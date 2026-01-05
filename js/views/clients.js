@@ -232,7 +232,13 @@ function renderClientForm() {
             <form id="client-form" class="space-y-4">
                 <input type="hidden" name="id" value="${editingId || ''}">
                 ${formFields}
-                <div class="flex justify-end pt-4 border-t mt-6">
+                <div class="flex justify-end pt-4 border-t mt-6 space-x-2">
+                     <!-- Botão Excluir (Apenas edição e se tiver permissão) -->
+                    ${editingId && appState.currentUser.permissions.canDelete ? `
+                    <button type="button" id="delete-client-btn" class="btn btn-error mr-auto" style="background-color: #ef4444; color: white; margin-right: auto;">
+                        <i class="fas fa-trash-alt mr-2"></i>Excluir
+                    </button>` : ''}
+                    
                     <button type="button" id="submit-client-form-btn" class="btn btn-primary">${editingId ? 'Salvar Alterações' : 'Adicionar'}</button>
                 </div>
             </form>
@@ -249,6 +255,43 @@ function renderClientForm() {
     }
     // Adiciona listener para o botão de fechar DENTRO do formulário
     document.getElementById('close-client-form-btn')?.addEventListener('click', closeAndClearForm);
+
+    // Adiciona listener para o botão de EXCLUIR
+    document.getElementById('delete-client-btn')?.addEventListener('click', async () => {
+        if (!confirm('Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.')) return;
+
+        const typeMap = {
+            organizations: 'organization',
+            contacts: 'contact',
+            clients_pf: 'cliente_pf'
+        };
+        const type = typeMap[appState.clientsView.activeTab];
+        const action = `delete_${type}`;
+
+        try {
+            await apiCall(action, {
+                method: 'POST',
+                body: JSON.stringify({ id: editingId })
+            });
+
+            showToast('Cliente excluído com sucesso!');
+
+            // Atualiza o estado local removendo o item
+            const stateKeyMap = { organizations: 'organizations', contacts: 'contacts', clients_pf: 'clients_pf' }; // Note o plural aqui
+            const stateKey = stateKeyMap[appState.clientsView.activeTab];
+
+            if (appState[stateKey]) {
+                appState[stateKey] = appState[stateKey].filter(item => item.id != editingId);
+            }
+
+            closeAndClearForm();
+            renderClientList();
+
+        } catch (error) {
+            // Erro já tratado no apiCall
+        }
+    });
+
     // Adiciona listener para o botão de submit DENTRO do formulário
     document.getElementById('submit-client-form-btn')?.addEventListener('click', () => {
         if (form && form.reportValidity()) {

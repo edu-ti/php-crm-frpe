@@ -121,6 +121,7 @@ try {
         // Organizações
         'create_organization' => ['POST' => 'handle_create_organization'],
         'update_organization' => ['POST' => 'handle_update_organization'], // Poderia ser PUT
+        'delete_organization' => ['POST' => 'handle_delete_organization'], // Adicionado DELETE
         'get_organization_details' => ['GET' => 'handle_get_organization_details'],
 
         // Contatos
@@ -131,6 +132,7 @@ try {
         // Clientes PF
         'create_cliente_pf' => ['POST' => 'handle_create_cliente_pf'],
         'update_cliente_pf' => ['POST' => 'handle_update_cliente_pf'], // Poderia ser PUT
+        'delete_cliente_pf' => ['POST' => 'handle_delete_cliente_pf'], // Adicionado DELETE
         'get_cliente_pf_details' => ['GET' => 'handle_get_cliente_pf_details'],
         'import_clients' => ['POST' => 'handle_import_clients'], // <-- NOVA ROTA DE IMPORTAÇÃO
 
