@@ -95,8 +95,8 @@ function openUserModal(user) {
     const isEditing = user !== null;
     const title = isEditing ? 'Editar Usuário' : 'Adicionar Novo Usuário';
     const roles = ['Especialista', 'Comercial', 'Vendedor', 'Gestor', 'Analista', 'Representante', 'Marketing'];
-    
-    const roleOptions = roles.map(role => 
+
+    const roleOptions = roles.map(role =>
         `<option value="${role}" ${isEditing && user.role === role ? 'selected' : ''}>${role}</option>`
     ).join('');
 
@@ -142,7 +142,7 @@ function openUserModal(user) {
     renderModal(title, content, async (form) => {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
-        
+
         try {
             const result = await apiCall(isEditing ? 'update_user' : 'create_user', { method: 'POST', body: JSON.stringify(data) });
             if (isEditing) {
@@ -155,7 +155,7 @@ function openUserModal(user) {
             }
             renderSettingsView();
             closeModal();
-        } catch (error) {}
+        } catch (error) { }
     });
 }
 
@@ -163,16 +163,38 @@ function openDeleteUserConfirmModal(userId) {
     const user = appState.users.find(u => u.id == userId);
     if (!user) return;
 
-    const content = `<p>Você tem certeza que deseja excluir o usuário <strong>${user.nome}</strong>? Esta ação não pode ser desfeita.</p>`;
-    
-    renderModal('Confirmar Exclusão', content, async () => {
-        try {
-            await apiCall('delete_user', { method: 'POST', body: JSON.stringify({ id: userId }) });
-            appState.users = appState.users.filter(u => u.id != userId);
-            renderSettingsView();
-            closeModal();
-            showToast('Usuário excluído com sucesso!');
-        } catch(error) {}
-    }, 'Excluir', 'btn-danger');
+    Swal.fire({
+        title: 'Tem certeza?',
+        text: `Você tem certeza que deseja excluir o usuário "${user.nome}"? Esta ação não pode ser desfeita.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Apagar',
+        cancelButtonText: 'Cancelar',
+        backdrop: `rgba(0,0,0,0.8)`
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                Swal.fire({
+                    title: 'Excluindo...',
+                    text: 'Aguarde...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                await apiCall('delete_user', { method: 'POST', body: JSON.stringify({ id: userId }) });
+                appState.users = appState.users.filter(u => u.id != userId);
+                renderSettingsView();
+                Swal.fire(
+                    'Excluído!',
+                    'Usuário excluído com sucesso.',
+                    'success'
+                );
+            } catch (error) {
+                console.error(error);
+                Swal.fire('Erro!', 'Ocorreu um erro ao excluir.', 'error');
+            }
+        }
+    });
 }
 

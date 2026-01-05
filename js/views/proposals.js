@@ -326,23 +326,37 @@ function addProposalCardEventListeners() {
             const id = e.currentTarget.dataset.id;
             const proposalNumber = e.currentTarget.closest('tr').querySelector('td[data-label="Nº"]').textContent;
 
-            renderModal(
-                'Confirmar Exclusão',
-                `<p>Tem certeza que deseja excluir a proposta <strong>${proposalNumber}</strong>? Esta ação não pode ser desfeita.</p>`,
-                async () => {
+            Swal.fire({
+                title: 'Tem certeza?',
+                text: `Você tem certeza que deseja excluir a proposta "${proposalNumber}"? Esta ação não pode ser desfeita.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Apagar',
+                cancelButtonText: 'Cancelar',
+                backdrop: `rgba(0,0,0,0.8)`
+            }).then(async (result) => {
+                if (result.isConfirmed) {
                     try {
+                        Swal.fire({
+                            title: 'Excluindo...',
+                            text: 'Aguarde...',
+                            allowOutsideClick: false,
+                            didOpen: () => { Swal.showLoading(); }
+                        });
                         await apiCall('delete_proposal', { method: 'POST', body: JSON.stringify({ id }) });
-                        showToast('Proposta excluída com sucesso!');
-                        renderProposalsList(); // Recarrega a lista
-                        closeModal(); // Fecha o modal de confirmação
+                        Swal.fire(
+                            'Excluído!',
+                            'Proposta excluída com sucesso!',
+                            'success'
+                        );
+                        renderProposalsList();
                     } catch (error) {
-                        // Erro tratado pelo apiCall/showToast
+                        Swal.fire('Erro!', 'Ocorreu um erro ao excluir.', 'error');
                     }
-                },
-                'Excluir',
-                'btn-error', // Classe vermelha para botão de confirmação
-                'sm' // Tamanho compacto
-            );
+                }
+            });
         });
     });
 }

@@ -17,7 +17,7 @@ export function renderAgendaView() {
     currentYear = today.getFullYear();
     const { permissions } = appState.currentUser;
 
-     // Garante layout flexível para scroll do calendário
+    // Garante layout flexível para scroll do calendário
     container.classList.add('flex', 'flex-col', 'h-full');
 
     container.innerHTML = `
@@ -47,11 +47,11 @@ export function renderAgendaView() {
 function addAgendaEventListeners() {
     const container = document.getElementById('agenda-view');
     // Previne adicionar listeners múltiplos
-    if(container.dataset.eventsAttached === 'true') return;
+    if (container.dataset.eventsAttached === 'true') return;
 
     container.addEventListener('click', (e) => {
         const target = e.target;
-        if(target.closest('#add-agendamento-btn')) {
+        if (target.closest('#add-agendamento-btn')) {
             openAgendamentoModal(null);
         } else if (target.closest('#prev-month-btn')) {
             currentMonth--;
@@ -73,8 +73,8 @@ function addAgendaEventListeners() {
             if (agendamento) {
                 openAgendamentoModal(agendamento);
             } else {
-                 console.error("Agendamento não encontrado no estado:", agendamentoId);
-                 showToast("Erro: Agendamento não encontrado.", "error");
+                console.error("Agendamento não encontrado no estado:", agendamentoId);
+                showToast("Erro: Agendamento não encontrado.", "error");
             }
         }
     });
@@ -118,20 +118,20 @@ function renderCalendar(month, year) {
     for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         // Filtra agendamentos para este dia específico
-         const agendamentosDoDia = (appState.agendamentos || [])
+        const agendamentosDoDia = (appState.agendamentos || [])
             .filter(ag => ag.data_inicio && ag.data_inicio.startsWith(dateStr))
-             .sort((a, b) => (a.data_inicio > b.data_inicio) ? 1 : -1); // Ordena por hora
+            .sort((a, b) => (a.data_inicio > b.data_inicio) ? 1 : -1); // Ordena por hora
 
         let agendamentosHtml = agendamentosDoDia.map(ag => {
-             // Extrai a hora
-             let hora = '??:??';
-             try {
-                 const dateObj = new Date(ag.data_inicio);
-                 // Interpreta como local
-                 hora = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-             } catch (e) { console.warn("Erro ao formatar hora:", ag.data_inicio); }
+            // Extrai a hora
+            let hora = '??:??';
+            try {
+                const dateObj = new Date(ag.data_inicio);
+                // Interpreta como local
+                hora = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            } catch (e) { console.warn("Erro ao formatar hora:", ag.data_inicio); }
 
-             // ** ALTERADO AQUI: Mostra múltiplos nomes usando 'para_usuario_nomes' **
+            // ** ALTERADO AQUI: Mostra múltiplos nomes usando 'para_usuario_nomes' **
             return `
             <div class="text-xs p-1 mt-1 rounded-md bg-blue-100 text-blue-800 truncate cursor-pointer event-item hover:bg-blue-200" data-id="${ag.id}" title="${ag.titulo} (${hora}) - Para: ${ag.para_usuario_nomes || 'N/A'}">
                 <i class="fas fa-circle text-[6px] mr-1"></i>${hora} - ${ag.titulo}
@@ -149,10 +149,10 @@ function renderCalendar(month, year) {
             </div>`;
     }
 
-     // Completa a última semana com células vazias se necessário
-     const totalCells = firstDayOfMonth + daysInMonth;
-     const remainingCells = (7 - (totalCells % 7)) % 7;
-     for (let i = 0; i < remainingCells; i++) {
+    // Completa a última semana com células vazias se necessário
+    const totalCells = firstDayOfMonth + daysInMonth;
+    const remainingCells = (7 - (totalCells % 7)) % 7;
+    for (let i = 0; i < remainingCells; i++) {
         dayCellsHtml += `<div class="bg-gray-50 border-t border-gray-200"></div>`;
     }
 
@@ -193,21 +193,21 @@ export function openAgendamentoModal(agendamento) {
     let horaAgendamento = '';
     if (data.data_inicio) {
         try {
-             // Tenta criar Data assumindo que a string do BD está em formato reconhecível (ex: YYYY-MM-DD HH:MM:SS)
-             // Força interpretação local dividindo a string
-             const parts = data.data_inicio.split(/[- :]/);
-             if (parts.length >= 5) {
+            // Tenta criar Data assumindo que a string do BD está em formato reconhecível (ex: YYYY-MM-DD HH:MM:SS)
+            // Força interpretação local dividindo a string
+            const parts = data.data_inicio.split(/[- :]/);
+            if (parts.length >= 5) {
                 // Constrói Data como UTC para evitar problemas de fuso, depois ajusta para local
                 // const utcDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], parts[3], parts[4]));
                 // Usa construtor que interpreta como local
-                 const localDate = new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4]);
+                const localDate = new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4]);
 
                 // Formata para input type="date" (YYYY-MM-DD)
                 dataAgendamento = localDate.getFullYear() + '-' + String(localDate.getMonth() + 1).padStart(2, '0') + '-' + String(localDate.getDate()).padStart(2, '0');
                 // Formata para input type="time" (HH:MM)
                 horaAgendamento = String(localDate.getHours()).padStart(2, '0') + ':' + String(localDate.getMinutes()).padStart(2, '0');
 
-             } else { throw new Error("Formato de data inválido"); }
+            } else { throw new Error("Formato de data inválido"); }
 
         } catch (e) {
             console.error("Erro ao parsear data_inicio:", data.data_inicio, e);
@@ -273,9 +273,9 @@ export function openAgendamentoModal(agendamento) {
             // Foca no select para indicar o erro
             const selectElement = form.querySelector('select[name="para_usuario_ids[]"]');
             if (selectElement) {
-                 selectElement.focus();
-                 selectElement.classList.add('border-red-500'); // Adiciona borda vermelha
-                 setTimeout(() => selectElement.classList.remove('border-red-500'), 2000); // Remove após 2s
+                selectElement.focus();
+                selectElement.classList.add('border-red-500'); // Adiciona borda vermelha
+                setTimeout(() => selectElement.classList.remove('border-red-500'), 2000); // Remove após 2s
             }
             return;
         }
@@ -293,10 +293,10 @@ export function openAgendamentoModal(agendamento) {
             // A view da agenda será re-renderizada automaticamente pelo initializeApp se for a view ativa
 
         } catch (error) {
-             console.error("Erro ao salvar agendamento:", error);
-             // showToast já é chamado pelo apiCall em caso de erro
+            console.error("Erro ao salvar agendamento:", error);
+            // showToast já é chamado pelo apiCall em caso de erro
         } finally {
-             showLoading(false); // Esconde loading após a chamada (sucesso ou erro)
+            showLoading(false); // Esconde loading após a chamada (sucesso ou erro)
         }
     }, 'Salvar', `btn-primary ${!showSaveButton ? 'hidden' : ''}`);
 
@@ -305,9 +305,9 @@ export function openAgendamentoModal(agendamento) {
     if (isEditing && Array.isArray(data.usuarios_associados)) {
         const selectElement = document.querySelector('select[name="para_usuario_ids[]"]');
         if (selectElement) {
-             // Converte IDs associados para string para comparação segura (valores de <option> são strings)
-             const associatedIds = data.usuarios_associados.map(String);
-             Array.from(selectElement.options).forEach(option => {
+            // Converte IDs associados para string para comparação segura (valores de <option> são strings)
+            const associatedIds = data.usuarios_associados.map(String);
+            Array.from(selectElement.options).forEach(option => {
                 // Verifica se o valor da opção está no array de IDs associados
                 if (associatedIds.includes(option.value)) {
                     option.selected = true; // Marca a opção como selecionada
@@ -317,30 +317,38 @@ export function openAgendamentoModal(agendamento) {
     }
 
 
-     // Adiciona listener para o botão de excluir (sem alterações aqui)
-     const deleteBtn = document.getElementById('delete-agendamento-btn');
-     if (deleteBtn) {
-         deleteBtn.addEventListener('click', async () => {
-             renderModal('Confirmar Exclusão',
-                 `<p>Tem certeza que deseja excluir o agendamento "${data.titulo}"?</p>`,
-                 async () => {
-                     closeModal(); // Fecha confirmação
-                     showLoading(true);
-                     try {
-                         await apiCall('delete_agendamento', { method: 'POST', body: JSON.stringify({ id: data.id }) });
-                         showToast('Agendamento excluído! Recarregando dados...', 'info');
-                         closeModal(); // Fecha modal de edição original
-                         await initializeApp(); // Recarrega dados após exclusão
-
-                     } catch (error) {
-                          // showToast já tratado por apiCall
-                     } finally {
-                          showLoading(false);
-                     }
-                 },
-                 'Excluir',
-                 'btn-danger'
-            );
-         });
-     }
+    // Adiciona listener para o botão de excluir (sem alterações aqui)
+    const deleteBtn = document.getElementById('delete-agendamento-btn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', async () => {
+            Swal.fire({
+                title: 'Tem certeza?',
+                text: `Você tem certeza que deseja excluir o agendamento "${data.titulo}"?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Apagar',
+                cancelButtonText: 'Cancelar',
+                backdrop: `rgba(0,0,0,0.8)`
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Excluindo...',
+                        text: 'Aguarde, atualizando agenda...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+                    try {
+                        await apiCall('delete_agendamento', { method: 'POST', body: JSON.stringify({ id: data.id }) });
+                        closeModal(); // Fecha o modal de edição
+                        await initializeApp(); // Recarrega tudo
+                        Swal.fire('Excluído!', 'Agendamento excluído com sucesso.', 'success');
+                    } catch (error) {
+                        Swal.fire('Erro!', 'Ocorreu um erro ao excluir.', 'error');
+                    }
+                }
+            });
+        });
+    }
 }

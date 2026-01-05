@@ -669,45 +669,54 @@ function renderOpportunityModal(opportunity = null) {
         setupClientContactSelectionLogic(form);
     }
 
-    // --- ADIÇÃO: Botão de Excluir (Injetado via JS) ---
+    // --- ADIÇÃO: Botão de Excluir com SweetAlert2 ---
     if (isEditing && permissions.canDelete) {
-        const footer = document.querySelector('#modal-box .p-4.bg-gray-50'); // Seleciona o rodapé do modal
+        const footer = document.querySelector('#modal-box .p-4.bg-gray-50');
         if (footer) {
-            // Cria o botão de excluir
             const deleteBtn = document.createElement('button');
-            deleteBtn.id = 'modal-delete-opp-btn';
-            deleteBtn.className = 'btn btn-error mr-auto'; // mr-auto empurra os outros botões para a direita
             deleteBtn.innerHTML = '<i class="fas fa-trash-alt mr-2"></i>Excluir';
+            deleteBtn.className = 'btn btn-error text-white bg-red-500 hover:bg-red-600 mr-auto';
             deleteBtn.type = 'button';
-            deleteBtn.style.backgroundColor = '#ef4444'; // Vermelho Tailwind (red-500)
-            deleteBtn.style.color = 'white';
-            deleteBtn.style.marginRight = 'auto'; // Garante alinhamento à esquerda
 
-            // Adiciona listener
-            deleteBtn.addEventListener('click', async () => {
-                renderModal(
-                    'Confirmar Exclusão',
-                    `<p>Tem certeza que deseja excluir esta oportunidade? Esta ação não pode ser desfeita.</p>`,
-                    async () => {
+            deleteBtn.addEventListener('click', () => {
+                Swal.fire({
+                    title: 'Tem certeza?',
+                    text: "Você tem certeza que deseja apagar esse registro!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Apagar',
+                    cancelButtonText: 'Cancelar',
+                    backdrop: `rgba(0,0,0,0.8)`
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
                         try {
+                            Swal.fire({
+                                title: 'Excluindo...',
+                                text: 'Aguarde...',
+                                allowOutsideClick: false,
+                                didOpen: () => { Swal.showLoading(); }
+                            });
                             await apiCall('delete_opportunity', {
                                 method: 'POST',
                                 body: JSON.stringify({ id: data.id })
                             });
-                            showToast('Oportunidade excluída com sucesso!');
-                            closeModal(); // Fecha o modal de confirmação
-                            renderFunilView(); // Recarrega o funil
+                            Swal.fire(
+                                'Excluído!',
+                                'Oportunidade excluída com sucesso.',
+                                'success'
+                            );
+                            closeModal();
+                            renderFunilView();
                         } catch (error) {
-                            // Erro tratado pelo apiCall
+                            console.error(error);
+                            Swal.fire('Erro!', 'Ocorreu um erro ao excluir.', 'error');
                         }
-                    },
-                    'Excluir',
-                    'btn-error',
-                    'sm'
-                );
+                    }
+                });
             });
 
-            // Insere no início do rodapé (esquerda)
             footer.insertBefore(deleteBtn, footer.firstChild);
         }
     }
@@ -1343,24 +1352,41 @@ function openVendaFornecedorModal(vendaData) {
 
     const deleteBtn = document.getElementById('delete-venda-btn');
     if (deleteBtn) {
-        deleteBtn.addEventListener('click', async () => {
-            renderModal('Confirmar Exclusão',
-                `<p>Tem certeza que deseja excluir esta venda (${data.titulo})? Esta ação não pode ser desfeita.</p>`,
-                async () => {
+        deleteBtn.addEventListener('click', () => {
+            Swal.fire({
+                title: 'Tem certeza?',
+                text: `Você tem certeza que deseja apagar a venda "${data.titulo}"!`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Apagar',
+                cancelButtonText: 'Cancelar',
+                backdrop: `rgba(0,0,0,0.8)`
+            }).then(async (result) => {
+                if (result.isConfirmed) {
                     try {
+                        Swal.fire({
+                            title: 'Excluindo...',
+                            text: 'Aguarde...',
+                            allowOutsideClick: false,
+                            didOpen: () => { Swal.showLoading(); }
+                        });
                         await apiCall('delete_venda_fornecedor', { method: 'POST', body: JSON.stringify({ id: data.id }) });
                         appState.vendasFornecedores = appState.vendasFornecedores.filter(v => v.id != data.id);
-                        showToast('Venda excluída com sucesso!');
+                        Swal.fire(
+                            'Excluído!',
+                            'Venda excluída com sucesso.',
+                            'success'
+                        );
                         renderFornecedoresView();
-                        closeModal(); // Fecha o modal de confirmação
-                        closeModal(); // Fecha o modal de edição original
+                        closeModal();
                     } catch (error) {
-                        closeModal(); // Fecha confirmação mesmo em erro
+                        console.error(error);
+                        Swal.fire('Erro!', 'Ocorreu um erro ao excluir a venda.', 'error');
                     }
-                },
-                'Excluir',
-                'btn-danger'
-            );
+                }
+            });
         });
     }
 

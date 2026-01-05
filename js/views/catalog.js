@@ -274,16 +274,33 @@ function openDeleteProductModal(productId) {
     const product = appState.products.find(p => p.id == productId);
     if (!product) return;
 
-    const content = `<p>Você tem certeza que deseja excluir o produto <strong>${product.nome_produto}</strong>? Esta ação não pode ser desfeita.</p>`;
-
-    renderModal('Confirmar Exclusão', content, async () => {
-        try {
-            await apiCall('delete_product', { method: 'POST', body: JSON.stringify({ id: productId }) });
-            appState.products = appState.products.filter(p => p.id != productId);
-            showToast('Produto excluído com sucesso!');
-            closeModal();
-            renderCatalogView(); // Re-renderiza a view inteira para atualizar o filtro
-        } catch (error) { }
-    }, 'Excluir', 'btn-danger');
+    Swal.fire({
+        title: 'Tem certeza?',
+        text: `Você tem certeza que deseja excluir o produto "${product.nome_produto}"? Esta ação não pode ser desfeita.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Apagar',
+        cancelButtonText: 'Cancelar',
+        backdrop: `rgba(0,0,0,0.8)`
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                Swal.fire({
+                    title: 'Excluindo...',
+                    text: 'Aguarde...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                await apiCall('delete_product', { method: 'POST', body: JSON.stringify({ id: productId }) });
+                appState.products = appState.products.filter(p => p.id != productId);
+                Swal.fire('Excluído!', 'Produto excluído com sucesso!', 'success');
+                renderCatalogView(); // Re-renderiza a view inteira para atualizar o filtro
+            } catch (error) {
+                Swal.fire('Erro!', 'Ocorreu um erro ao excluir.', 'error');
+            }
+        }
+    });
 }
 

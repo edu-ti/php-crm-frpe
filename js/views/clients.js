@@ -259,10 +259,18 @@ function renderClientForm() {
     // Adiciona listener para o botão de EXCLUIR
     // Adiciona listener para o botão de EXCLUIR
     document.getElementById('delete-client-btn')?.addEventListener('click', async () => {
-        renderModal(
-            'Confirmar Exclusão',
-            `<p>Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.</p>`,
-            async () => {
+        Swal.fire({
+            title: 'Tem certeza?',
+            text: `Você tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Apagar',
+            cancelButtonText: 'Cancelar',
+            backdrop: `rgba(0,0,0,0.8)`
+        }).then(async (result) => {
+            if (result.isConfirmed) {
                 const typeMap = {
                     organizations: 'organization',
                     contacts: 'contact',
@@ -272,12 +280,16 @@ function renderClientForm() {
                 const action = `delete_${type}`;
 
                 try {
+                    Swal.fire({
+                        title: 'Excluindo...',
+                        text: 'Aguarde...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
                     await apiCall(action, {
                         method: 'POST',
                         body: JSON.stringify({ id: editingId })
                     });
-
-                    showToast('Cliente excluído com sucesso!');
 
                     // Atualiza o estado local removendo o item
                     const stateKeyMap = { organizations: 'organizations', contacts: 'contacts', clients_pf: 'clients_pf' };
@@ -287,18 +299,16 @@ function renderClientForm() {
                         appState[stateKey] = appState[stateKey].filter(item => item.id != editingId);
                     }
 
-                    closeModal(); // Fecha o modal de confirmação
+                    Swal.fire('Excluído!', 'Cliente excluído com sucesso!', 'success');
                     closeAndClearForm();
                     renderClientList();
 
                 } catch (error) {
-                    // Erro já tratado no apiCall
+                    console.error(error);
+                    Swal.fire('Erro!', 'Ocorreu um erro ao excluir.', 'error');
                 }
-            },
-            'Excluir',
-            'btn-error',
-            'sm'
-        );
+            }
+        });
     });
 
     // Adiciona listener para o botão de submit DENTRO do formulário

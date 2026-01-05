@@ -27,6 +27,8 @@ $version = time();
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- ** ALTERAÇÃO: Insira a sua API Key aqui ** -->
     <script src="https://cdn.tiny.cloud/1/7w3oqmvbila1pjwhqf57sumy2pxj827rco8ictpgcegu9n45/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Estilo personalizado com versionamento dinâmico -->
     <link rel="stylesheet" href="css/style.css?v=<?php echo $version; ?>">
 </head>
