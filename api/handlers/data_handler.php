@@ -22,11 +22,15 @@
          'canSeeLeads' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Marketing']),
          'canSeeSettings' => in_array($current_user_role, ['Gestor', 'Analista']),
          'canSeeCatalog' => true,
-         'canCreate' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial']),
+         // canCreate genérico mantido para compatibilidade, mas recomenda-se usar específicos
+         'canCreate' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial']), 
          'canEdit' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial']),
          'canDelete' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial']),
          'canPrint' => true,
-         'canCreateOpportunity' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial']),
+         // Permissões Específicas
+         'canCreateOpportunity' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
+         'canCreateClient' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
+         'canCreateProduct' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Especialista']), // Vendedor NÃO pode
          'canEditOwnedItems' => in_array($current_user_role, ['Vendedor', 'Especialista', 'Representante']),
          'canManageLeads' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Marketing']), // Permissão para gerir leads
          'canCreateSchedule' => true,

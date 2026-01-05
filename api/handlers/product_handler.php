@@ -53,6 +53,11 @@ function handle_upload_product_image() {
  */
 function handle_create_product($pdo, $data) {
     $required = ['nome_produto'];
+    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Especialista'])) {
+        json_response(['success' => false, 'error' => 'Acesso negado: Perfil não autorizado a criar produtos.'], 403);
+        return;
+    }
+
     foreach($required as $field) {
         if(!isset($data[$field])) {
             json_response(['success' => false, 'error' => "Campo obrigatório ausente: {$field}"], 400);
@@ -102,6 +107,11 @@ function handle_update_product($pdo, $data) {
         return;
     }
     
+    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Especialista'])) {
+        json_response(['success' => false, 'error' => 'Acesso negado: Perfil não autorizado a editar produtos.'], 403);
+        return;
+    }
+    
     // --- CORREÇÃO: Permite valor 0.00 ---
     if(!isset($data['valor_unitario']) || !is_numeric($data['valor_unitario'])) {
          json_response(['success' => false, 'error' => "Valor unitário é obrigatório e deve ser numérico (pode ser 0)."], 400);
@@ -148,6 +158,11 @@ function handle_update_product($pdo, $data) {
 function handle_delete_product($pdo, $data) {
     if(empty($data['id'])) {
         json_response(['success' => false, 'error' => 'ID do produto é obrigatório para exclusão.'], 400);
+        return;
+    }
+
+    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial'])) {
+        json_response(['success' => false, 'error' => 'Acesso negado: Perfil não autorizado a excluir produtos.'], 403);
         return;
     }
 

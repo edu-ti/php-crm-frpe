@@ -278,7 +278,7 @@ function handle_move_opportunity($pdo, $data) {
     if (empty($data['opportunityId']) || empty($data['newStageId'])) {
         json_response(['success' => false, 'error' => 'Dados insuficientes para mover oportunidade.'], 400);
     }
-     if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial'])) {
+     if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista'])) {
          json_response(['success' => false, 'error' => 'Acesso negado para mover oportunidades.'], 403);
          return;
      }

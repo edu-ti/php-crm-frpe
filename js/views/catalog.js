@@ -23,7 +23,7 @@ export function renderCatalogView() {
             .filter(Boolean) // Remove valores nulos ou vazios
     )].sort(); // Ordena alfabeticamente
 
-    const fornecedorOptions = fornecedores.map(f => 
+    const fornecedorOptions = fornecedores.map(f =>
         `<option value="${f}" ${localState.selectedFornecedor === f ? 'selected' : ''}>${f}</option>`
     ).join('');
     // --- Fim da lógica do filtro ---
@@ -44,7 +44,7 @@ export function renderCatalogView() {
                      </select>
                 </div>
                  <!-- --- Fim do Filtro --- -->
-                ${permissions.canCreate ? `
+                ${permissions.canCreateProduct ? `
                 <button id="add-product-btn" class="btn btn-primary flex-shrink-0"><i class="fas fa-plus mr-2"></i>Novo Produto</button>
                 ` : ''}
             </div>
@@ -108,7 +108,7 @@ function renderProductList() {
                             <td data-label="Valor" class="table-cell">${formatCurrency(p.valor_unitario)}</td>
                             <td data-label="Unidade" class="table-cell">${p.unidade_medida || 'Unidade'}</td>
                             <td data-label="Ações" class="table-cell text-right space-x-2 actions-cell">
-                                ${permissions.canEdit ? `<button class="action-btn edit-product-btn" title="Editar" data-id="${p.id}"><i class="fas fa-pencil-alt"></i></button>` : ''}
+                                ${permissions.canCreateProduct ? `<button class="action-btn edit-product-btn" title="Editar" data-id="${p.id}"><i class="fas fa-pencil-alt"></i></button>` : ''}
                                 ${permissions.canDelete ? `<button class="action-btn delete-product-btn" title="Excluir" data-id="${p.id}"><i class="fas fa-trash-alt text-red-500 hover:text-red-700"></i></button>` : ''}
                             </td>
                         </tr>
@@ -123,7 +123,7 @@ function renderProductList() {
 
 function addCatalogEventListeners() {
     document.getElementById('add-product-btn')?.addEventListener('click', () => openProductModal(null));
-    
+
     // Atualiza estado local e re-renderiza ao pesquisar
     const searchInput = document.getElementById('product-search');
     if (searchInput) {
@@ -201,9 +201,9 @@ function openProductModal(product) {
 
     // Adiciona listener para formatar o valor monetário ao perder o foco
     const valorInput = document.querySelector('input[name="valor_unitario"]');
-    if(valorInput) {
+    if (valorInput) {
         valorInput.addEventListener('blur', (e) => {
-             e.target.value = formatCurrencyForInput(parseCurrency(e.target.value));
+            e.target.value = formatCurrencyForInput(parseCurrency(e.target.value));
         });
     }
 }
@@ -229,14 +229,14 @@ async function handleProductImageUpload(e) {
 async function saveProduct(form) {
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
-    
+
     // Pega o ID e a imagem do estado local
     data.id = localState.editingProduct.id;
     data.imagem_url = localState.editingProduct.imagem_url;
-    
+
     // --- CORREÇÃO: Converte valor monetário para número antes de enviar ---
     data.valor_unitario = parseCurrency(data.valor_unitario);
-    
+
     // Validação para permitir valor 0
     if (data.valor_unitario === null || data.valor_unitario === undefined || data.valor_unitario < 0) {
         showToast('Por favor, insira um Valor Unitário válido (pode ser 0).', 'error');
@@ -250,7 +250,7 @@ async function saveProduct(form) {
 
     try {
         const result = await apiCall(action, { method: 'POST', body: JSON.stringify(data) });
-        
+
         // Atualiza o estado da aplicação com o produto salvo
         const savedProduct = result.product;
         if (data.id) {
@@ -275,7 +275,7 @@ function openDeleteProductModal(productId) {
     if (!product) return;
 
     const content = `<p>Você tem certeza que deseja excluir o produto <strong>${product.nome_produto}</strong>? Esta ação não pode ser desfeita.</p>`;
-    
+
     renderModal('Confirmar Exclusão', content, async () => {
         try {
             await apiCall('delete_product', { method: 'POST', body: JSON.stringify({ id: productId }) });
@@ -283,7 +283,7 @@ function openDeleteProductModal(productId) {
             showToast('Produto excluído com sucesso!');
             closeModal();
             renderCatalogView(); // Re-renderiza a view inteira para atualizar o filtro
-        } catch(error) {}
+        } catch (error) { }
     }, 'Excluir', 'btn-danger');
 }
 

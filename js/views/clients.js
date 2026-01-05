@@ -22,7 +22,7 @@ export function renderClientsView() {
                     <input type="text" id="client-search-input" placeholder="Pesquisar..." class="form-input w-full md:w-64" value="${searchTerm}">
                     <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 </div>
-                 ${permissions.canCreate ? `
+                 ${permissions.canCreateClient ? `
                  <button id="import-clients-btn" class="btn btn-secondary flex-shrink-0">
                     <i class="fas fa-upload mr-2"></i>Importar
                  </button>
@@ -45,7 +45,7 @@ export function renderClientsView() {
     addClientsEventListeners();
 
     renderClientList();
-    if(appState.clientsView.isFormVisible) {
+    if (appState.clientsView.isFormVisible) {
         renderClientForm();
     }
 }
@@ -88,7 +88,7 @@ function closeAndClearForm() {
     appState.clientsView.isFormVisible = false;
     appState.clientsView.editingId = null;
     const formContainer = document.getElementById('client-form-container');
-    if(formContainer) formContainer.innerHTML = ''; // Limpa o container
+    if (formContainer) formContainer.innerHTML = ''; // Limpa o container
     // Atualiza a lista caso um item estivesse selecionado para edição
     renderClientList();
 }
@@ -121,16 +121,16 @@ function renderClientList() {
         // Adapta os campos de busca para cada tipo
         if (activeTab === 'organizations') {
             return (item.nome_fantasia && item.nome_fantasia.toLowerCase().includes(lowercasedSearch)) ||
-                   (item.razao_social && item.razao_social.toLowerCase().includes(lowercasedSearch)) ||
-                   (item.cnpj && item.cnpj.toLowerCase().includes(lowercasedSearch));
+                (item.razao_social && item.razao_social.toLowerCase().includes(lowercasedSearch)) ||
+                (item.cnpj && item.cnpj.toLowerCase().includes(lowercasedSearch));
         } else if (activeTab === 'contacts') {
             return (item.nome && item.nome.toLowerCase().includes(lowercasedSearch)) ||
-                   (item.email && item.email.toLowerCase().includes(lowercasedSearch)) ||
-                   (item.organizacao_nome && item.organizacao_nome.toLowerCase().includes(lowercasedSearch));
+                (item.email && item.email.toLowerCase().includes(lowercasedSearch)) ||
+                (item.organizacao_nome && item.organizacao_nome.toLowerCase().includes(lowercasedSearch));
         } else { // clients_pf
             return (item.nome && item.nome.toLowerCase().includes(lowercasedSearch)) ||
-                   (item.email && item.email.toLowerCase().includes(lowercasedSearch)) ||
-                   (item.cpf && item.cpf.toLowerCase().includes(lowercasedSearch));
+                (item.email && item.email.toLowerCase().includes(lowercasedSearch)) ||
+                (item.cpf && item.cpf.toLowerCase().includes(lowercasedSearch));
         }
     });
 
@@ -165,7 +165,7 @@ function renderClientList() {
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-bold">${titleMap[activeTab]}</h2>
             <!-- --- CORREÇÃO: Mostra o botão "+ Novo" para todas as abas --- --!>
-            ${permissions.canCreate ? `<button id="add-client-btn" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> ${newButtonText}</button>` : ''}
+            ${permissions.canCreateClient ? `<button id="add-client-btn" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> ${newButtonText}</button>` : ''}
              <!-- --- FIM DA CORREÇÃO --- --!>
         </div>
         <!-- Adicionado max-h e overflow --!>
@@ -247,19 +247,19 @@ function renderClientForm() {
     if (activeTab === 'organizations') { // Busca CNPJ apenas para PJ
         setupApiFetch(form, 'cnpj', apiCall);
     }
-     // Adiciona listener para o botão de fechar DENTRO do formulário
+    // Adiciona listener para o botão de fechar DENTRO do formulário
     document.getElementById('close-client-form-btn')?.addEventListener('click', closeAndClearForm);
-     // Adiciona listener para o botão de submit DENTRO do formulário
-     document.getElementById('submit-client-form-btn')?.addEventListener('click', () => {
-         if (form && form.reportValidity()) {
-              const typeMap = {
-                 organizations: 'organization',
-                 contacts: 'contact',
-                 clients_pf: 'cliente_pf'
-             };
-             handleClientFormSubmit(form, typeMap[appState.clientsView.activeTab]);
-         }
-     });
+    // Adiciona listener para o botão de submit DENTRO do formulário
+    document.getElementById('submit-client-form-btn')?.addEventListener('click', () => {
+        if (form && form.reportValidity()) {
+            const typeMap = {
+                organizations: 'organization',
+                contacts: 'contact',
+                clients_pf: 'cliente_pf'
+            };
+            handleClientFormSubmit(form, typeMap[appState.clientsView.activeTab]);
+        }
+    });
 }
 
 async function handleClientFormSubmit(form, type) {
@@ -285,17 +285,17 @@ async function handleClientFormSubmit(form, type) {
                 if (index !== -1) {
                     appState[stateKey][index] = savedItem;
                 } else {
-                     // Se não encontrou para atualizar, adiciona (menos provável)
-                     appState[stateKey].push(savedItem);
+                    // Se não encontrou para atualizar, adiciona (menos provável)
+                    appState[stateKey].push(savedItem);
                 }
-                 showToast(`${singularTitleMap[stateKey]} atualizado(a) com sucesso!`);
+                showToast(`${singularTitleMap[stateKey]} atualizado(a) com sucesso!`);
             } else { // Criando
                 appState[stateKey].push(savedItem);
-                 showToast(`${singularTitleMap[stateKey]} criado(a) com sucesso!`);
+                showToast(`${singularTitleMap[stateKey]} criado(a) com sucesso!`);
             }
         } else {
-             console.warn("Chave de estado ou item salvo não encontrado na resposta da API:", result);
-             showToast(`Operação concluída, mas houve um problema ao atualizar a lista local. Recarregue a página se necessário.`, 'info');
+            console.warn("Chave de estado ou item salvo não encontrado na resposta da API:", result);
+            showToast(`Operação concluída, mas houve um problema ao atualizar a lista local. Recarregue a página se necessário.`, 'info');
         }
 
 
@@ -303,8 +303,8 @@ async function handleClientFormSubmit(form, type) {
         closeAndClearForm();
         renderClientList(); // Re-renderiza a lista para mostrar a alteração/adição
 
-         // O recarregamento total foi removido para melhorar a performance.
-         // Se notar inconsistências em outras partes (ex: propostas), pode ser reativado.
+        // O recarregamento total foi removido para melhorar a performance.
+        // Se notar inconsistências em outras partes (ex: propostas), pode ser reativado.
 
     } catch (error) {
         console.error(`Falha ao salvar ${type}:`, error);
@@ -354,7 +354,7 @@ function renderContactFormFields(data) {
         </div>`;
 }
 function renderClientPfFormFields(data) {
-     return `
+    return `
         <div><label class="form-label">Nome*</label><input type="text" name="nome" required class="form-input" value="${data.nome || ''}"></div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label class="form-label">Email</label><input type="email" name="email" class="form-input" value="${data.email || ''}"></div>
@@ -431,11 +431,11 @@ function openImportClientsModal() {
                 } else if (fileType === 'csv') {
                     const csvData = data;
                     const lines = csvData.split(/\r\n|\n/).filter(line => line.trim() !== '');
-                     jsonData = lines.map(line => {
-                         return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell =>
-                             cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"')
-                         );
-                     });
+                    jsonData = lines.map(line => {
+                        return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell =>
+                            cell.trim().replace(/^"|"$/g, '').replace(/""/g, '"')
+                        );
+                    });
                 } else {
                     throw new Error('Formato de ficheiro não suportado.');
                 }
@@ -444,14 +444,14 @@ function openImportClientsModal() {
                     throw new Error('Ficheiro vazio ou contém apenas o cabeçalho.');
                 }
 
-                 const header = jsonData[0].map(h => String(h).toLowerCase().trim().replace(/\s+/g, '_'));
+                const header = jsonData[0].map(h => String(h).toLowerCase().trim().replace(/\s+/g, '_'));
                 const clientsData = jsonData.slice(1).map(row => {
                     const client = {};
                     header.forEach((key, index) => {
                         if (key && row[index] !== undefined) {
                             if (key === 'data_nascimento' && typeof row[index] === 'number' && row[index] > 10000) {
                                 client[key] = excelDateToJSDate(row[index]);
-                             } else {
+                            } else {
                                 client[key] = String(row[index]).trim();
                             }
                         }
@@ -466,7 +466,7 @@ function openImportClientsModal() {
                     body: JSON.stringify({ clients: clientsData })
                 });
 
-                 statusDiv.innerHTML = `
+                statusDiv.innerHTML = `
                     <p class="text-green-600 font-semibold">Importação Concluída!</p>
                     <ul class="list-disc list-inside mt-2">
                         <li>Organizações (PJ) importadas: ${result.importedPj}</li>
@@ -478,28 +478,28 @@ function openImportClientsModal() {
                  `;
                 showToast(`Importação concluída: ${result.importedPj + result.importedPf} clientes adicionados.`);
 
-                 if (result.importedPj > 0 || result.importedPf > 0) {
-                     await initializeApp();
-                     renderClientsView();
-                 }
+                if (result.importedPj > 0 || result.importedPf > 0) {
+                    await initializeApp();
+                    renderClientsView();
+                }
                 setTimeout(closeModal, 5000);
 
             } catch (error) {
-                 console.error("Erro na importação de clientes:", error);
-                 statusDiv.innerHTML = `<p class="text-red-600">Erro: ${error.message}</p>`;
-                 showToast(`Erro na importação: ${error.message}`, 'error');
-                 if (confirmBtn) confirmBtn.disabled = false;
-                 showLoading(false);
+                console.error("Erro na importação de clientes:", error);
+                statusDiv.innerHTML = `<p class="text-red-600">Erro: ${error.message}</p>`;
+                showToast(`Erro na importação: ${error.message}`, 'error');
+                if (confirmBtn) confirmBtn.disabled = false;
+                showLoading(false);
             } finally {
                 showLoading(false);
             }
         };
 
         reader.onerror = () => {
-             statusDiv.innerHTML = `<p class="text-red-600">Erro ao ler o ficheiro.</p>`;
-             showToast('Erro ao ler o ficheiro.', 'error');
-             if (confirmBtn) confirmBtn.disabled = false;
-             showLoading(false);
+            statusDiv.innerHTML = `<p class="text-red-600">Erro ao ler o ficheiro.</p>`;
+            showToast('Erro ao ler o ficheiro.', 'error');
+            if (confirmBtn) confirmBtn.disabled = false;
+            showLoading(false);
         };
 
         if (file.name.endsWith('.xlsx')) {
@@ -507,10 +507,10 @@ function openImportClientsModal() {
         } else if (file.name.endsWith('.csv')) {
             reader.readAsText(file);
         } else {
-             statusDiv.innerHTML = `<p class="text-red-600">Formato de ficheiro não suportado. Use .xlsx ou .csv.</p>`;
-             showToast('Formato de ficheiro não suportado.', 'error');
-             if (confirmBtn) confirmBtn.disabled = false;
-             showLoading(false);
+            statusDiv.innerHTML = `<p class="text-red-600">Formato de ficheiro não suportado. Use .xlsx ou .csv.</p>`;
+            showToast('Formato de ficheiro não suportado.', 'error');
+            if (confirmBtn) confirmBtn.disabled = false;
+            showLoading(false);
         }
 
     }, 'Importar', 'btn-primary');
@@ -518,17 +518,17 @@ function openImportClientsModal() {
 
 // Função auxiliar para converter data do Excel para formato YYYY-MM-DD
 function excelDateToJSDate(excelDate) {
-  if(typeof excelDate !== 'number' || excelDate < 1) return '';
-  try {
-    const baseDate = new Date(Date.UTC(1899, 11, 30 + excelDate -1));
-    const year = baseDate.getUTCFullYear();
-    const month = String(baseDate.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(baseDate.getUTCDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  } catch(e) {
-    console.warn("Erro ao converter data Excel:", excelDate, e);
-    return '';
-  }
+    if (typeof excelDate !== 'number' || excelDate < 1) return '';
+    try {
+        const baseDate = new Date(Date.UTC(1899, 11, 30 + excelDate - 1));
+        const year = baseDate.getUTCFullYear();
+        const month = String(baseDate.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(baseDate.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    } catch (e) {
+        console.warn("Erro ao converter data Excel:", excelDate, e);
+        return '';
+    }
 }
 // --- FIM DA FUNÇÃO DE IMPORTAÇÃO ---
 
