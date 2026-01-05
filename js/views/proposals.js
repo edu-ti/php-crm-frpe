@@ -26,19 +26,19 @@ export function resetProposalState() {
         assistencia_tecnica: 'Disponível com suporte especializado para manutenção e pós garantia.',
         observacoes: 'Nenhuma'
     };
-     appState.proposalsView.currentPage = 1;
+    appState.proposalsView.currentPage = 1;
 }
 
 export function renderProposalsView() {
     const container = document.getElementById('proposals-view');
-    
+
     if (!appState.proposal || (!appState.proposal.isEditing && !appState.proposal.oportunidade_id)) {
         resetProposalState();
     }
-    
+
     const p = appState.proposal;
     const { permissions } = appState.currentUser;
-    
+
     let preProposalsSection = '';
     if (appState.pre_proposals && appState.pre_proposals.length > 0) {
         const preProposalItems = appState.pre_proposals.map(op => `
@@ -134,7 +134,7 @@ export function renderProposalsView() {
 
     addProposalEventListeners();
     renderProposalsList();
-    if(p.isEditing || p.oportunidade_id) {
+    if (p.isEditing || p.oportunidade_id) {
         renderProposalClientSelection();
         renderProposalItemsSection();
     }
@@ -155,13 +155,13 @@ function renderProposalsList() {
         const date = formatDate(p.data_criacao);
 
         return clientName.toLowerCase().includes(searchTerm) ||
-               proposalNumber.toLowerCase().includes(searchTerm) ||
-               contactName.toLowerCase().includes(searchTerm) ||
-               docNumber.toLowerCase().includes(searchTerm) ||
-               status.toLowerCase().includes(searchTerm) ||
-               date.includes(searchTerm);
+            proposalNumber.toLowerCase().includes(searchTerm) ||
+            contactName.toLowerCase().includes(searchTerm) ||
+            docNumber.toLowerCase().includes(searchTerm) ||
+            status.toLowerCase().includes(searchTerm) ||
+            date.includes(searchTerm);
     });
-    
+
     const { column, direction } = appState.proposalSort;
     filteredProposals.sort((a, b) => {
         let valA = a[column];
@@ -209,9 +209,9 @@ function renderProposalsList() {
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     ${paginatedItems.map(p => {
-                        const contactName = p.contato_nome || 'N/A';
+        const contactName = p.contato_nome || 'N/A';
 
-                        return `
+        return `
                         <tr class="responsive-table-row">
                             <td data-label="Nº" class="table-cell font-medium">${p.numero_proposta || 'N/A'}</td>
                             <td data-label="Data" class="table-cell">${formatDate(p.data_criacao)}</td>
@@ -223,6 +223,7 @@ function renderProposalsList() {
                             <td data-label="Etapa Funil" class="table-cell">${p.etapa_funil_nome || 'N/A'}</td>
                             <td data-label="Ações" class="table-cell text-right space-x-2 actions-cell">
                                 ${permissions.canEdit ? `<button class="action-btn edit-proposal-btn" title="Editar" data-id="${p.id}"><i class="fas fa-pencil-alt"></i></button>` : ''}
+                                ${permissions.canDelete ? `<button class="action-btn delete-proposal-btn" title="Excluir" data-id="${p.id}"><i class="fas fa-trash-alt text-red-500 hover:text-red-700"></i></button>` : ''}
                                 ${permissions.canPrint ? `<button class="action-btn download-proposal-btn" title="Imprimir" data-id="${p.id}"><i class="fas fa-print"></i></button>` : ''}
                             </td>
                         </tr>
@@ -239,7 +240,7 @@ function renderProposalsList() {
             </div>
         </div>
     `;
-    
+
     addProposalCardEventListeners();
 
     document.querySelectorAll('.sortable-header').forEach(header => {
@@ -254,7 +255,7 @@ function renderProposalsList() {
             renderProposalsList();
         });
     });
-    
+
     document.getElementById('prev-page-btn').addEventListener('click', () => {
         if (appState.proposalsView.currentPage > 1) {
             appState.proposalsView.currentPage--;
@@ -275,26 +276,26 @@ function addProposalCardEventListeners() {
         btn.addEventListener('click', async e => {
             const id = e.currentTarget.dataset.id;
             try {
-                const result = await apiCall('get_proposal_details', { params: {id} });
+                const result = await apiCall('get_proposal_details', { params: { id } });
                 const { proposal } = result;
-                
+
                 resetProposalState();
                 appState.proposal.isEditing = true;
                 appState.proposal.id = proposal.id;
                 Object.assign(appState.proposal, proposal);
-                
+
                 // --- ALTERAÇÃO: Garante que 'items' e 'parametros' são arrays ---
                 appState.proposal.items = (proposal.items || []).map(item => ({
                     ...item,
                     parametros: (item.parametros && Array.isArray(item.parametros)) ? item.parametros : []
                 }));
                 // --- FIM ALTERAÇÃO ---
-                
+
                 if (proposal.organizacao_id) {
                     appState.proposal.clientType = 'pj';
                     const org = appState.organizations.find(o => o.id == proposal.organizacao_id);
                     appState.proposal.currentClient = JSON.parse(JSON.stringify(org));
-                    
+
                     if (proposal.contato_id) {
                         appState.proposal.currentClient.contact = {
                             id: proposal.contato_id,
@@ -309,7 +310,7 @@ function addProposalCardEventListeners() {
                     appState.proposal.currentClient = appState.clients_pf.find(c => c.id == proposal.cliente_pf_id);
                 }
                 renderProposalsView();
-            } catch (error) {}
+            } catch (error) { }
         });
     });
 
@@ -319,11 +320,31 @@ function addProposalCardEventListeners() {
             window.open(`imprimir_proposta.php?id=${id}`, '_blank');
         });
     });
+
+    document.querySelectorAll('.delete-proposal-btn').forEach(btn => {
+        btn.addEventListener('click', async e => {
+            const id = e.currentTarget.dataset.id;
+            const proposalNumber = e.currentTarget.closest('tr').querySelector('td[data-label="Nº"]').textContent;
+
+            if (confirm(`Tem certeza que deseja excluir a proposta ${proposalNumber}?`)) {
+                try {
+                    await apiCall('delete_proposal', {
+                        method: 'POST',
+                        body: JSON.stringify({ id })
+                    });
+                    showToast('Proposta excluída com sucesso!');
+                    renderProposalsList(); // Recarrega a lista
+                } catch (error) {
+                    // Erro já tratado pelo apiCall/showToast
+                }
+            }
+        });
+    });
 }
 
 function renderProposalClientSelection() {
     const container = document.getElementById('proposal-client-selection');
-    if(!container) return;
+    if (!container) return;
     const { currentClient, clientType } = appState.proposal;
 
     if (currentClient) {
@@ -354,7 +375,7 @@ function renderProposalClientSelection() {
                 `;
             }
         } else {
-             clientDetails = `
+            clientDetails = `
                 <p><strong>Cliente:</strong> ${currentClient.nome}</p>
                 <p><strong>CPF:</strong> ${currentClient.cpf || 'N/A'}</p>
             `;
@@ -393,7 +414,7 @@ function renderProposalClientSelection() {
                             <p class="text-xs text-gray-600">${c.email || ''} | ${c.telefone || ''}</p>
                         </div>
                     `).join('');
-                    
+
                     contactArea.innerHTML = `
                         <h4 class="font-semibold text-sm mt-3 mb-1">Contatos disponíveis:</h4>
                         <div class="border rounded-md max-h-40 overflow-y-auto bg-white">
@@ -417,7 +438,7 @@ function renderProposalClientSelection() {
             });
         }
     } else {
-         container.innerHTML = `
+        container.innerHTML = `
             <h3 class="text-lg font-semibold text-gray-700 mb-2">Selecionar Cliente</h3>
             <div class="flex space-x-4 mb-2">
                 <label class="flex items-center"><input type="radio" name="client-type" value="pj" class="mr-2" checked> Pessoa Jurídica</label>
@@ -429,7 +450,7 @@ function renderProposalClientSelection() {
         const renderSearch = (type) => {
             const searchContainer = document.getElementById('client-search-container');
             const placeholder = type === 'pj' ? 'Pesquisar organização...' : 'Pesquisar cliente PF...';
-            
+
             searchContainer.innerHTML = `
                 <div class="flex-grow relative">
                     <input type="text" id="client-search-input" class="form-input w-full" placeholder="${placeholder}">
@@ -440,14 +461,14 @@ function renderProposalClientSelection() {
             searchContainer.className = 'flex items-start gap-2';
 
             document.getElementById('show-add-new-client-modal-btn').addEventListener('click', () => openAddNewClientModalFromProposal(type));
-            
+
             const searchInput = document.getElementById('client-search-input');
             const dropdown = document.getElementById('client-dropdown');
 
             const populateDropdown = (filter = '') => {
                 const data = type === 'pj' ? appState.organizations : appState.clients_pf;
                 const filteredData = (data || []).filter(item => (item.nome_fantasia || item.nome).toLowerCase().includes(filter.toLowerCase()));
-                
+
                 dropdown.innerHTML = filteredData.map(item => `
                     <div class="p-2 hover:bg-indigo-100 cursor-pointer" data-id="${item.id}">
                         ${item.nome_fantasia || item.nome}
@@ -462,12 +483,12 @@ function renderProposalClientSelection() {
                             appState.proposal.currentClient = JSON.parse(JSON.stringify(selectedClient));
                             appState.proposal.clientType = type;
                             dropdown.classList.add('hidden');
-                            renderProposalClientSelection(); 
+                            renderProposalClientSelection();
                         }
                     });
                 });
             };
-            
+
             searchInput.addEventListener('focus', () => {
                 populateDropdown(searchInput.value);
                 dropdown.classList.remove('hidden');
@@ -485,15 +506,15 @@ function renderProposalClientSelection() {
         document.querySelectorAll('input[name="client-type"]').forEach(radio => {
             radio.addEventListener('change', e => renderSearch(e.target.value));
         });
-        
+
         renderSearch('pj');
     }
 }
 
 function renderProposalItemsSection() {
     const container = document.getElementById('proposal-items-section');
-    if(!container) return;
-    
+    if (!container) return;
+
     const { items } = appState.proposal;
     let totalProposta = 0;
 
@@ -501,38 +522,38 @@ function renderProposalItemsSection() {
         // --- INÍCIO: Lógica de Cálculo de Valor ---
         const valor_unitario_base = parseCurrency(item.valor_unitario);
         let valor_parametros = 0;
-        
+
         if (item.parametros && Array.isArray(item.parametros)) {
-             item.parametros.forEach(param => {
+            item.parametros.forEach(param => {
                 // parseCurrency lida com "R$ 1.234,56"
                 valor_parametros += (param.valor || 0);
-             });
+            });
         }
-        
+
         const valor_unitario_total = valor_unitario_base + valor_parametros;
         const multiplicador = (item.status === 'LOCAÇÃO') ? 24 : 1;
         const itemTotal = (item.quantidade || 0) * valor_unitario_total * multiplicador;
         totalProposta += itemTotal;
         const imageUrl = item.imagem_url || 'https://placehold.co/100x100/e2e8f0/64748b?text=Imagem';
         // --- FIM: Lógica de Cálculo de Valor ---
-        
+
         // --- INÍCIO: Renderização dos Parâmetros ---
-         let paramsHtml = '';
-         if (item.parametros && Array.isArray(item.parametros) && item.parametros.length > 0) {
-             paramsHtml = '<div class="mt-2 space-y-1">';
-             paramsHtml += item.parametros.map((param, pIndex) => `
+        let paramsHtml = '';
+        if (item.parametros && Array.isArray(item.parametros) && item.parametros.length > 0) {
+            paramsHtml = '<div class="mt-2 space-y-1">';
+            paramsHtml += item.parametros.map((param, pIndex) => `
                   <div class="flex items-center justify-between text-xs bg-gray-200 px-2 py-0.5 rounded">
                      <!-- ALTERAÇÃO: Formata o valor (que é número) para exibição -->
                      <span class="font-medium text-gray-800">${param.nome}: ${formatCurrency(param.valor)}</span>
                      <button type="button" class="remove-proposal-parameter-btn text-red-500 hover:text-red-700 font-bold" data-item-index="${index}" data-param-index="${pIndex}">&times;</button>
                  </div>
              `).join('');
-             paramsHtml += '</div>';
-         } else {
-              paramsHtml = '<p class="text-xs text-gray-500 italic mt-2">Nenhum parâmetro adicional.</p>';
-         }
-         // --- FIM: Renderização dos Parâmetros ---
-        
+            paramsHtml += '</div>';
+        } else {
+            paramsHtml = '<p class="text-xs text-gray-500 italic mt-2">Nenhum parâmetro adicional.</p>';
+        }
+        // --- FIM: Renderização dos Parâmetros ---
+
         return `
             <div class="border p-4 rounded-md mb-4 bg-gray-50 relative item-card">
                 <button type="button" class="remove-proposal-item-btn absolute top-2 right-2 action-btn text-red-500 hover:text-red-700 text-xl leading-none" data-index="${index}" title="Remover Item">&times;</button>
@@ -607,9 +628,9 @@ function renderProposalItemsSection() {
             <div class="text-xl font-bold">Total: <span id="proposal-total">${formatCurrency(totalProposta)}</span></div>
         </div>
     `;
-    
+
     // --- Adiciona Listeners ---
-    
+
     // Botão Adicionar Manualmente
     document.getElementById('add-manual-item-btn').addEventListener('click', () => {
         appState.proposal.items.push({
@@ -623,17 +644,17 @@ function renderProposalItemsSection() {
 
     // Botão Toggle Catálogo
     document.getElementById('toggle-prop-catalog-btn').addEventListener('click', (e) => {
-         const searchArea = document.getElementById('prop-catalog-search-area');
-         searchArea.classList.toggle('hidden');
-         if (!searchArea.classList.contains('hidden')) {
-             document.getElementById('prop-catalog-search-input').focus();
-             renderPropCatalogResults(''); // Renderiza lista inicial
-         }
+        const searchArea = document.getElementById('prop-catalog-search-area');
+        searchArea.classList.toggle('hidden');
+        if (!searchArea.classList.contains('hidden')) {
+            document.getElementById('prop-catalog-search-input').focus();
+            renderPropCatalogResults(''); // Renderiza lista inicial
+        }
     });
 
     // Input de Busca do Catálogo
     document.getElementById('prop-catalog-search-input')?.addEventListener('input', (e) => {
-         renderPropCatalogResults(e.target.value);
+        renderPropCatalogResults(e.target.value);
     });
 
     // Botões Remover Item
@@ -643,7 +664,7 @@ function renderProposalItemsSection() {
             renderProposalItemsSection();
         });
     });
-    
+
     // Upload de Imagem
     document.querySelectorAll('.item-image-upload').forEach(input => {
         input.addEventListener('change', handleImageUpload);
@@ -656,14 +677,14 @@ function renderProposalItemsSection() {
             input.addEventListener('blur', handleValueBlur);
         }
     });
-    
+
     // --- Início: Listeners de Parâmetros ---
     document.querySelectorAll('.add-proposal-parameter-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const index = e.currentTarget.dataset.index;
             const nomeInput = document.getElementById(`proposal-param-nome-${index}`);
             const valorInput = document.getElementById(`proposal-param-valor-${index}`);
-            
+
             if (nomeInput && valorInput && nomeInput.value && valorInput.value) {
                 // Formata o valor antes de salvar
                 const valorNumerico = parseCurrency(valorInput.value);
@@ -691,23 +712,23 @@ function renderProposalItemsSection() {
             renderProposalItemsSection(); // Re-renderiza
         });
     });
-     // --- Fim: Listeners de Parâmetros ---
+    // --- Fim: Listeners de Parâmetros ---
 }
 
 // --- NOVA FUNÇÃO: Renderiza resultados da busca do catálogo (EMBUTIDO) ---
 function renderPropCatalogResults(searchTerm) {
-     const container = document.getElementById('prop-catalog-results-container');
-     if (!container) return;
-     
-     const { products } = appState;
-     const lowerSearchTerm = searchTerm.toLowerCase();
+    const container = document.getElementById('prop-catalog-results-container');
+    if (!container) return;
 
-     const filtered = (products || []).filter(p => 
-         (p.nome_produto || '').toLowerCase().includes(lowerSearchTerm) ||
-         (p.fabricante || '').toLowerCase().includes(lowerSearchTerm)
-     ).sort((a,b) => (a.nome_produto || '').localeCompare(b.nome_produto || ''));
+    const { products } = appState;
+    const lowerSearchTerm = searchTerm.toLowerCase();
 
-     container.innerHTML = filtered.map(p => `
+    const filtered = (products || []).filter(p =>
+        (p.nome_produto || '').toLowerCase().includes(lowerSearchTerm) ||
+        (p.fabricante || '').toLowerCase().includes(lowerSearchTerm)
+    ).sort((a, b) => (a.nome_produto || '').localeCompare(b.nome_produto || ''));
+
+    container.innerHTML = filtered.map(p => `
          <div class="p-2 border-b last:border-b-0 hover:bg-indigo-100 flex justify-between items-center cursor-pointer prop-catalog-select-item" data-product-id="${p.id}">
              <div>
                  <p class="font-semibold text-sm">${p.nome_produto}</p>
@@ -718,33 +739,33 @@ function renderPropCatalogResults(searchTerm) {
          </div>
      `).join('') || '<p class="p-4 text-center text-gray-500 text-sm">Nenhum produto encontrado.</p>';
 
-     // Adiciona listeners aos itens clicáveis
-     container.querySelectorAll('.prop-catalog-select-item').forEach(item => {
-         item.addEventListener('click', e => {
-             const productId = e.currentTarget.dataset.productId;
-             const product = appState.products.find(p => p.id == productId);
-             if (product) {
-                 appState.proposal.items.push({
-                     id: `temp_prod_${product.id}_${Date.now()}`,
-                     produto_id: product.id,
-                     descricao: product.nome_produto,
-                     fabricante: product.fabricante || '',
-                     modelo: product.modelo || '',
-                     descricao_detalhada: product.descricao_detalhada || '',
-                     quantidade: 1,
-                     valor_unitario: product.valor_unitario || 0,
-                     unidade_medida: product.unidade_medida || 'Unidade',
-                     imagem_url: product.imagem_url || '',
-                     status: 'VENDA',
-                     parametros: [] // Inicia sem parâmetros
-                 });
-                 renderProposalItemsSection(); // Re-renderiza a seção de itens no modal
-                 // Não fecha o modal, apenas esconde a busca
-                 document.getElementById('prop-catalog-search-area').classList.add('hidden');
-                 document.getElementById('prop-catalog-search-input').value = '';
-             }
-         });
-     });
+    // Adiciona listeners aos itens clicáveis
+    container.querySelectorAll('.prop-catalog-select-item').forEach(item => {
+        item.addEventListener('click', e => {
+            const productId = e.currentTarget.dataset.productId;
+            const product = appState.products.find(p => p.id == productId);
+            if (product) {
+                appState.proposal.items.push({
+                    id: `temp_prod_${product.id}_${Date.now()}`,
+                    produto_id: product.id,
+                    descricao: product.nome_produto,
+                    fabricante: product.fabricante || '',
+                    modelo: product.modelo || '',
+                    descricao_detalhada: product.descricao_detalhada || '',
+                    quantidade: 1,
+                    valor_unitario: product.valor_unitario || 0,
+                    unidade_medida: product.unidade_medida || 'Unidade',
+                    imagem_url: product.imagem_url || '',
+                    status: 'VENDA',
+                    parametros: [] // Inicia sem parâmetros
+                });
+                renderProposalItemsSection(); // Re-renderiza a seção de itens no modal
+                // Não fecha o modal, apenas esconde a busca
+                document.getElementById('prop-catalog-search-area').classList.add('hidden');
+                document.getElementById('prop-catalog-search-input').value = '';
+            }
+        });
+    });
 }
 
 
@@ -758,15 +779,15 @@ function handleItemInputChange(e) {
     if (prop === 'valor_unitario') {
         e.target.value = value.replace(/[^0-9,]/g, '');
         // Não atualiza o estado aqui, só no blur
-        return; 
+        return;
     }
-    
+
     if (appState.proposal.items[index]) {
         appState.proposal.items[index][prop] = (prop === 'quantidade') ? parseInt(value) || 0 : value;
         // Se mudar status ou quantidade, re-renderiza para atualizar totais
         if (prop === 'status' || prop === 'quantidade') {
-            if(prop === 'status') {
-                 appState.proposal.items[index].unidade_medida = value === 'LOCAÇÃO' ? 'Mês' : 'Unidade';
+            if (prop === 'status') {
+                appState.proposal.items[index].unidade_medida = value === 'LOCAÇÃO' ? 'Mês' : 'Unidade';
             }
             renderProposalItemsSection();
         }
@@ -779,19 +800,19 @@ function handleValueBlur(e) {
     if (!appState.proposal.items[index]) return;
 
     if (e.target.name === 'item_valor_unitario') {
-         const value = parseCurrency(e.target.value); 
-         appState.proposal.items[index].valor_unitario = value;
-         e.target.value = formatCurrencyForInput(value);
-         
-             // Re-renderiza para atualizar subtotal e total
-            renderProposalItemsSection();
-    } 
+        const value = parseCurrency(e.target.value);
+        appState.proposal.items[index].valor_unitario = value;
+        e.target.value = formatCurrencyForInput(value);
+
+        // Re-renderiza para atualizar subtotal e total
+        renderProposalItemsSection();
+    }
     // Formata o valor do parâmetro (apenas se for o input de parâmetro)
     else if (e.target.id.startsWith('proposal-param-valor-')) {
-         const valorNumerico = parseCurrency(e.target.value);
-         e.target.value = formatCurrencyForInput(valorNumerico); // Apenas formata o input
+        const valorNumerico = parseCurrency(e.target.value);
+        e.target.value = formatCurrencyForInput(valorNumerico); // Apenas formata o input
     }
-    
+
 
 }
 
@@ -810,7 +831,7 @@ async function handleImageUpload(e) {
         showToast('Imagem enviada com sucesso!');
         document.getElementById(`item-image-preview-${index}`).src = result.url;
     } catch (error) {
-         document.getElementById(`item-image-preview-${index}`).src = 'https://placehold.co/100x100/e2e8f0/64748b?text=Erro';
+        document.getElementById(`item-image-preview-${index}`).src = 'https://placehold.co/100x100/e2e8f0/64748b?text=Erro';
     }
 }
 
@@ -833,10 +854,10 @@ function addProposalEventListeners() {
         renderProposalsView();
     });
     document.getElementById('proposal-search')?.addEventListener('input', () => {
-         appState.proposalsView.currentPage = 1;
-         renderProposalsList();
+        appState.proposalsView.currentPage = 1;
+        renderProposalsList();
     });
-    
+
     document.querySelectorAll('.create-proposal-from-opp-btn').forEach(btn => {
         btn.addEventListener('click', handleCreateProposalFromOpp);
     });
@@ -852,7 +873,7 @@ async function handleDeletePreProposal(e) {
     if (!opp) return;
 
     const content = `<p>Você tem certeza que deseja excluir a pré-proposta <strong>${opp.titulo}</strong>? Esta ação não pode ser desfeita.</p>`;
-    
+
     renderModal('Confirmar Exclusão', content, async () => {
         try {
             await apiCall('delete_opportunity', { method: 'POST', body: JSON.stringify({ id: opportunityId }) });
@@ -861,7 +882,7 @@ async function handleDeletePreProposal(e) {
             renderProposalsView();
             closeModal();
             showToast('Pré-proposta excluída com sucesso!');
-        } catch(error) {}
+        } catch (error) { }
     }, 'Excluir', 'btn-danger');
 }
 
@@ -871,45 +892,45 @@ async function handleCreateProposalFromOpp(e) {
     // --- ALTERAÇÃO: Busca detalhes completos da API ---
     let opp;
     try {
-         const result = await apiCall('get_opportunity_details', { params: { id: oppId } });
-         opp = result.opportunity;
+        const result = await apiCall('get_opportunity_details', { params: { id: oppId } });
+        opp = result.opportunity;
     } catch (error) {
-         showToast('Erro ao carregar detalhes da pré-proposta.', 'error');
-         return;
+        showToast('Erro ao carregar detalhes da pré-proposta.', 'error');
+        return;
     }
     // --- FIM ALTERAÇÃO ---
-    
+
     if (!opp) return showToast('Oportunidade não encontrada.', 'error');
-    
+
     resetProposalState();
     appState.proposal.oportunidade_id = opp.id;
-    
-    if(opp.organizacao_id) {
+
+    if (opp.organizacao_id) {
         appState.proposal.clientType = 'pj';
         appState.proposal.currentClient = JSON.parse(JSON.stringify(appState.organizations.find(org => org.id == opp.organizacao_id)));
-        if(opp.contato_id) {
+        if (opp.contato_id) {
             appState.proposal.currentClient.contact = appState.contacts.find(c => c.id == opp.contato_id);
         }
     } else if (opp.cliente_pf_id) {
-         appState.proposal.clientType = 'pf';
-         appState.proposal.currentClient = appState.clients_pf.find(c => c.id == opp.cliente_pf_id);
+        appState.proposal.clientType = 'pf';
+        appState.proposal.currentClient = appState.clients_pf.find(c => c.id == opp.cliente_pf_id);
     }
 
     // --- ALTERAÇÃO: Copia 'items' da oportunidade (que agora inclui parâmetros) ---
-     // A API (get_opportunity_details) agora retorna um array 'items'
-     appState.proposal.items = (opp.items || []).map((item, index) => ({
-         ...item,
-         id: `temp_opp_item_${item.id || index}_${Date.now()}`, // Cria ID temporário
-         produto_id: item.produto_id || null, // Garante que tenha produto_id (se houver)
-         // Garante que parâmetros sejam um array, mesmo se nulos
-         parametros: (item.parametros && Array.isArray(item.parametros))
-            ? item.parametros.map(p => ({ nome: p.nome, valor: parseCurrency(p.valor) })) 
+    // A API (get_opportunity_details) agora retorna um array 'items'
+    appState.proposal.items = (opp.items || []).map((item, index) => ({
+        ...item,
+        id: `temp_opp_item_${item.id || index}_${Date.now()}`, // Cria ID temporário
+        produto_id: item.produto_id || null, // Garante que tenha produto_id (se houver)
+        // Garante que parâmetros sejam um array, mesmo se nulos
+        parametros: (item.parametros && Array.isArray(item.parametros))
+            ? item.parametros.map(p => ({ nome: p.nome, valor: parseCurrency(p.valor) }))
             : []
-     }));
-     
-     // Fallback se 'items' não veio da API
-     if (appState.proposal.items.length === 0) {
-          appState.proposal.items.push({
+    }));
+
+    // Fallback se 'items' não veio da API
+    if (appState.proposal.items.length === 0) {
+        appState.proposal.items.push({
             id: `temp_fallback_${Date.now()}`,
             descricao: opp.descricao_produto || opp.titulo,
             descricao_detalhada: opp.notas || '',
@@ -920,9 +941,9 @@ async function handleCreateProposalFromOpp(e) {
             valor_unitario: parseFloat(opp.valor_unitario) || 0,
             status: 'VENDA',
             unidade_medida: 'Unidade',
-            parametros: [] 
-         });
-     }
+            parametros: []
+        });
+    }
     // --- FIM DA ALTERAÇÃO ---
 
     renderProposalsView();
@@ -932,15 +953,15 @@ async function handleProposalFormSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
     const data = { ...appState.proposal };
-    
-    ['data_validade', 'status', 'faturamento', 'treinamento', 'condicoes_pagamento', 'prazo_entrega', 
-     'garantia_equipamentos', 'garantia_acessorios', 'instalacao', 'assistencia_tecnica', 'observacoes']
-    .forEach(key => data[key] = formData.get(key));
-    
-    if(!data.currentClient) return showToast('Por favor, selecione um cliente.', 'error');
-    if(!data.items || data.items.length === 0) return showToast('Adicione pelo menos um item à proposta.', 'error');
 
-     // --- INÍCIO DA NOVA VALIDAÇÃO ---
+    ['data_validade', 'status', 'faturamento', 'treinamento', 'condicoes_pagamento', 'prazo_entrega',
+        'garantia_equipamentos', 'garantia_acessorios', 'instalacao', 'assistencia_tecnica', 'observacoes']
+        .forEach(key => data[key] = formData.get(key));
+
+    if (!data.currentClient) return showToast('Por favor, selecione um cliente.', 'error');
+    if (!data.items || data.items.length === 0) return showToast('Adicione pelo menos um item à proposta.', 'error');
+
+    // --- INÍCIO DA NOVA VALIDAÇÃO ---
     // Verifica se a data de validade está vazia
     if (!data.data_validade) {
         // Tenta focar no campo de data e destacá-lo
@@ -960,41 +981,41 @@ async function handleProposalFormSubmit(e) {
 
     // --- ALTERAÇÃO: Limpa IDs temporários e formata valores ---
     data.items = data.items.map(item => {
-         const newItem = {...item};
-         if (String(newItem.id).startsWith('temp_')) {
-             delete newItem.id;
-         }
-         // Garante que valor unitário seja número
-         newItem.valor_unitario = parseCurrency(newItem.valor_unitario);
-         // --- ALTERAÇÃO: Garante que valor do parâmetro é NÚMERO ---
-         if (newItem.parametros && Array.isArray(newItem.parametros)) {
-             newItem.parametros = newItem.parametros.map(param => ({
-                 nome: param.nome,
-                 valor: parseCurrency(param.valor) // Garante que é NÚMERO
-             }));
-         } else {
-             newItem.parametros = [];
-         }
-         
-         return newItem;
+        const newItem = { ...item };
+        if (String(newItem.id).startsWith('temp_')) {
+            delete newItem.id;
+        }
+        // Garante que valor unitário seja número
+        newItem.valor_unitario = parseCurrency(newItem.valor_unitario);
+        // --- ALTERAÇÃO: Garante que valor do parâmetro é NÚMERO ---
+        if (newItem.parametros && Array.isArray(newItem.parametros)) {
+            newItem.parametros = newItem.parametros.map(param => ({
+                nome: param.nome,
+                valor: parseCurrency(param.valor) // Garante que é NÚMERO
+            }));
+        } else {
+            newItem.parametros = [];
+        }
+
+        return newItem;
     });
     // --- FIM ALTERAÇÃO ---
 
     try {
         const action = data.id ? 'update_proposal' : 'create_proposal';
         const result = await apiCall(action, { method: 'POST', body: JSON.stringify(data) });
-        
+
         const resultProposal = result.proposal?.proposal || result.proposal; // Acomoda ambas as estruturas
-        
-        if(data.id) {
+
+        if (data.id) {
             const index = appState.proposals.findIndex(p => p.id == resultProposal.id);
-            if(index !== -1) appState.proposals[index] = resultProposal;
+            if (index !== -1) appState.proposals[index] = resultProposal;
             showToast('Proposta atualizada!');
         } else {
             appState.proposals.push(resultProposal);
             if (result.proposal.opportunity) appState.opportunities.push(result.proposal.opportunity);
-            if(data.oportunidade_id) appState.pre_proposals = appState.pre_proposals.filter(op => op.id != data.oportunidade_id);
-            
+            if (data.oportunidade_id) appState.pre_proposals = appState.pre_proposals.filter(op => op.id != data.oportunidade_id);
+
             const oppIdToUpdate = result.proposal.opportunity?.id || data.oportunidade_id;
             if (oppIdToUpdate) {
                 const stage = appState.stages.find(s => s.nome.toLowerCase() === 'proposta');
@@ -1007,7 +1028,7 @@ async function handleProposalFormSubmit(e) {
         }
         resetProposalState();
         renderProposalsView();
-    } catch(error) {}
+    } catch (error) { }
 }
 
 function openAddNewClientModalFromProposal(clientType) {
@@ -1029,15 +1050,15 @@ function openAddNewClientModalFromProposal(clientType) {
             const result = await apiCall(action, { method: 'POST', body: JSON.stringify(data) });
             const newItem = result[resultKey];
             appState[stateKey].push(newItem);
-            
+
             appState.proposal.currentClient = newItem;
             appState.proposal.clientType = clientType;
-            
+
             closeModal();
             renderProposalClientSelection();
             if (isPj) renderContactSelection(newItem.id);
             showToast(`${isPj ? 'Organização criada' : 'Cliente criado'}!`);
-        } catch (error) {}
+        } catch (error) { }
     });
 
     const form = document.getElementById('modal-form');
@@ -1069,7 +1090,7 @@ function renderOrganizationFormFieldsForModal(data) {
 }
 
 function renderClientPfFormFieldsForModal(data) {
-     return `
+    return `
         <div><label class="form-label">Nome*</label><input type="text" name="nome" required class="form-input" value="${data.nome || ''}"></div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label class="form-label">Email</label><input type="email" name="email" class="form-input" value="${data.email || ''}"></div>

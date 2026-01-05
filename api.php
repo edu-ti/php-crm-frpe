@@ -137,6 +137,7 @@ try {
         // Propostas
         'create_proposal' => ['POST' => 'handle_create_proposal'],
         'update_proposal' => ['POST' => 'handle_update_proposal'], // Poderia ser PUT
+        'delete_proposal' => ['POST' => 'handle_delete_proposal'], // Adicionado DELETE
         'update_proposal_status' => ['POST' => 'handle_update_proposal_status'], // Poderia ser PUT ou PATCH
         'get_proposal_details' => ['GET' => 'handle_get_proposal_details'],
         'upload_image' => ['POST' => 'handle_upload_image'], // Upload para itens da proposta

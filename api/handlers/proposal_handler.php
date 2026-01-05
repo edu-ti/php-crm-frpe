@@ -493,6 +493,43 @@
          json_response(['success' => false, 'error' => 'Erro na transação ao atualizar status: ' . $e->getMessage()], 500);
      }
  }
- 
+function handle_delete_proposal($pdo, $data) {
+    // 1. Verificação de ID
+    $proposalId = $data['id'] ?? null;
+    if (empty($proposalId)) {
+        json_response(['success' => false, 'error' => 'ID da proposta é obrigatório.'], 400);
+        return;
+    }
 
- ?>
+    // 2. Verificação de Permissão de Segurança (Backend)
+    // Apenas Gestor, Analista e Comercial podem excluir
+    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial'])) {
+        json_response(['success' => false, 'error' => 'Acesso negado: Você não tem permissão para excluir propostas.'], 403);
+        return;
+    }
+
+    $pdo->beginTransaction();
+    try {
+        // 3. Remove itens da proposta
+        $stmt_items = $pdo->prepare("DELETE FROM proposta_itens WHERE proposta_id = ?");
+        $stmt_items->execute([$proposalId]);
+
+        // 4. Remove a proposta
+        $stmt_proposal = $pdo->prepare("DELETE FROM propostas WHERE id = ?");
+        $stmt_proposal->execute([$proposalId]);
+
+        if ($stmt_proposal->rowCount() > 0) {
+            $pdo->commit();
+            json_response(['success' => true, 'message' => 'Proposta excluída com sucesso.']);
+        } else {
+            $pdo->rollBack();
+            json_response(['success' => false, 'error' => 'Proposta não encontrada ou já excluída.'], 404);
+        }
+
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        error_log("[Delete Proposal Error] " . $e->getMessage());
+        json_response(['success' => false, 'error' => 'Erro ao excluir proposta.'], 500);
+    }
+}
+?>
