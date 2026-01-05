@@ -1,0 +1,38 @@
+// js/ui.js
+
+export function renderModal(title, content, onConfirm, confirmText = 'Salvar', confirmClass = 'btn-primary') {
+    const container = document.getElementById('modal-container');
+    container.innerHTML = `
+         <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-60 z-40"></div>
+            <div id="modal-box" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-2xl z-50 w-full max-w-lg">
+            <div class="p-5 border-b flex justify-between items-center">
+                <h2 class="text-xl font-bold text-gray-800">${title}</h2>
+                <button id="modal-close-btn" class="action-btn text-2xl">&times;</button>
+            </div>
+            <div class="p-5 max-h-[70vh] overflow-y-auto">${content}</div>
+            <div class="p-4 bg-gray-50 border-t flex justify-end space-x-3">
+                <button id="modal-cancel-btn" class="btn btn-secondary">Cancelar</button>
+                <button id="modal-confirm-btn" class="btn ${confirmClass}">${confirmText}</button>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+    document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+    document.getElementById('modal-backdrop').addEventListener('click', closeModal);
+    
+    const confirmBtn = document.getElementById('modal-confirm-btn');
+    confirmBtn.addEventListener('click', () => {
+        const form = document.getElementById('modal-form');
+        if(form && form.reportValidity()){
+            onConfirm(form);
+        } else if (!form) {
+            onConfirm();
+        }
+    });
+}
+
+export function closeModal() {
+    const container = document.getElementById('modal-container');
+    container.innerHTML = '';
+}
