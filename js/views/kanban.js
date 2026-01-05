@@ -82,7 +82,14 @@ function renderKanbanBoard() {
     }
 
     appState.stages.forEach(stage => {
-        const opportunitiesInStage = appState.opportunities.filter(opp => opp.etapa_id == stage.id);
+        const opportunitiesInStage = appState.opportunities
+            .filter(opp => opp.etapa_id == stage.id)
+            .sort((a, b) => {
+                // Ordena por data_criacao DESC (mais recente primeiro)
+                const dateA = new Date(a.data_criacao || 0);
+                const dateB = new Date(b.data_criacao || 0);
+                return dateB - dateA;
+            });
         const stageTotal = opportunitiesInStage.reduce((sum, opp) => sum + parseFloat(opp.valor || 0), 0);
 
         let extraCards = '';
