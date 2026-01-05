@@ -326,18 +326,23 @@ function addProposalCardEventListeners() {
             const id = e.currentTarget.dataset.id;
             const proposalNumber = e.currentTarget.closest('tr').querySelector('td[data-label="Nº"]').textContent;
 
-            if (confirm(`Tem certeza que deseja excluir a proposta ${proposalNumber}?`)) {
-                try {
-                    await apiCall('delete_proposal', {
-                        method: 'POST',
-                        body: JSON.stringify({ id })
-                    });
-                    showToast('Proposta excluída com sucesso!');
-                    renderProposalsList(); // Recarrega a lista
-                } catch (error) {
-                    // Erro já tratado pelo apiCall/showToast
-                }
-            }
+            renderModal(
+                'Confirmar Exclusão',
+                `<p>Tem certeza que deseja excluir a proposta <strong>${proposalNumber}</strong>? Esta ação não pode ser desfeita.</p>`,
+                async () => {
+                    try {
+                        await apiCall('delete_proposal', { method: 'POST', body: JSON.stringify({ id }) });
+                        showToast('Proposta excluída com sucesso!');
+                        renderProposalsList(); // Recarrega a lista
+                        closeModal(); // Fecha o modal de confirmação
+                    } catch (error) {
+                        // Erro tratado pelo apiCall/showToast
+                    }
+                },
+                'Excluir',
+                'btn-error', // Classe vermelha para botão de confirmação
+                'sm' // Tamanho compacto
+            );
         });
     });
 }

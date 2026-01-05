@@ -685,19 +685,26 @@ function renderOpportunityModal(opportunity = null) {
 
             // Adiciona listener
             deleteBtn.addEventListener('click', async () => {
-                if (confirm('Tem certeza que deseja excluir esta oportunidade? Esta ação não pode ser desfeita.')) {
-                    try {
-                        await apiCall('delete_opportunity', {
-                            method: 'POST',
-                            body: JSON.stringify({ id: data.id })
-                        });
-                        showToast('Oportunidade excluída com sucesso!');
-                        closeModal();
-                        renderFunilView(); // Recarrega o funil
-                    } catch (error) {
-                        // Erro tratado pelo apiCall
-                    }
-                }
+                renderModal(
+                    'Confirmar Exclusão',
+                    `<p>Tem certeza que deseja excluir esta oportunidade? Esta ação não pode ser desfeita.</p>`,
+                    async () => {
+                        try {
+                            await apiCall('delete_opportunity', {
+                                method: 'POST',
+                                body: JSON.stringify({ id: data.id })
+                            });
+                            showToast('Oportunidade excluída com sucesso!');
+                            closeModal(); // Fecha o modal de confirmação
+                            renderFunilView(); // Recarrega o funil
+                        } catch (error) {
+                            // Erro tratado pelo apiCall
+                        }
+                    },
+                    'Excluir',
+                    'btn-error',
+                    'sm'
+                );
             });
 
             // Insere no início do rodapé (esquerda)

@@ -257,39 +257,48 @@ function renderClientForm() {
     document.getElementById('close-client-form-btn')?.addEventListener('click', closeAndClearForm);
 
     // Adiciona listener para o botão de EXCLUIR
+    // Adiciona listener para o botão de EXCLUIR
     document.getElementById('delete-client-btn')?.addEventListener('click', async () => {
-        if (!confirm('Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.')) return;
+        renderModal(
+            'Confirmar Exclusão',
+            `<p>Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.</p>`,
+            async () => {
+                const typeMap = {
+                    organizations: 'organization',
+                    contacts: 'contact',
+                    clients_pf: 'cliente_pf'
+                };
+                const type = typeMap[appState.clientsView.activeTab];
+                const action = `delete_${type}`;
 
-        const typeMap = {
-            organizations: 'organization',
-            contacts: 'contact',
-            clients_pf: 'cliente_pf'
-        };
-        const type = typeMap[appState.clientsView.activeTab];
-        const action = `delete_${type}`;
+                try {
+                    await apiCall(action, {
+                        method: 'POST',
+                        body: JSON.stringify({ id: editingId })
+                    });
 
-        try {
-            await apiCall(action, {
-                method: 'POST',
-                body: JSON.stringify({ id: editingId })
-            });
+                    showToast('Cliente excluído com sucesso!');
 
-            showToast('Cliente excluído com sucesso!');
+                    // Atualiza o estado local removendo o item
+                    const stateKeyMap = { organizations: 'organizations', contacts: 'contacts', clients_pf: 'clients_pf' };
+                    const stateKey = stateKeyMap[appState.clientsView.activeTab];
 
-            // Atualiza o estado local removendo o item
-            const stateKeyMap = { organizations: 'organizations', contacts: 'contacts', clients_pf: 'clients_pf' }; // Note o plural aqui
-            const stateKey = stateKeyMap[appState.clientsView.activeTab];
+                    if (appState[stateKey]) {
+                        appState[stateKey] = appState[stateKey].filter(item => item.id != editingId);
+                    }
 
-            if (appState[stateKey]) {
-                appState[stateKey] = appState[stateKey].filter(item => item.id != editingId);
-            }
+                    closeModal(); // Fecha o modal de confirmação
+                    closeAndClearForm();
+                    renderClientList();
 
-            closeAndClearForm();
-            renderClientList();
-
-        } catch (error) {
-            // Erro já tratado no apiCall
-        }
+                } catch (error) {
+                    // Erro já tratado no apiCall
+                }
+            },
+            'Excluir',
+            'btn-error',
+            'sm'
+        );
     });
 
     // Adiciona listener para o botão de submit DENTRO do formulário
