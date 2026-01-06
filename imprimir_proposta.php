@@ -16,7 +16,7 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 $proposal_id = (int)$_GET['id'];
 $proposal = null;
 $company_info = [
-    'name' => 'FR REPRESENTAÇÕES E COMERCIO DE PRODUTOS MÉDICOS LTDA',
+    'name' => 'FR PRODUTOS MÉDICOS',
     'cnpj' => '09.005.588/0001-40',
     'phone' => '(81) 3423-2022 | (81) 3423-7272',
     'address' => 'Rua Joaquim de Brito, 240, Boa Vista, Recife-PE, CEP: 50.070-280',
@@ -99,235 +99,370 @@ function format_date($value, $format = 'd/m/Y') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proposta <?php echo htmlspecialchars($proposal['numero_proposta']); ?></title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    screens: {
+                        'print': {'raw': 'print'},
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Paged.js CDN -->
+    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Arial');
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; 
+            color: #333;
         }
-        .page {
-            width: 21cm;
-            min-height: 29.7cm;
-            display: flex;
-            flex-direction: column;
-            margin: 1cm auto;
-            background: white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            padding: 1cm;
-            font-size: 8pt;
-        }
-        main {
-            flex-grow: 1;
-        }
-        .bordered-table th, .bordered-table td {
-            border: 0.5px solid #a1a1aa;
-        }
-        .text-header {
-            font-size: 6.5pt;
-            line-height: 1.2;
+
+        /* Paged.js CSS Rules */
+        @page {
+            size: A4;
+            /* Increased top margin to 55mm to prevent clipping */
+            margin: 55mm 15mm 15mm 15mm; 
+            
+            /* Place the running header in the top-center margin box */
+            @top-center {
+                content: element(headerInfo);
+                width: 100%;
+                vertical-align: bottom; /* Aligns content to the bottom of the margin header area */
+            }
+            
+            /* Remove footer pagination as it moved to header */
+            @bottom-right {
+                content: none;
+            }
         }
         
+        /* Define the Header as a Running Element */
+        .running-header {
+            position: running(headerInfo);
+            width: 100%; 
+            /* Removed bottom margins to prevent pushing content up off the page */
+            margin-bottom: 0 !important; 
+            padding-bottom: 5px; /* Slight padding for the border */
+        }
+        
+        /* Render Page Counter inside the HTML element */
+        .page-counter::after {
+            content: "Página " counter(page) " de " counter(pages);
+        }
+
+        /* Ensure major blocks don't split weirdly */
+        .break-inside-avoid {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        /* Styles for Paged.js Preview */
+        .pagedjs_pages {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+        }
+        .pagedjs_page {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            background-color: white;
+            /* Debugging margins */
+            /* --pagedjs-margin-top: 55mm !important; */
+        }
+        
+        /* Table Styles */
+        .ref-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .ref-table th {
+            background-color: #2e2a78;
+            color: #ffffff;
+            font-weight: 500;
+            text-transform: capitalize; 
+            font-size: 8pt;
+            padding: 8px 10px;
+            text-align: left;
+        }
+        .ref-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: middle;
+            font-size: 8pt;
+            color: #1f2937;
+        }
+
+        /* Client Box - REDUCED FONT SIZE */
+        .client-box {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            font-size: 8pt; 
+        }
+
         @media print {
-            body { background: white; }
-            .no-print { display: none; }
-            .page {
-                width: 100%;
-                min-height: 29.7cm;
-                margin: 0;
-                box-shadow: none;
-                padding: 1.5cm;
-                page-break-inside: avoid;
+            .no-print { display: none !important; }
+            body { background: white; margin: 0; }
+            .pagedjs_pages { padding: 0; display: block; }
+            .pagedjs_page { box-shadow: none; margin: 0; }
+            
+            /* Force background colors */
+            .ref-table th {
+                background-color: #2e2a78 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .client-box {
+                background-color: #f9fafb !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
         }
     </style>
 </head>
 <body>
-    <div class="no-print p-4 bg-gray-800 text-white text-center">
-        <p>A janela de impressão deve abrir automaticamente. Caso contrário, pressione Ctrl+P.</p>
-        <button onclick="window.print()" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
-            Imprimir
-        </button>
-    </div>
+    <!-- Static Header removed - Injected via JS after Paged.js render -->
 
-    <div class="page">
-        <header>
-            <div class="flex items-center mb-2">
-                <div class="w-1/4">
-                    <img src="imagens/LOGO-FR.webp" alt="Logo FR" class="h-16">
-                </div>
-                <div class="w-3/4 text-center text-header">
-                    <p class="font-bold text-sm"><?php echo htmlspecialchars($company_info['name']); ?></p>
-                    <p>CNPJ: <?php echo htmlspecialchars($company_info['cnpj']); ?> / FONE: <?php echo htmlspecialchars($company_info['phone']); ?></p>
-                    <p><?php echo htmlspecialchars($company_info['address']); ?></p>
-                    <p><?php echo htmlspecialchars($company_info['site']); ?> / <?php echo htmlspecialchars($company_info['email']); ?> / <?php echo htmlspecialchars($company_info['social']); ?></p>
-                </div>
+    <!-- Spacer for fixed top bar -->
+    <div class="h-24 no-print print:hidden"></div>
+
+    <div id="content"> 
+        
+        <!-- Header - Moved to Running Element via CSS -->
+        <header class="running-header border-b border-[#2e2a78] pb-4">
+            <!-- Row 1: Title Only (Visual Alignment) -->
+            <div class="text-right mb-2">
+                 <h1 class="text-[18pt] font-black text-[#2e2a78] uppercase leading-none tracking-tight">PROPOSTA COMERCIAL</h1>
             </div>
-            <div class="text-center py-1">
-                <h1 class="text-lg font-bold">Proposta Comercial</h1>
-            </div>
-             <div class="flex justify-end items-center">
-                <div class="text-right">
-                    <p class="text-xs">Página | 1</p>
-                    <p class="font-bold">N° <?php echo htmlspecialchars($proposal['numero_proposta']); ?></p>
-                    <p class="text-xs">Data Emissão: <?php echo format_date($proposal['data_criacao']); ?></p>
-                    <p class="text-xs">Validade: <?php echo format_date($proposal['data_validade']); ?></p>
+
+            <div class="flex justify-between items-start">
+                
+                <!-- Left Side: Logo | Divider | Company Info -->
+                <div class="flex items-start"> 
+                    <!-- Logo -->
+                    <div class="flex-shrink-0 mr-4 self-center">
+                         <img src="imagens/LOGO-FR.webp" alt="Logo FR" class="h-16 w-auto object-contain">
+                    </div>
+                    
+                    <!-- Vertical Divider -->
+                    <div class="w-[1.5px] bg-[#2e2a78] self-stretch mr-4 opacity-100"></div>
+
+                    <!-- Company Info -->
+                    <div class="flex flex-col justify-between py-0.5 text-[8.5pt] text-slate-500 leading-[1.3]">
+                        <p class="font-bold text-[#2e2a78] text-[9.5pt] uppercase tracking-tight"><?php echo htmlspecialchars($company_info['name']); ?></p>
+                        <p>CNPJ: <?php echo htmlspecialchars($company_info['cnpj']); ?></p>
+                        <p><?php echo htmlspecialchars($company_info['address']); ?></p>
+                        <div class="flex gap-1">
+                            <span><?php echo htmlspecialchars($company_info['phone']); ?></span>
+                            <span>|</span>
+                            <span><?php echo htmlspecialchars($company_info['email']); ?></span>
+                        </div>
+                        <p><?php echo htmlspecialchars($company_info['site']); ?></p>
+                    </div>
+                </div>
+
+                <!-- Right Side: Number | Dates | Page -->
+                <!-- Pt-0.5 ensures baseline alignment with Company Name if fonts match closely -->
+                <div class="text-right flex flex-col pt-0.5">
+                    
+                    <!-- Number with precise color match and alignment to Company Name -->
+                    <p class="text-[14pt] font-bold text-[#94a3b8] mb-1 leading-none">Nº <?php echo htmlspecialchars($proposal['numero_proposta']); ?></p>
+                    
+                    <!-- Dates & Page -->
+                    <div class="text-[9pt] text-slate-600 leading-tight mt-1">
+                        <p class="mb-0.5">Data de Emissão: <span class="font-bold text-[#2e2a78]"><?php echo format_date($proposal['data_criacao']); ?></span></p>
+                        <p class="mb-0.5 font-bold text-red-600">Validade: <?php echo format_date($proposal['data_validade']); ?></p>
+                        <p class="text-[#94a3b8] page-counter font-normal text-[9pt] mt-1"></p>
+                    </div>
                 </div>
             </div>
         </header>
 
-        <main class="mt-4">
-            <div class="border border-gray-400 p-2 text-xs rounded-lg">
-                <p><span class="font-bold">Cliente:</span> <?php echo htmlspecialchars($proposal['organizacao_nome'] ?: $proposal['cliente_pf_nome']); ?></p>
-                <p><span class="font-bold">CNPJ:</span> <?php echo htmlspecialchars($proposal['cnpj'] ?: $proposal['cpf']); ?></p>
-                <p><span class="font-bold">Endereço:</span> <?php echo htmlspecialchars($proposal['logradouro'] . ', ' . $proposal['org_numero'] . ' - ' . $proposal['org_bairro'] . ' - ' . $proposal['org_cidade'] . '/' . $proposal['org_estado'] . ' CEP: ' . $proposal['org_cep']); ?></p>
-                <p><span class="font-bold">Contato:</span> <?php echo htmlspecialchars($proposal['contato_nome'] ?: 'N/A'); ?></p>
-                <p><span class="font-bold">Fone:</span> <?php echo htmlspecialchars($proposal['contato_telefone'] ?: 'N/A'); ?> | <span class="font-bold">E-mail:</span> <?php echo htmlspecialchars($proposal['contato_email'] ?: 'N/A'); ?></p>
+        <!-- Spacer after header in flow -->
+        <div class="h-6"></div>
+
+        <!-- Client Info - Font reduced via .client-box CSS class -->
+        <div class="client-box grid grid-cols-2 gap-8 break-inside-avoid shadow-sm">
+            <div class="space-y-1.5">
+                <p><span class="font-bold text-slate-700">Cliente:</span> <span class="uppercase font-semibold text-slate-600"><?php echo htmlspecialchars($proposal['cnpj'] ?: $proposal['cpf']); ?> <?php echo htmlspecialchars($proposal['organizacao_nome'] ?: $proposal['cliente_pf_nome']); ?></span></p>
+                <p><span class="font-bold text-slate-700">CNPJ/CPF:</span> <span class="text-slate-600"><?php echo htmlspecialchars($proposal['cnpj'] ?: $proposal['cpf']); ?></span></p>
+                <p class="flex items-start gap-1">
+                    <span class="font-bold text-slate-700 whitespace-nowrap">Endereço:</span> 
+                    <span class="text-slate-600"><?php echo htmlspecialchars($proposal['logradouro'] . ', ' . $proposal['org_numero'] . ($proposal['org_complemento'] ? ' (' . $proposal['org_complemento'] . ')' : '')); ?> - <?php echo htmlspecialchars($proposal['org_bairro']); ?></span>
+                </p>
+                <p><span class="font-bold text-slate-700">Cidade/UF:</span> <span class="uppercase text-slate-600"><?php echo htmlspecialchars($proposal['org_cidade'] . ' - ' . $proposal['org_estado']); ?> - CEP: <?php echo htmlspecialchars($proposal['org_cep']); ?></span></p>
             </div>
-
-            <div class="mt-2 text-xs">
-                <p>Prezados (as),</p>
-                <p class="mt-1">A FR Produtos Médicos agradece seu interesse em nossos produtos e serviços. Sabemos da sua importância em sempre oferecer a mais alta tecnologia para a melhor e mais rápida recuperação do paciente e também em oferecer segurança aos profissionais da saúde.</p>
+            <div class="space-y-1.5">
+                <p><span class="font-bold text-slate-700">Contato:</span> <span class="text-slate-600"><?php echo htmlspecialchars($proposal['contato_nome'] ?: 'N/A'); ?></span></p>
+                <p><span class="font-bold text-slate-700">Telefone:</span> <span class="text-slate-600"><?php echo htmlspecialchars($proposal['contato_telefone'] ?: 'N/A'); ?></span></p>
+                <p><span class="font-bold text-slate-700">E-mail:</span> <span class="text-slate-600"><?php echo htmlspecialchars($proposal['contato_email'] ?: 'N/A'); ?></span></p>
             </div>
-            
-            <div class="mt-2">
-                <table class="w-full text-xs bordered-table rounded-lg overflow-hidden">
-                    <thead>
-                        <tr class="bg-gray-200">
-                            <th class="p-1 font-bold">Imagem</th>
-                            <th class="p-1 font-bold">Descrição</th>
-                            <th class="p-1 font-bold text-center">Estado</th> 
-                            <th class="p-1 font-bold">Unid. de Medida</th>
-                            <th class="p-1 font-bold">Qtd</th>
-                            <th class="p-1 font-bold">Vlr. Unit.</th>
-                            <th class="p-1 font-bold">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach($proposal['items'] as $item): 
-                            $valor_unitario_base = (float) ($item['valor_unitario'] ?? 0);
-                            $valor_parametros = 0;
-                            
-                            $visible_params = [];
-                            $is_locacao = (strtoupper($item['status']) === 'LOCAÇÃO');
-                            $meses_locacao = 1; 
+        </div>
 
-                            // Use column value preferentially
-                            if ($is_locacao && !empty($item['meses_locacao'])) {
-                                $meses_locacao = (int) $item['meses_locacao'];
-                            } elseif ($is_locacao) {
-                                 // Fallback to 1 (or 12?) if not set. Default DB is 1. Previous JS default was 12.
-                                 // Let's use 1 if column is null/zero, but mostly it should be set.
-                                 if (empty($meses_locacao)) $meses_locacao = 1; 
-                            }
+        <!-- Intro -->
+        <div class="mb-6 text-[9pt] text-slate-600 leading-relaxed text-justify break-inside-avoid">
+            <p class="mb-2">Prezados (as),</p>
+            <p>A <strong>FR Produtos Médicos</strong> agradece seu interesse em nossos produtos e serviços. Sabemos da sua importância em sempre oferecer a mais alta tecnologia para a melhor e mais rápida recuperação do paciente e também em oferecer segurança aos profissionais da saúde.</p>
+        </div>
 
-                            if (!empty($item['parametros']) && is_array($item['parametros'])) {
-                                foreach ($item['parametros'] as $param) {
-                                    // Hide hidden params
-                                    if (($param['nome'] ?? '') === '__meses_locacao') {
-                                        // Legacy fallback if needed, but we trust column now
-                                        continue; 
-                                    }
-                                    
-                                    $valor_limpo = str_replace(',', '.', preg_replace('/[^\d,]/', '', $param['valor'] ?? '0'));
-                                    $valor_parametros += (float) $valor_limpo;
-                                    $visible_params[] = $param;
-                                }
-                            }
-                            
-                            $valor_unitario_total = $valor_unitario_base + $valor_parametros;
-                            $quantidade = (int) ($item['quantidade'] ?? 1);
-                            
-                            $multiplicador = $is_locacao ? $meses_locacao : 1;
-                            $subtotal = $valor_unitario_total * $quantidade * $multiplicador;
-                            $total_geral += $subtotal;
+        <!-- Table -->
+        <table class="ref-table">
+            <thead>
+                <tr>
+                    <th width="70">Imagem</th>
+                    <th>Descrição</th>
+                    <th class="text-center">Estado</th>
+                    <th class="text-center">Unid.</th>
+                    <th class="text-center">Qtd</th>
+                    <th class="text-right">Vlr. Unit.</th>
+                    <th class="text-right">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach($proposal['items'] as $item): 
+                    $valor_unitario_base = (float) ($item['valor_unitario'] ?? 0);
+                    $valor_parametros = 0;
+                    $visible_params = [];
+                    $is_locacao = (strtoupper($item['status']) === 'LOCAÇÃO');
+                    $meses_locacao = 1; 
 
-                            $unidade_medida = $is_locacao ? 'Mês' : ($item['unidade_medida'] ?: 'Unidade');
-                            
-                            // Formata o status para exibição
-                             $status_display = $is_locacao 
-                                ? "LOCAÇÃO<br><span style='font-size: 7pt;'>{$meses_locacao} MESES</span>" 
-                                : "Vendas";
-                        ?>
-                        <tr>
-                            <td class="p-1 align-middle text-center"><img src="<?php echo htmlspecialchars($item['imagem_url'] ?: 'https://placehold.co/80x80/e2e8f0/64748b?text=Sem+Img'); ?>" class="w-16 h-16 object-contain inline-block" onerror="this.onerror=null;this.src='https://placehold.co/80x80/e2e8f0/64748b?text=Erro'"></td>
-                            <td class="p-1 align-middle text-center">
-                                <p class="font-bold"><?php echo htmlspecialchars($item['descricao']); ?></p>
-                                <p><?php echo htmlspecialchars($item['fabricante'] . ' - ' . $item['modelo']); ?></p>
-                                <div class="mt-1"><?php echo nl2br(htmlspecialchars($item['descricao_detalhada'])); ?></div>
+                    if ($is_locacao && !empty($item['meses_locacao'])) {
+                        $meses_locacao = (int) $item['meses_locacao'];
+                    } elseif ($is_locacao && empty($meses_locacao)) {
+                        $meses_locacao = 1; 
+                    }
 
-                                <!-- --- INÍCIO DA MODIFICAÇÃO: Exibir Parâmetros (Estilo da Imagem) --- -->
-                                <?php if (!empty($visible_params)): ?>
-                                    <div class="mt-2 p-1 max-w-xs mx-auto">
-                                        <p class="font-bold text-center text-[7pt]">PARÂMETROS ADICIONAIS</p>
-                                        <p class="text-center text-[7pt] font-medium">
-                                            <?php
-                                            $param_names = [];
-                                            foreach ($visible_params as $param) {
-                                                // Exibe apenas o nome, como na imagem "Layout.png"
-                                                $param_names[] = htmlspecialchars($param['nome']);
-                                            }
-                                            echo implode(' | ', $param_names);
-                                            ?>
-                                        </p>
-                                    </div>
-                                <?php endif; ?>
-                                <!-- --- FIM DA MODIFICAÇÃO --- -->
-                            </td>
-                            <td class="p-1 text-center align-middle"><?php echo $status_display; ?></td>
-                            <td class="p-1 text-center align-middle"><?php echo htmlspecialchars($unidade_medida); ?></td>
-                            <td class="p-1 text-center align-middle"><?php echo htmlspecialchars($quantidade); ?></td>
-                            <td class="p-1 text-right align-middle whitespace-nowrap"><?php echo format_currency($valor_unitario_total); ?></td> <!-- Alterado para valor unitário total -->
-                            <td class="p-1 text-right align-middle font-bold whitespace-nowrap"><?php echo format_currency($subtotal); ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                        <tr>
-                            <td colspan="6" class="p-1 text-right font-bold border-l-0 border-b-0">Valor Total Geral</td>
-                            <td class="p-1 text-right font-bold bg-gray-200 whitespace-nowrap"><?php echo format_currency($total_geral); ?></td>
-                        </tr>
-                    </tbody>
-                </table>
+                    if (!empty($item['parametros']) && is_array($item['parametros'])) {
+                        foreach ($item['parametros'] as $param) {
+                            if (($param['nome'] ?? '') === '__meses_locacao') continue; 
+                            $valor_limpo = str_replace(',', '.', preg_replace('/[^\d,]/', '', $param['valor'] ?? '0'));
+                            $valor_parametros += (float) $valor_limpo;
+                            $visible_params[] = $param;
+                        }
+                    }
+                    
+                    $valor_unitario_total = $valor_unitario_base + $valor_parametros;
+                    $quantidade = (int) ($item['quantidade'] ?? 1);
+                    $multiplicador = $is_locacao ? $meses_locacao : 1;
+                    $subtotal = $valor_unitario_total * $quantidade * $multiplicador;
+                    $total_geral += $subtotal;
+                    $unidade_medida = $is_locacao ? 'Mês' : ($item['unidade_medida'] ?: 'Unidade');
+                ?>
+                <tr class="break-inside-avoid">
+                    <td class="text-center">
+                        <img src="<?php echo htmlspecialchars($item['imagem_url'] ?: 'https://placehold.co/40x40/e2e8f0/64748b?text=IMG'); ?>" class="w-10 h-10 object-contain mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=IMG'">
+                    </td>
+                    <td>
+                        <div class="font-bold text-[#2e2a78] uppercase text-[8.5pt]"><?php echo htmlspecialchars($item['descricao']); ?></div>
+                        <div class="text-[7.5pt] uppercase text-slate-500 font-semibold"><?php echo htmlspecialchars($item['fabricante'] . ' - ' . $item['modelo']); ?></div>
+                        <div class="text-[7.5pt] text-slate-500 italic mt-1">
+                            <?php echo nl2br(htmlspecialchars($item['descricao_detalhada'])); ?>
+                            <?php if (!empty($visible_params)): ?>
+                                <div class="flex flex-wrap gap-1 mt-1">
+                                    <?php foreach ($visible_params as $param): ?>
+                                        <span><?php echo htmlspecialchars($param['nome']); ?>,</span>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <div class="text-[7pt] font-semibold text-slate-600 uppercase"><?php echo $is_locacao ? 'LOCAÇÃO' : 'VENDA'; ?></div>
+                        <?php if ($is_locacao): ?>
+                            <div class="text-[7pt] text-slate-400"><?php echo $meses_locacao; ?> MESES</div>
+                        <?php endif; ?>
+                    </td>
+                    <td class="text-center"><?php echo htmlspecialchars($unidade_medida); ?></td>
+                    <td class="text-center font-bold text-slate-700"><?php echo htmlspecialchars($quantidade); ?></td>
+                    <td class="text-right whitespace-nowrap"><?php echo format_currency($valor_unitario_total); ?></td>
+                    <td class="text-right font-bold text-slate-800 whitespace-nowrap"><?php echo format_currency($subtotal); ?></td>
+                </tr>
+                <?php endforeach; ?>
+                <!-- Total -->
+                <tr class="bg-gray-100 border-t border-gray-200 break-inside-avoid">
+                        <td colspan="6" class="text-right py-2 px-4 text-[8.5pt] uppercase font-bold text-slate-600">Valor Total Geral</td>
+                        <td class="text-right py-2 px-4 text-[10pt] font-bold text-[#2e2a78] whitespace-nowrap"><?php echo format_currency($total_geral); ?></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Conditions -->
+        <div class="mb-8 text-[9pt] text-slate-700 break-inside-avoid">
+            <h3 class="font-bold text-[#2e2a78] text-[9pt] mb-3 border-b border-gray-200 pb-1">Condições Gerais de Fornecimento</h3>
+            <ol class="list-decimal list-inside space-y-1 marker:text-slate-500">
+                <li><span class="font-semibold">Faturamento:</span> <?php echo htmlspecialchars($proposal['faturamento'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Treinamento:</span> <?php echo htmlspecialchars($proposal['treinamento'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Condições de Pagamento:</span> <?php echo htmlspecialchars($proposal['condicoes_pagamento'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Prazo de Entrega:</span> <?php echo htmlspecialchars($proposal['prazo_entrega'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Garantia dos Equipamentos:</span> <?php echo htmlspecialchars($proposal['garantia_equipamentos'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Garantia dos Acessórios:</span> <?php echo htmlspecialchars($proposal['garantia_acessorios'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Instalação:</span> <?php echo htmlspecialchars($proposal['instalacao'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Assistência Técnica:</span> <?php echo htmlspecialchars($proposal['assistencia_tecnica'] ?: '-'); ?></li>
+            </ol>
+        </div>
+
+        <!-- Observations -->
+        <?php if (!empty($proposal['observacoes'])): ?>
+            <div class="mb-8 text-[9pt] break-inside-avoid">
+                <h3 class="font-bold text-[#2e2a78] text-[9pt] mb-2">Observações</h3>
+                <p class="text-slate-600"><?php echo nl2br(htmlspecialchars($proposal['observacoes'])); ?></p>
             </div>
+        <?php endif; ?>
 
-            <div class="mt-4">
-                 <div class="p-2">
-                    <h2 class="text-sm font-bold text-center">Condições Gerais de Fornecimento:</h2>
-                    <div class="text-xs space-y-1 mt-2">
-                        <p><strong>1. Faturamento:</strong> <?php echo htmlspecialchars($proposal['faturamento']); ?></p>
-                        <p><strong>2. Treinamento:</strong> <?php echo htmlspecialchars($proposal['treinamento']); ?></p>
-                        <p><strong>3. Condições de pagamento:</strong> <?php echo htmlspecialchars($proposal['condicoes_pagamento']); ?></p>
-                        <p><strong>4. Prazo de entrega:</strong> <?php echo htmlspecialchars($proposal['prazo_entrega']); ?></p>
-                        <p><strong>5. Garantia dos equipamentos:</strong> <?php echo htmlspecialchars($proposal['garantia_equipamentos']); ?></p>
-                        <p><strong>6. Garantia dos acessórios:</strong> <?php echo htmlspecialchars($proposal['garantia_acessorios']); ?></p>
-                        <p><strong>7. Instalação:</strong> <?php echo htmlspecialchars($proposal['instalacao']); ?></p>
-                        <p><strong>8. Assistência técnica:</strong> <?php echo htmlspecialchars($proposal['assistencia_tecnica']); ?></p>
+        <!-- Signatures (Grid can be tricky, using Flex instead for better safety if needed, but break-inside-avoid helps) -->
+        <div class="grid grid-cols-2 gap-10 mt-8 pt-4 border-t border-slate-200 break-inside-avoid text-[9pt]">
+            <div>
+                    <p class="font-bold text-[#2e2a78] text-[9pt] mb-1"><?php echo htmlspecialchars($proposal['vendedor_nome']); ?></p>
+                    <p class="uppercase text-slate-500 text-[7pt] mb-1"><?php echo htmlspecialchars($proposal['vendedor_role']); ?></p>
+                    <p class="text-slate-600">Fone: <?php echo htmlspecialchars($proposal['vendedor_telefone']); ?></p>
+                    <p class="text-slate-600">E-mail: <?php echo htmlspecialchars($proposal['vendedor_email']); ?></p>
+            </div>
+            <div class="flex flex-col items-end">
+                    <div class="border-b border-black w-full mb-2"></div>
+                    <div class="w-full flex justify-between items-center text-slate-600">
+                        <span>Data: ____/____/________</span>
+                        <span class="font-bold text-slate-800">De Acordo</span>
                     </div>
-                    <div class="mt-2 text-xs">
-                        <h3 class="font-bold">Observações:</h3>
-                        <p><?php echo nl2br(htmlspecialchars($proposal['observacoes'])); ?></p>
-                    </div>
-                </div>
             </div>
-             <div class="flex-grow"></div>
-             <div class="pt-10 grid grid-cols-2 gap-8 text-center text-xs">
-                <div class="pt-2">
-                    <p class="border-t border-black pt-1 font-bold w-2/3 mx-auto"><?php echo htmlspecialchars($proposal['vendedor_nome']); ?></p>
-                    <p><?php echo htmlspecialchars($proposal['vendedor_role']); ?></p>
-                    <p>Fone: <?php echo htmlspecialchars($proposal['vendedor_telefone']); ?></p>
-                    <p>E-mail: <?php echo htmlspecialchars($proposal['vendedor_email']); ?></p>
-                </div>
-                <div class="pt-2">
-                    <p class="border-t border-black pt-1 w-2/3 mx-auto">De Acordo:</p>
-                    <p class="mt-4">Data: ____/____/________</p>
-                </div>
-            </div>
-        </main>
+        </div>
     </div>
-    
+
+    <!-- Paged.js Auto-Runner (No custom script needed, purely declarative) -->
+    <!-- We removed specific JS for preview() because the Polyfill auto-runs on DOMContentLoaded if not configured otherwise -->
     <script>
-        window.onload = () => {
-            // Remove o delay, imprime imediatamente
-            window.print();
+        window.PagedConfig = {
+            auto: true,
+            after: (flow) => {
+                console.log("Paged.js finish");
+                
+                // Re-inject the print interface because Paged.js clears the body
+                const printUi = document.createElement('div');
+                // FIXED to BOTTOM (bottom-0) instead of TOP (top-0)
+                printUi.className = "no-print p-4 bg-slate-800 text-white text-center shadow-md print:hidden fixed bottom-0 w-full z-50";
+                printUi.innerHTML = `
+                    <div class="flex justify-between items-center max-w-4xl mx-auto">
+                        <div class="text-left text-xs text-slate-400">
+                             Visualização de Impressão
+                        </div>
+                        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-8 rounded-full transition-colors duration-200 shadow-lg flex items-center gap-2">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                            Imprimir Proposta
+                        </button>
+                        <div class="text-right text-xs text-slate-400">
+                            Pressione CTRL+P se necessário
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(printUi);
+            }
         };
     </script>
 </body>
