@@ -114,6 +114,80 @@ function format_date($value, $format = 'd/m/Y') {
     </script>
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Paged.js Config (Must be before Polyfill) -->
+    <script>
+        window.PagedConfig = {
+            auto: true,
+            after: (flow) => {
+                console.log("Paged.js finish - Injecting Buttons safely");
+                
+                // Use setTimeout to ensure DOM is settled and override any Paged.js cleanup
+                setTimeout(() => {
+                    // Remove existing check
+                    const existing = document.getElementById('print-controls');
+                    if (existing) existing.remove();
+
+                    // Re-inject the floating action buttons
+                const printUi = document.createElement('div');
+                printUi.id = 'print-controls';
+                
+                // NO INLINE DISPLAY STYLE to allow CSS override. 
+                // We keep position and z-index here for safety, but display is handled by CSS.
+                printUi.style.cssText = "position: fixed; top: 20px; right: 20px; z-index: 2147483647; pointer-events: auto;";
+                
+                printUi.innerHTML = `
+                    <!-- Print Button -->
+                    <button onclick="window.print()" style="width: 56px; height: 56px; border-radius: 50%; background-color: #4f46e5; color: white; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="Imprimir">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                    </button>
+                    
+                    <!-- Close Button -->
+                    <button onclick="window.close()" style="width: 56px; height: 56px; border-radius: 50%; background-color: #334155; color: white; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="Fechar">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                `;
+                document.body.appendChild(printUi);
+                
+                // Add JS event listeners for printing as a failsafe
+                const handleBeforePrint = () => {
+                    const controls = document.getElementById('print-controls');
+                    if (controls) controls.style.display = 'none';
+                };
+                const handleAfterPrint = () => {
+                   const controls = document.getElementById('print-controls');
+                   if (controls) controls.style.display = 'flex'; // Restore logic
+                };
+                
+                window.addEventListener('beforeprint', handleBeforePrint);
+                window.addEventListener('afterprint', handleAfterPrint);
+            }, 500);
+        }
+    };
+</script>
+
+<!-- Explicit Print Hiding for the Controls -->
+<style>
+    /* Screen styles: Visible */
+    #print-controls {
+        display: flex; /* Removed !important to allow JS override */
+        flex-direction: column; 
+        gap: 12px;
+    }
+    
+    /* Print styles: Hidden (backup) */
+    @media print {
+        #print-controls {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+    }
+</style>
+
     <!-- Paged.js CDN -->
     <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
     
@@ -256,13 +330,13 @@ function format_date($value, $format = 'd/m/Y') {
                     <div class="w-[1.5px] bg-[#2e2a78] self-stretch mr-4 opacity-100"></div>
 
                     <!-- Company Info -->
-                    <div class="flex flex-col justify-between py-0.5 text-[8.5pt] text-slate-500 leading-[1.3]">
-                        <p class="font-bold text-[#2e2a78] text-[9.5pt] uppercase tracking-tight"><?php echo htmlspecialchars($company_info['name']); ?></p>
-                        <p>CNPJ: <?php echo htmlspecialchars($company_info['cnpj']); ?></p>
-                        <p><?php echo htmlspecialchars($company_info['address']); ?></p>
-                        <div class="flex gap-1">
+                    <div class="flex flex-col justify-center text-[7.5pt] text-slate-500 leading-snug text-left py-1">
+                        <p class="font-bold text-[#2e2a78] text-[9pt] uppercase tracking-tight mb-0.5"><?php echo htmlspecialchars($company_info['name']); ?></p>
+                        <p class="mb-px">CNPJ: <?php echo htmlspecialchars($company_info['cnpj']); ?></p>
+                        <p class="mb-px"><?php echo htmlspecialchars($company_info['address']); ?></p>
+                        <div class="flex flex-wrap gap-1 mb-px">
                             <span><?php echo htmlspecialchars($company_info['phone']); ?></span>
-                            <span>|</span>
+                            <span class="text-slate-400">|</span>
                             <span><?php echo htmlspecialchars($company_info['email']); ?></span>
                         </div>
                         <p><?php echo htmlspecialchars($company_info['site']); ?></p>
@@ -418,7 +492,7 @@ function format_date($value, $format = 'd/m/Y') {
         <?php endif; ?>
 
         <!-- Signatures (Grid can be tricky, using Flex instead for better safety if needed, but break-inside-avoid helps) -->
-        <div class="grid grid-cols-2 gap-10 mt-8 pt-4 border-t border-slate-200 break-inside-avoid text-[9pt]">
+        <div class="grid grid-cols-2 gap-10 mt-8 pt-4 break-inside-avoid text-[9pt]">
             <div>
                     <p class="font-bold text-[#2e2a78] text-[9pt] mb-1"><?php echo htmlspecialchars($proposal['vendedor_nome']); ?></p>
                     <p class="uppercase text-slate-500 text-[7pt] mb-1"><?php echo htmlspecialchars($proposal['vendedor_role']); ?></p>
@@ -437,33 +511,6 @@ function format_date($value, $format = 'd/m/Y') {
 
     <!-- Paged.js Auto-Runner (No custom script needed, purely declarative) -->
     <!-- We removed specific JS for preview() because the Polyfill auto-runs on DOMContentLoaded if not configured otherwise -->
-    <script>
-        window.PagedConfig = {
-            auto: true,
-            after: (flow) => {
-                console.log("Paged.js finish");
-                
-                // Re-inject the print interface because Paged.js clears the body
-                const printUi = document.createElement('div');
-                // FIXED to BOTTOM (bottom-0) instead of TOP (top-0)
-                printUi.className = "no-print p-4 bg-slate-800 text-white text-center shadow-md print:hidden fixed bottom-0 w-full z-50";
-                printUi.innerHTML = `
-                    <div class="flex justify-between items-center max-w-4xl mx-auto">
-                        <div class="text-left text-xs text-slate-400">
-                             Visualização de Impressão
-                        </div>
-                        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-8 rounded-full transition-colors duration-200 shadow-lg flex items-center gap-2">
-                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                            Imprimir Proposta
-                        </button>
-                        <div class="text-right text-xs text-slate-400">
-                            Pressione CTRL+P se necessário
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(printUi);
-            }
-        };
-    </script>
+
 </body>
 </html>
