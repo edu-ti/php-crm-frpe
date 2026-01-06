@@ -203,7 +203,7 @@ function addLeadsEventListeners() {
     document.getElementById('clear-sub-origem-filter')?.addEventListener('click', () => {
         localState.filters.sub_origem = '';
         const radio = document.querySelector('input[name="sub_origem_filter"]:checked');
-        if(radio) radio.checked = false;
+        if (radio) radio.checked = false;
         document.getElementById('clear-sub-origem-filter')?.classList.add('hidden');
         renderLeadKanbanBoard();
     });
@@ -217,11 +217,11 @@ function addKanbanEventListeners() {
     const canManage = permissions.canManageLeads;
 
     document.querySelectorAll('.lead-kanban-card').forEach(card => {
-        if (canManage){
+        if (canManage) {
             card.setAttribute('draggable', 'true');
             card.addEventListener('dragstart', handleDragStart);
         } else {
-             card.setAttribute('draggable', 'false');
+            card.setAttribute('draggable', 'false');
         }
         card.addEventListener('click', (e) => {
             if (e.target.closest('select')) return; // Não abre modal se clicar no select
@@ -229,7 +229,7 @@ function addKanbanEventListeners() {
         });
     });
 
-    if (canManage){
+    if (canManage) {
         // --- ALTERAÇÃO: Listeners agora no container interno ---
         const columns = document.querySelectorAll('#lead-kanban-inner-container .kanban-column');
         columns.forEach(column => {
@@ -245,7 +245,7 @@ function addKanbanEventListeners() {
             const leadId = e.currentTarget.dataset.leadId;
             const fieldName = e.currentTarget.dataset.field;
             const value = e.currentTarget.value;
-             try {
+            try {
                 if (fieldName === 'sub_origem') {
                     await apiCall('update_lead_field', {
                         method: 'POST',
@@ -256,14 +256,14 @@ function addKanbanEventListeners() {
                     showToast(`Campo '${fieldName}' do lead atualizado.`);
                     // Não precisa re-renderizar tudo, apenas atualiza o estado
                 }
-            } catch (error) {}
+            } catch (error) { }
         });
     });
 }
 
 
 function handleDragStart(e) {
-    if(!e.target.classList.contains('lead-kanban-card')) return;
+    if (!e.target.classList.contains('lead-kanban-card')) return;
     e.dataTransfer.setData('text/plain', e.target.dataset.leadId);
     e.dataTransfer.effectAllowed = 'move';
     // Adiciona a classe diretamente, o timeout não é estritamente necessário
@@ -283,13 +283,13 @@ function handleDragOver(e) {
 
 
 function handleDragLeave(e) {
-   // A classe drag-over é removida da coluna no CSS
+    // A classe drag-over é removida da coluna no CSS
 }
 
 async function handleDrop(e) {
     e.preventDefault();
     const column = e.currentTarget.closest('.kanban-column'); // Garante que pegamos a coluna
-     if(!column) return;
+    if (!column) return;
     // A classe drag-over é removida da coluna no CSS
 
     const draggingCard = document.querySelector('.lead-kanban-card.dragging');
@@ -314,10 +314,10 @@ async function handleDrop(e) {
         // Otimização: Move o card visualmente ANTES da chamada da API
         const targetCardContainer = column.querySelector('.stage-cards');
         if (draggingCard && targetCardContainer) {
-             // Insere no início da coluna de destino
-             targetCardContainer.insertBefore(draggingCard, targetCardContainer.firstChild);
-             // Atualiza a cor da borda imediatamente
-             draggingCard.className = `lead-kanban-card ${getLeadCardColorClass(newStatus)}`;
+            // Insere no início da coluna de destino
+            targetCardContainer.insertBefore(draggingCard, targetCardContainer.firstChild);
+            // Atualiza a cor da borda imediatamente
+            draggingCard.className = `lead-kanban-card ${getLeadCardColorClass(newStatus)}`;
         }
 
         try {
@@ -329,10 +329,10 @@ async function handleDrop(e) {
             // Não precisa re-renderizar tudo, o card já foi movido
             showToast('Status do lead atualizado!');
         } catch (error) {
-             console.error("Erro ao atualizar status do lead:", error);
-             // Se der erro, desfaz a movimentação visual (pode precisar recarregar)
-             showToast('Erro ao atualizar status. Recarregue a página.', 'error');
-             renderLeadKanbanBoard(); // Re-renderiza para garantir consistência em caso de erro
+            console.error("Erro ao atualizar status do lead:", error);
+            // Se der erro, desfaz a movimentação visual (pode precisar recarregar)
+            showToast('Erro ao atualizar status. Recarregue a página.', 'error');
+            renderLeadKanbanBoard(); // Re-renderiza para garantir consistência em caso de erro
         }
     }
 }
@@ -401,7 +401,7 @@ async function openEditLeadModal(leadId) {
     preProposalBtn.id = 'modal-preproposal-btn';
     preProposalBtn.className = `btn btn-primary ${!canManage ? 'hidden' : ''}`;
     preProposalBtn.textContent = isEditingOpp ? 'Atualizar Pré-Proposta' : 'Encaminhar Pré-Proposta';
-    if(confirmBtn) confirmBtn.insertAdjacentElement('beforebegin', preProposalBtn);
+    if (confirmBtn) confirmBtn.insertAdjacentElement('beforebegin', preProposalBtn);
 
     const handlePreProposalSubmit = async () => {
         if (!form.reportValidity()) return;
@@ -419,7 +419,7 @@ async function openEditLeadModal(leadId) {
             const result = await apiCall(isEditingOpp ? 'update_opportunity' : 'create_opportunity', { method: 'POST', body: JSON.stringify(dataToSend) });
             const savedOpp = result.opportunity;
 
-            if(isEditingOpp) {
+            if (isEditingOpp) {
                 const index = appState.opportunities.findIndex(o => o.id == savedOpp.id);
                 if (index > -1) appState.opportunities[index] = savedOpp;
             } else {
@@ -427,8 +427,8 @@ async function openEditLeadModal(leadId) {
                 lead.oportunidade_id = savedOpp.id;
             }
 
-             // Atualiza o status do lead para "Convertido" ou mantém se já estiver
-             if (lead.status !== 'Convertido em Oportunidade') {
+            // Atualiza o status do lead para "Convertido" ou mantém se já estiver
+            if (lead.status !== 'Convertido em Oportunidade') {
                 lead.status = 'Convertido em Oportunidade'; // Muda o status local
                 await apiCall('update_lead_status', { method: 'POST', body: JSON.stringify({ lead_id: lead.id, status: 'Convertido em Oportunidade' }) });
             }
@@ -444,9 +444,61 @@ async function openEditLeadModal(leadId) {
 
     preProposalBtn.addEventListener('click', handlePreProposalSubmit);
 
-    if(confirmBtn){
+    // --- BUTTON DELETE START ---
+    if (permissions.canDelete) {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.innerHTML = '<i class="fas fa-trash-alt mr-2"></i>Excluir';
+        deleteBtn.className = 'btn btn-error text-white bg-red-500 hover:bg-red-600 mr-auto';
+        deleteBtn.type = 'button';
+        deleteBtn.style.marginRight = 'auto'; // Force left alignment
+
+        deleteBtn.addEventListener('click', () => {
+            Swal.fire({
+                title: 'Tem certeza?',
+                text: `Você tem certeza que deseja excluir o lead "${lead.nome}"?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Apagar',
+                cancelButtonText: 'Cancelar',
+                backdrop: `rgba(0,0,0,0.8)`
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Excluindo...',
+                        text: 'Aguarde...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+                    try {
+                        await apiCall('delete_lead', { method: 'POST', body: JSON.stringify({ id: lead.id }) });
+                        // Remove from local state
+                        appState.leads = appState.leads.filter(l => l.id != lead.id);
+                        Swal.fire('Excluído!', 'Lead excluído com sucesso.', 'success');
+                        closeModal();
+                        renderLeadKanbanBoard();
+                    } catch (error) {
+                        console.error(error);
+                        Swal.fire('Erro!', 'Ocorreu um erro ao excluir.', 'error');
+                    }
+                }
+            });
+        });
+
+        // Insert before the confirmation button (or wherever fits best in footer)
+        if (confirmBtn) {
+            // Se já existir botão de confirmação, insere antes dele, mas queremos que fique na esquerda
+            // O footer do modal geralmente é flex-end. Para alinhar à esquerda, podemos usar mr-auto no botão.
+            const footer = confirmBtn.parentElement;
+            if (footer) footer.insertBefore(deleteBtn, footer.firstChild);
+        }
+    }
+    // --- BUTTON DELETE END ---
+
+    if (confirmBtn) {
         confirmBtn.addEventListener('click', async () => {
-             if (!canManage) return;
+            if (!canManage) return;
             const fieldsToUpdate = ['nome', 'telefone', 'email', 'observacao'];
             const dataToSave = { lead_id: lead.id, fields: {} };
             let changed = false;
@@ -454,8 +506,8 @@ async function openEditLeadModal(leadId) {
             fieldsToUpdate.forEach(field => {
                 const formValue = form.querySelector(`[name="lead_${field}"]`)?.value;
                 // Compara valores, tratando null/undefined como string vazia para consistência
-                 const currentValue = lead[field] === null || lead[field] === undefined ? '' : String(lead[field]);
-                 const newValue = formValue === null || formValue === undefined ? '' : String(formValue);
+                const currentValue = lead[field] === null || lead[field] === undefined ? '' : String(lead[field]);
+                const newValue = formValue === null || formValue === undefined ? '' : String(formValue);
 
                 if (currentValue !== newValue) {
                     dataToSave.fields[field] = formValue; // Salva o valor original do form
@@ -473,18 +525,18 @@ async function openEditLeadModal(leadId) {
             try {
                 await apiCall('update_lead_fields', { method: 'POST', body: JSON.stringify(dataToSave) });
                 // Atualiza o objeto lead no estado da aplicação
-                 Object.assign(lead, dataToSave.fields);
+                Object.assign(lead, dataToSave.fields);
                 showToast('Alterações salvas no lead.');
                 closeModal();
                 renderLeadKanbanBoard(); // Re-renderiza para mostrar as alterações
-            } catch (error) {}
+            } catch (error) { }
         });
     }
 
     const restartBtn = document.getElementById('restart-lead-btn');
     if (restartBtn) {
         restartBtn.addEventListener('click', async () => {
-             if (!canManage) return;
+            if (!canManage) return;
             if (lead.status === 'Novo') {
                 showToast('Este lead já está no início do funil.', 'info');
                 return;
@@ -499,7 +551,7 @@ async function openEditLeadModal(leadId) {
                 closeModal();
                 renderLeadKanbanBoard(); // Re-renderiza para mover o card
             } catch (error) {
-                 console.error("Erro ao reiniciar lead:", error);
+                console.error("Erro ao reiniciar lead:", error);
             }
         });
     }
@@ -561,12 +613,12 @@ function openPrintReportModal() {
         }
 
         let leadsToPrint = [...(appState.leads || [])];
-         if (localState.filters.sub_origem) {
+        if (localState.filters.sub_origem) {
             leadsToPrint = leadsToPrint.filter(lead => lead.sub_origem === localState.filters.sub_origem);
         }
         if (localState.searchTerm) {
             const term = localState.searchTerm.toLowerCase();
-             leadsToPrint = leadsToPrint.filter(lead =>
+            leadsToPrint = leadsToPrint.filter(lead =>
                 (lead.nome && lead.nome.toLowerCase().includes(term)) ||
                 (lead.email && lead.email.toLowerCase().includes(term)) ||
                 (lead.telefone && lead.telefone.toLowerCase().includes(term)) ||
@@ -592,10 +644,10 @@ function openPrintReportModal() {
         leadsToPrint.forEach(lead => {
             printWindow.document.write('<tr>');
             selectedColumns.forEach(key => {
-                 let value = lead[key] || '';
-                 if(key === 'data_chegada') value = formatDate(value);
-                 if(key === 'observacao' && value.length > 100) value = value.substring(0, 100) + '...';
-                 printWindow.document.write(`<td>${value}</td>`);
+                let value = lead[key] || '';
+                if (key === 'data_chegada') value = formatDate(value);
+                if (key === 'observacao' && value.length > 100) value = value.substring(0, 100) + '...';
+                printWindow.document.write(`<td>${value}</td>`);
             });
             printWindow.document.write('</tr>');
         });
@@ -649,37 +701,37 @@ function openImportLeadsModal() {
                     leads = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                 } else if (file.name.endsWith('.csv')) {
                     // Simples parse CSV (pode precisar de biblioteca mais robusta para casos complexos)
-                     const csvData = data;
-                     const lines = csvData.split(/\r\n|\n/).filter(line => line.trim() !== ''); // Ignora linhas vazias
-                     leads = lines.map(line => {
-                         // Lida com vírgulas dentro de aspas (simplificado)
-                         const cells = [];
-                         let currentCell = '';
-                         let inQuotes = false;
-                         for (let i = 0; i < line.length; i++) {
-                             const char = line[i];
-                             if (char === '"' && (i === 0 || line[i-1] !== '\\')) { // Lida com aspas escapadas simples
-                                 inQuotes = !inQuotes;
-                             } else if (char === ',' && !inQuotes) {
-                                 cells.push(currentCell.trim().replace(/^"|"$/g, '').replace(/\\"/g, '"'));
-                                 currentCell = '';
-                             } else {
-                                 currentCell += char;
-                             }
-                         }
-                         cells.push(currentCell.trim().replace(/^"|"$/g, '').replace(/\\"/g, '"')); // Última célula
-                         return cells;
-                     });
+                    const csvData = data;
+                    const lines = csvData.split(/\r\n|\n/).filter(line => line.trim() !== ''); // Ignora linhas vazias
+                    leads = lines.map(line => {
+                        // Lida com vírgulas dentro de aspas (simplificado)
+                        const cells = [];
+                        let currentCell = '';
+                        let inQuotes = false;
+                        for (let i = 0; i < line.length; i++) {
+                            const char = line[i];
+                            if (char === '"' && (i === 0 || line[i - 1] !== '\\')) { // Lida com aspas escapadas simples
+                                inQuotes = !inQuotes;
+                            } else if (char === ',' && !inQuotes) {
+                                cells.push(currentCell.trim().replace(/^"|"$/g, '').replace(/\\"/g, '"'));
+                                currentCell = '';
+                            } else {
+                                currentCell += char;
+                            }
+                        }
+                        cells.push(currentCell.trim().replace(/^"|"$/g, '').replace(/\\"/g, '"')); // Última célula
+                        return cells;
+                    });
                 } else {
                     throw new Error('Formato de ficheiro não suportado.');
                 }
 
 
                 if (leads.length < 2) {
-                     throw new Error('Ficheiro vazio ou apenas com cabeçalho.');
+                    throw new Error('Ficheiro vazio ou apenas com cabeçalho.');
                 }
 
-                 const header = leads[0].map(h => String(h).toLowerCase().trim().replace(/\s+/g, '_')); // Converte para string antes de usar métodos
+                const header = leads[0].map(h => String(h).toLowerCase().trim().replace(/\s+/g, '_')); // Converte para string antes de usar métodos
                 const requiredHeaders = ['nome', 'email', 'telefone', 'origem', 'produto_interesse', 'observacao'];
                 const headerMap = {};
                 requiredHeaders.forEach(reqHeader => {
@@ -687,30 +739,30 @@ function openImportLeadsModal() {
                     if (index !== -1) {
                         headerMap[reqHeader] = index;
                     } else {
-                         console.warn(`Cabeçalho opcional não encontrado: ${reqHeader}`);
+                        console.warn(`Cabeçalho opcional não encontrado: ${reqHeader}`);
                     }
                 });
 
                 if (headerMap.nome === undefined) {
-                     throw new Error("A coluna 'nome' é obrigatória no cabeçalho.");
+                    throw new Error("A coluna 'nome' é obrigatória no cabeçalho.");
                 }
 
 
                 const leadsData = leads.slice(1).map((row, rowIndex) => {
                     const lead = {};
                     let hasEmailOrPhone = false;
-                     for (const key in headerMap) {
+                    for (const key in headerMap) {
                         const cellValue = row[headerMap[key]];
                         // Converte valor da célula para string antes de processar
                         const stringValue = cellValue !== undefined && cellValue !== null ? String(cellValue) : null;
 
                         if ((key === 'data_chegada') && typeof cellValue === 'number' && cellValue > 10000) {
-                             // Tenta converter data do Excel
-                             const excelEpoch = new Date(1899, 11, 30);
-                             const date = new Date(excelEpoch.getTime() + cellValue * 86400000);
-                             lead[key] = date.toISOString().split('T')[0];
+                            // Tenta converter data do Excel
+                            const excelEpoch = new Date(1899, 11, 30);
+                            const date = new Date(excelEpoch.getTime() + cellValue * 86400000);
+                            lead[key] = date.toISOString().split('T')[0];
                         } else {
-                             lead[key] = stringValue;
+                            lead[key] = stringValue;
                         }
 
 
@@ -720,7 +772,7 @@ function openImportLeadsModal() {
                     }
                     // Validação mais robusta: nome não pode ser vazio e precisa de email OU telefone
                     if (!lead.nome || lead.nome.trim() === '' || (!lead.email && !lead.telefone)) {
-                         console.warn(`Linha ${rowIndex + 2} ignorada: Nome (${lead.nome}) e (Email ou Telefone) são obrigatórios e não podem ser vazios.`);
+                        console.warn(`Linha ${rowIndex + 2} ignorada: Nome (${lead.nome}) e (Email ou Telefone) são obrigatórios e não podem ser vazios.`);
                         return null;
                     }
 
@@ -742,10 +794,10 @@ function openImportLeadsModal() {
 
                 statusDiv.textContent = `Importação concluída! ${result.imported} leads importados, ${result.duplicates} duplicados ignorados, ${result.errors} erros.`;
                 showToast(`Importação concluída! ${result.imported} novos leads.`);
-                 if (result.newLeads && result.newLeads.length > 0) {
+                if (result.newLeads && result.newLeads.length > 0) {
                     // Adiciona os novos leads ao início da lista no estado da aplicação
-                     appState.leads = [...result.newLeads, ...appState.leads];
-                     renderLeadKanbanBoard(); // Re-renderiza o quadro com os novos leads
+                    appState.leads = [...result.newLeads, ...appState.leads];
+                    renderLeadKanbanBoard(); // Re-renderiza o quadro com os novos leads
                 }
 
                 setTimeout(closeModal, 3000);
@@ -761,10 +813,10 @@ function openImportLeadsModal() {
         if (file.name.endsWith('.xlsx')) {
             reader.readAsBinaryString(file);
         } else if (file.name.endsWith('.csv')) {
-             reader.readAsText(file);
+            reader.readAsText(file);
         } else {
-             showToast('Formato de ficheiro não suportado. Use .xlsx ou .csv.', 'error');
-             confirmBtn.disabled = false;
+            showToast('Formato de ficheiro não suportado. Use .xlsx ou .csv.', 'error');
+            confirmBtn.disabled = false;
         }
 
     }, 'Importar', 'btn-primary');
