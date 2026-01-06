@@ -544,14 +544,19 @@ function renderProposalItemsSection() {
 
         if (item.parametros && Array.isArray(item.parametros)) {
             item.parametros.forEach(param => {
-                // parseCurrency lida com "R$ 1.234,56"
                 valor_parametros += (param.valor || 0);
             });
         }
 
         const valor_unitario_total = valor_unitario_base + valor_parametros;
-        const multiplicador = (item.status === 'LOCAÇÃO') ? 24 : 1;
-        const itemTotal = (item.quantidade || 0) * valor_unitario_total * multiplicador;
+
+        // ALTERAÇÃO: Usa o campo meses_locacao se for LOCAÇÃO, default 1.
+        const meses = (item.status === 'LOCAÇÃO' && item.meses_locacao) ? parseInt(item.meses_locacao) : 1;
+
+        // Se for locação, o total é Qtd * Valor * Meses. Se for venda, é Qtd * Valor.
+        // O multiplicador "24" antigo foi removido em favor da entrada manual.
+        const itemTotal = (item.quantidade || 0) * valor_unitario_total * meses;
+
         totalProposta += itemTotal;
         const imageUrl = item.imagem_url || 'https://placehold.co/100x100/e2e8f0/64748b?text=Imagem';
         // --- FIM: Lógica de Cálculo de Valor ---
@@ -562,16 +567,17 @@ function renderProposalItemsSection() {
             paramsHtml = '<div class="mt-2 space-y-1">';
             paramsHtml += item.parametros.map((param, pIndex) => `
                   <div class="flex items-center justify-between text-xs bg-gray-200 px-2 py-0.5 rounded">
-                     <!-- ALTERAÇÃO: Formata o valor (que é número) para exibição -->
-                     <span class="font-medium text-gray-800">${param.nome}: ${formatCurrency(param.valor)}</span>
-                     <button type="button" class="remove-proposal-parameter-btn text-red-500 hover:text-red-700 font-bold" data-item-index="${index}" data-param-index="${pIndex}">&times;</button>
-                 </div>
-             `).join('');
+                      <span class="font-medium text-gray-800">${param.nome}: ${formatCurrency(param.valor)}</span>
+                      <button type="button" class="remove-proposal-parameter-btn text-red-500 hover:text-red-700 font-bold" data-item-index="${index}" data-param-index="${pIndex}">&times;</button>
+                  </div>
+              `).join('');
             paramsHtml += '</div>';
         } else {
             paramsHtml = '<p class="text-xs text-gray-500 italic mt-2">Nenhum parâmetro adicional.</p>';
         }
         // --- FIM: Renderização dos Parâmetros ---
+
+        const isLocacao = item.status === 'LOCAÇÃO';
 
         return `
             <div class="border p-4 rounded-md mb-4 bg-gray-50 relative item-card">
@@ -616,9 +622,16 @@ function renderProposalItemsSection() {
                  </div>
                  <!-- --- Fim: Seção de Parâmetros --- -->
 
-                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 pt-4 border-t">
+                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4 pt-4 border-t">
                     <div><label class="form-label">Quantidade*</label><input type="number" data-index="${index}" name="item_quantidade" required class="form-input" value="${item.quantidade || 1}" min="1"></div>
                     <div><label class="form-label">Valor Unitário*</label><input type="text" inputmode="decimal" data-index="${index}" name="item_valor_unitario" required class="form-input" value="${formatCurrencyForInput(item.valor_unitario)}" placeholder="0,00"></div>
+                    
+                    <!-- CAMPO MESES LOCAÇÃO: Condicional -->
+                    <div class="${isLocacao ? '' : 'hidden'}">
+                        <label class="form-label">Meses Locação</label>
+                        <input type="number" data-index="${index}" name="item_meses_locacao" class="form-input" value="${item.meses_locacao || 12}" min="1">
+                    </div>
+                    
                     <div><label class="form-label">Unidade de Medida</label><input type="text" data-index="${index}" name="item_unidade_medida" class="form-input" value="${item.unidade_medida || 'Unidade'}"></div>
                     <div><label class="form-label">Subtotal</label><input type="text" class="form-input bg-gray-100 font-bold" value="${formatCurrency(itemTotal)}" readonly></div>
                 </div>
@@ -798,19 +811,20 @@ function handleItemInputChange(e) {
     if (prop === 'valor_unitario') {
         e.target.value = value.replace(/[^0-9,]/g, '');
         // Não atualiza o estado aqui, só no blur
-        return;
-    }
-
-    if (appState.proposal.items[index]) {
-        appState.proposal.items[index][prop] = (prop === 'quantidade') ? parseInt(value) || 0 : value;
-        // Se mudar status ou quantidade, re-renderiza para atualizar totais
-        if (prop === 'status' || prop === 'quantidade') {
-            if (prop === 'status') {
-                appState.proposal.items[index].unidade_medida = value === 'LOCAÇÃO' ? 'Mês' : 'Unidade';
-            }
-            renderProposalItemsSection();
-        }
-        // Para outros campos (descricao, etc), atualiza o estado mas não re-renderiza
+    } else if (prop === 'status') {
+        appState.proposal.items[index][prop] = value;
+        // Se mudou o status, precisamos re-renderizar para mostrar/esconder o campo Locação
+        renderProposalItemsSection();
+    } else if (prop === 'meses_locacao') {
+        appState.proposal.items[index][prop] = parseInt(value) || 1;
+        // Re-renderiza para atualizar o subtotal imediatamente
+        renderProposalItemsSection();
+    } else if (prop === 'quantidade') {
+        appState.proposal.items[index][prop] = parseInt(value) || 0;
+        // Re-renderiza para atualizar o subtotal
+        renderProposalItemsSection();
+    } else {
+        appState.proposal.items[index][prop] = value;
     }
 }
 

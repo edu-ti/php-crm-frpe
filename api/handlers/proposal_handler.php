@@ -14,7 +14,8 @@
      try {
          $valor_total = 0;
          foreach ($items as $item) {
-             $multiplicador = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') ? 24 : 1; // Default VENDA
+             $meses = (int)($item['meses_locacao'] ?? 12);
+             $multiplicador = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') ? $meses : 1; 
              $valor_total += (($item['quantidade'] ?? 1) * ($item['valor_unitario'] ?? 0) * $multiplicador);
          }
 
@@ -77,24 +78,36 @@
          $update_numero_stmt->execute([$numero_proposta, $proposta_id]);
 
          // Insere os itens da proposta
-         // --- ALTERAÇÃO: Adiciona coluna 'parametros' ---
-         $item_sql = "INSERT INTO proposta_itens (proposta_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+         $item_sql = "INSERT INTO proposta_itens (proposta_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros, meses_locacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
          $item_stmt = $pdo->prepare($item_sql);
 
          foreach ($items as $item) {
-             // --- ALTERAÇÃO: Codifica parâmetros do item ---
-             $item_parametros_json = null;
-             if (!empty($item['parametros']) && is_array($item['parametros'])) {
-                 $item_parametros_json = json_encode($item['parametros']);
+             $meses_val = 1;
+             if (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') {
+                 $meses_val = (int)($item['meses_locacao'] ?? 12); // Default to 12 to match frontend
+             } else {
+                 $meses_val = null; // Send null for VENDA if allowed, or 1. DB allow null? 
+                 // Dump says "meses_locacao int(11) DEFAULT 1". It doesn't say NOT NULL. 
+                 // INSERTs in dump use NULL for VENDA. So I will use NULL.
+                 $meses_val = null;
              }
-             // --- FIM DA ALTERAÇÃO ---
- 
+             
+             // Parametros handling: Clean up existing hack if present in input
+             $parametros = $item['parametros'] ?? [];
+             if (is_array($parametros)) {
+                 $parametros = array_values(array_filter($parametros, function($p) {
+                     return isset($p['nome']) && $p['nome'] !== '__meses_locacao';
+                 }));
+             }
+             $item_parametros_json = !empty($parametros) ? json_encode($parametros) : null;
+
              $item_stmt->execute([
                  $proposta_id, $item['produto_id'] ?? null, $item['descricao'], $item['descricao_detalhada'] ?? null,
                  $item['fabricante'] ?? null, $item['modelo'] ?? null, $item['imagem_url'] ?? null,
                  $item['quantidade'] ?? 1, $item['valor_unitario'] ?? 0, $item['status'] ?? 'VENDA',
                  $item['unidade_medida'] ?? null,
-                 $item_parametros_json // Adicionado
+                 $item_parametros_json,
+                 $meses_val
              ]);
          }
 
@@ -160,7 +173,8 @@
          // Calcula valor total
          $valor_total = 0;
          foreach ($items as $item) {
-             $multiplicador = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') ? 24 : 1;
+             $meses = (int)($item['meses_locacao'] ?? 12);
+             $multiplicador = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') ? $meses : 1;
              $valor_total += (($item['quantidade'] ?? 1) * ($item['valor_unitario'] ?? 0) * $multiplicador);
          }
 
@@ -186,23 +200,33 @@
          $delete_stmt->execute([$proposalId]);
 
          // --- ALTERAÇÃO: Adiciona coluna 'parametros' ---
-         $item_sql = "INSERT INTO proposta_itens (proposta_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+         $item_sql = "INSERT INTO proposta_itens (proposta_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros, meses_locacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
          $item_stmt = $pdo->prepare($item_sql);
 
          foreach ($items as $item) {
-             // --- ALTERAÇÃO: Codifica parâmetros do item ---
-             $item_parametros_json = null;
-             if (!empty($item['parametros']) && is_array($item['parametros'])) {
-                 $item_parametros_json = json_encode($item['parametros']);
+             $meses_val = 1;
+             if (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') {
+                 $meses_val = (int)($item['meses_locacao'] ?? 12); 
+             } else {
+                 $meses_val = null;
              }
-             // --- FIM DA ALTERAÇÃO ---
+
+             // Parametros handling
+             $parametros = $item['parametros'] ?? [];
+             if (is_array($parametros)) {
+                 $parametros = array_values(array_filter($parametros, function($p) {
+                     return isset($p['nome']) && $p['nome'] !== '__meses_locacao';
+                 }));
+             }
+             $item_parametros_json = !empty($parametros) ? json_encode($parametros) : null;
  
              $item_stmt->execute([
                  $proposalId, $item['produto_id'] ?? null, $item['descricao'], $item['descricao_detalhada'] ?? null,
                  $item['fabricante'] ?? null, $item['modelo'] ?? null, $item['imagem_url'] ?? null,
                  $item['quantidade'] ?? 1, $item['valor_unitario'] ?? 0, $item['status'] ?? 'VENDA',
                  $item['unidade_medida'] ?? null,
-                 $item_parametros_json // Adicionado
+                 $item_parametros_json,
+                 $meses_val
              ]);
          }
 
@@ -386,20 +410,26 @@
  
      // Decodifica o JSON de parâmetros para cada item
      foreach ($items as &$item) {
+         $decoded_params = [];
          if (!empty($item['parametros'])) {
              try {
-                $decoded_params = json_decode($item['parametros'], true); // true para array associativo
-                 // --- ALTERAÇÃO: Não formata mais o valor, envia o NÚMERO como está ---
-                 if (is_array($decoded_params)) {
-                    $item['parametros'] = $decoded_params;
-                 } else {
-                    $item['parametros'] = [];
-                 }
+                $decoded_params = json_decode($item['parametros'], true);
+                if (!is_array($decoded_params)) {
+                    $decoded_params = [];
+                }
              } catch (Exception $e) {
-                 $item['parametros'] = []; // Define como array vazio em caso de erro
+                 $decoded_params = [];
              }
-         } else {
-             $item['parametros'] = []; // Define como array vazio se for nulo
+         }
+         
+         // Filter out __meses_locacao from parameters if it exists (legacy cleanup)
+         $item['parametros'] = array_values(array_filter($decoded_params, function($p) {
+             return isset($p['nome']) && $p['nome'] !== '__meses_locacao';
+         }));
+         
+         // Ensure integer type for meses_locacao if present
+         if (isset($item['meses_locacao'])) {
+             $item['meses_locacao'] = (int)$item['meses_locacao'];
          }
      }
      unset($item); // Libera a referência

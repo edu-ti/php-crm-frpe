@@ -196,7 +196,7 @@ function format_date($value, $format = 'd/m/Y') {
                         <tr class="bg-gray-200">
                             <th class="p-1 font-bold">Imagem</th>
                             <th class="p-1 font-bold">Descrição</th>
-                            <th class="p-1 font-bold">Status</th>
+                            <th class="p-1 font-bold text-center">Estado</th> 
                             <th class="p-1 font-bold">Unid. de Medida</th>
                             <th class="p-1 font-bold">Qtd</th>
                             <th class="p-1 font-bold">Vlr. Unit.</th>
@@ -205,27 +205,49 @@ function format_date($value, $format = 'd/m/Y') {
                     </thead>
                     <tbody>
                         <?php foreach($proposal['items'] as $item): 
-                            // --- INÍCIO DA ALTERAÇÃO: Cálculo com Parâmetros ---
                             $valor_unitario_base = (float) ($item['valor_unitario'] ?? 0);
                             $valor_parametros = 0;
                             
-                            // Soma o valor dos parâmetros ao valor unitário base
+                            $visible_params = [];
+                            $is_locacao = (strtoupper($item['status']) === 'LOCAÇÃO');
+                            $meses_locacao = 1; 
+
+                            // Use column value preferentially
+                            if ($is_locacao && !empty($item['meses_locacao'])) {
+                                $meses_locacao = (int) $item['meses_locacao'];
+                            } elseif ($is_locacao) {
+                                 // Fallback to 1 (or 12?) if not set. Default DB is 1. Previous JS default was 12.
+                                 // Let's use 1 if column is null/zero, but mostly it should be set.
+                                 if (empty($meses_locacao)) $meses_locacao = 1; 
+                            }
+
                             if (!empty($item['parametros']) && is_array($item['parametros'])) {
                                 foreach ($item['parametros'] as $param) {
-                                    // Remove "R$", espaços, troca vírgula por ponto para somar
+                                    // Hide hidden params
+                                    if (($param['nome'] ?? '') === '__meses_locacao') {
+                                        // Legacy fallback if needed, but we trust column now
+                                        continue; 
+                                    }
+                                    
                                     $valor_limpo = str_replace(',', '.', preg_replace('/[^\d,]/', '', $param['valor'] ?? '0'));
                                     $valor_parametros += (float) $valor_limpo;
+                                    $visible_params[] = $param;
                                 }
                             }
                             
                             $valor_unitario_total = $valor_unitario_base + $valor_parametros;
                             $quantidade = (int) ($item['quantidade'] ?? 1);
-                            $multiplicador = (strtoupper($item['status']) === 'LOCAÇÃO') ? 12 : 1;
+                            
+                            $multiplicador = $is_locacao ? $meses_locacao : 1;
                             $subtotal = $valor_unitario_total * $quantidade * $multiplicador;
                             $total_geral += $subtotal;
-                            // --- FIM DA ALTERAÇÃO ---
 
-                            $unidade_medida = (strtoupper($item['status']) === 'LOCAÇÃO') ? 'Mês' : ($item['unidade_medida'] ?: 'Unidade');
+                            $unidade_medida = $is_locacao ? 'Mês' : ($item['unidade_medida'] ?: 'Unidade');
+                            
+                            // Formata o status para exibição
+                             $status_display = $is_locacao 
+                                ? "LOCAÇÃO<br><span style='font-size: 7pt;'>{$meses_locacao} MESES</span>" 
+                                : "Vendas";
                         ?>
                         <tr>
                             <td class="p-1 align-middle text-center"><img src="<?php echo htmlspecialchars($item['imagem_url'] ?: 'https://placehold.co/80x80/e2e8f0/64748b?text=Sem+Img'); ?>" class="w-16 h-16 object-contain inline-block" onerror="this.onerror=null;this.src='https://placehold.co/80x80/e2e8f0/64748b?text=Erro'"></td>
@@ -235,13 +257,13 @@ function format_date($value, $format = 'd/m/Y') {
                                 <div class="mt-1"><?php echo nl2br(htmlspecialchars($item['descricao_detalhada'])); ?></div>
 
                                 <!-- --- INÍCIO DA MODIFICAÇÃO: Exibir Parâmetros (Estilo da Imagem) --- -->
-                                <?php if (!empty($item['parametros']) && is_array($item['parametros'])): ?>
+                                <?php if (!empty($visible_params)): ?>
                                     <div class="mt-2 p-1 max-w-xs mx-auto">
                                         <p class="font-bold text-center text-[7pt]">PARÂMETROS ADICIONAIS</p>
                                         <p class="text-center text-[7pt] font-medium">
                                             <?php
                                             $param_names = [];
-                                            foreach ($item['parametros'] as $param) {
+                                            foreach ($visible_params as $param) {
                                                 // Exibe apenas o nome, como na imagem "Layout.png"
                                                 $param_names[] = htmlspecialchars($param['nome']);
                                             }
@@ -252,7 +274,7 @@ function format_date($value, $format = 'd/m/Y') {
                                 <?php endif; ?>
                                 <!-- --- FIM DA MODIFICAÇÃO --- -->
                             </td>
-                            <td class="p-1 text-center align-middle"><?php echo htmlspecialchars($item['status']); ?></td>
+                            <td class="p-1 text-center align-middle"><?php echo $status_display; ?></td>
                             <td class="p-1 text-center align-middle"><?php echo htmlspecialchars($unidade_medida); ?></td>
                             <td class="p-1 text-center align-middle"><?php echo htmlspecialchars($quantidade); ?></td>
                             <td class="p-1 text-right align-middle whitespace-nowrap"><?php echo format_currency($valor_unitario_total); ?></td> <!-- Alterado para valor unitário total -->
