@@ -707,8 +707,19 @@ function renderOpportunityModal(opportunity = null) {
                                 'Oportunidade excluída com sucesso.',
                                 'success'
                             );
+                            // Remove do estado local
+                            appState.opportunities = appState.opportunities.filter(o => o.id != data.id);
+
                             closeModal();
-                            renderFunilView();
+                            // Re-renderiza o board (era renderFunilView, mas para oportunidades deve ser kanban)
+                            if (typeof renderKanbanBoard === 'function') {
+                                renderKanbanBoard();
+                            } else if (typeof appState.renderView === 'function') {
+                                appState.renderView(); // Fallback genérico se existir
+                            } else {
+                                // Tenta reload se não achar função (mas kanban deve existir)
+                                location.reload();
+                            }
                         } catch (error) {
                             console.error(error);
                             Swal.fire('Erro!', 'Ocorreu um erro ao excluir.', 'error');
@@ -778,7 +789,9 @@ function renderOpportunityItemsSection(canEdit = true) {
         }
 
         const valor_unitario_total = valor_unitario_base + valor_parametros;
-        const multiplicador = (item.status === 'LOCAÇÃO') ? 24 : 1;
+        const isLocacao = item.status === 'LOCAÇÃO';
+        const meses = (isLocacao && item.meses_locacao) ? parseInt(item.meses_locacao) : 1;
+        const multiplicador = isLocacao ? meses : 1;
         const itemTotal = (item.quantidade || 0) * valor_unitario_total * multiplicador;
         totalOportunidade += itemTotal;
         const imageUrl = item.imagem_url || 'https://placehold.co/100x100/e2e8f0/64748b?text=Imagem';
@@ -812,10 +825,12 @@ function renderOpportunityItemsSection(canEdit = true) {
                         <div><label class="form-label">Modelo</label><input type="text" data-index="${index}" name="item_modelo" class="form-input" value="${item.modelo || ''}" ${isDisabled}></div>
                         <div>
                             <label class="form-label">Status</label>
-                            <select data-index="${index}" name="item_status" class="form-input" ${isDisabled}>
-                                <option value="VENDA" ${item.status === 'VENDA' ? 'selected' : ''}>Venda</option>
-                                <option value="LOCAÇÃO" ${item.status === 'LOCAÇÃO' ? 'selected' : ''}>Locação</option>
-                            </select>
+                            <div class="flex gap-2">
+                                <select data-index="${index}" name="item_status" class="form-input w-full" ${isDisabled}>
+                                    <option value="VENDA" ${item.status === 'VENDA' ? 'selected' : ''}>Venda</option>
+                                    <option value="LOCAÇÃO" ${item.status === 'LOCAÇÃO' ? 'selected' : ''}>Locação</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div class="text-center">
@@ -846,9 +861,12 @@ function renderOpportunityItemsSection(canEdit = true) {
                  </div>
                  <!-- --- Fim: Seção de Parâmetros --- -->
  
-                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 pt-4 border-t">
+                 <div class="grid grid-cols-1 md:grid-cols-${isLocacao ? '5' : '4'} gap-4 mt-4 pt-4 border-t">
                     <div><label class="form-label">Quantidade*</label><input type="number" data-index="${index}" name="item_quantidade" required class="form-input" value="${item.quantidade || 1}" min="1" ${isDisabled}></div>
                     <div><label class="form-label">Valor Unitário*</label><input type="text" inputmode="decimal" data-index="${index}" name="item_valor_unitario" required class="form-input" value="${formatCurrencyForInput(item.valor_unitario)}" placeholder="0,00" ${isDisabled}></div>
+                    ${isLocacao ? `
+                    <div><label class="form-label">Meses Locação</label><input type="number" data-index="${index}" name="item_meses_locacao" class="form-input" value="${item.meses_locacao || 1}" min="1" ${isDisabled}></div>
+                    ` : ''}
                     <div><label class="form-label">Unidade de Medida</label><input type="text" data-index="${index}" name="item_unidade_medida" class="form-input" value="${item.unidade_medida || 'Unidade'}" ${isDisabled}></div>
                     <div><label class="form-label">Subtotal</label><input type="text" class="form-input bg-gray-100 font-bold" value="${formatCurrency(itemTotal)}" readonly></div>
                 </div>
@@ -1056,9 +1074,12 @@ function handleOpportunityItemInputChange(e) {
 
     currentOpportunityItems[index][prop] = (prop === 'quantidade') ? parseInt(value) || 0 : value;
 
-    if (prop === 'status' || prop === 'quantidade') {
+    if (prop === 'status' || prop === 'quantidade' || prop === 'meses_locacao') {
         if (prop === 'status') {
             currentOpportunityItems[index].unidade_medida = value === 'LOCAÇÃO' ? 'Mês' : 'Unidade';
+            if (value === 'LOCAÇÃO' && !currentOpportunityItems[index].meses_locacao) {
+                currentOpportunityItems[index].meses_locacao = 1; // Default
+            }
         }
         renderOpportunityItemsSection(true); // Re-renderiza para atualizar totais
     }

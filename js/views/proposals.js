@@ -346,6 +346,10 @@ function addProposalCardEventListeners() {
                             didOpen: () => { Swal.showLoading(); }
                         });
                         await apiCall('delete_proposal', { method: 'POST', body: JSON.stringify({ id }) });
+
+                        // Atualiza estado local
+                        appState.proposals = appState.proposals.filter(p => p.id != id);
+
                         Swal.fire(
                             'Excluído!',
                             'Proposta excluída com sucesso!',
@@ -905,18 +909,42 @@ async function handleDeletePreProposal(e) {
     const opp = appState.pre_proposals.find(o => o.id == opportunityId);
     if (!opp) return;
 
-    const content = `<p>Você tem certeza que deseja excluir a pré-proposta <strong>${opp.titulo}</strong>? Esta ação não pode ser desfeita.</p>`;
+    Swal.fire({
+        title: 'Tem certeza?',
+        text: `Você tem certeza que deseja excluir a pré-proposta "${opp.titulo}"? Esta ação não pode ser desfeita.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Apagar',
+        cancelButtonText: 'Cancelar',
+        backdrop: `rgba(0,0,0,0.8)`
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                Swal.fire({
+                    title: 'Excluindo...',
+                    text: 'Aguarde...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                await apiCall('delete_opportunity', { method: 'POST', body: JSON.stringify({ id: opportunityId }) });
 
-    renderModal('Confirmar Exclusão', content, async () => {
-        try {
-            await apiCall('delete_opportunity', { method: 'POST', body: JSON.stringify({ id: opportunityId }) });
-            appState.pre_proposals = appState.pre_proposals.filter(o => o.id != opportunityId);
-            appState.opportunities = appState.opportunities.filter(o => o.id != opportunityId);
-            renderProposalsView();
-            closeModal();
-            showToast('Pré-proposta excluída com sucesso!');
-        } catch (error) { }
-    }, 'Excluir', 'btn-danger');
+                appState.pre_proposals = appState.pre_proposals.filter(o => o.id != opportunityId);
+                appState.opportunities = appState.opportunities.filter(o => o.id != opportunityId);
+
+                Swal.fire(
+                    'Excluído!',
+                    'Pré-proposta excluída com sucesso!',
+                    'success'
+                );
+                renderProposalsView();
+            } catch (error) {
+                console.error(error);
+                Swal.fire('Erro!', 'Ocorreu um erro ao excluir.', 'error');
+            }
+        }
+    });
 }
 
 

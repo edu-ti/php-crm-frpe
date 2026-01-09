@@ -856,7 +856,8 @@ CREATE TABLE `oportunidade_itens` (
   `valor_unitario` decimal(20,2) NOT NULL DEFAULT 0.00,
   `status` enum('VENDA','LOCAÇÃO') DEFAULT 'VENDA',
   `unidade_medida` varchar(50) DEFAULT 'Unidade',
-  `parametros` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`parametros`))
+  `parametros` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`parametros`)),
+  `meses_locacao` int(11) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --

@@ -32,7 +32,14 @@ function handle_create_opportunity($pdo, $data) {
             }
         }
         $valor_unitario_total = $valor_unitario_base + $valor_parametros;
-        $multiplicador = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') ? 24 : 1;
+        // --- CORREÇÃO 2: Multiplicador dinâmico vindo do input (meses_locacao) ---
+        $is_locacao = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO');
+        $meses_locacao = 1;
+        if ($is_locacao) {
+             // Se for locação, usa o valor enviado ou 1 se não enviado (embora o front deva enviar)
+             $meses_locacao = isset($item['meses_locacao']) ? (int)$item['meses_locacao'] : 1; 
+        }
+        $multiplicador = $is_locacao ? $meses_locacao : 1;
         $valor_total += (($item['quantidade'] ?? 1) * $valor_unitario_total * $multiplicador);
     }
     // --- FIM DA CORREÇÃO ---
@@ -63,7 +70,8 @@ function handle_create_opportunity($pdo, $data) {
         $lastId = $pdo->lastInsertId();
 
         // --- INÍCIO: Insere itens na nova tabela 'oportunidade_itens' ---
-        $item_sql = "INSERT INTO oportunidade_itens (oportunidade_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // --- CORREÇÃO 3: Adiciona meses_locacao ao INSERT ---
+        $item_sql = "INSERT INTO oportunidade_itens (oportunidade_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros, meses_locacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $item_stmt = $pdo->prepare($item_sql);
         
         foreach ($data['items'] as $item) {
@@ -85,7 +93,8 @@ function handle_create_opportunity($pdo, $data) {
                  $item['valor_unitario'] ?? 0, // Valor base
                  $item['status'] ?? 'VENDA',
                  $item['unidade_medida'] ?? 'Unidade',
-                 $item_parametros_json
+                 $item_parametros_json,
+                 isset($item['meses_locacao']) ? (int)$item['meses_locacao'] : 1
              ]);
         }
         // --- FIM: Inserção de itens ---
@@ -144,7 +153,13 @@ function handle_update_opportunity($pdo, $data) {
             }
         }
         $valor_unitario_total = $valor_unitario_base + $valor_parametros;
-        $multiplicador = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') ? 24 : 1;
+        // --- CORREÇÃO 2: Multiplicador dinâmico vindo do input (meses_locacao) ---
+        $is_locacao = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO');
+        $meses_locacao = 1;
+        if ($is_locacao) {
+             $meses_locacao = isset($item['meses_locacao']) ? (int)$item['meses_locacao'] : 1; 
+        }
+        $multiplicador = $is_locacao ? $meses_locacao : 1;
         $valor_total += (($item['quantidade'] ?? 1) * $valor_unitario_total * $multiplicador);
     }
     // --- FIM DA CORREÇÃO ---
@@ -182,7 +197,8 @@ function handle_update_opportunity($pdo, $data) {
         $delete_stmt = $pdo->prepare("DELETE FROM oportunidade_itens WHERE oportunidade_id = ?");
         $delete_stmt->execute([$data['id']]);
 
-        $item_sql = "INSERT INTO oportunidade_itens (oportunidade_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // --- CORREÇÃO 3: Adiciona meses_locacao ao INSERT ---
+        $item_sql = "INSERT INTO oportunidade_itens (oportunidade_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros, meses_locacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $item_stmt = $pdo->prepare($item_sql);
         
         foreach ($data['items'] as $item) {
@@ -203,7 +219,8 @@ function handle_update_opportunity($pdo, $data) {
                  $item['valor_unitario'] ?? 0, // Valor base
                  $item['status'] ?? 'VENDA',
                  $item['unidade_medida'] ?? 'Unidade',
-                 $item_parametros_json
+                 $item_parametros_json,
+                 isset($item['meses_locacao']) ? (int)$item['meses_locacao'] : 1
              ]);
         }
         // --- FIM: Atualização de itens ---

@@ -202,7 +202,7 @@ function format_date($value, $format = 'd/m/Y') {
         @page {
             size: A4;
             /* Increased top margin to 55mm to prevent clipping */
-            margin: 55mm 15mm 15mm 15mm; 
+            margin: 37mm 10mm 10mm 10mm; 
             
             /* Place the running header in the top-center margin box */
             @top-center {
@@ -277,8 +277,8 @@ function format_date($value, $format = 'd/m/Y') {
             background-color: #f9fafb;
             border: 1px solid #e5e7eb;
             border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
+            padding: 10px;
+            margin-bottom: 10px;
             font-size: 8pt; 
         }
 
@@ -314,7 +314,7 @@ function format_date($value, $format = 'd/m/Y') {
         <header class="running-header border-b border-[#2e2a78] pb-4">
             <!-- Row 1: Title Only (Visual Alignment) -->
             <div class="text-right mb-2">
-                 <h1 class="text-[18pt] font-black text-[#2e2a78] uppercase leading-none tracking-tight">PROPOSTA COMERCIAL</h1>
+                 <h1 class="text-[11pt] font-black text-[#2e2a78] uppercase leading-none tracking-tight">PROPOSTA COMERCIAL</h1>
             </div>
 
             <div class="flex justify-between items-start">
@@ -323,15 +323,15 @@ function format_date($value, $format = 'd/m/Y') {
                 <div class="flex items-start"> 
                     <!-- Logo -->
                     <div class="flex-shrink-0 mr-4 self-center">
-                         <img src="imagens/LOGO-FR.webp" alt="Logo FR" class="h-16 w-auto object-contain">
+                         <img src="imagens/LOGO-FR.webp" alt="Logo FR" class="h-12 w-auto object-contain">
                     </div>
                     
                     <!-- Vertical Divider -->
-                    <div class="w-[1.5px] bg-[#2e2a78] self-stretch mr-4 opacity-100"></div>
+                    <div class="w-[0.5px] bg-[#2e2a78] self-stretch mr-4 opacity-100"></div>
 
                     <!-- Company Info -->
-                    <div class="flex flex-col justify-center text-[7.5pt] text-slate-500 leading-snug text-left py-1">
-                        <p class="font-bold text-[#2e2a78] text-[9pt] uppercase tracking-tight mb-0.5"><?php echo htmlspecialchars($company_info['name']); ?></p>
+                    <div class="flex flex-col justify-center text-[6.5pt] text-slate-500 leading-snug text-left py-1">
+                        <p class="font-bold text-[#2e2a78] text-[8pt] uppercase tracking-tight mb-0.5"><?php echo htmlspecialchars($company_info['name']); ?></p>
                         <p class="mb-px">CNPJ: <?php echo htmlspecialchars($company_info['cnpj']); ?></p>
                         <p class="mb-px"><?php echo htmlspecialchars($company_info['address']); ?></p>
                         <div class="flex flex-wrap gap-1 mb-px">
@@ -348,13 +348,13 @@ function format_date($value, $format = 'd/m/Y') {
                 <div class="text-right flex flex-col pt-0.5">
                     
                     <!-- Number with precise color match and alignment to Company Name -->
-                    <p class="text-[14pt] font-bold text-[#94a3b8] mb-1 leading-none">Nº <?php echo htmlspecialchars($proposal['numero_proposta']); ?></p>
+                    <p class="text-[8pt] font-bold text-[#94a3b8] mb-1 leading-none">Nº <?php echo htmlspecialchars($proposal['numero_proposta']); ?></p>
                     
                     <!-- Dates & Page -->
-                    <div class="text-[9pt] text-slate-600 leading-tight mt-1">
+                    <div class="text-[7pt] text-slate-600 leading-tight mt-1">
                         <p class="mb-0.5">Data de Emissão: <span class="font-bold text-[#2e2a78]"><?php echo format_date($proposal['data_criacao']); ?></span></p>
                         <p class="mb-0.5 font-bold text-red-600">Validade: <?php echo format_date($proposal['data_validade']); ?></p>
-                        <p class="text-[#94a3b8] page-counter font-normal text-[9pt] mt-1"></p>
+                        <p class="text-[#94a3b8] page-counter font-normal text-[7.5pt] mt-1"></p>
                     </div>
                 </div>
             </div>
@@ -382,7 +382,7 @@ function format_date($value, $format = 'd/m/Y') {
         </div>
 
         <!-- Intro -->
-        <div class="mb-6 text-[9pt] text-slate-600 leading-relaxed text-justify break-inside-avoid">
+        <div class="mb-6 text-[8pt] text-slate-600 leading-relaxed text-justify break-inside-avoid">
             <p class="mb-2">Prezados (as),</p>
             <p>A <strong>FR Produtos Médicos</strong> agradece seu interesse em nossos produtos e serviços. Sabemos da sua importância em sempre oferecer a mais alta tecnologia para a melhor e mais rápida recuperação do paciente e também em oferecer segurança aos profissionais da saúde.</p>
         </div>
@@ -469,7 +469,7 @@ function format_date($value, $format = 'd/m/Y') {
         </table>
 
         <!-- Conditions -->
-        <div class="mb-8 text-[9pt] text-slate-700 break-inside-avoid">
+        <div class="mb-8 text-[7.5pt] text-slate-700 break-inside-avoid">
             <h3 class="font-bold text-[#2e2a78] text-[9pt] mb-3 border-b border-gray-200 pb-1">Condições Gerais de Fornecimento</h3>
             <ol class="list-decimal list-inside space-y-1 marker:text-slate-500">
                 <li><span class="font-semibold">Faturamento:</span> <?php echo htmlspecialchars($proposal['faturamento'] ?: '-'); ?></li>
@@ -485,17 +485,17 @@ function format_date($value, $format = 'd/m/Y') {
 
         <!-- Observations -->
         <?php if (!empty($proposal['observacoes'])): ?>
-            <div class="mb-8 text-[9pt] break-inside-avoid">
+            <div class="mb-8 text-[7.5pt] break-inside-avoid">
                 <h3 class="font-bold text-[#2e2a78] text-[9pt] mb-2">Observações</h3>
                 <p class="text-slate-600"><?php echo nl2br(htmlspecialchars($proposal['observacoes'])); ?></p>
             </div>
         <?php endif; ?>
 
         <!-- Signatures (Grid can be tricky, using Flex instead for better safety if needed, but break-inside-avoid helps) -->
-        <div class="grid grid-cols-2 gap-10 mt-8 pt-4 break-inside-avoid text-[9pt]">
+        <div class="grid grid-cols-2 gap-10 mt-8 pt-4 break-inside-avoid text-[8pt]">
             <div>
-                    <p class="font-bold text-[#2e2a78] text-[9pt] mb-1"><?php echo htmlspecialchars($proposal['vendedor_nome']); ?></p>
-                    <p class="uppercase text-slate-500 text-[7pt] mb-1"><?php echo htmlspecialchars($proposal['vendedor_role']); ?></p>
+                    <p class="font-bold text-[#2e2a78] text-[8pt] mb-1"><?php echo htmlspecialchars($proposal['vendedor_nome']); ?></p>
+                    <p class="uppercase text-slate-500 text-[6pt] mb-1"><?php echo htmlspecialchars($proposal['vendedor_role']); ?></p>
                     <p class="text-slate-600">Fone: <?php echo htmlspecialchars($proposal['vendedor_telefone']); ?></p>
                     <p class="text-slate-600">E-mail: <?php echo htmlspecialchars($proposal['vendedor_email']); ?></p>
             </div>
