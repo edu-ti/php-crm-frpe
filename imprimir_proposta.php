@@ -431,7 +431,7 @@ function format_date($value, $format = 'd/m/Y') {
                     $unidade_medida = $is_locacao ? 'Mês' : ($item['unidade_medida'] ?: 'Unidade');
                 ?>
                 <tr class="break-inside-avoid">
-                    <td class="text-center">
+                    <td class="text-center align-middle">
                         <img src="<?php echo htmlspecialchars($item['imagem_url'] ?: 'https://placehold.co/40x40/e2e8f0/64748b?text=IMG'); ?>" class="w-10 h-10 object-contain mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=IMG'">
                     </td>
                     <td>
@@ -439,13 +439,6 @@ function format_date($value, $format = 'd/m/Y') {
                         <div class="text-[7.5pt] uppercase text-slate-500 font-semibold"><?php echo htmlspecialchars($item['fabricante'] . ' - ' . $item['modelo']); ?></div>
                         <div class="text-[7.5pt] text-slate-500 italic mt-1">
                             <?php echo nl2br(htmlspecialchars($item['descricao_detalhada'])); ?>
-                            <?php if (!empty($visible_params)): ?>
-                                <div class="flex flex-wrap gap-1 mt-1">
-                                    <?php foreach ($visible_params as $param): ?>
-                                        <span><?php echo htmlspecialchars($param['nome']); ?>,</span>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
                         </div>
                     </td>
                     <td class="text-center">
@@ -456,9 +449,65 @@ function format_date($value, $format = 'd/m/Y') {
                     </td>
                     <td class="text-center"><?php echo htmlspecialchars($unidade_medida); ?></td>
                     <td class="text-center font-bold text-slate-700"><?php echo htmlspecialchars($quantidade); ?></td>
-                    <td class="text-right whitespace-nowrap"><?php echo format_currency($valor_unitario_total); ?></td>
-                    <td class="text-right font-bold text-slate-800 whitespace-nowrap"><?php echo format_currency($subtotal); ?></td>
+                    <!-- MAIN ROW: Base Price and Base Subtotal -->
+                    <td class="text-right whitespace-nowrap text-slate-600"><?php echo format_currency($valor_unitario_base); ?></td>
+                    <td class="text-right font-bold text-slate-600 whitespace-nowrap"><?php echo format_currency($valor_unitario_base * $quantidade * ($is_locacao ? $meses_locacao : 1)); ?></td>
                 </tr>
+                <?php if (!empty($visible_params)): ?>
+                    <!-- ROW: Params Header -->
+                    <tr class="bg-[#F3F4F6] print:bg-[#F3F4F6]" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <td class="py-1"></td> <!-- Img col spacing -->
+                        <td colspan="4" class="py-1 pl-2 text-[8.5pt] font-bold text-gray-900 uppercase leading-none border-t border-l border-gray-300 rounded-tl-md">
+                            PARAMETROS ADICIONAIS
+                        </td>
+                        <td class="py-1 border-t border-r border-gray-300 rounded-tr-md"></td> <!-- Price col -->
+                        <td></td> <!-- Subtotal col (Outside box) -->
+                    </tr>
+                    <!-- ROWS: Params Items -->
+                    <?php 
+                    $total_params = count($visible_params);
+                    $counter = 0;
+                    foreach ($visible_params as $param): 
+                        $counter++;
+                        $val_str = $param['valor'] ?? '0';
+                        $val_clean = str_replace(',', '.', preg_replace('/[^\d,]/', '', $val_str));
+                        $val_float = (float) $val_clean;
+                    ?>
+                    <tr class="bg-[#F3F4F6] print:bg-[#F3F4F6]" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <td></td>
+                        <td colspan="4" class="pl-2 pr-2 text-[8pt] text-gray-800 border-l border-gray-300">
+                            <div class="flex items-end">
+                                <span class="uppercase font-semibold leading-tight pr-1 whitespace-nowrap"><?php echo htmlspecialchars($param['nome']); ?></span>
+                                <div class="flex-grow border-b-[1.5px] border-dotted border-gray-400 mb-[4px] opacity-70"></div>
+                            </div>
+                        </td>
+                        <td class="text-right whitespace-nowrap text-[8pt] font-bold text-gray-800 align-bottom pb-1 border-r border-gray-300">
+                            <?php echo format_currency($val_float); ?>
+                        </td>
+                        <td></td> <!-- Subtotal col (Outside box) -->
+                    </tr>
+                    <?php endforeach; ?>
+                    
+                    <!-- ROW: Footer (Total Final) -->
+                    <tr class="bg-[#D1D5DB] print:bg-[#D1D5DB]" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                         <td></td>
+                         <td colspan="4" class="py-1 pl-2 text-right border-l border-b border-gray-400 rounded-bl-md">
+                             <span class="text-[8.5pt] font-black text-gray-900 uppercase">VALOR UNITÁRIO FINAL (Base + Adicionais):</span>
+                         </td>
+                         <td class="py-1 text-right whitespace-nowrap text-[9pt] font-black text-gray-900 border-b border-gray-400">
+                             <?php echo format_currency($valor_unitario_total); ?>
+                         </td>
+                         <td class="py-1 pr-2 text-right whitespace-nowrap text-[9pt] font-black text-red-600 border-t border-r border-b border-gray-400 rounded-br-md rounded-tr-md">
+                             <?php  // Final Subtotal
+                                $final_subtotal = $valor_unitario_total * $quantidade * ($is_locacao ? $meses_locacao : 1);
+                                echo format_currency($final_subtotal); 
+                             ?>
+                         </td>
+                    </tr>
+
+                    <!-- Spacer Row to separate from next item -->
+                    <tr><td colspan="7" class="h-2"></td></tr>
+                <?php endif; ?>
                 <?php endforeach; ?>
                 <!-- Total -->
                 <tr class="bg-gray-100 border-t border-gray-200 break-inside-avoid">
