@@ -254,7 +254,12 @@ function format_date($value, $format = 'd/m/Y') {
         }
         
         /* Table Styles */
-        .ref-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .ref-table { 
+            width: 100%; 
+            border-collapse: separate; /* Changed from collapse to separate for rounded corners */
+            border-spacing: 0; 
+            margin-bottom: 20px; 
+        }
         .ref-table th {
             background-color: #2e2a78;
             color: #ffffff;
@@ -264,6 +269,10 @@ function format_date($value, $format = 'd/m/Y') {
             padding: 8px 10px;
             text-align: left;
         }
+        /* First and Last TH rounding */
+        .ref-table th:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+        .ref-table th:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+
         .ref-table td {
             padding: 10px;
             border-bottom: 1px solid #e5e7eb;
@@ -455,13 +464,13 @@ function format_date($value, $format = 'd/m/Y') {
                 </tr>
                 <?php if (!empty($visible_params)): ?>
                     <!-- ROW: Params Header -->
-                    <tr class="bg-[#F3F4F6] print:bg-[#F3F4F6]" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                    <tr class="bg-blue-50 print:bg-blue-50" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
                         <td class="py-1"></td> <!-- Img col spacing -->
-                        <td colspan="4" class="py-1 pl-2 text-[8.5pt] font-bold text-gray-900 uppercase leading-none border-t border-l border-gray-300 rounded-tl-md">
+                        <td colspan="4" class="py-1 pl-2 text-[8.5pt] font-bold text-gray-900 uppercase leading-none rounded-l-lg">
                             PARAMETROS ADICIONAIS
                         </td>
-                        <td class="py-1 border-t border-r border-gray-300 rounded-tr-md"></td> <!-- Price col -->
-                        <td></td> <!-- Subtotal col (Outside box) -->
+                        <td class="py-1"></td> <!-- Price col -->
+                        <td class="rounded-r-lg"></td> <!-- Subtotal col -->
                     </tr>
                     <!-- ROWS: Params Items -->
                     <?php 
@@ -472,32 +481,39 @@ function format_date($value, $format = 'd/m/Y') {
                         $val_str = $param['valor'] ?? '0';
                         $val_clean = str_replace(',', '.', preg_replace('/[^\d,]/', '', $val_str));
                         $val_float = (float) $val_clean;
+                        
+                        // Calculations
+                        $param_subtotal = $val_float * $quantidade * $multiplicador;
                     ?>
-                    <tr class="bg-[#F3F4F6] print:bg-[#F3F4F6]" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                    <tr class="bg-white print:bg-white" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
                         <td></td>
-                        <td colspan="4" class="pl-2 pr-2 text-[8pt] text-gray-800 border-l border-gray-300">
+                        <td colspan="4" class="pl-2 pr-2 text-[8pt] text-gray-800">
                             <div class="flex items-end">
                                 <span class="uppercase font-semibold leading-tight pr-1 whitespace-nowrap"><?php echo htmlspecialchars($param['nome']); ?></span>
                                 <div class="flex-grow border-b-[1.5px] border-dotted border-gray-400 mb-[4px] opacity-70"></div>
                             </div>
                         </td>
-                        <td class="text-right whitespace-nowrap text-[8pt] font-bold text-gray-800 align-bottom pb-1 border-r border-gray-300">
+                        <!-- Unit Price -->
+                        <td class="text-right whitespace-nowrap text-[8pt] font-bold text-gray-800 align-bottom pb-1">
                             <?php echo format_currency($val_float); ?>
                         </td>
-                        <td></td> <!-- Subtotal col (Outside box) -->
+                        <!-- Subtotal (Added) -->
+                        <td class="text-right whitespace-nowrap text-[8pt] font-bold text-red-600 align-bottom pb-1">
+                            <?php echo format_currency($param_subtotal); ?>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                     
                     <!-- ROW: Footer (Total Final) -->
-                    <tr class="bg-[#D1D5DB] print:bg-[#D1D5DB]" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                    <tr class="bg-gray-100 print:bg-gray-100" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
                          <td></td>
-                         <td colspan="4" class="py-1 pl-2 text-right border-l border-b border-gray-400 rounded-bl-md">
+                         <td colspan="4" class="py-1 pl-2 text-right rounded-l-lg">
                              <span class="text-[8.5pt] font-black text-gray-900 uppercase">VALOR UNITÁRIO FINAL (Base + Adicionais):</span>
                          </td>
-                         <td class="py-1 text-right whitespace-nowrap text-[9pt] font-black text-gray-900 border-b border-gray-400">
+                         <td class="py-1 text-right whitespace-nowrap text-[9pt] font-black text-gray-900">
                              <?php echo format_currency($valor_unitario_total); ?>
                          </td>
-                         <td class="py-1 pr-2 text-right whitespace-nowrap text-[9pt] font-black text-red-600 border-t border-r border-b border-gray-400 rounded-br-md rounded-tr-md">
+                         <td class="py-1 pr-2 text-right whitespace-nowrap text-[9pt] font-black text-red-600 rounded-r-lg">
                              <?php  // Final Subtotal
                                 $final_subtotal = $valor_unitario_total * $quantidade * ($is_locacao ? $meses_locacao : 1);
                                 echo format_currency($final_subtotal); 
@@ -510,9 +526,9 @@ function format_date($value, $format = 'd/m/Y') {
                 <?php endif; ?>
                 <?php endforeach; ?>
                 <!-- Total -->
-                <tr class="bg-gray-100 border-t border-gray-200 break-inside-avoid">
-                        <td colspan="6" class="text-right py-2 px-4 text-[8.5pt] uppercase font-bold text-slate-600">Valor Total Geral</td>
-                        <td class="text-right py-2 px-4 text-[10pt] font-bold text-[#2e2a78] whitespace-nowrap"><?php echo format_currency($total_geral); ?></td>
+                <tr class="bg-[#D1D5DB] break-inside-avoid print:bg-[#D1D5DB]" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <td colspan="6" class="text-right py-2 px-4 text-[8.5pt] uppercase font-bold text-slate-700 rounded-l-lg">Valor Total Geral</td>
+                        <td class="text-right py-2 px-4 text-[10pt] font-bold text-[#2e2a78] whitespace-nowrap rounded-r-lg"><?php echo format_currency($total_geral); ?></td>
                 </tr>
             </tbody>
         </table>
