@@ -55,8 +55,9 @@ function handle_create_proposal($pdo, $data)
 
         } elseif (!empty($oportunidade_id) && $proposta_stage_id) {
             // Se veio de uma oportunidade, atualiza a etapa dela para 'Proposta'
-            $update_opp_stmt = $pdo->prepare("UPDATE oportunidades SET etapa_id = ?, data_ultima_movimentacao = NOW() WHERE id = ?");
-            $update_opp_stmt->execute([$proposta_stage_id, $oportunidade_id]);
+            // REMOVIDO: A atualização agora será feita pela função de sincronização
+            // $update_opp_stmt = $pdo->prepare("UPDATE oportunidades SET etapa_id = ?, data_ultima_movimentacao = NOW() WHERE id = ?");
+            // $update_opp_stmt->execute([$proposta_stage_id, $oportunidade_id]);
         }
 
         // Busca o usuario_id (dono) da oportunidade para manter a atribuição original
@@ -147,6 +148,9 @@ function handle_create_proposal($pdo, $data)
                 $meses_val
             ]);
         }
+
+        // Sincroniza o status da oportunidade
+        sync_opportunity_stage($pdo, $oportunidade_id, $data['status'] ?? 'Rascunho');
 
         // ***** INÍCIO: Lógica para criar venda fornecedor se status for "Aprovada" *****
         if (($data['status'] ?? 'Rascunho') === 'Aprovada') {
@@ -286,6 +290,16 @@ function handle_update_proposal($pdo, $data)
                 $item_parametros_json,
                 $meses_val
             ]);
+        }
+
+        // Sincroniza o status da oportunidade
+        // Precisamos buscar o oportunidade_id da proposta se não tivermos
+        $opp_id_stmt = $pdo->prepare("SELECT oportunidade_id FROM propostas WHERE id = ?");
+        $opp_id_stmt->execute([$proposalId]);
+        $oportunidade_id = $opp_id_stmt->fetchColumn();
+
+        if ($oportunidade_id) {
+            sync_opportunity_stage($pdo, $oportunidade_id, $new_status);
         }
 
         // ***** INÍCIO: Lógica para criar venda fornecedor se status mudou para "Aprovada" *****
@@ -432,6 +446,59 @@ function create_vendas_fornecedores_from_proposal($pdo, $proposta_id, $organizac
 }
 // --- FIM DA FUNÇÃO AUXILIAR ---
 
+/**
+ * Sincroniza a etapa da oportunidade baseada no status da proposta.
+ */
+function sync_opportunity_stage($pdo, $oportunidade_id, $status_proposta)
+{
+    if (empty($oportunidade_id) || empty($status_proposta)) {
+        return;
+    }
+
+    $mapa_status = [
+        'ENVIADA' => 'Proposta',
+        'Recusada' => 'Recusado',
+        'Aprovada' => 'Fechado',
+        'Negociando' => 'Negociação'
+    ];
+
+    // Verifica se o status atual da proposta tem um mapeamento definido
+    // Pode haver variações de case, então vamos normalizar para comparação se necessário,
+    // mas o array acima usa as chaves exatas fornecidas.
+    // Se o status da proposta não estiver no mapa, não faz nada.
+
+    // Vamos tentar buscar case-insensitive para garantir?
+    // O PHP array keys são case-sensitive. Vamos iterar.
+    $target_stage_name = null;
+    foreach ($mapa_status as $key => $val) {
+        if (strcasecmp($key, $status_proposta) === 0) {
+            $target_stage_name = $val;
+            break;
+        }
+    }
+
+    if ($target_stage_name) {
+        try {
+            // Busca o ID da etapa correspondente
+            $stmt_stage = $pdo->prepare("SELECT id FROM etapas_funil WHERE nome = ? LIMIT 1");
+            $stmt_stage->execute([$target_stage_name]);
+            $stage_id = $stmt_stage->fetchColumn();
+
+            if ($stage_id) {
+                // Atualiza a oportunidade
+                $stmt_update = $pdo->prepare("UPDATE oportunidades SET etapa_id = ?, data_ultima_movimentacao = NOW() WHERE id = ?");
+                $stmt_update->execute([$stage_id, $oportunidade_id]);
+                error_log("[Sync Opp Stage] Opp ID {$oportunidade_id} movida para etapa '{$target_stage_name}' (ID: {$stage_id}) devido ao status da proposta '{$status_proposta}'.");
+            } else {
+                error_log("[Sync Opp Stage] Etapa '{$target_stage_name}' não encontrada no banco.");
+            }
+        } catch (Exception $e) {
+            error_log("[Sync Opp Stage] Erro ao sincronizar: " . $e->getMessage());
+        }
+    }
+}
+
+
 // Função para buscar detalhes da proposta (sem alterações aqui, mas verifica se busca todos os campos necessários)
 function handle_get_proposal_details($pdo, $get_data)
 {
@@ -570,6 +637,16 @@ function handle_update_proposal_status($pdo, $data)
         // Atualiza o status
         $stmt_update = $pdo->prepare("UPDATE propostas SET status = ? WHERE id = ?");
         $stmt_update->execute([$new_status, $proposalId]);
+
+        // Sincroniza o status da oportunidade
+        // Precisamos buscar o oportunidade_id desta proposta
+        $opp_id_stmt = $pdo->prepare("SELECT oportunidade_id FROM propostas WHERE id = ?");
+        $opp_id_stmt->execute([$proposalId]);
+        $oportunidade_id = $opp_id_stmt->fetchColumn();
+
+        if ($oportunidade_id) {
+            sync_opportunity_stage($pdo, $oportunidade_id, $new_status);
+        }
 
         // Lógica para criar venda fornecedor se status mudou para "Aprovada"
         if ($new_status === 'Aprovada' && $current_status !== 'Aprovada') {
