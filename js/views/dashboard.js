@@ -9,9 +9,9 @@ export async function renderDashboardView() {
     try {
         showLoading(true);
         const stats = await apiCall('get_stats');
-        
+
         container.innerHTML = `
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                 <div class="kpi-card">
                     <h3 class="kpi-title">Oportunidades Totais</h3>
                     <p class="kpi-value">${stats.kpis.total_opps || 0}</p>
@@ -21,8 +21,12 @@ export async function renderDashboardView() {
                     <p class="kpi-value">${formatCurrency(stats.kpis.total_value)}</p>
                 </div>
                  <div class="kpi-card">
-                    <h3 class="kpi-title">Taxa de Conversão</h3>
+                    <h3 class="kpi-title">Conv. Oportunidades</h3>
                     <p class="kpi-value">${(stats.kpis.conversion_rate || 0).toFixed(2)}%</p>
+                </div>
+                <div class="kpi-card">
+                    <h3 class="kpi-title">Valor Aprovado (Propostas)</h3>
+                    <p class="kpi-value">${formatCurrency(stats.kpis.approved_proposals_value)}</p>
                 </div>
                  <div class="kpi-card">
                     <h3 class="kpi-title">Ticket Médio</h3>
@@ -34,7 +38,7 @@ export async function renderDashboardView() {
                 <div class="lg:col-span-3 chart-container"><div style="height: 400px;"><canvas id="combinedSalesChart"></canvas></div></div>
             </div>
         `;
-        
+
         renderChart('oppsByStageChart', 'doughnut', stats.oppsByStage, 'nome', 'count', 'Oportunidades por Etapa');
         renderCombinedSalesChart(stats.oppsByUser, stats.salesByFornecedor);
 
@@ -48,11 +52,11 @@ export async function renderDashboardView() {
 function renderChart(canvasId, type, data, labelKey, dataKey, title) {
     const ctx = document.getElementById(canvasId)?.getContext('2d');
     if (!ctx) return;
-    
+
     if (appState.charts[canvasId]) {
         appState.charts[canvasId].destroy();
     }
-    
+
     const chartColors = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#d946ef', '#ec4899', '#64748b'];
 
     appState.charts[canvasId] = new Chart(ctx, {
@@ -86,7 +90,7 @@ function renderCombinedSalesChart(oppsData, salesData) {
     if (appState.charts[canvasId]) {
         appState.charts[canvasId].destroy();
     }
-    
+
     const allLabels = [...new Set([...oppsData.map(d => d.nome), ...salesData.map(d => d.nome)])];
 
     const oppsDataset = {
@@ -123,7 +127,7 @@ function renderCombinedSalesChart(oppsData, salesData) {
                 title: { display: true, text: 'Oportunidades e Vendas', font: { size: 16 } },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
+                        label: function (context) {
                             let label = context.dataset.label || '';
                             if (label) {
                                 label += ': ';
@@ -160,7 +164,7 @@ function renderCombinedSalesChart(oppsData, salesData) {
                     },
                     beginAtZero: true,
                     ticks: {
-                        callback: function(value, index, values) {
+                        callback: function (value, index, values) {
                             return formatCurrency(value);
                         }
                     }

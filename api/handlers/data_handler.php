@@ -196,15 +196,25 @@ function handle_get_stats($pdo)
         $won_sql = "SELECT COUNT(*) FROM oportunidades WHERE etapa_id = ?";
         $stmt_won = $pdo->prepare($won_sql);
         $stmt_won->execute([$fechado_id]);
+        $stmt_won->execute([$fechado_id]);
         $won_count = $stmt_won->fetchColumn();
     }
+
+    // --- NOVO: Valor Aprovado (Propostas) ---
+    $sql_approved = "SELECT SUM(valor_total) FROM propostas WHERE status = 'Aprovada'";
+    $stmt_approved = $pdo->prepare($sql_approved);
+    $stmt_approved->execute();
+    $approved_value = $stmt_approved->fetchColumn();
+    // ----------------------------------------
 
     $kpis['total_opps'] = $kpis['total_opps'] ?? 0;
     $kpis['total_value'] = $kpis['total_value'] ?? 0;
     $won_count = $won_count ?? 0;
 
     $kpis['conversion_rate'] = $kpis['total_opps'] > 0 ? ($won_count / $kpis['total_opps']) * 100 : 0;
+    $kpis['conversion_rate'] = $kpis['total_opps'] > 0 ? ($won_count / $kpis['total_opps']) * 100 : 0;
     $kpis['avg_deal_size'] = $kpis['total_opps'] > 0 ? $kpis['total_value'] / $kpis['total_opps'] : 0;
+    $kpis['approved_proposals_value'] = $approved_value ?? 0; // Adiciona ao array de retorno
 
     $sql_stages = "SELECT ef.nome, COUNT(o.id) as count FROM etapas_funil ef LEFT JOIN oportunidades o ON ef.id = o.etapa_id GROUP BY ef.id ORDER BY ef.ordem";
     $stmt_stages = $pdo->prepare($sql_stages);
