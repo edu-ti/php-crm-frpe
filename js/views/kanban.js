@@ -18,35 +18,40 @@ export function renderFunilView() {
     const { activeTab } = appState.funilView;
     const { permissions } = appState.currentUser;
 
+    // Define 'licitacoes' as a valid tab if not already handled by default state
+    // We might need to ensure appState.funilView has a sensible default.
+
     container.innerHTML = `
-         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 flex-shrink-0"> <!-- Adicionado flex-shrink-0 --!>
+         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 flex-shrink-0"> <!-- Adicionado flex-shrink-0 -->
              <div class="flex items-center space-x-1">
                  <button class="funil-tab-btn ${activeTab === 'vendas' ? 'active' : ''}" data-tab="vendas">Funil de Vendas</button>
                  <button class="funil-tab-btn ${activeTab === 'fornecedores' ? 'active' : ''}" data-tab="fornecedores">Funil de Fornecedores</button>
+                 <button class="funil-tab-btn ${activeTab === 'licitacoes' ? 'active' : ''}" data-tab="licitacoes">Funil Licitações</button>
              </div>
              <div class="flex items-center gap-2">
                   ${permissions.canCreateOpportunity ? `
                      <button id="add-opportunity-btn" class="btn btn-primary ${activeTab === 'fornecedores' ? 'hidden' : ''}">
-                         <i class="fas fa-plus mr-2"></i><span>Oportunidade</span>
+                         <i class="fas fa-plus mr-2"></i><span>${activeTab === 'licitacoes' ? 'Nova Licitação' : 'Oportunidade'}</span>
                      </button>
                  ` : ''}
 
                  ${permissions.canCreate ? `
-                  <button id="add-venda-fornecedor-btn" class="btn btn-primary ${activeTab === 'vendas' ? 'hidden' : ''}">
+                  <button id="add-venda-fornecedor-btn" class="btn btn-primary ${activeTab === 'vendas' || activeTab === 'licitacoes' ? 'hidden' : ''}">
                      <i class="fas fa-plus mr-2"></i><span>Cadastrar Venda</span>
                  </button>
                  ` : ''}
              </div>
          </div>
-          <!-- Container para abas/ano (APENAS para Fornecedores) --!>
-         <div id="fornecedores-header-container" class="bg-white p-4 rounded-lg shadow-sm border mb-4 flex-shrink-0 ${activeTab !== 'fornecedores' ? 'hidden' : ''}">
-              <!-- Conteúdo do cabeçalho Fornecedores virá aqui --!>
-         </div>
+          <!-- Container para Cabeçalho de Fornecedores -->
+         <div id="fornecedores-header-container" class="bg-white p-4 rounded-lg shadow-sm border mb-4 flex-shrink-0 ${activeTab !== 'fornecedores' ? 'hidden' : ''}"></div>
+         
+         <!-- Container para Cabeçalho de Licitações (Novo) -->
+         <div id="licitacoes-header-container" class="bg-white p-4 rounded-lg shadow-sm border mb-4 flex-shrink-0 ${activeTab !== 'licitacoes' ? 'hidden' : ''}"></div>
 
-         <!-- --- ALTERAÇÃO: Adicionado container para scroll --- --!>
+         <!-- --- ALTERAÇÃO: Adicionado container para scroll --- -->
          <div id="funil-content-container" class="kanban-scroll-container">
               <div id="funil-inner-container" class="kanban-inner-container">
-                  <!-- Conteúdo (colunas) será renderizado aqui --!>
+                  <!-- Conteúdo (colunas) será renderizado aqui -->
               </div>
          </div>
      `;
@@ -58,18 +63,21 @@ export function renderFunilView() {
         });
     });
 
-    document.getElementById('add-opportunity-btn')?.addEventListener('click', openCreateOpportunityModal);
+    document.getElementById('add-opportunity-btn')?.addEventListener('click', () => openCreateOpportunityModal());
     document.getElementById('add-venda-fornecedor-btn')?.addEventListener('click', () => openVendaFornecedorModal(null));
 
     // Renderiza o conteúdo apropriado dentro do container interno
     if (activeTab === 'vendas') {
+        renderKanbanBoard();
+    } else if (activeTab === 'licitacoes') {
+        renderLicitacoesHeader(); // Renderiza o cabeçalho novo
         renderKanbanBoard();
     } else {
         renderFornecedoresView(); // Fornecedores também usam a estrutura Kanban agora
     }
 }
 
-// Renderiza o conteúdo do Funil de Vendas (Kanban)
+// Renderiza o conteúdo do Funil de Vendas ou Licitações (Kanban)
 function renderKanbanBoard() {
     // Alvo é o container interno
     const board = document.getElementById('funil-inner-container');
@@ -81,15 +89,74 @@ function renderKanbanBoard() {
         return;
     }
 
-    appState.stages.forEach(stage => {
-        const opportunitiesInStage = appState.opportunities
-            .filter(opp => opp.etapa_id == stage.id)
-            .sort((a, b) => {
-                // Ordena por data_criacao DESC (mais recente primeiro)
-                const dateA = new Date(a.data_criacao || 0);
-                const dateB = new Date(b.data_criacao || 0);
-                return dateB - dateA;
+    const { activeTab } = appState.funilView;
+    const currentFunnelId = activeTab === 'licitacoes' ? 2 : 1; // 1 = Vendas, 2 = Licitações
+
+    // Inicializa estados de filtro para licitações se não existirem
+    if (activeTab === 'licitacoes') {
+        if (!appState.funilView.licitacaoYear) appState.funilView.licitacaoYear = new Date().getFullYear();
+        if (appState.funilView.licitacaoMonth === undefined) appState.funilView.licitacaoMonth = new Date().getMonth(); // 0-11
+        if (appState.funilView.selectedLicitacaoFornecedorId === undefined) appState.funilView.selectedLicitacaoFornecedorId = null;
+    }
+
+    // Filter stages by the current funnel
+    const stagesToRender = appState.stages.filter(stage => {
+        // If funil_id is explicitly set, use it. Otherwise, assume ID 1 (legacy/default)
+        if (stage.funil_id) {
+            return stage.funil_id == currentFunnelId;
+        }
+        // Fallback: If no funil_id in DB yet (older entries?), or standard stages, assume funnel 1
+        // EXCEPT if we just added stages with funil_id 2, then undefined ones are likely funnel 1.
+        return currentFunnelId === 1;
+    }).sort((a, b) => a.ordem - b.ordem);
+
+
+    if (stagesToRender.length === 0) {
+        board.innerHTML = `<div class="p-8 text-center w-full"><p class="text-gray-500">Nenhuma etapa encontrada para este funil (ID ${currentFunnelId}).</p></div>`;
+        return;
+    }
+
+    stagesToRender.forEach(stage => {
+        let opportunitiesInStage = appState.opportunities
+            .filter(opp => opp.etapa_id == stage.id);
+
+        // --- FILTROS ESPECÍFICOS DE LICITAÇÕES ---
+        if (activeTab === 'licitacoes') {
+            const { licitacaoYear, licitacaoMonth, selectedLicitacaoFornecedorId } = appState.funilView;
+
+            opportunitiesInStage = opportunitiesInStage.filter(opp => {
+                // Filtro de Data (considerando data_criacao)
+                const date = new Date(opp.data_criacao || 0);
+                const matchDate = date.getFullYear() === licitacaoYear && date.getMonth() === licitacaoMonth;
+
+                // Filtro de Fornecedor (Stub: Por enquanto checa se o nome do fornecedor está nas notas ou se passarmos a ter esse dado)
+                // Como não temos o dado 'fornecedor_id' direto na oportunidade (apenas nos itens), 
+                // vamos assumir que se nenhum fornecedor for selecionado, mostra todos.
+                // Se um for selecionado, precisaríamos filtrar. 
+                // TEMPORÁRIO: Ignora filtro de fornecedor se não tivermos como checar, ou faz busca textual básica.
+                let matchFornecedor = true;
+                if (selectedLicitacaoFornecedorId) {
+                    // Tenta encontrar o nome do fornecedor nos 'fornecedores' e buscar no texto da opp
+                    const fornecedor = appState.fornecedores.find(f => f.id == selectedLicitacaoFornecedorId);
+                    if (fornecedor) {
+                        const term = fornecedor.nome.toLowerCase();
+                        matchFornecedor = (opp.titulo && opp.titulo.toLowerCase().includes(term)) ||
+                            (opp.notas && opp.notas.toLowerCase().includes(term));
+                    }
+                }
+
+                return matchDate && matchFornecedor;
             });
+        }
+        // -----------------------------------------
+
+        opportunitiesInStage.sort((a, b) => {
+            // Ordena por data_criacao DESC (mais recente primeiro)
+            const dateA = new Date(a.data_criacao || 0);
+            const dateB = new Date(b.data_criacao || 0);
+            return dateB - dateA;
+        });
+
         const stageTotal = opportunitiesInStage.reduce((sum, opp) => sum + parseFloat(opp.valor || 0), 0);
 
         let extraCards = '';
@@ -118,6 +185,94 @@ function renderKanbanBoard() {
     });
 
     addKanbanEventListeners();
+}
+
+// --- NOVA FUNÇÃO: Renderiza cabeçalho de filtros para Licitações ---
+function renderLicitacoesHeader() {
+    const headerContainer = document.getElementById('licitacoes-header-container');
+    if (!headerContainer) return;
+
+    // Inicializa defaults se necessário
+    if (!appState.funilView.licitacaoYear) appState.funilView.licitacaoYear = new Date().getFullYear();
+    if (appState.funilView.licitacaoMonth === undefined) appState.funilView.licitacaoMonth = new Date().getMonth();
+    if (appState.funilView.selectedLicitacaoFornecedorId === undefined) appState.funilView.selectedLicitacaoFornecedorId = null;
+
+
+    const { licitacaoYear, licitacaoMonth, selectedLicitacaoFornecedorId } = appState.funilView;
+    const { fornecedores } = appState;
+    const meses = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+
+    headerContainer.classList.remove('hidden');
+
+    const fornecedorTabs = fornecedores.map(f => `
+         <button class="licitacao-fornecedor-btn px-3 py-1 rounded-full border text-sm font-medium transition-colors ${f.id == selectedLicitacaoFornecedorId ? 'bg-[#206a9b] text-white border-[#206a9b]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}" data-id="${f.id}">
+            ${f.nome}
+         </button>
+     `).join('');
+
+    // Botão "Todos" para limpar filtro de fornecedor
+    const allBtn = `
+        <button class="licitacao-fornecedor-btn px-3 py-1 rounded-full border text-sm font-medium transition-colors ${!selectedLicitacaoFornecedorId ? 'bg-[#206a9b] text-white border-[#206a9b]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}" data-id="">
+            Todos
+        </button>
+    `;
+
+    headerContainer.innerHTML = `
+         <div class="flex flex-col md:flex-row justify-between items-center flex-wrap gap-4">
+             <!-- Filtro de Fornecedores -->
+             <div class="flex items-center space-x-2 flex-wrap gap-2">
+                 ${allBtn}
+                 ${fornecedorTabs}
+             </div>
+             
+             <!-- Filtro de Mês e Ano -->
+             <div class="flex items-center gap-4 flex-shrink-0">
+                 <!-- Selector de Mês -->
+                 <div class="flex items-center space-x-2">
+                     <button id="prev-month-lic-btn" class="year-btn rounded-full p-2 hover:bg-gray-100"><i class="fas fa-chevron-left"></i></button>
+                     <span class="px-4 py-2 bg-[#206a9b] text-white rounded-md font-bold text-sm min-w-[100px] text-center">${meses[licitacaoMonth]}</span>
+                     <button id="next-month-lic-btn" class="year-btn rounded-full p-2 hover:bg-gray-100"><i class="fas fa-chevron-right"></i></button>
+                 </div>
+                 
+                 <!-- Selector de Ano -->
+                 <div class="flex items-center space-x-2">
+                     <button id="prev-year-lic-btn" class="year-btn rounded-full p-2 hover:bg-gray-100"><i class="fas fa-chevron-left"></i></button>
+                     <span class="px-4 py-2 bg-[#206a9b] text-white rounded-md font-bold text-sm">${licitacaoYear}</span>
+                     <button id="next-year-lic-btn" class="year-btn rounded-full p-2 hover:bg-gray-100"><i class="fas fa-chevron-right"></i></button>
+                 </div>
+             </div>
+         </div>
+     `;
+
+    // Listeners para Fornecedores
+    document.querySelectorAll('.licitacao-fornecedor-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            appState.funilView.selectedLicitacaoFornecedorId = btn.dataset.id || null;
+            renderFunilView(); // Re-renderiza para atualizar visual do botão e filtrar board
+        });
+    });
+
+    // Listeners para Mes/Ano
+    document.getElementById('prev-month-lic-btn')?.addEventListener('click', () => {
+        let newMonth = appState.funilView.licitacaoMonth - 1;
+        if (newMonth < 0) { newMonth = 11; appState.funilView.licitacaoYear--; }
+        appState.funilView.licitacaoMonth = newMonth;
+        renderFunilView();
+    });
+    document.getElementById('next-month-lic-btn')?.addEventListener('click', () => {
+        let newMonth = appState.funilView.licitacaoMonth + 1;
+        if (newMonth > 11) { newMonth = 0; appState.funilView.licitacaoYear++; }
+        appState.funilView.licitacaoMonth = newMonth;
+        renderFunilView();
+    });
+    document.getElementById('prev-year-lic-btn')?.addEventListener('click', () => {
+        appState.funilView.licitacaoYear--;
+        renderFunilView();
+    });
+    document.getElementById('next-year-lic-btn')?.addEventListener('click', () => {
+        appState.funilView.licitacaoYear++;
+        renderFunilView();
+    });
 }
 
 
