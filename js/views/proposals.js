@@ -554,8 +554,9 @@ function renderProposalItemsSection() {
 
         const valor_unitario_total = valor_unitario_base + valor_parametros;
 
-        // ALTERAÇÃO: Usa o campo meses_locacao se for LOCAÇÃO, default 1.
-        const meses = (item.status === 'LOCAÇÃO' && item.meses_locacao) ? parseInt(item.meses_locacao) : 1;
+        // ALTERAÇÃO: Usa o campo meses_locacao se for LOCAÇÃO (case insensitive), default 1.
+        const isLocacaoStatus = (item.status || '').toUpperCase() === 'LOCAÇÃO';
+        const meses = (isLocacaoStatus && item.meses_locacao) ? parseInt(item.meses_locacao) : 1;
 
         // Se for locação, o total é Qtd * Valor * Meses. Se for venda, é Qtd * Valor.
         // O multiplicador "24" antigo foi removido em favor da entrada manual.
@@ -581,7 +582,7 @@ function renderProposalItemsSection() {
         }
         // --- FIM: Renderização dos Parâmetros ---
 
-        const isLocacao = item.status === 'LOCAÇÃO';
+        const isLocacao = (item.status || '').toUpperCase() === 'LOCAÇÃO';
 
         return `
             <div class="border p-4 rounded-md mb-4 bg-gray-50 relative item-card">

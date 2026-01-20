@@ -615,7 +615,7 @@ function renderOpportunityModal(opportunity = null) {
     const contactOptions = data.organizacao_id ? appState.contacts
         .filter(c => c.organizacao_id == data.organizacao_id)
         .map(c => `<option value="${c.id}" ${data.contato_id == c.id ? 'selected' : ''}>${c.nome}</option>`).join('') : '';
-    const userOptions = appState.users.filter(u => ['Comercial', 'Gestor', 'Analista'].includes(u.role))
+    const userOptions = appState.users.filter(u => ['Comercial', 'Gestor', 'Analista', 'Vendedor', 'Especialista'].includes(u.role))
         .map(u => `<option value="${u.id}" ${data.comercial_user_id == u.id ? 'selected' : ''}>${u.nome}</option>`).join('');
 
     const clienteSelectedValue = data.cliente_pf_id ? `pf-${data.cliente_pf_id}` : (data.organizacao_id || '');
@@ -789,7 +789,7 @@ function renderOpportunityItemsSection(canEdit = true) {
         }
 
         const valor_unitario_total = valor_unitario_base + valor_parametros;
-        const isLocacao = item.status === 'LOCAÇÃO';
+        const isLocacao = (item.status || '').toUpperCase() === 'LOCAÇÃO';
         const meses = (isLocacao && item.meses_locacao) ? parseInt(item.meses_locacao) : 1;
         const multiplicador = isLocacao ? meses : 1;
         const itemTotal = (item.quantidade || 0) * valor_unitario_total * multiplicador;

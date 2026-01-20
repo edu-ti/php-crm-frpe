@@ -252,7 +252,7 @@ function handle_update_opportunity($pdo, $data) {
 
 
 function handle_delete_opportunity($pdo, $data) {
-    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial'])) {
+    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista'])) {
         json_response(['success' => false, 'error' => 'Acesso negado para exclusão.'], 403);
         return; 
     }

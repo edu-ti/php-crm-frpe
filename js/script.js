@@ -54,7 +54,7 @@ export async function initializeApp() { // Tornada exportável para ser chamada 
         Object.assign(appState, data);
         // Garante que o estado da nova view exista
         if (!appState.emailMarketingView) {
-             appState.emailMarketingView = {
+            appState.emailMarketingView = {
                 selectedInterests: [],
                 subject: '',
                 body: '',
@@ -73,8 +73,8 @@ export async function initializeApp() { // Tornada exportável para ser chamada 
             window.location.href = 'login.html'; // Redireciona para login.html
         } else {
             const appRoot = document.getElementById('app-root');
-             if(appRoot) { // Verifica se appRoot existe
-                 appRoot.innerHTML = `<div class="p-8 text-center"><p class="text-red-500">Erro fatal ao carregar dados. Verifique a conexão e tente recarregar.</p><p class="text-sm text-gray-600 mt-2">${error.message || 'Erro desconhecido.'}</p></div>`;
+            if (appRoot) { // Verifica se appRoot existe
+                appRoot.innerHTML = `<div class="p-8 text-center"><p class="text-red-500">Erro fatal ao carregar dados. Verifique a conexão e tente recarregar.</p><p class="text-sm text-gray-600 mt-2">${error.message || 'Erro desconhecido.'}</p></div>`;
             }
         }
     } finally {
@@ -114,13 +114,13 @@ function switchView(viewName) {
         } catch (error) {
             console.error(`Erro ao renderizar a view "${viewName}":`, error);
             // Opcional: Mostrar uma mensagem de erro na UI
-             const viewContainer = document.getElementById(`${viewName}-view`);
-             if (viewContainer) {
-                 viewContainer.innerHTML = `<p class="text-red-500 p-4">Ocorreu um erro ao carregar esta seção.</p>`;
-             }
+            const viewContainer = document.getElementById(`${viewName}-view`);
+            if (viewContainer) {
+                viewContainer.innerHTML = `<p class="text-red-500 p-4">Ocorreu um erro ao carregar esta seção.</p>`;
+            }
         }
     } else {
-         console.error(`Função de renderização para "${viewName}" não encontrada.`);
+        console.error(`Função de renderização para "${viewName}" não encontrada.`);
     }
 }
 
@@ -167,12 +167,12 @@ function renderUI() {
     const navLinks = [
         { id: 'dashboard', icon: 'fa-chart-pie', text: 'Dashboard', permission: true },
         { id: 'funil', icon: 'fa-columns', text: 'Funil Vendas', permission: true },
-        { id: 'leads', icon: 'fa-filter', text: 'Funil Leads Online', permission: permissions.canSeeLeads },
+        { id: 'leads', icon: 'fa-filter', text: 'Funil Leads Online', permission: permissions.canSeeLeads && !['Vendedor', 'Especialista'].includes(currentUser.role) },
         { id: 'agenda', icon: 'fa-calendar-alt', text: 'Agenda', permission: true },
         { id: 'clients', icon: 'fa-users', text: 'Clientes', permission: true },
         { id: 'proposals', icon: 'fa-file-invoice-dollar', text: 'Propostas', permission: true },
         { id: 'catalog', icon: 'fa-book-open', text: 'Catálogo', permission: permissions.canSeeCatalog }, // Usar permissão
-        { id: 'email-marketing', icon: 'fa-envelope-open-text', text: 'E-mail Marketing', permission: permissions.canManageLeads }, // Nova aba e permissão
+        { id: 'email-marketing', icon: 'fa-envelope-open-text', text: 'E-mail Marketing', permission: permissions.canManageLeads && !['Vendedor', 'Especialista'].includes(currentUser.role) }, // Nova aba e permissão
         { id: 'settings', icon: 'fa-cog', text: 'Configurações', permission: permissions.canSeeSettings }
     ];
 
@@ -202,15 +202,15 @@ function addGlobalEventListeners() {
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
 
     const refreshBtn = document.getElementById('refresh-data-btn');
-     if(refreshBtn) refreshBtn.addEventListener('click', () => {
+    if (refreshBtn) refreshBtn.addEventListener('click', () => {
         showToast('Atualizando dados...', 'info');
         initializeApp(); // Chama a função para recarregar tudo
     });
 
 
     const userMenuBtn = document.getElementById('user-menu-btn');
-    if(userMenuBtn) userMenuBtn.addEventListener('click', () => {
-         document.getElementById('user-menu-dropdown')?.classList.toggle('hidden');
+    if (userMenuBtn) userMenuBtn.addEventListener('click', () => {
+        document.getElementById('user-menu-dropdown')?.classList.toggle('hidden');
     });
 
     document.addEventListener('click', (e) => {
@@ -218,7 +218,7 @@ function addGlobalEventListeners() {
         const userMenuDropdown = document.getElementById('user-menu-dropdown');
         // Fecha o menu do usuário se clicar fora dele
         if (userMenuButton && userMenuDropdown && !userMenuButton.contains(e.target) && !userMenuDropdown.contains(e.target)) {
-             userMenuDropdown.classList.add('hidden');
+            userMenuDropdown.classList.add('hidden');
         }
     });
 
@@ -239,7 +239,7 @@ function addGlobalEventListeners() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
 
-    if(menuToggleBtn && sidebar && overlay) {
+    if (menuToggleBtn && sidebar && overlay) {
         menuToggleBtn.addEventListener('click', () => {
             sidebar.classList.toggle('open');
             overlay.classList.toggle('hidden');
@@ -254,10 +254,10 @@ function addGlobalEventListeners() {
 async function logout() {
     try {
         await apiCall('logout', { method: 'POST' });
-    } catch(e) {
+    } catch (e) {
         console.error("Logout falhou.", e);
-         // Mesmo que falhe no servidor, força o redirecionamento
+        // Mesmo que falhe no servidor, força o redirecionamento
     } finally {
-         window.location.href = 'login.html'; // Redireciona para login.html
+        window.location.href = 'login.html'; // Redireciona para login.html
     }
 }

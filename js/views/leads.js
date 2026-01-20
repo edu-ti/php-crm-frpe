@@ -350,7 +350,7 @@ async function openEditLeadModal(leadId) {
     const data = opportunity || lead;
     const title = isEditingOpp ? 'Editar Pré-Proposta Associada' : 'Detalhes do Lead / Criar Pré-Proposta';
 
-    const userOptions = appState.users.filter(u => ['Comercial', 'Gestor', 'Analista'].includes(u.role))
+    const userOptions = appState.users.filter(u => ['Comercial', 'Gestor', 'Analista', 'Vendedor', 'Especialista'].includes(u.role))
         .map(u => `<option value="${u.id}" ${data.comercial_user_id == u.id ? 'selected' : ''}>${u.nome}</option>`).join('');
 
     const content = `
