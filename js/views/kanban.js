@@ -129,19 +129,20 @@ function renderKanbanBoard() {
                 const date = new Date(opp.data_criacao || 0);
                 const matchDate = date.getFullYear() === licitacaoYear && date.getMonth() === licitacaoMonth;
 
-                // Filtro de Fornecedor (Stub: Por enquanto checa se o nome do fornecedor está nas notas ou se passarmos a ter esse dado)
-                // Como não temos o dado 'fornecedor_id' direto na oportunidade (apenas nos itens), 
-                // vamos assumir que se nenhum fornecedor for selecionado, mostra todos.
-                // Se um for selecionado, precisaríamos filtrar. 
-                // TEMPORÁRIO: Ignora filtro de fornecedor se não tivermos como checar, ou faz busca textual básica.
+                // Filtro de Fornecedor
                 let matchFornecedor = true;
                 if (selectedLicitacaoFornecedorId) {
-                    // Tenta encontrar o nome do fornecedor nos 'fornecedores' e buscar no texto da opp
                     const fornecedor = appState.fornecedores.find(f => f.id == selectedLicitacaoFornecedorId);
                     if (fornecedor) {
                         const term = fornecedor.nome.toLowerCase();
-                        matchFornecedor = (opp.titulo && opp.titulo.toLowerCase().includes(term)) ||
-                            (opp.notas && opp.notas.toLowerCase().includes(term));
+                        // Verifica se o fabricante está na lista de fabricantes dos itens
+                        if (opp.fabricantes_itens && typeof opp.fabricantes_itens === 'string') {
+                            matchFornecedor = opp.fabricantes_itens.toLowerCase().includes(term);
+                        } else {
+                            // Fallback: busca no título ou notas
+                            matchFornecedor = (opp.titulo && opp.titulo.toLowerCase().includes(term)) ||
+                                (opp.notas && opp.notas.toLowerCase().includes(term));
+                        }
                     }
                 }
 
@@ -779,38 +780,116 @@ function renderOpportunityModal(opportunity = null) {
          <form id="modal-form" class="space-y-4">
              ${data.proposta_id ? `<div class="p-3 bg-yellow-100 border border-yellow-300 rounded-md text-yellow-800 text-sm">Esta oportunidade já foi convertida na Proposta Nº ${data.numero_proposta}. A edição dos itens deve ser feita na proposta.</div>` : ''}
              <input type="hidden" name="id" value="${data.id || ''}">
-             <div><label class="form-label">Título*</label><input type="text" name="titulo" required class="form-input" value="${data.titulo || ''}" ${isDisabled}></div>
-            
-            <div id="licitacao-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-4 ${appState.funilView.activeTab === 'licitacoes' || data.numero_edital || data.numero_processo ? '' : 'hidden'}">
-                <div><label class="form-label">Número do Edital</label><input type="text" name="numero_edital" class="form-input" value="${data.numero_edital || ''}" ${isDisabled}></div>
-                <div><label class="form-label">Número do Processo</label><input type="text" name="numero_processo" class="form-input" value="${data.numero_processo || ''}" ${isDisabled}></div>
-            </div>
              
-             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 <div>
-                     <label class="form-label">Cliente (Organização ou PF)</label>
-                     <select name="cliente_id" class="form-input" ${isDisabled}>
-                         <option value="">Selecione...</option>
-                         <optgroup label="Organizações">
-                             ${orgOptions}
-                         </optgroup>
-                         <optgroup label="Clientes PF">
-                             ${pfOptions}
-                         </optgroup>
-                     </select>
+             <!-- --- LAYOUT PADRÃO (VENDAS/FORNECEDORES) --- -->
+             <div id="standard-opportunity-fields" class="${appState.funilView.activeTab === 'licitacoes' ? 'hidden' : ''}">
+                 <div><label class="form-label">Título*</label><input type="text" name="titulo" class="form-input" value="${data.titulo || ''}" ${isDisabled}></div>
+                 
+                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                     <div>
+                         <label class="form-label">Cliente (Organização ou PF)</label>
+                         <select name="cliente_id" class="form-input" ${isDisabled}>
+                             <option value="">Selecione...</option>
+                             <optgroup label="Organizações">
+                                 ${orgOptions}
+                             </optgroup>
+                             <optgroup label="Clientes PF">
+                                 ${pfOptions}
+                             </optgroup>
+                         </select>
+                     </div>
+                     <div><label class="form-label">Contato (apenas para Organização)</label><select name="contato_id" class="form-input" ${isDisabled || data.cliente_pf_id ? 'disabled' : ''}><option value="">Selecione...</option>${contactOptions}</select></div>
                  </div>
-                 <div><label class="form-label">Contato (apenas para Organização)</label><select name="contato_id" class="form-input" ${isDisabled || data.cliente_pf_id ? 'disabled' : ''}><option value="">Selecione...</option>${contactOptions}</select></div>
+                 
+                 <div class="mt-4"><label class="form-label">Encaminhar para (Pré-Proposta)</label><select name="comercial_user_id" class="form-input" ${isDisabled}><option value="">Minha oportunidade</option>${userOptions}</select></div>
              </div>
-             
-             <div><label class="form-label">Encaminhar para (Pré-Proposta)</label><select name="comercial_user_id" class="form-input" ${isDisabled}><option value="">Minha oportunidade</option>${userOptions}</select></div>
+
+             <!-- --- LAYOUT LICITAÇÕES --- -->
+             <div id="licitacao-opportunity-fields" class="${appState.funilView.activeTab === 'licitacoes' ? '' : 'hidden'}">
+                  <!-- Título também no licitação, mas talvez com label diferente se quiser -->
+                  <div><label class="form-label">Título / Objeto Resumido*</label><input type="text" name="titulo_licitacao" class="form-input" value="${data.titulo || ''}" ${isDisabled}></div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                      <div><label class="form-label">Número do Edital</label><input type="text" name="numero_edital" class="form-input" value="${data.numero_edital || ''}" ${isDisabled}></div>
+                      <div><label class="form-label">Número do Processo</label><input type="text" name="numero_processo" class="form-input" value="${data.numero_processo || ''}" ${isDisabled}></div>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                       <div>
+                           <label class="form-label">Modalidade</label>
+                           <select name="modalidade" class="form-input" ${isDisabled}>
+                               <option value="">Selecione...</option>
+                               <option value="Pregão Eletrônico" ${data.modalidade === 'Pregão Eletrônico' ? 'selected' : ''}>Pregão Eletrônico</option>
+                               <option value="Pregão Presencial" ${data.modalidade === 'Pregão Presencial' ? 'selected' : ''}>Pregão Presencial</option>
+                               <option value="Concorrência" ${data.modalidade === 'Concorrência' ? 'selected' : ''}>Concorrência</option>
+                               <option value="Tomada de Preços" ${data.modalidade === 'Tomada de Preços' ? 'selected' : ''}>Tomada de Preços</option>
+                               <option value="Convite" ${data.modalidade === 'Convite' ? 'selected' : ''}>Convite</option>
+                               <option value="Compra Direta" ${data.modalidade === 'Compra Direta' ? 'selected' : ''}>Compra Direta</option>
+                               <option value="Dispensa de Licitação" ${data.modalidade === 'Dispensa de Licitação' ? 'selected' : ''}>Dispensa de Licitação</option>
+                               <option value="ATA de Registro de Preço" ${data.modalidade === 'ATA de Registro de Preço' ? 'selected' : ''}>ATA de Registro de Preço</option>
+                               <option value="Carona" ${data.modalidade === 'Carona' ? 'selected' : ''}>Carona</option>
+                               <option value="Leilão" ${data.modalidade === 'Leilão' ? 'selected' : ''}>Leilão</option>
+                               <option value="Outra" ${data.modalidade === 'Outra' ? 'selected' : ''}>Outra</option>
+                           </select>
+                       </div>
+                       <div>
+                           <label class="form-label">Órgão Comprador</label>
+                           <!-- Reusa o mesmo select de clientes, mas com cópia para funcionar independente -->
+                           <select name="cliente_licitacao_id" class="form-input" ${isDisabled}>
+                               <option value="">Selecione...</option>
+                               <optgroup label="Organizações">
+                                   ${orgOptions}
+                               </optgroup>
+                               <optgroup label="Clientes PF">
+                                   ${pfOptions}
+                               </optgroup>
+                           </select>
+                       </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                      <div><label class="form-label">Local da Disputa/Portal</label><input type="text" name="local_disputa" class="form-input" value="${data.local_disputa || ''}" ${isDisabled}></div>
+                      <div><label class="form-label">UASG</label><input type="text" name="uasg" class="form-input" value="${data.uasg || ''}" ${isDisabled}></div>
+                  </div>
+                  
+                  <div class="mt-4">
+                      <label class="form-label">Objeto</label>
+                      <textarea name="objeto" rows="4" class="form-input" ${isDisabled}>${data.objeto || ''}</textarea>
+                  </div>
+                  
+                  <div class="mt-4"><label class="form-label">Encaminhar para (Pré-Proposta)</label><select name="comercial_user_id" class="form-input" ${isDisabled}><option value="">Minha oportunidade</option>${userOptions}</select></div>
+             </div>
+             <!-- --- FIM LAYOUT LICITAÇÕES --- -->
  
              <!-- --- INÍCIO: Secção de Itens (Nova Estrutura) --- -->
              <div id="opportunity-items-section" class="border-t pt-4 mt-4">
                  <!-- Conteúdo renderizado por renderOpportunityItemsSection -->
              </div>
              <!-- --- FIM: Secção de Itens --- -->
- 
-             <div><label class="form-label">Mensagem/Notas Gerais</label><textarea name="notas" rows="3" class="form-input" ${isDisabled}>${data.notas || ''}</textarea></div>
+             
+             <!-- --- RODAPÉ ESPECÍFICO LICITAÇÕES --- -->
+             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 ${appState.funilView.activeTab === 'licitacoes' ? '' : 'hidden'}">
+                 <div><label class="form-label">Data de Abertura/Disputa</label><input type="date" name="data_abertura" class="form-input" value="${data.data_abertura || ''}" ${isDisabled}></div>
+                 <div><label class="form-label">Hora da Disputa</label><input type="time" name="hora_disputa" class="form-input" value="${data.hora_disputa || ''}" ${isDisabled}></div>
+                 
+                 <div class="sm:col-span-2">
+                       <label class="form-label">Status (Etapa do Funil)</label>
+                       <select name="etapa_id" class="form-input" ${isDisabled}>
+                           ${appState.stages
+            .filter(s => s.funil_id == 2)
+            .sort((a, b) => a.ordem - b.ordem)
+            .map(s => `<option value="${s.id}" ${data.etapa_id == s.id ? 'selected' : ''}>${s.nome}</option>`)
+            .join('')
+        }
+                       </select>
+                 </div>
+             </div>
+
+             <!-- --- RODAPÉ PADRÃO --- -->
+             <div class="${appState.funilView.activeTab === 'licitacoes' ? 'hidden' : ''}">
+                 <div><label class="form-label">Mensagem/Notas Gerais</label><textarea name="notas" rows="3" class="form-input" ${isDisabled}>${data.notas || ''}</textarea></div>
+             </div>
+
          </form>
      `;
 
@@ -1307,7 +1386,8 @@ async function handleOpportunityFormSubmit(form) {
 
     const formData = new FormData(form);
     const data = {};
-    ['id', 'titulo', 'cliente_id', 'contato_id', 'comercial_user_id', 'notas'].forEach(key => {
+    // Modificado para incluir novos campos de Licitação
+    ['id', 'titulo', 'cliente_id', 'contato_id', 'comercial_user_id', 'notas', 'numero_edital', 'numero_processo', 'modalidade', 'local_disputa', 'uasg', 'objeto', 'data_abertura', 'hora_disputa', 'etapa_id'].forEach(key => {
         data[key] = formData.get(key) || null;
     });
 
@@ -1339,9 +1419,27 @@ async function handleOpportunityFormSubmit(form) {
         return newItem;
     });
 
-    // --- Lógica de Cliente (igual à criação de proposta) ---
-    const clienteSelecionado = data['cliente_id'];
-    delete data['cliente_id']; // Remove a chave combinada
+    // --- Lógica de Cliente (Unificada) ---
+    let clienteSelecionado = data['cliente_id'];
+
+    // Se estiver na aba Licitações, usa os campos específicos
+    if (appState.funilView && appState.funilView.activeTab === 'licitacoes') {
+        const clienteLicitacao = formData.get('cliente_licitacao_id');
+        if (clienteLicitacao) clienteSelecionado = clienteLicitacao;
+
+        const tituloLicitacao = formData.get('titulo_licitacao');
+        if (tituloLicitacao) data.titulo = tituloLicitacao;
+    }
+
+    delete data['cliente_id']; // Remove a chave combinada original
+    delete data['cliente_licitacao_id']; // Remove a chave de licitação se existir
+
+    // --- NOVA VALIDAÇÃO MANUAL (já que removemos o required do HTML) ---
+    if (!data.titulo || data.titulo.trim() === '') {
+        showToast('O campo Título é obrigatório.', 'error');
+        return;
+    }
+
     if (clienteSelecionado && clienteSelecionado.startsWith('pf-')) {
         data.cliente_pf_id = clienteSelecionado.substring(3);
         data.organizacao_id = null;
@@ -1349,7 +1447,7 @@ async function handleOpportunityFormSubmit(form) {
     } else if (clienteSelecionado) {
         data.organizacao_id = clienteSelecionado;
         data.cliente_pf_id = null;
-        // Mantém o contato_id selecionado
+        // Mantém o contato_id selecionado (se houver no form padrão, no licitação não tem contato por enquanto)
     } else {
         data.organizacao_id = null;
         data.cliente_pf_id = null;

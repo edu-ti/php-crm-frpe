@@ -36,10 +36,23 @@ function handle_get_data($pdo)
         'canManageLeads' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Marketing', 'Vendedor', 'Especialista']), // Permissão para gerir leads
         'canCreateSchedule' => true,
         'canEditSchedule' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista', 'Representante']),
+        'canSeeReports' => in_array($current_user_role, ['Gestor', 'Analista']), // Nova permissão
     ];
     $currentUser['permissions'] = $permissions;
 
-    $sql_opps = "SELECT o.*, org.nome_fantasia as organizacao_nome, cpf.nome as cliente_pf_nome, c.nome as contato_nome, c.email as contato_email, c.telefone as contato_telefone, u.nome as vendedor_nome FROM oportunidades o LEFT JOIN organizacoes org ON o.organizacao_id = org.id LEFT JOIN clientes_pf cpf ON o.cliente_pf_id = cpf.id LEFT JOIN contatos c ON o.contato_id = c.id LEFT JOIN usuarios u ON o.usuario_id = u.id";
+    $sql_opps = "SELECT o.*, 
+                 org.nome_fantasia as organizacao_nome, 
+                 cpf.nome as cliente_pf_nome, 
+                 c.nome as contato_nome, 
+                 c.email as contato_email, 
+                 c.telefone as contato_telefone, 
+                 u.nome as vendedor_nome,
+                 (SELECT GROUP_CONCAT(DISTINCT fabricante SEPARATOR ', ') FROM oportunidade_itens WHERE oportunidade_id = o.id) as fabricantes_itens
+                 FROM oportunidades o 
+                 LEFT JOIN organizacoes org ON o.organizacao_id = org.id 
+                 LEFT JOIN clientes_pf cpf ON o.cliente_pf_id = cpf.id 
+                 LEFT JOIN contatos c ON o.contato_id = c.id 
+                 LEFT JOIN usuarios u ON o.usuario_id = u.id";
     $stmt_opps = $pdo->query($sql_opps);
 
     $proposals_stmt = $pdo->query("

@@ -28,11 +28,12 @@ require_once __DIR__ . '/api/handlers/lead_handler.php';
 require_once __DIR__ . '/api/handlers/product_handler.php';
 require_once __DIR__ . '/api/handlers/email_handler.php';
 require_once __DIR__ . '/api/handlers/image_handler.php';
+require_once __DIR__ . '/api/handlers/report_handler.php';
 
 
 // --- MANIPULADORES DE ERRO GLOBAIS ---
 set_error_handler('handle_php_error');
-set_exception_handler(function($exception) {
+set_exception_handler(function ($exception) {
     handle_php_error(
         $exception->getCode(),
         $exception->getMessage(),
@@ -56,9 +57,9 @@ if ($method === 'POST' || $method === 'PUT' || $method === 'DELETE') {
         if (json_last_error() === JSON_ERROR_NONE) {
             $data = $decoded_data;
         } else {
-             // Se não for JSON, pode ser FormData (para uploads)
-             // Neste caso, os handlers específicos acessarão $_POST e $_FILES
-             // Não é necessário preencher $data aqui para FormData
+            // Se não for JSON, pode ser FormData (para uploads)
+            // Neste caso, os handlers específicos acessarão $_POST e $_FILES
+            // Não é necessário preencher $data aqui para FormData
         }
     }
 } elseif ($method === 'GET') {
@@ -83,7 +84,7 @@ try {
         handle_fetch_cep($data['cep'] ?? '');
         exit;
     }
-     // Rota de upload de imagem para o editor (POST)
+    // Rota de upload de imagem para o editor (POST)
     if ($action === 'upload_email_image' && $method === 'POST') {
         // Verifica autenticação ANTES de processar o upload
         if (!isset($_SESSION['user_id'])) {
@@ -169,27 +170,29 @@ try {
 
         // Email Marketing
         'send_bulk_email_leads' => ['POST' => 'handle_send_bulk_email_leads'],
-        // 'upload_email_image' já definida
+
+        // Relatórios
+        'get_report_data' => ['GET' => 'handle_get_report_data'],
     ];
 
     // Executa o handler correspondente à ação e ao método
     if (isset($routes[$action]) && isset($routes[$action][$method])) {
         $handler_function = $routes[$action][$method];
         if (function_exists($handler_function)) {
-             // Passa $pdo e $data para a maioria dos handlers
-             // Ajusta if/else se algum handler tiver assinatura diferente
-             if (in_array($handler_function, ['handle_logout'])) {
-                  $handler_function();
-             } elseif (in_array($handler_function, ['handle_get_data', 'handle_get_stats', 'handle_get_agendamentos'])) {
-                  $handler_function($pdo);
-             } else {
-                 $handler_function($pdo, $data);
-             }
+            // Passa $pdo e $data para a maioria dos handlers
+            // Ajusta if/else se algum handler tiver assinatura diferente
+            if (in_array($handler_function, ['handle_logout'])) {
+                $handler_function();
+            } elseif (in_array($handler_function, ['handle_get_data', 'handle_get_stats', 'handle_get_agendamentos'])) {
+                $handler_function($pdo);
+            } else {
+                $handler_function($pdo, $data);
+            }
         } else {
             json_response(['error' => "Handler não implementado: {$handler_function}"], 501);
         }
     } else {
-         json_response(['error' => "Ação inválida ({$action}) ou método não permitido ({$method})."], 400);
+        json_response(['error' => "Ação inválida ({$action}) ou método não permitido ({$method})."], 400);
     }
 
 
@@ -198,8 +201,8 @@ try {
     error_log('Erro PDO: ' . $e->getMessage() . "\n" . $e->getTraceAsString()); // Log detalhado
     json_response(['error' => 'Erro de Base de Dados.'], 500); // Mensagem genérica para o cliente
 } catch (Exception $e) {
-     // Log detalhado do erro geral pode ser útil aqui
-     error_log('Erro Geral: ' . $e->getMessage() . "\n" . $e->getTraceAsString()); // Log detalhado
+    // Log detalhado do erro geral pode ser útil aqui
+    error_log('Erro Geral: ' . $e->getMessage() . "\n" . $e->getTraceAsString()); // Log detalhado
     json_response(['error' => 'Erro Interno do Servidor.'], 500); // Mensagem genérica para o cliente
 }
 

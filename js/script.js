@@ -10,7 +10,8 @@ import { renderSettingsView } from './views/settings.js';
 import { renderAgendaView } from './views/agenda.js';
 import { renderLeadsView } from './views/leads.js';
 import { renderCatalogView } from './views/catalog.js';
-import { renderEmailMarketingView } from './views/email_marketing.js'; // Importa a nova view
+import { renderEmailMarketingView } from './views/email_marketing.js';
+
 
 // O estado da aplicação
 export let appState = {
@@ -82,7 +83,7 @@ export async function initializeApp() { // Tornada exportável para ser chamada 
     }
 }
 
-function switchView(viewName) {
+async function switchView(viewName) {
     // Verifica se a view existe antes de tentar mudar
     if (!document.getElementById(`${viewName}-view`)) {
         console.warn(`View "${viewName}" não encontrada. Redirecionando para o dashboard.`);
@@ -96,6 +97,23 @@ function switchView(viewName) {
     document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
     document.getElementById(`nav-link-${viewName}`)?.classList.add('active');
 
+    if (viewName === 'reports') {
+        try {
+            showLoading(true);
+            const module = await import(`./views/reports.js?v=${new Date().getTime()}`);
+            await module.renderReportsView(appState);
+        } catch (error) {
+            console.error(`Erro ao carregar módulo de relatórios:`, error);
+            const viewContainer = document.getElementById(`${viewName}-view`);
+            if (viewContainer) {
+                viewContainer.innerHTML = `<p class="text-red-500 p-4">Ocorreu um erro ao carregar o módulo de relatórios. Verifique o console.</p>`;
+            }
+        } finally {
+            showLoading(false);
+        }
+        return;
+    }
+
     const renderFunction = {
         'dashboard': renderDashboardView,
         'funil': renderFunilView,
@@ -105,7 +123,7 @@ function switchView(viewName) {
         'leads': renderLeadsView,
         'settings': renderSettingsView,
         'catalog': renderCatalogView,
-        'email-marketing': renderEmailMarketingView // Adiciona a nova função de renderização
+        'email-marketing': renderEmailMarketingView
     }[viewName];
 
     if (renderFunction) {
@@ -132,13 +150,126 @@ function renderUI() {
 
     const appRoot = document.getElementById('app-root');
     appRoot.innerHTML = `
+        <style>
+            /* Reset básico para inputs */
+            input:focus, select:focus, textarea:focus {
+                outline: none;
+                border-color: #6366f1;
+                ring: 2px;
+                ring-color: #c7d2fe;
+            }
+
+            /* Estilos para Sidebar Retrátil (Apenas Desktop) */
+            @media (min-width: 768px) {
+                #sidebar {
+                    width: 5rem; /* w-20 (80px) */
+                    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    z-index: 50;
+                }
+                #sidebar:hover {
+                    width: 17rem; /* w-64 (expandido um pouco mais para conforto) */
+                }
+                
+                /* Link de Navegação */
+                .nav-link {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center; /* Centralizado quando recolhido */
+                    padding: 0.75rem 0.5rem;
+                    margin-bottom: 0.25rem;
+                    border-radius: 0.5rem;
+                    color: #4b5563; /* text-gray-600 */
+                    transition: all 0.2s;
+                    white-space: nowrap;
+                    overflow: hidden;
+                }
+                
+                /* Comportamento no Hover da Sidebar */
+                #sidebar:hover .nav-link {
+                    justify-content: flex-start; /* Alinha a esquerda expandido */
+                    padding-left: 1rem;
+                }
+                
+                /* Ícone */
+                .nav-link i {
+                    font-size: 1.25rem;
+                    min-width: 1.5rem;
+                    text-align: center;
+                    margin-right: 0;
+                    transition: margin 0.2s;
+                }
+                #sidebar:hover .nav-link i {
+                    margin-right: 0.75rem; /* Espaço entre ícone e texto */
+                }
+                
+                /* Texto */
+                .nav-text {
+                    opacity: 0;
+                    display: none;
+                    transition: opacity 0.3s ease-in-out;
+                }
+                #sidebar:hover .nav-text {
+                    display: inline-block;
+                    opacity: 1;
+                }
+                
+                /* Estados do Link (Hover e Active) */
+                .nav-link:hover {
+                    background-color: #084b78; /* gray-100 */
+                    color: #ffffff; /* gray-900 (Escuro para contraste) */
+                }
+                
+                .nav-link.active {
+                    background-color: #206a9b; /* indigo-600 */
+                    color: #ffffff !important;
+                    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+                }
+                
+                /* Garante contraste quando o item ativo é 'hovered' */
+                .nav-link.active:hover {
+                    background-color: #206a9b; /* indigo-700 */
+                    color: #ffffff !important;
+                }
+
+                /* Logo */
+                .logo-container {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 4rem;
+                    overflow: hidden;
+                }
+                .logo-img {
+                    height: 2.5rem; /* Tamanho maior recolhido */
+                    width: auto;
+                    object-fit: contain;
+                    transition: all 0.3s;
+                }
+                #sidebar:hover .logo-img {
+                    height: 3rem; /* Um pouco maior expandido */
+                }
+            }
+
+            /* Ajustes Mobile (se necessário, mantém padrão) */
+            @media (max-width: 767px) {
+                .nav-link {
+                    display: flex;
+                    padding: 0.75rem;
+                    color: #4b5563;
+                }
+                .nav-link.active {
+                    background-color: #4f46e5;
+                    color: white;
+                }
+            }
+        </style>
         <div id="app-container" class="flex h-screen bg-gray-100">
             <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
-            <aside id="sidebar" class="sidebar w-64 bg-white shadow-md flex flex-col flex-shrink-0">
-                <div class="p-4 border-b h-16 flex items-center justify-center">
-                    <img src="imagens/LOGO-FR.webp" alt="Logo" class="h-10">
+            <aside id="sidebar" class="sidebar bg-white shadow-xl flex flex-col flex-shrink-0">
+                <div class="logo-container p-4 border-b">
+                    <img src="imagens/LOGO-FR.webp" alt="Logo" class="logo-img">
                 </div>
-                <nav id="main-nav" class="flex-1 p-2 space-y-1"></nav>
+                <nav id="main-nav" class="flex-1 p-2 space-y-1 mt-2 overflow-y-auto overflow-x-hidden custom-scrollbar"></nav>
             </aside>
             <main class="flex-1 flex flex-col overflow-hidden">
                 <header id="main-header" class="bg-white p-4 shadow-sm border-b flex justify-between items-center h-16">
@@ -173,12 +304,14 @@ function renderUI() {
         { id: 'proposals', icon: 'fa-file-invoice-dollar', text: 'Propostas', permission: true },
         { id: 'catalog', icon: 'fa-book-open', text: 'Catálogo', permission: permissions.canSeeCatalog }, // Usar permissão
         { id: 'email-marketing', icon: 'fa-envelope-open-text', text: 'E-mail Marketing', permission: permissions.canManageLeads && !['Vendedor', 'Especialista'].includes(currentUser.role) }, // Nova aba e permissão
+        { id: 'reports', icon: 'fa-chart-line', text: 'Relatórios', permission: permissions.canSeeReports }, // Nova aba Relatórios
         { id: 'settings', icon: 'fa-cog', text: 'Configurações', permission: permissions.canSeeSettings }
     ];
 
     document.getElementById('main-nav').innerHTML = navLinks
         .filter(link => link.permission) // Filtra baseado na permissão do usuário
-        .map(link => `<a href="#" id="nav-link-${link.id}" class="nav-link" data-view="${link.id}"><i class="fas ${link.icon} mr-3 w-5"></i><span>${link.text}</span></a>`)
+        // Usando as classes definidas no CSS em vez de Tailwind inline para evitar conflitos
+        .map(link => `<a href="#" id="nav-link-${link.id}" class="nav-link" data-view="${link.id}"><i class="fas ${link.icon}"></i><span class="nav-text">${link.text}</span></a>`)
         .join('');
 
     // Conteúdo das Views
@@ -189,7 +322,8 @@ function renderUI() {
         <div id="clients-view" class="view-container"></div>
         <div id="proposals-view" class="view-container"></div>
         <div id="leads-view" class="view-container"></div>
-        <div id="email-marketing-view" class="view-container hidden"></div> <!-- Novo container para a view -->
+        <div id="email-marketing-view" class="view-container hidden"></div>
+        <div id="reports-view" class="view-container hidden"></div>
         <div id="settings-view" class="view-container"></div>
         <div id="catalog-view" class="view-container"></div>
     `;

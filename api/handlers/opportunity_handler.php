@@ -45,8 +45,8 @@ function handle_create_opportunity($pdo, $data)
     }
     // --- FIM DA CORREÇÃO ---
 
-    // --- CORREÇÃO: SQL simplificado, usa nova estrutura de itens ---
-    $sql = "INSERT INTO oportunidades (titulo, organizacao_id, contato_id, cliente_pf_id, etapa_id, usuario_id, comercial_user_id, pre_proposal_number, valor, notas, numero_edital, numero_processo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    // --- CORREÇÃO: SQL include new fields ---
+    $sql = "INSERT INTO oportunidades (titulo, organizacao_id, contato_id, cliente_pf_id, etapa_id, usuario_id, comercial_user_id, pre_proposal_number, valor, notas, numero_edital, numero_processo, local_disputa, uasg, data_abertura, hora_disputa, modalidade, objeto) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
 
     $pdo->beginTransaction();
@@ -63,7 +63,13 @@ function handle_create_opportunity($pdo, $data)
             $valor_total, // Valor total calculado
             $data['notas'] ?? null,
             $data['numero_edital'] ?? null,
-            $data['numero_processo'] ?? null
+            $data['numero_processo'] ?? null,
+            $data['local_disputa'] ?? null,
+            $data['uasg'] ?? null,
+            $data['data_abertura'] ?? null,
+            $data['hora_disputa'] ?? null,
+            $data['modalidade'] ?? null,
+            $data['objeto'] ?? null
         ]);
 
         if (!$success) {
@@ -168,7 +174,7 @@ function handle_update_opportunity($pdo, $data)
     }
     // --- FIM DA CORREÇÃO ---
 
-    // --- CORREÇÃO: SQL simplificado, remove colunas de item único ---
+    // --- CORREÇÃO: SQL simplificado, include new fields ---
     $sql = "UPDATE oportunidades SET
                 titulo = ?,
                 organizacao_id = ?,
@@ -178,7 +184,14 @@ function handle_update_opportunity($pdo, $data)
                 notas = ?,
                 comercial_user_id = ?,
                 numero_edital = ?,
-                numero_processo = ?
+                numero_processo = ?,
+                local_disputa = ?,
+                uasg = ?,
+                data_abertura = ?,
+                hora_disputa = ?,
+                modalidade = ?,
+                objeto = ?,
+                etapa_id = ?
             WHERE id = ?";
 
     $pdo->beginTransaction();
@@ -194,6 +207,13 @@ function handle_update_opportunity($pdo, $data)
             empty($data['comercial_user_id']) ? null : $data['comercial_user_id'],
             $data['numero_edital'] ?? null,
             $data['numero_processo'] ?? null,
+            $data['local_disputa'] ?? null,
+            $data['uasg'] ?? null,
+            $data['data_abertura'] ?? null,
+            $data['hora_disputa'] ?? null,
+            $data['modalidade'] ?? null,
+            $data['objeto'] ?? null,
+            $data['etapa_id'] ?? 1, // Ensure etapa_id is updated if sent
             $data['id']
         ]);
 
