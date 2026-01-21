@@ -1,7 +1,8 @@
 <?php
 // api/handlers/opportunity_handler.php
 
-function handle_create_opportunity($pdo, $data) {
+function handle_create_opportunity($pdo, $data)
+{
     // Validações básicas
     if (empty($data['titulo'])) {
         json_response(['success' => false, 'error' => 'Título é obrigatório.'], 400);
@@ -23,12 +24,12 @@ function handle_create_opportunity($pdo, $data) {
     // --- CORREÇÃO: Calcula o valor total a partir de TODOS os itens ---
     $valor_total = 0;
     foreach ($data['items'] as $item) {
-        $valor_unitario_base = (float)($item['valor_unitario'] ?? 0);
+        $valor_unitario_base = (float) ($item['valor_unitario'] ?? 0);
         $valor_parametros = 0;
         if (!empty($item['parametros']) && is_array($item['parametros'])) {
             foreach ($item['parametros'] as $param) {
                 // O valor do parâmetro vem do JS como número (parseCurrency)
-                $valor_parametros += (float)($param['valor'] ?? 0);
+                $valor_parametros += (float) ($param['valor'] ?? 0);
             }
         }
         $valor_unitario_total = $valor_unitario_base + $valor_parametros;
@@ -36,18 +37,18 @@ function handle_create_opportunity($pdo, $data) {
         $is_locacao = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO');
         $meses_locacao = 1;
         if ($is_locacao) {
-             // Se for locação, usa o valor enviado ou 1 se não enviado (embora o front deva enviar)
-             $meses_locacao = isset($item['meses_locacao']) ? (int)$item['meses_locacao'] : 1; 
+            // Se for locação, usa o valor enviado ou 1 se não enviado (embora o front deva enviar)
+            $meses_locacao = isset($item['meses_locacao']) ? (int) $item['meses_locacao'] : 1;
         }
         $multiplicador = $is_locacao ? $meses_locacao : 1;
         $valor_total += (($item['quantidade'] ?? 1) * $valor_unitario_total * $multiplicador);
     }
     // --- FIM DA CORREÇÃO ---
-    
+
     // --- CORREÇÃO: SQL simplificado, usa nova estrutura de itens ---
-    $sql = "INSERT INTO oportunidades (titulo, organizacao_id, contato_id, cliente_pf_id, etapa_id, usuario_id, comercial_user_id, pre_proposal_number, valor, notas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO oportunidades (titulo, organizacao_id, contato_id, cliente_pf_id, etapa_id, usuario_id, comercial_user_id, pre_proposal_number, valor, notas, numero_edital, numero_processo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
-    
+
     $pdo->beginTransaction();
     try {
         $success = $stmt->execute([
@@ -60,9 +61,11 @@ function handle_create_opportunity($pdo, $data) {
             $data['comercial_user_id'] ?? null,
             $pre_proposal_number,
             $valor_total, // Valor total calculado
-            $data['notas'] ?? null
+            $data['notas'] ?? null,
+            $data['numero_edital'] ?? null,
+            $data['numero_processo'] ?? null
         ]);
-        
+
         if (!$success) {
             throw new Exception("Falha ao criar a oportunidade principal.");
         }
@@ -73,29 +76,29 @@ function handle_create_opportunity($pdo, $data) {
         // --- CORREÇÃO 3: Adiciona meses_locacao ao INSERT ---
         $item_sql = "INSERT INTO oportunidade_itens (oportunidade_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros, meses_locacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $item_stmt = $pdo->prepare($item_sql);
-        
+
         foreach ($data['items'] as $item) {
-             $item_parametros_json = null;
-             if (!empty($item['parametros']) && is_array($item['parametros'])) {
+            $item_parametros_json = null;
+            if (!empty($item['parametros']) && is_array($item['parametros'])) {
                 // Salva o valor do parâmetro já como número
-                 $item_parametros_json = json_encode($item['parametros']);
-             }
-             
-             $item_stmt->execute([
-                 $lastId,
-                 $item['produto_id'] ?? null,
-                 $item['descricao'],
-                 $item['descricao_detalhada'] ?? null,
-                 $item['fabricante'] ?? null,
-                 $item['modelo'] ?? null,
-                 $item['imagem_url'] ?? null,
-                 $item['quantidade'] ?? 1,
-                 $item['valor_unitario'] ?? 0, // Valor base
-                 $item['status'] ?? 'VENDA',
-                 $item['unidade_medida'] ?? 'Unidade',
-                 $item_parametros_json,
-                 isset($item['meses_locacao']) ? (int)$item['meses_locacao'] : 1
-             ]);
+                $item_parametros_json = json_encode($item['parametros']);
+            }
+
+            $item_stmt->execute([
+                $lastId,
+                $item['produto_id'] ?? null,
+                $item['descricao'],
+                $item['descricao_detalhada'] ?? null,
+                $item['fabricante'] ?? null,
+                $item['modelo'] ?? null,
+                $item['imagem_url'] ?? null,
+                $item['quantidade'] ?? 1,
+                $item['valor_unitario'] ?? 0, // Valor base
+                $item['status'] ?? 'VENDA',
+                $item['unidade_medida'] ?? 'Unidade',
+                $item_parametros_json,
+                isset($item['meses_locacao']) ? (int) $item['meses_locacao'] : 1
+            ]);
         }
         // --- FIM: Inserção de itens ---
 
@@ -103,7 +106,7 @@ function handle_create_opportunity($pdo, $data) {
             $stmt_update_lead = $pdo->prepare("UPDATE leads SET oportunidade_id = ? WHERE id = ?");
             $stmt_update_lead->execute([$lastId, $data['lead_id']]);
         }
-        
+
         $pdo->commit();
 
         // Busca dados completos da oportunidade criada (incluindo nomes via JOINs)
@@ -130,26 +133,27 @@ function handle_create_opportunity($pdo, $data) {
 }
 
 
-function handle_update_opportunity($pdo, $data) {
+function handle_update_opportunity($pdo, $data)
+{
     if (empty($data['id'])) {
-         json_response(['success' => false, 'error' => 'ID da oportunidade é obrigatório.'], 400);
-     }
+        json_response(['success' => false, 'error' => 'ID da oportunidade é obrigatório.'], 400);
+    }
     if (empty($data['titulo'])) {
         json_response(['success' => false, 'error' => 'Título é obrigatório.'], 400);
     }
     if (empty($data['items']) || !is_array($data['items'])) {
         json_response(['success' => false, 'error' => 'É necessário pelo menos um item na oportunidade.'], 400);
     }
-    
+
     // --- CORREÇÃO: Calcula o valor total a partir de TODOS os itens ---
     $valor_total = 0;
     foreach ($data['items'] as $item) {
-        $valor_unitario_base = (float)($item['valor_unitario'] ?? 0);
+        $valor_unitario_base = (float) ($item['valor_unitario'] ?? 0);
         $valor_parametros = 0;
         if (!empty($item['parametros']) && is_array($item['parametros'])) {
             foreach ($item['parametros'] as $param) {
                 // O valor do parâmetro vem do JS como número (parseCurrency)
-                $valor_parametros += (float)($param['valor'] ?? 0);
+                $valor_parametros += (float) ($param['valor'] ?? 0);
             }
         }
         $valor_unitario_total = $valor_unitario_base + $valor_parametros;
@@ -157,7 +161,7 @@ function handle_update_opportunity($pdo, $data) {
         $is_locacao = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO');
         $meses_locacao = 1;
         if ($is_locacao) {
-             $meses_locacao = isset($item['meses_locacao']) ? (int)$item['meses_locacao'] : 1; 
+            $meses_locacao = isset($item['meses_locacao']) ? (int) $item['meses_locacao'] : 1;
         }
         $multiplicador = $is_locacao ? $meses_locacao : 1;
         $valor_total += (($item['quantidade'] ?? 1) * $valor_unitario_total * $multiplicador);
@@ -172,7 +176,9 @@ function handle_update_opportunity($pdo, $data) {
                 cliente_pf_id = ?,
                 valor = ?,
                 notas = ?,
-                comercial_user_id = ?
+                comercial_user_id = ?,
+                numero_edital = ?,
+                numero_processo = ?
             WHERE id = ?";
 
     $pdo->beginTransaction();
@@ -186,6 +192,8 @@ function handle_update_opportunity($pdo, $data) {
             $valor_total, // Valor total calculado
             $data['notas'] ?? null,
             empty($data['comercial_user_id']) ? null : $data['comercial_user_id'],
+            $data['numero_edital'] ?? null,
+            $data['numero_processo'] ?? null,
             $data['id']
         ]);
 
@@ -200,31 +208,31 @@ function handle_update_opportunity($pdo, $data) {
         // --- CORREÇÃO 3: Adiciona meses_locacao ao INSERT ---
         $item_sql = "INSERT INTO oportunidade_itens (oportunidade_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros, meses_locacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $item_stmt = $pdo->prepare($item_sql);
-        
+
         foreach ($data['items'] as $item) {
-             $item_parametros_json = null;
-             if (!empty($item['parametros']) && is_array($item['parametros'])) {
-                 $item_parametros_json = json_encode($item['parametros']);
-             }
-             
-             $item_stmt->execute([
-                 $data['id'],
-                 $item['produto_id'] ?? null,
-                 $item['descricao'],
-                 $item['descricao_detalhada'] ?? null,
-                 $item['fabricante'] ?? null,
-                 $item['modelo'] ?? null,
-                 $item['imagem_url'] ?? null,
-                 $item['quantidade'] ?? 1,
-                 $item['valor_unitario'] ?? 0, // Valor base
-                 $item['status'] ?? 'VENDA',
-                 $item['unidade_medida'] ?? 'Unidade',
-                 $item_parametros_json,
-                 isset($item['meses_locacao']) ? (int)$item['meses_locacao'] : 1
-             ]);
+            $item_parametros_json = null;
+            if (!empty($item['parametros']) && is_array($item['parametros'])) {
+                $item_parametros_json = json_encode($item['parametros']);
+            }
+
+            $item_stmt->execute([
+                $data['id'],
+                $item['produto_id'] ?? null,
+                $item['descricao'],
+                $item['descricao_detalhada'] ?? null,
+                $item['fabricante'] ?? null,
+                $item['modelo'] ?? null,
+                $item['imagem_url'] ?? null,
+                $item['quantidade'] ?? 1,
+                $item['valor_unitario'] ?? 0, // Valor base
+                $item['status'] ?? 'VENDA',
+                $item['unidade_medida'] ?? 'Unidade',
+                $item_parametros_json,
+                isset($item['meses_locacao']) ? (int) $item['meses_locacao'] : 1
+            ]);
         }
         // --- FIM: Atualização de itens ---
-        
+
         $pdo->commit();
 
         // Busca dados completos da oportunidade atualizada
@@ -251,10 +259,11 @@ function handle_update_opportunity($pdo, $data) {
 }
 
 
-function handle_delete_opportunity($pdo, $data) {
+function handle_delete_opportunity($pdo, $data)
+{
     if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista'])) {
         json_response(['success' => false, 'error' => 'Acesso negado para exclusão.'], 403);
-        return; 
+        return;
     }
     if (empty($data['id'])) {
         json_response(['success' => false, 'error' => 'ID da oportunidade não fornecido.'], 400);
@@ -269,8 +278,8 @@ function handle_delete_opportunity($pdo, $data) {
         $stmt_unlink_lead->execute([$opp_id]);
 
         // 2. Excluir histórico de atribuição
-         $stmt_delete_hist = $pdo->prepare("DELETE FROM historico_atribuicao WHERE oportunidade_id = ?");
-         $stmt_delete_hist->execute([$opp_id]);
+        $stmt_delete_hist = $pdo->prepare("DELETE FROM historico_atribuicao WHERE oportunidade_id = ?");
+        $stmt_delete_hist->execute([$opp_id]);
 
         // 3. Excluir a oportunidade principal (itens em 'oportunidade_itens' serão excluídos por CASCADE)
         $stmt = $pdo->prepare("DELETE FROM oportunidades WHERE id = ?");
@@ -284,21 +293,22 @@ function handle_delete_opportunity($pdo, $data) {
             json_response(['success' => false, 'error' => 'Oportunidade não encontrada ou falha ao excluir.'], $success ? 404 : 500);
         }
     } catch (PDOException $e) {
-         $pdo->rollBack();
-         error_log("Erro DB (Delete Opportunity): " . $e->getMessage());
-         json_response(['success' => false, 'error' => 'Erro no banco de dados ao excluir.'], 500);
+        $pdo->rollBack();
+        error_log("Erro DB (Delete Opportunity): " . $e->getMessage());
+        json_response(['success' => false, 'error' => 'Erro no banco de dados ao excluir.'], 500);
     }
 }
 
 
-function handle_move_opportunity($pdo, $data) {
+function handle_move_opportunity($pdo, $data)
+{
     if (empty($data['opportunityId']) || empty($data['newStageId'])) {
         json_response(['success' => false, 'error' => 'Dados insuficientes para mover oportunidade.'], 400);
     }
-     if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista'])) {
-         json_response(['success' => false, 'error' => 'Acesso negado para mover oportunidades.'], 403);
-         return;
-     }
+    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista'])) {
+        json_response(['success' => false, 'error' => 'Acesso negado para mover oportunidades.'], 403);
+        return;
+    }
 
     $stmt = $pdo->prepare("UPDATE oportunidades SET etapa_id = ?, data_ultima_movimentacao = NOW() WHERE id = ?");
     $success = $stmt->execute([$data['newStageId'], $data['opportunityId']]);
@@ -311,12 +321,13 @@ function handle_move_opportunity($pdo, $data) {
     }
 }
 
-function handle_get_opportunity_details($pdo, $get_data) {
-    $id = isset($get_data['id']) ? (int)$get_data['id'] : 0;
+function handle_get_opportunity_details($pdo, $get_data)
+{
+    $id = isset($get_data['id']) ? (int) $get_data['id'] : 0;
     if (empty($id)) {
         json_response(['success' => false, 'error' => 'ID da oportunidade não fornecido.'], 400);
     }
-    
+
     // 1. Busca a oportunidade principal e dados da proposta (se houver)
     $stmt = $pdo->prepare("
         SELECT 
@@ -355,7 +366,7 @@ function handle_get_opportunity_details($pdo, $get_data) {
         $stmt_items->execute([$id]);
         $items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
     }
-    
+
     // 3. Decodifica o JSON de parâmetros para cada item
     $opportunity['items'] = []; // Inicializa
     if ($items) {
@@ -367,10 +378,10 @@ function handle_get_opportunity_details($pdo, $get_data) {
                     if (is_array($decoded_params)) {
                         $item['parametros'] = $decoded_params;
                     } else {
-                         $item['parametros'] = [];
+                        $item['parametros'] = [];
                     }
                 } catch (Exception $e) {
-                    $item['parametros'] = []; 
+                    $item['parametros'] = [];
                 }
             } else {
                 $item['parametros'] = []; // Define como array vazio se for nulo
@@ -383,7 +394,8 @@ function handle_get_opportunity_details($pdo, $get_data) {
 }
 
 
-function handle_transfer_opportunity($pdo, $data) {
+function handle_transfer_opportunity($pdo, $data)
+{
     if (!in_array($_SESSION['role'], ['Gestor', 'Analista'])) {
         json_response(['success' => false, 'error' => 'Acesso negado para transferir oportunidades.'], 403);
         return;
@@ -398,9 +410,9 @@ function handle_transfer_opportunity($pdo, $data) {
 
     $stmt_user_check = $pdo->prepare("SELECT id FROM usuarios WHERE id = ? AND status = 'Ativo'");
     $stmt_user_check->execute([$data['newUserId']]);
-    if(!$stmt_user_check->fetchColumn()){
-         json_response(['success' => false, 'error' => 'Utilizador de destino inválido ou inativo.'], 400);
-         return;
+    if (!$stmt_user_check->fetchColumn()) {
+        json_response(['success' => false, 'error' => 'Utilizador de destino inválido ou inativo.'], 400);
+        return;
     }
 
     $pdo->beginTransaction();
@@ -410,7 +422,7 @@ function handle_transfer_opportunity($pdo, $data) {
 
         $stmt_log = $pdo->prepare("INSERT INTO historico_atribuicao (oportunidade_id, usuario_anterior_id, usuario_novo_id, usuario_transferencia_id) VALUES (?, ?, ?, ?)");
         $stmt_log->execute([$data['opportunityId'], $current_owner, $data['newUserId'], $_SESSION['user_id']]);
-        
+
         $pdo->commit();
         json_response(['success' => true]);
     } catch (Exception $e) {

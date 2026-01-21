@@ -11,7 +11,7 @@ export async function renderDashboardView() {
         const stats = await apiCall('get_stats');
 
         container.innerHTML = `
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 mb-3">
                 <div class="kpi-card">
                     <h3 class="kpi-title">Oportunidades Totais</h3>
                     <p class="kpi-value">${stats.kpis.total_opps || 0}</p>
@@ -33,7 +33,7 @@ export async function renderDashboardView() {
                     <p class="kpi-value">${formatCurrency(stats.kpis.avg_deal_size)}</p>
                 </div>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-3">
                 <div class="lg:col-span-2 chart-container"><div style="height: 400px;"><canvas id="oppsByStageChart"></canvas></div></div>
                 <div class="lg:col-span-3 chart-container"><div style="height: 400px;"><canvas id="combinedSalesChart"></canvas></div></div>
             </div>
@@ -75,8 +75,8 @@ function renderChart(canvasId, type, data, labelKey, dataKey, title) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: type === 'doughnut' ? 'top' : 'none' },
-                title: { display: true, text: title, font: { size: 16 } }
+                legend: { position: type === 'doughnut' ? 'top' : 'none', labels: { boxWidth: 10, font: { size: 10 } } },
+                title: { display: true, text: title, font: { size: 14 } }
             }
         }
     });
@@ -123,8 +123,8 @@ function renderCombinedSalesChart(oppsData, salesData) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'top' },
-                title: { display: true, text: 'Oportunidades e Vendas', font: { size: 16 } },
+                legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+                title: { display: true, text: 'Oportunidades e Vendas', font: { size: 14 } },
                 tooltip: {
                     callbacks: {
                         label: function (context) {

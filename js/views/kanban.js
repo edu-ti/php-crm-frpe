@@ -22,7 +22,7 @@ export function renderFunilView() {
     // We might need to ensure appState.funilView has a sensible default.
 
     container.innerHTML = `
-         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 flex-shrink-0"> <!-- Adicionado flex-shrink-0 -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2 flex-shrink-0"> <!-- Adicionado flex-shrink-0 (compacto) -->
              <div class="flex items-center space-x-1">
                  <button class="funil-tab-btn ${activeTab === 'vendas' ? 'active' : ''}" data-tab="vendas">Funil de Vendas</button>
                  <button class="funil-tab-btn ${activeTab === 'fornecedores' ? 'active' : ''}" data-tab="fornecedores">Funil de Fornecedores</button>
@@ -43,10 +43,10 @@ export function renderFunilView() {
              </div>
          </div>
           <!-- Container para Cabeçalho de Fornecedores -->
-         <div id="fornecedores-header-container" class="bg-white p-4 rounded-lg shadow-sm border mb-4 flex-shrink-0 ${activeTab !== 'fornecedores' ? 'hidden' : ''}"></div>
+         <div id="fornecedores-header-container" class="bg-white p-2 rounded-lg shadow-sm border mb-3 flex-shrink-0 ${activeTab !== 'fornecedores' ? 'hidden' : ''}"></div>
          
          <!-- Container para Cabeçalho de Licitações (Novo) -->
-         <div id="licitacoes-header-container" class="bg-white p-4 rounded-lg shadow-sm border mb-4 flex-shrink-0 ${activeTab !== 'licitacoes' ? 'hidden' : ''}"></div>
+         <div id="licitacoes-header-container" class="bg-white p-2 rounded-lg shadow-sm border mb-3 flex-shrink-0 ${activeTab !== 'licitacoes' ? 'hidden' : ''}"></div>
 
          <!-- --- ALTERAÇÃO: Adicionado container para scroll --- -->
          <div id="funil-content-container" class="kanban-scroll-container">
@@ -172,8 +172,8 @@ function renderKanbanBoard() {
         column.innerHTML = `
              <div class="kanban-column-header">
                  <div class="flex justify-between items-center">
-                     <h3 class="font-semibold text-md text-gray-700">${stage.nome}</h3>
-                     <span class="font-bold text-sm text-gray-800">${formatCurrency(stageTotal)}</span>
+                     <h3 class="font-semibold text-sm text-gray-700">${stage.nome}</h3>
+                     <span class="font-bold text-xs text-gray-800">${formatCurrency(stageTotal)}</span>
                  </div>
              </div>
              <div class="stage-cards">
@@ -205,14 +205,14 @@ function renderLicitacoesHeader() {
     headerContainer.classList.remove('hidden');
 
     const fornecedorTabs = fornecedores.map(f => `
-         <button class="licitacao-fornecedor-btn px-3 py-1 rounded-full border text-sm font-medium transition-colors ${f.id == selectedLicitacaoFornecedorId ? 'bg-[#206a9b] text-white border-[#206a9b]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}" data-id="${f.id}">
+         <button class="licitacao-fornecedor-btn px-2 py-0.5 rounded-full border text-xs font-medium transition-colors ${f.id == selectedLicitacaoFornecedorId ? 'bg-[#206a9b] text-white border-[#206a9b]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}" data-id="${f.id}">
             ${f.nome}
          </button>
      `).join('');
 
     // Botão "Todos" para limpar filtro de fornecedor
     const allBtn = `
-        <button class="licitacao-fornecedor-btn px-3 py-1 rounded-full border text-sm font-medium transition-colors ${!selectedLicitacaoFornecedorId ? 'bg-[#206a9b] text-white border-[#206a9b]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}" data-id="">
+        <button class="licitacao-fornecedor-btn px-2 py-0.5 rounded-full border text-xs font-medium transition-colors ${!selectedLicitacaoFornecedorId ? 'bg-[#206a9b] text-white border-[#206a9b]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}" data-id="">
             Todos
         </button>
     `;
@@ -229,16 +229,16 @@ function renderLicitacoesHeader() {
              <div class="flex items-center gap-4 flex-shrink-0">
                  <!-- Selector de Mês -->
                  <div class="flex items-center space-x-2">
-                     <button id="prev-month-lic-btn" class="year-btn rounded-full p-2 hover:bg-gray-100"><i class="fas fa-chevron-left"></i></button>
-                     <span class="px-4 py-2 bg-[#206a9b] text-white rounded-md font-bold text-sm min-w-[100px] text-center">${meses[licitacaoMonth]}</span>
-                     <button id="next-month-lic-btn" class="year-btn rounded-full p-2 hover:bg-gray-100"><i class="fas fa-chevron-right"></i></button>
+                     <button id="prev-month-lic-btn" class="year-btn rounded-full p-1 hover:bg-gray-100"><i class="fas fa-chevron-left text-xs"></i></button>
+                     <span class="px-3 py-1 bg-[#206a9b] text-white rounded-md font-bold text-xs min-w-[80px] text-center">${meses[licitacaoMonth]}</span>
+                     <button id="next-month-lic-btn" class="year-btn rounded-full p-1 hover:bg-gray-100"><i class="fas fa-chevron-right text-xs"></i></button>
                  </div>
                  
                  <!-- Selector de Ano -->
                  <div class="flex items-center space-x-2">
-                     <button id="prev-year-lic-btn" class="year-btn rounded-full p-2 hover:bg-gray-100"><i class="fas fa-chevron-left"></i></button>
-                     <span class="px-4 py-2 bg-[#206a9b] text-white rounded-md font-bold text-sm">${licitacaoYear}</span>
-                     <button id="next-year-lic-btn" class="year-btn rounded-full p-2 hover:bg-gray-100"><i class="fas fa-chevron-right"></i></button>
+                     <button id="prev-year-lic-btn" class="year-btn rounded-full p-1 hover:bg-gray-100"><i class="fas fa-chevron-left text-xs"></i></button>
+                     <span class="px-3 py-1 bg-[#206a9b] text-white rounded-md font-bold text-xs">${licitacaoYear}</span>
+                     <button id="next-year-lic-btn" class="year-btn rounded-full p-1 hover:bg-gray-100"><i class="fas fa-chevron-right text-xs"></i></button>
                  </div>
              </div>
          </div>
@@ -300,14 +300,14 @@ function createTrainingCard(treinamento) {
 
     return `
          <div class="training-card" data-id="${treinamento.id}">
-             <h4 class="font-bold text-gray-800 text-sm">${treinamento.titulo}</h4>
-             <p class="text-xs text-gray-600 mt-1"><i class="fas fa-user-tag mr-2 text-gray-400"></i>Para: ${nomesPara}</p>
-             <p class="text-xs text-gray-500"><i class="fas fa-user-edit mr-2 text-gray-400"></i>Por: ${treinamento.criado_por_nome || 'N/A'}</p>
-             <div class="mt-3 pt-2 border-t border-gray-100 flex justify-between items-center">
-                 <span class="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+             <h4 class="font-bold text-gray-800 text-xs">${treinamento.titulo}</h4>
+             <p class="text-[10px] text-gray-600 mt-0.5"><i class="fas fa-user-tag mr-2 text-gray-400"></i>Para: ${nomesPara}</p>
+             <p class="text-[10px] text-gray-500"><i class="fas fa-user-edit mr-2 text-gray-400"></i>Por: ${treinamento.criado_por_nome || 'N/A'}</p>
+             <div class="mt-2 pt-1.5 border-t border-gray-100 flex justify-between items-center">
+                 <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
                      <i class="far fa-calendar-alt mr-1"></i>${displayDate}
                  </span>
-                 <span class="text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-800">
+                 <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">
                      <i class="far fa-clock mr-1"></i>${displayTime}
                  </span>
              </div>
@@ -322,21 +322,21 @@ function createOpportunityCard(opp) {
     if (timeInStage.days > 5) timeAlertClass = 'time-alert-danger';
     else if (timeInStage.days > 2) timeAlertClass = 'time-alert-warn';
 
-    const contactInfo = opp.contato_nome ? `<p class="text-xs text-gray-600 truncate"><i class="fas fa-user mr-2 text-gray-400"></i>${opp.contato_nome}</p>` : '';
+    const contactInfo = opp.contato_nome ? `<p class="text-[10px] text-gray-600 truncate"><i class="fas fa-user mr-2 text-gray-400"></i>${opp.contato_nome}</p>` : '';
 
     return `
          <div class="opportunity-card" draggable="true" data-opp-id="${opp.id}">
-             <h4 class="font-bold text-gray-800 text-sm">${opp.titulo}</h4>
-             <p class="text-xs text-gray-500 mt-1">${opp.organizacao_nome || opp.cliente_pf_nome || 'Cliente não definido'}</p>
-             ${contactInfo}
-             <div class="mt-3 pt-2 border-t border-gray-100 flex justify-between items-center">
-                 <span class="text-md font-semibold text-indigo-700">${formatCurrency(opp.valor)}</span>
-                 <span class="text-xs font-medium px-2 py-1 rounded-full ${timeAlertClass}">
+             <h4 class="font-bold text-gray-800 text-xs">${opp.titulo}</h4>
+             <p class="text-[10px] text-gray-500 mt-0.5">${opp.organizacao_nome || opp.cliente_pf_nome || 'Cliente não definido'}</p>
+             ${contactInfo ? contactInfo.replace('text-xs', 'text-[10px]') : ''}
+             <div class="mt-2 pt-1.5 border-t border-gray-100 flex justify-between items-center">
+                 <span class="text-sm font-semibold text-indigo-700">${formatCurrency(opp.valor)}</span>
+                 <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-full ${timeAlertClass}">
                      <i class="far fa-clock mr-1"></i>${timeInStage.text}
                  </span>
              </div>
-             <div class="text-right mt-2">
-                 <span class="text-xs text-gray-500 mt-1">${opp.vendedor_nome || ''}</span>
+             <div class="text-right mt-1.5">
+                 <span class="text-[10px] text-gray-500 mt-0.5">${opp.vendedor_nome || ''}</span>
              </div>
          </div>
      `;
@@ -571,9 +571,9 @@ function renderFornecedoresHeader() {
                  ${fornecedorTabs}
              </div>
              <div class="flex items-center space-x-2 flex-shrink-0">
-                 <button id="prev-year-btn" class="year-btn"><i class="fas fa-chevron-left"></i></button>
-                 <span class="px-4 py-2 bg-[#206a9b] text-white rounded-md font-bold text-lg">${year}</span>
-                 <button id="next-year-btn" class="year-btn"><i class="fas fa-chevron-right"></i></button>
+                 <button id="prev-year-btn" class="year-btn"><i class="fas fa-chevron-left text-xs"></i></button>
+                 <span class="px-3 py-1 bg-[#206a9b] text-white rounded-md font-bold text-sm">${year}</span>
+                 <button id="next-year-btn" class="year-btn"><i class="fas fa-chevron-right text-xs"></i></button>
              </div>
          </div>
      `;
@@ -631,11 +631,11 @@ function renderFornecedoresGrid() {
             const clientName = venda.organizacao_nome || venda.cliente_pf_nome || 'Cliente não informado';
             return `
              <div class="fornecedor-venda-card opportunity-card" data-venda-id="${venda.id}"> <!-- Usando opportunity-card --!>
-                 <h4 class="font-bold text-gray-800 text-sm">${venda.titulo || 'Sem Título'}</h4>
-                 <p class="text-sm text-gray-600 mt-1 truncate">${clientName}</p>
-                 <div class="mt-3 pt-2 border-t border-gray-100 flex justify-between items-center">
-                     <span class="text-md font-semibold text-indigo-700">${formatCurrency(venda.valor_total)}</span>
-                     <span class="text-xs text-gray-500 mt-1">${venda.usuario_nome || ''}</span>
+                 <h4 class="font-bold text-gray-800 text-xs">${venda.titulo || 'Sem Título'}</h4>
+                 <p class="text-[10px] text-gray-600 mt-0.5 truncate">${clientName}</p>
+                 <div class="mt-2 pt-1.5 border-t border-gray-100 flex justify-between items-center">
+                     <span class="text-sm font-semibold text-indigo-700">${formatCurrency(venda.valor_total)}</span>
+                     <span class="text-[10px] text-gray-500 mt-0.5">${venda.usuario_nome || ''}</span>
                  </div>
              </div>
          `}).join('');
@@ -644,8 +644,8 @@ function renderFornecedoresGrid() {
              <div class="kanban-column flex flex-col">
                  <div class="kanban-column-header">
                      <div class="flex justify-between items-center">
-                          <h3 class="font-semibold text-md text-gray-700">${mes}</h3>
-                          <span class="font-bold text-sm text-gray-800">${formatCurrency(totalMes)}</span>
+                          <h3 class="font-semibold text-sm text-gray-700">${mes}</h3>
+                          <span class="font-bold text-xs text-gray-800">${formatCurrency(totalMes)}</span>
                      </div>
                   </div>
                  <div class="stage-cards">${cardsHtml || '<p class="text-center text-xs text-gray-400 p-4">Nenhuma venda.</p>'}</div>
@@ -780,6 +780,11 @@ function renderOpportunityModal(opportunity = null) {
              ${data.proposta_id ? `<div class="p-3 bg-yellow-100 border border-yellow-300 rounded-md text-yellow-800 text-sm">Esta oportunidade já foi convertida na Proposta Nº ${data.numero_proposta}. A edição dos itens deve ser feita na proposta.</div>` : ''}
              <input type="hidden" name="id" value="${data.id || ''}">
              <div><label class="form-label">Título*</label><input type="text" name="titulo" required class="form-input" value="${data.titulo || ''}" ${isDisabled}></div>
+            
+            <div id="licitacao-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-4 ${appState.funilView.activeTab === 'licitacoes' || data.numero_edital || data.numero_processo ? '' : 'hidden'}">
+                <div><label class="form-label">Número do Edital</label><input type="text" name="numero_edital" class="form-input" value="${data.numero_edital || ''}" ${isDisabled}></div>
+                <div><label class="form-label">Número do Processo</label><input type="text" name="numero_processo" class="form-input" value="${data.numero_processo || ''}" ${isDisabled}></div>
+            </div>
              
              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                  <div>
