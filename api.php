@@ -173,6 +173,8 @@ try {
 
         // Relatórios
         'get_report_data' => ['GET' => 'handle_get_report_data'],
+        'get_supplier_targets' => ['GET' => 'handle_get_supplier_targets'],
+        'save_targets' => ['POST' => 'handle_save_targets'],
     ];
 
     // Executa o handler correspondente à ação e ao método

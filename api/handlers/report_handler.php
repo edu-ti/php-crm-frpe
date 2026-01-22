@@ -159,6 +159,62 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_id, $user_id)
         }
     }
 
+    // 4. Fetch Supplier Goals (Annual/Monthly) & User Targets Flag
+    $year = date('Y', strtotime($start_date));
+    if ($supplier_id) {
+        try {
+            $stmt_sup = $pdo->prepare("SELECT meta_anual, meta_mensal, user_targets_enabled FROM fornecedor_metas WHERE fornecedor_id = ? AND ano = ?");
+            $stmt_sup->execute([$supplier_id, $year]);
+            $sup_meta = $stmt_sup->fetch(PDO::FETCH_ASSOC);
+            if ($sup_meta && isset($report_data[$supplier_id])) {
+                $report_data[$supplier_id]['meta_anual'] = (float) $sup_meta['meta_anual'];
+                $report_data[$supplier_id]['meta_mensal'] = (float) $sup_meta['meta_mensal'];
+                $report_data[$supplier_id]['user_targets_enabled'] = (int) ($sup_meta['user_targets_enabled'] ?? 1);
+            } else if (isset($report_data[$supplier_id])) {
+                // Default to enabled if no meta record found
+                $report_data[$supplier_id]['user_targets_enabled'] = 1;
+            }
+
+            // 5. Fetch Sales by State
+            $sql_states = "
+                SELECT 
+                    COALESCE(o.estado, c.estado, 'ND') as estado,
+                    SUM(vf.valor_total) as total_vendido
+                FROM vendas_fornecedores vf
+                LEFT JOIN organizacoes o ON vf.organizacao_id = o.id
+                LEFT JOIN clientes_pf c ON vf.cliente_pf_id = c.id
+                WHERE vf.data_venda BETWEEN ? AND ?
+                AND vf.fornecedor_id = ?
+                GROUP BY estado
+            ";
+            $stmt_st = $pdo->prepare($sql_states);
+            $stmt_st->execute([$start_date, $end_date, $supplier_id]);
+            $state_sales = $stmt_st->fetchAll(PDO::FETCH_ASSOC);
+
+            $report_data[$supplier_id]['state_sales'] = [];
+            foreach ($state_sales as $ss) {
+                // Ensure state is valid 2 chars (sometimes ND or empty)
+                $uf = strtoupper(trim($ss['estado']));
+                if (strlen($uf) === 2) {
+                    $report_data[$supplier_id]['state_sales'][$uf] = (float) $ss['total_vendido'];
+                }
+            }
+
+            // 6. Fetch State Goals (Target) for Comparison
+            $stmt_st_goals = $pdo->prepare("SELECT estado, meta_anual FROM fornecedor_metas_estados WHERE fornecedor_id = ? AND ano = ?");
+            $stmt_st_goals->execute([$supplier_id, $year]);
+            $state_goals = $stmt_st_goals->fetchAll(PDO::FETCH_ASSOC);
+
+            $report_data[$supplier_id]['state_goals'] = [];
+            foreach ($state_goals as $sg) {
+                $report_data[$supplier_id]['state_goals'][$sg['estado']] = (float) $sg['meta_anual'];
+            }
+
+        } catch (Exception $e) {
+            // Table might not exist yet. Ignore.
+        }
+    }
+
     return $report_data;
 }
 
@@ -280,9 +336,82 @@ function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_id, $user
     }
     return $report_data;
 }
+
+function handle_get_supplier_targets($pdo)
+{
+    $supplier_id = isset($_GET['supplier_id']) ? (int) $_GET['supplier_id'] : null;
+    $year = isset($_GET['year']) ? (int) $_GET['year'] : date('Y');
+
+    if (!$supplier_id) {
+        json_response(['success' => false, 'error' => 'Fornecedor não informado.'], 400);
+        return;
+    }
+
+    try {
+        // 1. Fetch Supplier Goals
+        $stmt_sup = $pdo->prepare("SELECT meta_anual, meta_mensal, user_targets_enabled FROM fornecedor_metas WHERE fornecedor_id = ? AND ano = ?");
+        $stmt_sup->execute([$supplier_id, $year]);
+        $sup_meta = $stmt_sup->fetch(PDO::FETCH_ASSOC);
+
+        $result = [
+            'meta_anual' => $sup_meta ? (float) $sup_meta['meta_anual'] : 0,
+            'meta_mensal' => $sup_meta ? (float) $sup_meta['meta_mensal'] : 0,
+            'user_targets_enabled' => $sup_meta ? (int) ($sup_meta['user_targets_enabled'] ?? 1) : 1,
+            'state_targets' => [],
+            'targets' => []
+        ];
+
+        // 2. Fetch State Targets
+        // Check if table exists first? Or just try/catch
+        try {
+            $stmt_states = $pdo->prepare("SELECT estado, meta_anual, meta_mensal_json FROM fornecedor_metas_estados WHERE fornecedor_id = ? AND ano = ?");
+            $stmt_states->execute([$supplier_id, $year]);
+            $state_rows = $stmt_states->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($state_rows as $sr) {
+                $result['state_targets'][$sr['estado']] = [
+                    'meta_anual' => (float) $sr['meta_anual'],
+                    'meta_mensal' => json_decode($sr['meta_mensal_json'] ?? '[]', true)
+                ];
+            }
+        } catch (Exception $ex) {
+            // Table might not exist, ignore
+        }
+
+        // 3. Fetch User Targets for that year
+        $stmt_users = $pdo->prepare("
+            SELECT usuario_id, mes, valor_meta 
+            FROM vendas_objetivos 
+            WHERE fornecedor_id = ? AND ano = ?
+        ");
+        $stmt_users->execute([$supplier_id, $year]);
+        $rows = $stmt_users->fetchAll(PDO::FETCH_ASSOC);
+
+        // Format for easy frontend consumption: map[userId][month] = val
+        foreach ($rows as $row) {
+            $uid = $row['usuario_id'];
+            $m = $row['mes'];
+            if (!isset($result['targets'][$uid])) {
+                $result['targets'][$uid] = [];
+            }
+            $result['targets'][$uid][$m] = (float) $row['valor_meta'];
+        }
+
+        json_response(['success' => true, 'data' => $result]);
+
+    } catch (Exception $e) {
+        // Log error for debugging
+        $logFile = __DIR__ . '/../../api_debug_log.txt';
+        file_put_contents($logFile, date('[Y-m-d H:i:s] ') . "Error fetching targets: " . $e->getMessage() . PHP_EOL, FILE_APPEND);
+
+        // ALWAYS return empty structure on error to prevent UI blockage
+        json_response(['success' => true, 'data' => ['meta_anual' => 0, 'meta_mensal' => 0, 'targets' => [], 'state_targets' => [], 'user_targets_enabled' => 1]]);
+    }
+}
+
+
 function handle_save_targets($pdo)
 {
-    // Espera JSON: { year: 2024, targets: [ { usuario_id, fornecedor_id, mes, valor }, ... ] }
+    // Espera JSON: { year: 2024, supplier_id: 1, supplier_goals: { annual: X, monthly: Y }, state_targets: { 'PE': {...}, ... }, targets: [ ... ], user_targets_enabled: true/false }
     $data = json_decode(file_get_contents('php://input'), true);
 
     if (!$data || !isset($data['year']) || !isset($data['targets'])) {
@@ -292,35 +421,102 @@ function handle_save_targets($pdo)
 
     $year = (int) $data['year'];
     $targets = $data['targets'];
+    $supplier_id = isset($data['supplier_id']) ? (int) $data['supplier_id'] : (isset($targets[0]['fornecedor_id']) ? $targets[0]['fornecedor_id'] : 0);
+    $supGoals = $data['supplier_goals'] ?? ['annual' => 0, 'monthly' => 0];
+    $stateTargets = $data['state_targets'] ?? [];
+    $userTargetsEnabled = isset($data['user_targets_enabled']) ? (int) $data['user_targets_enabled'] : 1;
+
+    if (!$supplier_id) {
+        json_response(['success' => false, 'error' => 'Fornecedor ID não encontrado.'], 400);
+        return;
+    }
 
     try {
         $pdo->beginTransaction();
 
-        $sql = "INSERT INTO vendas_objetivos (usuario_id, fornecedor_id, ano, mes, valor_meta) 
-                VALUES (?, ?, ?, ?, ?) 
-                ON DUPLICATE KEY UPDATE valor_meta = VALUES(valor_meta)";
-        $stmt = $pdo->prepare($sql);
+        // 1. Ensure Tables Exist
+        $pdo->exec("CREATE TABLE IF NOT EXISTS fornecedor_metas (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            fornecedor_id INT NOT NULL,
+            ano INT NOT NULL,
+            meta_anual DECIMAL(15,2) DEFAULT 0,
+            meta_mensal DECIMAL(15,2) DEFAULT 0,
+            user_targets_enabled TINYINT(1) DEFAULT 1,
+            UNIQUE KEY uq_forn_ano (fornecedor_id, ano)
+        )");
 
-        foreach ($targets as $target) {
-            // Se usuario_id, fornecedor_id nao vierem, pula
-            if (empty($target['usuario_id']) || empty($target['fornecedor_id']))
-                continue;
+        $pdo->exec("CREATE TABLE IF NOT EXISTS fornecedor_metas_estados (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            fornecedor_id INT NOT NULL,
+            ano INT NOT NULL,
+            estado VARCHAR(2) NOT NULL,
+            meta_anual DECIMAL(15,2) DEFAULT 0,
+            meta_mensal_json TEXT, -- JSON {1: val, 2: val...}
+            UNIQUE KEY uq_forn_ano_est (fornecedor_id, ano, estado)
+        )");
 
-            $stmt->execute([
-                $target['usuario_id'],
-                $target['fornecedor_id'],
+        // Add column user_targets_enabled if missing
+        try {
+            $pdo->query("SELECT user_targets_enabled FROM fornecedor_metas LIMIT 1");
+        } catch (Exception $e) {
+            $pdo->exec("ALTER TABLE fornecedor_metas ADD COLUMN user_targets_enabled TINYINT(1) DEFAULT 1");
+        }
+
+
+        // 2. Save Supplier Goals
+        $stmt = $pdo->prepare("
+            INSERT INTO fornecedor_metas (fornecedor_id, ano, meta_anual, meta_mensal, user_targets_enabled)
+            VALUES (?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE 
+                meta_anual = VALUES(meta_anual),
+                meta_mensal = VALUES(meta_mensal),
+                user_targets_enabled = VALUES(user_targets_enabled)
+        ");
+        $stmt->execute([$supplier_id, $year, $supGoals['annual'], $supGoals['monthly'], $userTargetsEnabled]);
+
+
+        // 3. Save State Goals
+        $stmtState = $pdo->prepare("
+            INSERT INTO fornecedor_metas_estados (fornecedor_id, ano, estado, meta_anual, meta_mensal_json)
+            VALUES (?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                meta_anual = VALUES(meta_anual),
+                meta_mensal_json = VALUES(meta_mensal_json)
+        ");
+        foreach ($stateTargets as $state => $sData) {
+            $stmtState->execute([$supplier_id, $year, $state, $sData['annual'], json_encode($sData['monthly'])]);
+        }
+
+        // 4. Save User Targets
+        $stmtUser = $pdo->prepare("
+            INSERT INTO vendas_objetivos (fornecedor_id, usuario_id, ano, mes, valor_meta, created_at) 
+            VALUES (?, ?, ?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE 
+                valor_meta = VALUES(valor_meta),
+                updated_at = NOW()
+        ");
+
+        foreach ($targets as $t) {
+            $stmtUser->execute([
+                $t['fornecedor_id'],
+                $t['usuario_id'],
                 $year,
-                $target['mes'],
-                $target['valor']
+                $t['mes'],
+                $t['valor']
             ]);
         }
 
         $pdo->commit();
-        json_response(['success' => true, 'message' => 'Metas salvas com sucesso.']);
+        json_response(['success' => true]);
 
     } catch (Exception $e) {
-        $pdo->rollBack();
-        json_response(['success' => false, 'error' => 'Erro ao salvar metas: ' . $e->getMessage()], 500);
+        if ($pdo->inTransaction())
+            $pdo->rollBack();
+
+        // Log error
+        file_put_contents(__DIR__ . '/../../api_debug_log.txt', date('[Y-m-d H:i:s] ') . "Error saving targets: " . $e->getMessage() . PHP_EOL, FILE_APPEND);
+
+        json_response(['success' => false, 'error' => $e->getMessage()], 500);
     }
 }
 ?>

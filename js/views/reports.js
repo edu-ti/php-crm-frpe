@@ -1,5 +1,5 @@
 import { apiCall } from '../api.js';
-import { formatCurrency, showToast, showLoading } from '../utils.js';
+import { formatCurrency as formatCurrencyUtil, showToast, showLoading } from '../utils.js';
 
 let appState = {};
 
@@ -261,7 +261,12 @@ function renderReports(data, container, type, startStr, endStr) {
 
         let tableHtml = '';
         if (type === 'sales') {
-            tableHtml = renderSalesTable(group.rows, monthsRange);
+            tableHtml = renderSalesTable(group, monthsRange);
+            // Append State Report
+            const stateReportHtml = renderStateReport(group);
+            if (stateReportHtml) {
+                tableHtml += stateReportHtml;
+            }
         } else if (type === 'products') {
             tableHtml = renderProductsTable(group.rows);
         } else if (type === 'licitacoes') {
@@ -276,13 +281,21 @@ function renderReports(data, container, type, startStr, endStr) {
     });
 }
 
-function renderSalesTable(rows, monthsRange) {
+function renderSalesTable(group, monthsRange) {
+    const rows = group.rows;
+    const userTargetsEnabled = group.user_targets_enabled !== 0; // Default true if missing
+    const supplierMetaMensal = parseFloat(group.meta_mensal) || 0;
+
+    // We'll calculate the periodic goal for the Total row based on selected months
+    // Ideally this comes from backend, but here we can approximate: meta_mensal * num_months
+    const numMonths = monthsRange.length;
+
     const monthKeys = monthsRange.map(m => m.key);
 
     // Helper format
     const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
-    // Calculate Totals per Month
+    // Calculate Totals per Month (Sum of Users)
     const totals = monthKeys.reduce((acc, monthKey) => {
         acc[monthKey] = { venda: 0, meta: 0, saldo: 0 };
         rows.forEach(row => {
@@ -290,6 +303,7 @@ function renderSalesTable(rows, monthsRange) {
             const venda = parseFloat(cellData.venda) || 0;
             const meta = parseFloat(cellData.meta) || 0;
             acc[monthKey].venda += venda;
+            // If user targets enabled, sum them up. Else we'll handle meta differently in display (use global)
             acc[monthKey].meta += meta;
             acc[monthKey].saldo += (venda - meta);
         });
@@ -313,13 +327,13 @@ function renderSalesTable(rows, monthsRange) {
             rowVenda += v; rowMeta += m;
 
             const saldoClass = s >= 0 ? 'text-green-600' : 'text-red-600';
-            const bgClass = m > 0 ? (v >= m ? 'bg-green-50' : 'bg-red-50') : '';
+            const bgClass = (userTargetsEnabled && m > 0) ? (v >= m ? 'bg-green-50' : 'bg-red-50') : '';
 
             return `
                 <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500 border-r border-gray-200 text-right ${bgClass}">
                     <div class="font-medium text-gray-900">${v > 0 ? format(v) : '-'}</div>
-                    ${m > 0 ? `<div class="text-gray-400 text-[10px]">M: ${format(m)}</div>` : ''}
-                    ${m > 0 ? `<div class="${saldoClass} font-bold border-t border-gray-100 mt-1 pt-1 text-[10px]">S: ${format(s)}</div>` : ''}
+                    ${(userTargetsEnabled && m > 0) ? `<div class="text-gray-400 text-[10px]">M: ${format(m)}</div>` : ''}
+                    ${(userTargetsEnabled && m > 0) ? `<div class="${saldoClass} font-bold border-t border-gray-100 mt-1 pt-1 text-[10px]">S: ${format(s)}</div>` : ''}
                 </td>
             `;
         }).join('');
@@ -335,28 +349,37 @@ function renderSalesTable(rows, monthsRange) {
                 ${cells}
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-right bg-gray-50 font-bold border-l border-gray-200">
                     <div>${format(rowVenda)}</div>
-                    <div class="text-[10px] text-gray-500">M: ${format(rowMeta)}</div>
-                    <div class="${rowSaldoClass} text-[10px] border-t border-gray-200 pt-1">S: ${format(rowSaldo)}</div>
+                    ${userTargetsEnabled ? `<div class="text-[10px] text-gray-500">M: ${format(rowMeta)}</div>` : ''}
+                    ${userTargetsEnabled ? `<div class="${rowSaldoClass} text-[10px] border-t border-gray-200 pt-1">S: ${format(rowSaldo)}</div>` : ''}
                 </td>
             </tr>
         `;
     }).join('');
 
-    // Totals Row
+    // Totals Row Construction
     const totalsCells = monthKeys.map(key => {
         const t = totals[key];
-        const sClass = t.saldo >= 0 ? 'text-green-600' : 'text-red-600';
+        // If targets disabled, use supplier global meta monthly divided or just flat?
+        // Usually global meta is monthly.
+        const metaVal = userTargetsEnabled ? t.meta : supplierMetaMensal;
+        const saldoVal = t.venda - metaVal;
+
+        const sClass = saldoVal >= 0 ? 'text-green-600' : 'text-red-600';
         return `
             <td class="px-2 py-3 whitespace-nowrap text-xs text-right font-bold bg-gray-100 border-r border-gray-200">
                 <div>${format(t.venda)}</div>
-                <div class="text-gray-500 text-[10px]">${format(t.meta)}</div>
-                <div class="${sClass} text-[10px]">${format(t.saldo)}</div>
+                <div class="text-gray-500 text-[10px]">${format(metaVal)}</div>
+                <div class="${sClass} text-[10px]">${format(saldoVal)}</div>
             </td>
         `;
     }).join('');
 
     const grandVenda = Object.values(totals).reduce((a, b) => a + b.venda, 0);
-    const grandMeta = Object.values(totals).reduce((a, b) => a + b.meta, 0);
+    // Grand Meta: If user targets enabled, sum of user metas. If disabled, Sum of Monthly Global Metas for the period.
+    const grandMeta = userTargetsEnabled
+        ? Object.values(totals).reduce((a, b) => a + b.meta, 0)
+        : (supplierMetaMensal * numMonths);
+
     const grandSaldo = grandVenda - grandMeta;
     const grandSaldoClass = grandSaldo >= 0 ? 'text-green-600' : 'text-red-600';
 
@@ -383,6 +406,72 @@ function renderSalesTable(rows, monthsRange) {
                     </tr>
                 </tbody>
             </table>
+        </div>
+    `;
+}
+
+function renderStateReport(group) {
+    const stateSales = group.state_sales || {};
+    const stateGoals = group.state_goals || {};
+
+    // Get unique states from both sales and goals
+    const states = [...new Set([...Object.keys(stateSales), ...Object.keys(stateGoals)])].sort();
+
+    if (states.length === 0) return ''; // No state data
+
+    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+    let rowsHtml = '';
+    let totalSales = 0;
+    let totalGoal = 0;
+
+    states.forEach(uf => {
+        const sales = parseFloat(stateSales[uf]) || 0;
+        const goal = parseFloat(stateGoals[uf]) || 0; // This is meta_anual usually
+        const balance = sales - goal;
+
+        totalSales += sales;
+        totalGoal += goal;
+
+        const balClass = balance >= 0 ? 'text-green-600' : 'text-red-500';
+
+        rowsHtml += `
+            <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${uf}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700">${format(sales)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${format(goal)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold ${balClass}">${format(balance)}</td>
+            </tr>
+        `;
+    });
+
+    const totalBal = totalSales - totalGoal;
+    const totalBalClass = totalBal >= 0 ? 'text-green-600' : 'text-red-500';
+
+    return `
+        <div class="mt-8">
+            <h4 class="text-md font-bold text-gray-700 mb-3 px-1 border-l-4 border-blue-500 pl-2">Performance por Estado</h4>
+            <div class="overflow-x-auto rounded-lg shadow border border-gray-200">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Vendas (Período)</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Meta Anual</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${rowsHtml}
+                        <tr class="bg-gray-100 font-bold border-t-2 border-gray-300">
+                            <td class="px-6 py-4 text-sm text-gray-900">TOTAIS</td>
+                            <td class="px-6 py-4 text-sm text-right text-gray-900">${format(totalSales)}</td>
+                            <td class="px-6 py-4 text-sm text-right text-gray-700">${format(totalGoal)}</td>
+                            <td class="px-6 py-4 text-sm text-right ${totalBalClass}">${format(totalBal)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     `;
 }
@@ -527,76 +616,416 @@ function setupModalLinks() {
     document.getElementById('save-targets-btn').addEventListener('click', saveTargets);
 }
 
-function loadTargetsEditor(supplierId) {
+function loadTargetsEditor(supplierId, year = null) {
     if (!supplierId) return;
     const container = document.getElementById('targets-grid-container');
-    const allUsers = appState.users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor'].includes(u.role));
+    const allUsers = appState.users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista'].includes(u.role));
 
-    const startVal = document.getElementById('filter-start-date').value;
-    const year = startVal ? startVal.split('-')[0] : new Date().getFullYear();
+    // Determine year: passed arg > current filter > current real year
+    if (!year) {
+        const startVal = document.getElementById('filter-start-date').value;
+        year = startVal ? startVal.split('-')[0] : new Date().getFullYear();
+    }
 
-    let html = `<div class="p-2 bg-yellow-50 mb-2 text-xs">Editando metas para o ano: <b>${year}</b></div>`;
-    html += `<table class="w-full text-sm border bg-white"><thead><tr><th class="p-2 text-left bg-gray-100 border">Vendedor</th>`;
-    for (let i = 1; i <= 12; i++) html += `<th class="border bg-gray-100 text-center w-20">${i}</th>`;
-    html += `</tr></thead><tbody>`;
+    // Show loading skeleton or similar? For now just keep old until fetch done.
 
-    // Find supplier data in current report if available to pre-fill
-    // Assuming 'sales' report type was loaded. If not, values will be 0, which is fine.
-    const supData = Array.isArray(currentReportData) ? currentReportData.find(s => s.fornecedor_id == supplierId) : null;
-
-    allUsers.forEach(u => {
-        html += `<tr><td class="p-2 border font-bold text-gray-700">${u.nome}</td>`;
-        for (let i = 1; i <= 12; i++) {
-            let val = 0;
-            if (supData && supData.rows) {
-                const row = supData.rows.find(r => r.usuario_id == u.id);
-                if (row) {
-                    const key = `${year}-${i}`;
-                    if (row.dados_mes && row.dados_mes[key]) {
-                        val = row.dados_mes[key].meta || 0;
-                    }
-                }
+    // Fetch Data from Backend
+    apiCall('get_supplier_targets', { params: { supplier_id: supplierId, year: year } })
+        .then(response => {
+            if (!response.success) {
+                container.innerHTML = `<p class="text-red-500">Erro ao carregar metas: ${response.error}</p>`;
+                return;
             }
-            html += `<td class="border p-1 text-center"><input type="number" class="w-full text-right border-gray-300 rounded p-1 text-xs target-edit-input focus:ring-indigo-500 focus:border-indigo-500" data-user="${u.id}" data-month="${i}" value="${val > 0 ? val : ''}"></td>`;
-        }
-        html += `</tr>`;
+
+            const data = response.data;
+            const metaAnualTotal = data.meta_anual || 0;
+            const stateTargets = data.state_targets || {};
+            const targets = data.targets || {};
+            const userTargetsEnabled = data.user_targets_enabled !== 0; // Default true
+
+            // Initialize states from DB or default
+            let states = Object.keys(stateTargets);
+            if (states.length === 0) states = ['PE', 'PB', 'RN'];
+
+            // Helper to format/parse (relying on global helpers added below)
+            const fmt = (v) => formatCurrency(v);
+
+            // Styles
+            const inputClass = "form-input text-right text-sm border-gray-300 rounded w-full focus:ring-indigo-500 focus:border-indigo-500 font-mono";
+            const headerClass = "border bg-gray-100 text-center w-24 px-1 text-xs font-bold";
+
+            // --- HEADER ---
+            let html = `
+                <div class="mb-6">
+                    <div class="p-5 bg-white rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                        <div class="flex flex-wrap gap-6 items-end" id="header-state-inputs">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">Ano Base</label>
+                                <input type="number" id="target-year-input" class="form-input font-bold text-gray-900 w-24 text-center border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500" value="${year}">
+                            </div>
+                             
+                            <div class="pl-6 border-l border-gray-200">
+                                 <label class="block text-xs font-bold text-gray-700 mb-1 text-indigo-900 uppercase tracking-wider">Meta Global (R$)</label>
+                                 <input type="text" id="sup-meta-annual-display" class="form-input text-right font-bold text-gray-900 w-48 bg-gray-50 border-gray-200" value="${fmt(metaAnualTotal)}" readonly>
+                                 <input type="hidden" id="sup-meta-annual" value="${metaAnualTotal}">
+                                 <p class="text-[10px] text-gray-400 mt-1 flex items-center"><i class="fas fa-calculator mr-1"></i> Soma automática dos estados</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                            <div id="add-state-container" class="flex items-center gap-2">
+                                <button id="btn-show-add-state" class="bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 text-xs px-4 py-2 rounded-md flex items-center transition-colors shadow-sm font-medium">
+                                    <i class="fas fa-plus-circle mr-2"></i> Adicionar Estado
+                                </button>
+                                
+                                <div id="add-state-form" class="hidden flex items-center gap-2 animate-fade-in">
+                                     <input type="text" id="new-state-input" class="form-input text-sm border-gray-300 rounded w-20 uppercase font-bold text-center" placeholder="UF" maxlength="2">
+                                     <button id="btn-confirm-add-state" class="bg-green-600 hover:bg-green-700 text-white p-2 rounded shadow-sm hover:scale-105 transition-transform" title="Confirmar">
+                                        <i class="fas fa-check"></i>
+                                     </button>
+                                     <button id="btn-cancel-add-state" class="bg-gray-200 hover:bg-gray-300 text-gray-600 p-2 rounded shadow-sm hover:scale-105 transition-transform" title="Cancelar">
+                                        <i class="fas fa-times"></i>
+                                     </button>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                <span>Os valores são formatados automaticamente como moeda.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // --- STATE GRID ---
+            html += `<div class="mb-6 border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white">
+                <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 font-bold text-sm flex justify-between items-center text-gray-700">
+                    <div class="flex items-center">
+                        <i class="fas fa-map-marked-alt mr-2 text-indigo-500"></i>
+                        <span>Metas por Estado (Mensal)</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm bg-white" id="state-grid-table">
+                        <thead class="bg-gray-50 text-gray-600">
+                            <tr>
+                                <th class="p-3 text-left border-b w-32 font-bold text-xs uppercase tracking-wider">Estado</th>`;
+            for (let i = 1; i <= 12; i++) html += `<th class="${headerClass}">${i}</th>`;
+            html += `</tr></thead><tbody></tbody></table></div></div>`;
+
+            // --- USER GRID ---
+            html += `<div class="mb-4 border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white">
+                <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 font-bold text-sm flex justify-between items-center text-gray-700">
+                    <div class="flex items-center">
+                        <i class="fas fa-users mr-2 text-indigo-500"></i>
+                        <span>Metas por Vendedor</span>
+                    </div>
+                    <div class="flex items-center">
+                        <label class="inline-flex items-center cursor-pointer group">
+                            <input type="checkbox" id="toggle-user-targets" class="form-checkbox h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" ${userTargetsEnabled ? 'checked' : ''}>
+                            <span class="ml-2 text-xs font-medium text-gray-600 group-hover:text-indigo-600 transition-colors">Habilitar metas por vendedor</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="overflow-x-auto transition-opacity duration-300 ${userTargetsEnabled ? '' : 'opacity-50 pointer-events-none'}" id="user-grid-wrapper">
+                    <table class="w-full text-sm bg-white relative">
+                        <thead class="sticky top-0 z-10 bg-gray-50 text-gray-600">
+                            <tr>
+                                <th class="p-3 text-left border-b min-w-[200px] font-bold text-xs uppercase tracking-wider">
+                                    Vendedor
+                                    <span class="text-[10px] font-normal text-gray-400 ml-1 block normal-case">(Marque para ativar)</span>
+                                </th>`;
+            for (let i = 1; i <= 12; i++) html += `<th class="${headerClass}">${i}</th>`;
+            html += `</tr></thead><tbody>`;
+
+            allUsers.forEach(u => {
+                let userTargets = targets[u.id] || {};
+                let hasTarget = Object.values(userTargets).some(v => v > 0);
+
+                let cells = '';
+                for (let i = 1; i <= 12; i++) {
+                    let val = userTargets[i] || 0;
+                    cells += `<td class="border p-1"><input type="text" class="${inputClass} user-month-input currency-input" data-user="${u.id}" data-month="${i}" value="${val > 0 ? fmt(val) : ''}" ${hasTarget ? '' : 'disabled'}></td>`;
+                }
+
+                html += `<tr class="hover:bg-indigo-50 transition-colors group">
+                    <td class="p-2 border text-gray-700 flex items-center bg-white sticky left-0 z-10 group-hover:bg-indigo-50 transition-colors">
+                        <input type="checkbox" class="form-checkbox h-4 w-4 text-indigo-600 rounded border-gray-300 mr-2 user-active-check focus:ring-indigo-500" data-user="${u.id}" ${hasTarget ? 'checked' : ''}>
+                        <span class="${hasTarget ? 'font-bold text-gray-900' : ''}">${u.nome}</span>
+                    </td>
+                    ${cells}
+                </tr>`;
+            });
+            html += `</tbody></table></div></div>`;
+
+            container.innerHTML = html;
+
+            // --- CURRENCY BEHAVIOR ---
+            const attachCurrencyEvents = (input) => {
+                input.addEventListener('focus', function () {
+                    this.select();
+                });
+
+                input.addEventListener('blur', function () {
+                    const val = parseCurrency(this.value);
+                    if (val > 0) this.value = formatCurrency(val);
+                    else this.value = '';
+                });
+
+                // Simple restriction (optional)
+                input.addEventListener('keypress', function (e) {
+                    if (!/[\d,.]/.test(e.key) && e.key.length === 1 && e.key !== 'Enter') e.preventDefault();
+                });
+            };
+
+            // --- DYNAMIC STATE FUNCTIONS ---
+            const stateHeaderContainer = document.getElementById('header-state-inputs');
+            const stateGridBody = document.querySelector('#state-grid-table tbody');
+
+            const addStateToUI = (uf, annualVal = 0, monthlyData = {}) => {
+                // Check duplicate
+                if (container.querySelector(`.state-annual-input[data-state="${uf}"]`)) {
+                    showToast(`Estado ${uf} já adicionado.`, 'warning');
+                    return;
+                }
+
+                // 1. Add Header Input
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Meta Anual ${uf} (R$)</label>
+                    <input type="text" class="form-input text-right text-gray-900 font-bold w-32 border-gray-300 rounded state-annual-input currency-input focus:ring-indigo-500 focus:border-indigo-500" data-state="${uf}" value="${annualVal > 0 ? fmt(annualVal) : ''}" placeholder="R$ 0,00">
+                `;
+                stateHeaderContainer.appendChild(div);
+
+                // 2. Add Grid Row
+                const tr = document.createElement('tr');
+                let cells = '';
+                for (let i = 1; i <= 12; i++) {
+                    let val = monthlyData[i] || 0;
+                    cells += `<td class="border p-1"><input type="text" class="${inputClass} state-month-input currency-input" data-state="${uf}" data-month="${i}" value="${val > 0 ? fmt(val) : ''}"></td>`;
+                }
+                tr.innerHTML = `
+                    <td class="p-2 border font-bold text-gray-700 bg-gray-50 flex justify-between items-center group">
+                        <span class="w-8 text-center bg-white border rounded px-1 text-xs shadow-sm">${uf}</span>
+                        <button class="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity btn-remove-state p-1 rounded hover:bg-red-50" data-state="${uf}" title="Remover Estado">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                    ${cells}
+                `;
+                stateGridBody.appendChild(tr);
+
+                // 3. Attach Events
+                const annInput = div.querySelector('input');
+                attachCurrencyEvents(annInput);
+                annInput.addEventListener('blur', () => updateGrandTotal(container));
+
+                tr.querySelectorAll('.state-month-input').forEach(inp => {
+                    attachCurrencyEvents(inp);
+                    inp.addEventListener('blur', () => {
+                        let sum = 0;
+                        container.querySelectorAll(`.state-month-input[data-state="${uf}"]`).forEach(mInp => {
+                            sum += parseCurrency(mInp.value);
+                        });
+                        // Update Annual with formatted sum
+                        annInput.value = sum > 0 ? formatCurrency(sum) : '';
+                        updateGrandTotal(container);
+                    });
+                });
+
+                tr.querySelector('.btn-remove-state').addEventListener('click', () => {
+                    if (confirm(`Remover estado ${uf}?`)) {
+                        div.remove();
+                        tr.remove();
+                        updateGrandTotal(container);
+                    }
+                });
+            };
+
+            // Initial Render of States
+            states.forEach(uf => {
+                const sData = stateTargets[uf] || {};
+                addStateToUI(uf, sData.meta_anual || 0, sData.meta_mensal || {});
+            });
+
+            // Attach to existing user inputs
+            container.querySelectorAll('.currency-input').forEach(inp => attachCurrencyEvents(inp));
+
+            // Add State Logic (Custom UI)
+            const btnShow = document.getElementById('btn-show-add-state');
+            const formAdd = document.getElementById('add-state-form');
+            const inputAdd = document.getElementById('new-state-input');
+            const btnConfirm = document.getElementById('btn-confirm-add-state');
+            const btnCancel = document.getElementById('btn-cancel-add-state');
+
+            if (btnShow && formAdd) {
+                btnShow.addEventListener('click', () => {
+                    btnShow.classList.add('hidden');
+                    formAdd.classList.remove('hidden');
+                    inputAdd.value = '';
+                    inputAdd.focus();
+                });
+
+                const hideAddForm = () => {
+                    formAdd.classList.add('hidden');
+                    btnShow.classList.remove('hidden');
+                };
+
+                btnCancel.addEventListener('click', hideAddForm);
+
+                const performAdd = () => {
+                    const uf = inputAdd.value.trim().toUpperCase();
+                    if (uf && uf.length === 2) {
+                        addStateToUI(uf);
+                        updateGrandTotal(container);
+                        hideAddForm();
+                    } else {
+                        showToast("Sigla inválida (Use 2 letras, ex: SP)", "error");
+                        inputAdd.focus();
+                    }
+                };
+
+                btnConfirm.addEventListener('click', performAdd);
+
+                inputAdd.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') performAdd();
+                });
+
+                inputAdd.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') hideAddForm();
+                });
+            }
+
+            // --- EVENT LISTENERS (Standard) ---
+
+            // Year Change
+            const yearInput = document.getElementById('target-year-input');
+            if (yearInput) {
+                yearInput.addEventListener('change', (e) => loadTargetsEditor(supplierId, e.target.value));
+            }
+
+            // User Targets Toggle
+            const toggleUsers = document.getElementById('toggle-user-targets');
+            const userWrapper = document.getElementById('user-grid-wrapper');
+            if (toggleUsers) {
+                toggleUsers.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        userWrapper.classList.remove('opacity-50', 'pointer-events-none');
+                    } else {
+                        userWrapper.classList.add('opacity-50', 'pointer-events-none');
+                    }
+                });
+            }
+
+            // User Rows Checkbox
+            container.querySelectorAll('.user-active-check').forEach(chk => {
+                chk.addEventListener('change', (e) => {
+                    const uid = e.target.dataset.user;
+                    const inputs = container.querySelectorAll(`.user-month-input[data-user="${uid}"]`);
+                    inputs.forEach(inp => {
+                        inp.disabled = !e.target.checked;
+                        if (!e.target.checked) inp.value = '';
+                    });
+                    e.target.nextElementSibling.classList.toggle('font-bold', e.target.checked);
+                    e.target.nextElementSibling.classList.toggle('text-gray-900', e.target.checked);
+                });
+            });
+
+        })
+        .catch(err => {
+            console.error(err);
+            container.innerHTML = `<p class="text-red-500">Erro de conexão ao buscar metas.</p>`;
+        });
+}
+
+// --- CURRENCY HELPERS ---
+function parseCurrency(str) {
+    if (!str || str === '') return 0;
+    if (typeof str === 'number') return str;
+    // Remove "R$", trim, remove "." thousands sep, replace "," with "."
+    let s = str.toString().replace(/[^\d,-]/g, '').replace(/\./g, '').replace(',', '.');
+    return parseFloat(s) || 0;
+}
+
+function formatCurrency(val) {
+    if (val === undefined || val === null || val === '') return '';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+}
+
+function updateGrandTotal(container) {
+    let grand = 0;
+    container.querySelectorAll('.state-annual-input').forEach(inp => {
+        grand += parseCurrency(inp.value);
     });
-    html += `</tbody></table>`;
-    container.innerHTML = html;
+    const disp = document.getElementById('sup-meta-annual-display');
+    const val = document.getElementById('sup-meta-annual');
+    if (val) val.value = grand;
+    if (disp) disp.value = formatCurrency(grand);
 }
 
 async function saveTargets() {
     const inputs = document.querySelectorAll('.target-edit-input');
-    if (inputs.length === 0) return;
+    // Re-query inputs? No, we use specific collectors below.
 
     const supplierId = document.getElementById('target-supplier-select').value;
-    const startVal = document.getElementById('filter-start-date').value;
-    const year = startVal ? startVal.split('-')[0] : new Date().getFullYear();
+    const year = document.getElementById('target-year-input')?.value || new Date().getFullYear();
 
-    const targets = [];
-    inputs.forEach(inp => {
-        const val = parseFloat(inp.value);
-        if (!isNaN(val) && val > 0) {
-            targets.push({
-                usuario_id: inp.dataset.user,
-                fornecedor_id: supplierId,
-                mes: inp.dataset.month,
-                valor: val
-            });
-        } else if (inp.value === '' || parseFloat(inp.value) === 0) {
-            // Send 0 to clear target if needed? 
-            targets.push({
-                usuario_id: inp.dataset.user,
-                fornecedor_id: supplierId,
-                mes: inp.dataset.month,
-                valor: 0
-            });
-        }
+    // Supplier Goals
+    const supAnnual = parseFloat(document.getElementById('sup-meta-annual')?.value) || 0;
+
+    // User Enabled
+    const userTargetsEnabled = document.getElementById('toggle-user-targets')?.checked;
+
+    // State Targets
+    const stateTargets = {};
+    const stateInputs = document.querySelectorAll('.state-annual-input');
+    stateInputs.forEach(input => {
+        const uf = input.dataset.state;
+        const ann = parseCurrency(input.value);
+        const monthly = {};
+        document.querySelectorAll(`.state-month-input[data-state="${uf}"]`).forEach(inp => {
+            const m = inp.dataset.month;
+            const val = parseCurrency(inp.value);
+            monthly[m] = val;
+        });
+        stateTargets[uf] = {
+            annual: ann,
+            monthly: monthly
+        };
     });
+
+    // User Targets
+    const targets = [];
+    if (userTargetsEnabled) {
+        const inputs = document.querySelectorAll('.user-month-input');
+        inputs.forEach(inp => {
+            if (!inp.disabled) {
+                const val = parseCurrency(inp.value);
+                if (val > 0) {
+                    targets.push({
+                        usuario_id: inp.dataset.user,
+                        fornecedor_id: supplierId,
+                        mes: inp.dataset.month,
+                        valor: val
+                    });
+                }
+            }
+        });
+    }
 
     showLoading(true);
     try {
-        const res = await apiCall('save_targets', { method: 'POST', body: JSON.stringify({ year, targets }) });
+        const payload = {
+            year,
+            supplier_id: supplierId,
+            supplier_goals: { annual: supAnnual, monthly: 0 },
+            state_targets: stateTargets,
+            targets,
+            user_targets_enabled: userTargetsEnabled
+        };
+        const res = await apiCall('save_targets', { method: 'POST', body: JSON.stringify(payload) });
         if (res.success) {
             showToast('Metas salvas com sucesso!', 'success');
             document.getElementById('targets-modal').classList.add('hidden');
@@ -611,4 +1040,3 @@ async function saveTargets() {
         showLoading(false);
     }
 }
-
