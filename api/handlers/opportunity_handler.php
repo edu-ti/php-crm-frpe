@@ -56,7 +56,32 @@ function handle_create_opportunity($pdo, $data)
             $data['organizacao_id'] ?? null,
             $data['contato_id'] ?? null,
             $data['cliente_pf_id'] ?? null,
-            $data['etapa_id'] ?? 1,
+
+            // --- CORREÇÃO: Lógica para obter a etapa padrão do funil de Vendas se não enviada ---
+            (function ($provided_etapa_id) use ($pdo) {
+                if (!empty($provided_etapa_id))
+                    return $provided_etapa_id;
+
+                // Tenta buscar a primeira etapa do "Funil de Vendas"
+                $stmt_stage = $pdo->prepare("
+                    SELECT ef.id 
+                    FROM etapas_funil ef 
+                    JOIN funis f ON ef.funil_id = f.id 
+                    WHERE f.nome LIKE '%Vendas%' 
+                    ORDER BY ef.ordem ASC, ef.id ASC 
+                    LIMIT 1
+                ");
+                $stmt_stage->execute();
+                $etapa_id = $stmt_stage->fetchColumn();
+
+                if ($etapa_id)
+                    return $etapa_id;
+
+                // Fallback: Pega a primeira etapa de qualquer funil (evita erro de chave estrangeira)
+                $stmt_fallback = $pdo->query("SELECT id FROM etapas_funil ORDER BY id ASC LIMIT 1");
+                return $stmt_fallback->fetchColumn() ?: 1;
+            })($data['etapa_id'] ?? null),
+            // --- FIM CORREÇÃO ---
             $_SESSION['user_id'],
             $data['comercial_user_id'] ?? null,
             $pre_proposal_number,

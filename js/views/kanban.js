@@ -874,7 +874,7 @@ function renderOpportunityModal(opportunity = null) {
                  
                  <div class="sm:col-span-2">
                        <label class="form-label">Status (Etapa do Funil)</label>
-                       <select name="etapa_id" class="form-input" ${isDisabled}>
+                       <select name="etapa_id" class="form-input" ${isDisabled} ${appState.funilView.activeTab !== 'licitacoes' ? 'disabled' : ''}>
                            ${appState.stages
             .filter(s => s.funil_id == 2)
             .sort((a, b) => a.ordem - b.ordem)
