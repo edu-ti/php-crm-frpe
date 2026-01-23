@@ -12,6 +12,7 @@ $version = time();
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,17 +27,20 @@ $version = time();
     <!-- SheetJS (xlsx) para importação -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- ** ALTERAÇÃO: Insira a sua API Key aqui ** -->
-    <script src="https://cdn.tiny.cloud/1/7w3oqmvbila1pjwhqf57sumy2pxj827rco8ictpgcegu9n45/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.tiny.cloud/1/7w3oqmvbila1pjwhqf57sumy2pxj827rco8ictpgcegu9n45/tinymce/6/tinymce.min.js"
+        referrerpolicy="origin"></script>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Estilo personalizado com versionamento dinâmico -->
     <link rel="stylesheet" href="css/style.css?v=<?php echo $version; ?>">
 </head>
+
 <body class="bg-gray-100">
 
     <!-- Elementos globais que existem fora do root do app -->
-    <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 space-y-2 w-full max-w-md"></div>
-    <div id="loading-spinner" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+    <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-[80] space-y-2 w-full max-w-md"></div>
+    <div id="loading-spinner"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[90]">
         <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-white"></div>
     </div>
     <div id="modal-container"></div>
@@ -44,7 +48,7 @@ $version = time();
 
     <!-- O container principal será preenchido pelo JavaScript -->
     <div id="app-root">
-         <div class="flex justify-center items-center h-screen">
+        <div class="flex justify-center items-center h-screen">
             <div class="text-center">
                 <i class="fas fa-spinner fa-spin text-4xl text-gray-500"></i>
                 <p class="mt-4 text-lg font-medium text-gray-600">Carregando CRM...</p>
@@ -55,5 +59,5 @@ $version = time();
     <!-- Script principal com versionamento dinâmico para forçar a atualização do cache  -->
     <script type="module" src="js/script.js?v=<?php echo $version; ?>"></script>
 </body>
-</html>
 
+</html>

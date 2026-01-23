@@ -9,8 +9,8 @@ export function renderModal(title, content, onConfirm, confirmText = 'Salvar', c
     else if (size === 'xl') widthClass = 'max-w-4xl'; // Extra largo (se precisar futuramente)
 
     container.innerHTML = `
-         <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-60 z-40"></div>
-            <div id="modal-box" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-2xl z-50 w-full ${widthClass}">
+         <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-60 z-[60]"></div>
+            <div id="modal-box" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-2xl z-[70] w-full ${widthClass}">
             <div class="p-5 border-b flex justify-between items-center">
                 <h2 class="text-xl font-bold text-gray-800">${title}</h2>
                 <button id="modal-close-btn" class="action-btn text-2xl">&times;</button>

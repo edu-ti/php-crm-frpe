@@ -177,10 +177,17 @@ export function openAgendamentoModal(agendamento) {
     const title = isEditing ? (canCurrentUserEdit ? 'Editar Agendamento' : 'Detalhes do Agendamento') : 'Novo Agendamento';
     const isDisabled = isEditing && !canCurrentUserEdit ? 'disabled' : '';
 
-    const userOptions = appState.users
+    // --- ALTERAÇÃO: Gera lista de checkboxes em vez de options ---
+    const userCheckboxes = appState.users
         .filter(user => user.status === 'Ativo') // Filtra apenas usuários ativos
-        .map(user => `<option value="${user.id}">${user.nome}</option>`)
+        .map(user => `
+            <label class="flex items-center space-x-2 py-1 px-2 hover:bg-gray-50 rounded cursor-pointer">
+                <input type="checkbox" name="para_usuario_ids[]" value="${user.id}" class="form-checkbox h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 user-select-checkbox">
+                <span class="text-sm text-gray-700">${user.nome}</span>
+            </label>
+        `)
         .join('');
+
     const tipoOptions = ['Reunião', 'Treinamento', 'Visita', 'Ligação', 'Outro']
         .map(tipo => `<option value="${tipo}" ${data.tipo === tipo ? 'selected' : ''}>${tipo}</option>`)
         .join('');
@@ -215,7 +222,7 @@ export function openAgendamentoModal(agendamento) {
         }
     }
 
-    // --- ALTERAÇÃO: Adiciona 'multiple' ao select e muda o nome para array ---
+    // --- ALTERAÇÃO: Substitui Select por Container de Checkboxes com Scroll ---
     const content = `
         <form id="modal-form" class="space-y-4">
             <input type="hidden" name="id" value="${data.id || ''}">
@@ -224,16 +231,15 @@ export function openAgendamentoModal(agendamento) {
                 <div><label class="form-label">Data*</label><input type="date" name="data_agendamento" required class="form-input" value="${dataAgendamento}" ${isDisabled}></div>
                 <div><label class="form-label">Hora*</label><input type="time" name="hora_agendamento" required class="form-input" value="${horaAgendamento}" ${isDisabled}></div>
             </div>
-            <div class="grid grid-cols-1 gap-4"> <!-- Ajustado para 1 coluna --!>
+            <div class="grid grid-cols-1 gap-4"> <!-- Ajustado para 1 coluna -->
                 <div><label class="form-label">Tipo*</label><select name="tipo" required class="form-input" ${isDisabled}>${tipoOptions}</select></div>
                 <div>
                      <label class="form-label">Direcionar para*</label>
-                    <!-- ***** ALTERADO AQUI ***** --!>
-                     <select name="para_usuario_ids[]" required class="form-input h-32" multiple ${isDisabled}>
-                         ${userOptions}
-                     </select>
-                     <p class="text-xs text-gray-500 mt-1">Segure Ctrl (ou Cmd no Mac) para selecionar mais de um.</p>
-                     <!-- ***** FIM DA ALTERAÇÃO ***** --!>
+                     <!-- Container Scrollable para Checkboxes -->
+                     <div class="border border-gray-300 rounded-md p-2 max-h-48 overflow-y-auto bg-white" id="user-selection-container">
+                        ${userCheckboxes}
+                     </div>
+                     <p class="text-xs text-gray-500 mt-1">Marque as pessoas que participarão.</p>
                 </div>
             </div>
 
@@ -261,7 +267,7 @@ export function openAgendamentoModal(agendamento) {
         const formData = new FormData(form);
         const dataToSend = Object.fromEntries(formData.entries());
 
-        // --- ALTERAÇÃO: Pega o array de IDs do select multiple ---
+        // --- ALTERAÇÃO: Pega o array de IDs dos checkboxes ---
         const selectedUserIds = formData.getAll('para_usuario_ids[]');
         dataToSend.para_usuario_ids = selectedUserIds; // Adiciona o array
         // Remove a chave antiga do FormData se existir (importante!)
@@ -270,12 +276,12 @@ export function openAgendamentoModal(agendamento) {
         // Validação extra: Garante que pelo menos um usuário foi selecionado
         if (selectedUserIds.length === 0) {
             showToast("Selecione pelo menos um usuário para direcionar.", "error");
-            // Foca no select para indicar o erro
-            const selectElement = form.querySelector('select[name="para_usuario_ids[]"]');
-            if (selectElement) {
-                selectElement.focus();
-                selectElement.classList.add('border-red-500'); // Adiciona borda vermelha
-                setTimeout(() => selectElement.classList.remove('border-red-500'), 2000); // Remove após 2s
+            // Foca no container para indicar o erro
+            const containerElement = form.querySelector('#user-selection-container');
+            if (containerElement) {
+                containerElement.scrollIntoView({ behavior: 'smooth' });
+                containerElement.classList.add('border-red-500', 'ring-1', 'ring-red-500'); // Adiciona borda vermelha
+                setTimeout(() => containerElement.classList.remove('border-red-500', 'ring-1', 'ring-red-500'), 2000); // Remove após 2s
             }
             return;
         }
@@ -300,17 +306,16 @@ export function openAgendamentoModal(agendamento) {
         }
     }, 'Salvar', `btn-primary ${!showSaveButton ? 'hidden' : ''}`);
 
-    // --- ALTERAÇÃO: Pré-seleciona múltiplos usuários ao editar ---
+    // --- ALTERAÇÃO: Pré-seleciona checkboxes ao editar ---
     // Verifica se 'usuarios_associados' existe e é um array
     if (isEditing && Array.isArray(data.usuarios_associados)) {
-        const selectElement = document.querySelector('select[name="para_usuario_ids[]"]');
-        if (selectElement) {
-            // Converte IDs associados para string para comparação segura (valores de <option> são strings)
+        const checkboxes = document.querySelectorAll('input[name="para_usuario_ids[]"]');
+        if (checkboxes) {
+            // Converte IDs associados para string para comparação segura
             const associatedIds = data.usuarios_associados.map(String);
-            Array.from(selectElement.options).forEach(option => {
-                // Verifica se o valor da opção está no array de IDs associados
-                if (associatedIds.includes(option.value)) {
-                    option.selected = true; // Marca a opção como selecionada
+            checkboxes.forEach(chk => {
+                if (associatedIds.includes(chk.value)) {
+                    chk.checked = true;
                 }
             });
         }

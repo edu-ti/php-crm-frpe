@@ -41,38 +41,36 @@ export async function renderReportsView(state) {
                     <div class="flex space-x-2">
                          <div class="flex flex-col">
                             <label class="text-xs text-gray-500 mb-1">De</label>
-                            <input type="month" id="filter-start-date" class="form-input text-sm border-gray-300 rounded-md shadow-sm w-32">
+                            <input type="month" id="filter-start-date" class="form-input text-sm border-gray-300 rounded-md shadow-sm w-48 font-semibold text-gray-700">
                         </div>
                         <div class="flex flex-col">
                             <label class="text-xs text-gray-500 mb-1">Até</label>
-                            <input type="month" id="filter-end-date" class="form-input text-sm border-gray-300 rounded-md shadow-sm w-32">
+                            <input type="month" id="filter-end-date" class="form-input text-sm border-gray-300 rounded-md shadow-sm w-48 font-semibold text-gray-700">
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">Fornecedor</label>
-                        <select id="filter-supplier" class="form-select w-64 text-sm border-gray-300 rounded-md text-ellipsis overflow-hidden">
-                            <option value="">Todos</option>
-                            <!-- Populated via JS -->
-                        </select>
+                        <div id="filter-supplier-container" class="w-64 relative">
+                            <!-- Custom Multi-select injected here -->
+                        </div>
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">Vendedor</label>
-                        <select id="filter-user" class="form-select w-64 text-sm border-gray-300 rounded-md text-ellipsis overflow-hidden">
-                            <option value="">Todos</option>
-                             <!-- Populated via JS -->
-                        </select>
+                         <div id="filter-user-container" class="w-64 relative">
+                            <!-- Custom Multi-select injected here -->
+                        </div>
                     </div>
 
                     <div class="flex space-x-2 flex-grow md:flex-grow-0 ml-auto">
-                        <button id="refresh-report-btn" class="btn btn-primary text-sm py-2 px-4" title="Filtrar">
+                        <button id="refresh-report-btn" class="btn btn-primary text-sm py-2 px-4 shadow-sm hover:shadow-md transition-shadow" title="Filtrar">
                              <i class="fas fa-filter mr-1"></i>Filtrar
                         </button>
-                        <button id="export-excel-btn" class="btn bg-green-600 text-white hover:bg-green-700 text-sm py-2 px-4" title="Excel">
+                        <button id="export-excel-btn" class="btn bg-green-600 text-white hover:bg-green-700 text-sm py-2 px-4 shadow-sm hover:shadow-md transition-shadow" title="Excel">
                              <i class="fas fa-file-excel mr-1"></i>XLS
                         </button>
-                        <button id="print-report-btn" class="btn btn-secondary text-sm py-2 px-4" title="Imprimir/PDF">
+                        <button id="print-report-btn" class="btn btn-secondary text-sm py-2 px-4 shadow-sm hover:shadow-md transition-shadow" title="Imprimir/PDF">
                              <i class="fas fa-print mr-1"></i>PDF
                         </button>
                     </div>
@@ -142,6 +140,27 @@ export async function renderReportsView(state) {
             .text-green-600 { color: #059669; }
             .text-red-500 { color: #dc2626; }
             .bg-yellow-pale { background-color: #fef9c3; }
+
+            /* Multi Select Custom Styles */
+            .multiselect-dropdown { user-select: none; }
+            .multiselect-button {
+                 display: flex; justify-content: space-between; align-items: center;
+                 width: 100%; padding: 0.5rem; background: white; border: 1px solid #d1d5db; border-radius: 0.375rem;
+                 font-size: 0.875rem; color: #1f2937; cursor: pointer; text-align: left;
+            }
+            .multiselect-button:focus { outline: 2px solid #a5b4fc; border-color: #6366f1; }
+            .multiselect-list {
+                display: none; position: absolute; z-index: 50; width: 100%; max-height: 15rem; overflow-y: auto;
+                background: white; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-top: 0.25rem;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+            .multiselect-list.show { display: block; }
+            .multiselect-item {
+                display: flex; align-items: center; padding: 0.5rem; cursor: pointer; transition: background-color 0.15s;
+            }
+            .multiselect-item:hover { background-color: #f3f4f6; }
+            .multiselect-item input[type="checkbox"] { margin-right: 0.5rem; height: 1rem; width: 1rem; color: #4f46e5; border-radius: 0.25rem; border-color: #d1d5db; }
+
         </style>
     `;
 
@@ -159,8 +178,8 @@ export async function renderReportsView(state) {
     document.getElementById('refresh-report-btn').addEventListener('click', loadReportData);
     document.getElementById('filter-start-date').addEventListener('change', loadReportData);
     document.getElementById('filter-end-date').addEventListener('change', loadReportData);
-    document.getElementById('filter-supplier').addEventListener('change', loadReportData);
-    document.getElementById('filter-user').addEventListener('change', loadReportData);
+    // document.getElementById('filter-supplier').addEventListener('change', loadReportData); // Removed standard select
+    // document.getElementById('filter-user').addEventListener('change', loadReportData); // Removed standard select
     document.getElementById('print-report-btn').addEventListener('click', () => window.print());
     document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
 
@@ -175,17 +194,99 @@ let currentReportData = [];
 
 function populateFilters() {
     const suppliers = appState.fornecedores || [];
-    const supSelect = document.getElementById('filter-supplier');
-    if (supSelect) supSelect.innerHTML = '<option value="">Todos os Fornecedores</option>' +
-        suppliers.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
+    renderMultiSelect('filter-supplier-container', 'supplier-select', suppliers.map(s => ({ value: s.id, label: s.nome })), 'Todos os Fornecedores');
 
     const users = appState.users || [];
-    const userSelect = document.getElementById('filter-user');
-    // Filtra apenas vendedores/comerciais
     const sellers = users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista'].includes(u.role));
-    if (userSelect) userSelect.innerHTML = '<option value="">Todos os Vendedores</option>' +
-        sellers.map(u => `<option value="${u.id}">${u.nome}</option>`).join('');
+    renderMultiSelect('filter-user-container', 'user-select', sellers.map(u => ({ value: u.id, label: u.nome })), 'Todos os Vendedores');
+
+    // Close dropdowns on outside click
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.multiselect-dropdown')) {
+            document.querySelectorAll('.multiselect-list').forEach(el => el.classList.remove('show'));
+        }
+    });
 }
+
+function renderMultiSelect(containerId, selectId, options, defaultText) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    let html = `
+        <div class="multiselect-dropdown relative" id="${selectId}-wrapper">
+            <button type="button" class="multiselect-button" onclick="toggleMultiSelect('${selectId}')" id="${selectId}-btn">
+                <span class="truncate block" id="${selectId}-text">${defaultText}</span>
+                <i class="fas fa-chevron-down text-gray-400 text-xs ml-2"></i>
+            </button>
+            <div class="multiselect-list" id="${selectId}-list">
+                <div class="p-2 border-b border-gray-100 flex justify-between">
+                     <button type="button" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium" onclick="toggleAllMultiSelect('${selectId}', true)">Marcar Todos</button>
+                     <button type="button" class="text-xs text-gray-500 hover:text-gray-700" onclick="toggleAllMultiSelect('${selectId}', false)">Limpar</button>
+                </div>
+                <!-- Options -->
+                ${options.map(opt => `
+                    <label class="multiselect-item">
+                        <input type="checkbox" value="${opt.value}" class="${selectId}-checkbox" onchange="updateMultiSelectText('${selectId}', '${defaultText}')">
+                        <span class="text-sm text-gray-700">${opt.label}</span>
+                    </label>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    container.innerHTML = html;
+}
+
+// Global scope helpers for onclick events (since module scope)
+window.toggleMultiSelect = function (id) {
+    const list = document.getElementById(`${id}-list`);
+    // Close others
+    document.querySelectorAll('.multiselect-list').forEach(el => {
+        if (el.id !== `${id}-list`) el.classList.remove('show');
+    });
+    list.classList.toggle('show');
+};
+
+window.toggleAllMultiSelect = function (id, selectAll) {
+    const checkboxes = document.querySelectorAll(`.${id}-checkbox`);
+    checkboxes.forEach(cb => cb.checked = selectAll);
+    const defaultText = id.includes('supplier') ? 'Todos os Fornecedores' : 'Todos os Vendedores';
+    updateMultiSelectText(id, defaultText);
+};
+
+window.updateMultiSelectText = function (id, defaultText) {
+    const checkboxes = document.querySelectorAll(`.${id}-checkbox:checked`);
+    const btnText = document.getElementById(`${id}-text`);
+    const total = document.querySelectorAll(`.${id}-checkbox`).length;
+
+    if (checkboxes.length === 0) {
+        btnText.innerText = defaultText; // Or 'Nenhum selecionado' but user wants default 'Todos' behavior if none explicit? Actually usually none means all in filters, or validation error. User screenshot implies 'Todos' is default.
+        // If 0 selected, let's treat as "All" for UI Text or "Nenhum"?
+        // Usually filters: empty means all. Let's keep "Todos" text if 0.
+        // But logic is: if 0 selected sends null -> backend treats as all.
+        btnText.innerText = defaultText;
+        return;
+    }
+
+    if (checkboxes.length === total) {
+        btnText.innerText = defaultText; // All selected
+        return;
+    }
+
+    if (checkboxes.length === 1) {
+        // Find label
+        const label = checkboxes[0].nextElementSibling.innerText;
+        btnText.innerText = label;
+    } else {
+        btnText.innerText = `${checkboxes.length} selecionados`;
+    }
+};
+
+window.getMultiSelectValues = function (id) {
+    const checkboxes = document.querySelectorAll(`.${id}-checkbox:checked`);
+    // If none selected, return empty (implies all in backend logic if we passed null, or restrict?)
+    // Based on backend change: empty sends null.
+    return Array.from(checkboxes).map(cb => cb.value);
+};
 
 async function loadReportData() {
     const container = document.getElementById('report-content');
@@ -194,8 +295,18 @@ async function loadReportData() {
     const type = document.getElementById('report-type').value;
     const start = document.getElementById('filter-start-date').value;
     const end = document.getElementById('filter-end-date').value;
-    const supplierId = document.getElementById('filter-supplier').value;
-    const userId = document.getElementById('filter-user').value;
+
+    // Get Multi-select values
+    const supplierIds = window.getMultiSelectValues('supplier-select');
+    const userIds = window.getMultiSelectValues('user-select');
+
+    // If empty is "All", let's pass empty array/null.
+    // If user explicitly unchecks all, it implies "None"? Or "All"? 
+    // In most dashboard filters, clearing selection = All.
+    // My backend handles empty as All. Note UI says "Todos" when empty.
+
+    const supplierPayload = supplierIds.length > 0 ? supplierIds.join(',') : '';
+    const userPayload = userIds.length > 0 ? userIds.join(',') : '';
 
     if (!start || !end) {
         showToast('Selecione o período.', 'warning');
@@ -218,8 +329,9 @@ async function loadReportData() {
             report_type: type,
             start_date: `${start}-01`,
             end_date: formattedEnd,
-            supplier_id: supplierId,
-            user_id: userId
+            end_date: formattedEnd,
+            supplier_id: supplierPayload,
+            user_id: userPayload
         };
         const response = await apiCall('get_report_data', { params });
 
@@ -651,15 +763,16 @@ function loadTargetsEditor(supplierId, year = null) {
             const fmt = (v) => formatCurrency(v);
 
             // Styles
-            const inputClass = "form-input text-right text-sm border-gray-300 rounded w-full focus:ring-indigo-500 focus:border-indigo-500 font-mono";
-            const headerClass = "border bg-gray-100 text-center w-24 px-1 text-xs font-bold";
+            // Styles
+            const inputClass = "form-input text-right text-xs border-gray-300 rounded w-full focus:ring-indigo-500 focus:border-indigo-500 font-mono p-1 h-8";
+            const headerClass = "border bg-gray-100 text-center w-24 px-1 text-[10px] font-bold uppercase";
 
             // --- HEADER ---
             let html = `
                 <div class="mb-6">
                     <div class="p-5 bg-white rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
                         <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-                        <div class="flex flex-wrap gap-6 items-end" id="header-state-inputs">
+                        <div class="flex flex-wrap gap-6 items-center" id="header-state-inputs">
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">Ano Base</label>
                                 <input type="number" id="target-year-input" class="form-input font-bold text-gray-900 w-24 text-center border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500" value="${year}">
@@ -667,9 +780,9 @@ function loadTargetsEditor(supplierId, year = null) {
                              
                             <div class="pl-6 border-l border-gray-200">
                                  <label class="block text-xs font-bold text-gray-700 mb-1 text-indigo-900 uppercase tracking-wider">Meta Global (R$)</label>
-                                 <input type="text" id="sup-meta-annual-display" class="form-input text-right font-bold text-gray-900 w-48 bg-gray-50 border-gray-200" value="${fmt(metaAnualTotal)}" readonly>
+                                 <input type="text" id="sup-meta-annual-display" class="form-input text-right font-bold text-sm text-gray-900 w-48 bg-gray-50 border-gray-200" value="${fmt(metaAnualTotal)}" readonly>
                                  <input type="hidden" id="sup-meta-annual" value="${metaAnualTotal}">
-                                 <p class="text-[10px] text-gray-400 mt-1 flex items-center"><i class="fas fa-calculator mr-1"></i> Soma automática dos estados</p>
+                                 <p class="text-[10px] text-gray-400 mt-1 flex items-center"><i class="fas fa-calculator mr-1"></i> Soma automática</p>
                             </div>
                         </div>
                         
@@ -795,7 +908,7 @@ function loadTargetsEditor(supplierId, year = null) {
                 const div = document.createElement('div');
                 div.innerHTML = `
                     <label class="block text-xs font-bold text-gray-700 mb-1">Meta Anual ${uf} (R$)</label>
-                    <input type="text" class="form-input text-right text-gray-900 font-bold w-32 border-gray-300 rounded state-annual-input currency-input focus:ring-indigo-500 focus:border-indigo-500" data-state="${uf}" value="${annualVal > 0 ? fmt(annualVal) : ''}" placeholder="R$ 0,00">
+                    <input type="text" class="form-input text-right text-gray-900 font-bold text-sm w-40 border-gray-300 rounded state-annual-input currency-input focus:ring-indigo-500 focus:border-indigo-500" data-state="${uf}" value="${annualVal > 0 ? fmt(annualVal) : ''}" placeholder="R$ 0,00">
                 `;
                 stateHeaderContainer.appendChild(div);
 

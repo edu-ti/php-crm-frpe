@@ -5,21 +5,33 @@ function handle_get_report_data($pdo)
 {
     $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-01-01');
     $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-12-31');
-    $supplier_id = isset($_GET['supplier_id']) && $_GET['supplier_id'] !== '' ? (int) $_GET['supplier_id'] : null;
-    $user_id = isset($_GET['user_id']) && $_GET['user_id'] !== '' ? (int) $_GET['user_id'] : null;
+
+    // Handle multi-select: receive as comma-separated string or array
+    $supplier_id_input = isset($_GET['supplier_id']) ? $_GET['supplier_id'] : null;
+    $user_id_input = isset($_GET['user_id']) ? $_GET['user_id'] : null;
+
+    // Helper to parse comma-separated or array to array of integers
+    $parseIds = function ($input) {
+        if (is_array($input))
+            return array_map('intval', $input);
+        if (is_string($input) && strlen($input) > 0)
+            return array_map('intval', explode(',', $input));
+        if (is_numeric($input))
+            return [(int) $input];
+        return [];
+    };
+
+    $supplier_ids = $parseIds($supplier_id_input);
+    $user_ids = $parseIds($user_id_input);
+
     $type = $_GET['type'] ?? 'sales';
     try {
-        $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-01-01');
-        $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-12-31');
-        $supplier_id = !empty($_GET['supplier_id']) ? (int) $_GET['supplier_id'] : null;
-        $user_id = !empty($_GET['user_id']) ? (int) $_GET['user_id'] : null;
-
         if ($type === 'products') {
-            $data = get_products_report($pdo, $start_date, $end_date, $supplier_id, $user_id);
+            $data = get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids);
         } elseif ($type === 'licitacoes') {
-            $data = get_licitacoes_report($pdo, $start_date, $end_date, $supplier_id, $user_id);
+            $data = get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids);
         } else {
-            $data = get_sales_report($pdo, $start_date, $end_date, $supplier_id, $user_id);
+            $data = get_sales_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids);
         }
 
         echo json_encode(['success' => true, 'report_data' => $data]);
@@ -29,8 +41,16 @@ function handle_get_report_data($pdo)
     }
 }
 
-function get_sales_report($pdo, $start_date, $end_date, $supplier_id, $user_id)
+function get_sales_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids)
 {
+    // Helper to build IN clause
+    $buildIn = function ($ids) {
+        if (empty($ids))
+            return [null, []];
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        return [$placeholders, $ids];
+    };
+
     // 1. Fetch Sales Data
     $sql = "
         SELECT 
@@ -49,14 +69,16 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_id, $user_id)
 
     $params = [$start_date, $end_date];
 
-    if ($supplier_id) {
-        $sql .= " AND vf.fornecedor_id = ?";
-        $params[] = $supplier_id;
+    if (!empty($supplier_ids)) {
+        list($ph, $vals) = $buildIn($supplier_ids);
+        $sql .= " AND vf.fornecedor_id IN ($ph)";
+        $params = array_merge($params, $vals);
     }
 
-    if ($user_id) {
-        $sql .= " AND vf.usuario_id = ?";
-        $params[] = $user_id;
+    if (!empty($user_ids)) {
+        list($ph, $vals) = $buildIn($user_ids);
+        $sql .= " AND vf.usuario_id IN ($ph)";
+        $params = array_merge($params, $vals);
     }
 
     $sql .= " GROUP BY vf.fornecedor_id, vf.usuario_id, YEAR(vf.data_venda), MONTH(vf.data_venda)
@@ -82,18 +104,18 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_id, $user_id)
         WHERE CAST(CONCAT(vo.ano, '-', LPAD(vo.mes, 2, '0'), '-01') AS DATE) BETWEEN ? AND ?
     ";
 
-    // Adjust logic to properly filter meta by date range logic or just simple year/month match
-    // Simplified range check for targets:
     $params_metas = [$start_date, $end_date];
 
-    if ($supplier_id) {
-        $sql_metas .= " AND vo.fornecedor_id = ?";
-        $params_metas[] = $supplier_id;
+    if (!empty($supplier_ids)) {
+        list($ph, $vals) = $buildIn($supplier_ids);
+        $sql_metas .= " AND vo.fornecedor_id IN ($ph)";
+        $params_metas = array_merge($params_metas, $vals);
     }
 
-    if ($user_id) {
-        $sql_metas .= " AND vo.usuario_id = ?";
-        $params_metas[] = $user_id;
+    if (!empty($user_ids)) {
+        list($ph, $vals) = $buildIn($user_ids);
+        $sql_metas .= " AND vo.usuario_id IN ($ph)";
+        $params_metas = array_merge($params_metas, $vals);
     }
 
     $stmt_metas = $pdo->prepare($sql_metas);
@@ -112,8 +134,6 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_id, $user_id)
                 'rows' => []
             ];
         }
-        // Check if user row exists in rows array (need to search or use map)
-        // Using map for easier access then convert to array values
         if (!isset($array[$fid]['rows_map'][$uid])) {
             $array[$fid]['rows_map'][$uid] = [
                 'usuario_id' => $uid,
@@ -159,74 +179,94 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_id, $user_id)
         }
     }
 
-    // 4. Fetch Supplier Goals (Annual/Monthly) & User Targets Flag
+    // 4. Fetch Supplier Goals & User Targets Flag for ALL suppliers present in data
     $year = date('Y', strtotime($start_date));
-    if ($supplier_id) {
-        try {
-            $stmt_sup = $pdo->prepare("SELECT meta_anual, meta_mensal, user_targets_enabled FROM fornecedor_metas WHERE fornecedor_id = ? AND ano = ?");
-            $stmt_sup->execute([$supplier_id, $year]);
-            $sup_meta = $stmt_sup->fetch(PDO::FETCH_ASSOC);
-            if ($sup_meta && isset($report_data[$supplier_id])) {
-                $report_data[$supplier_id]['meta_anual'] = (float) $sup_meta['meta_anual'];
-                $report_data[$supplier_id]['meta_mensal'] = (float) $sup_meta['meta_mensal'];
-                $report_data[$supplier_id]['user_targets_enabled'] = (int) ($sup_meta['user_targets_enabled'] ?? 1);
-            } else if (isset($report_data[$supplier_id])) {
-                // Default to enabled if no meta record found
-                $report_data[$supplier_id]['user_targets_enabled'] = 1;
+    $supplier_keys = array_keys($report_data);
+
+    if (!empty($supplier_keys)) {
+        list($ph, $vals) = $buildIn($supplier_keys);
+
+        // Fetch all metas for relevant suppliers
+        $sql_sup = "SELECT fornecedor_id, meta_anual, meta_mensal, user_targets_enabled FROM fornecedor_metas WHERE fornecedor_id IN ($ph) AND ano = ?";
+        $params_sup = array_merge($vals, [$year]);
+
+        $stmt_sup = $pdo->prepare($sql_sup);
+        $stmt_sup->execute($params_sup);
+        $sup_metas = $stmt_sup->fetchAll(PDO::FETCH_GROUP | PDO::FETCH_ASSOC); // Group by fornecedor_id
+        // $sup_metas format: [ 123 => [ [ 'meta_anual' => ..., 'user_targets_enabled' => ... ] ] ]
+
+        foreach ($supplier_keys as $sid) {
+            if (isset($sup_metas[$sid][0])) {
+                $m = $sup_metas[$sid][0];
+                $report_data[$sid]['meta_anual'] = (float) $m['meta_anual'];
+                $report_data[$sid]['meta_mensal'] = (float) $m['meta_mensal'];
+                $report_data[$sid]['user_targets_enabled'] = (int) ($m['user_targets_enabled'] ?? 1);
+            } else {
+                $report_data[$sid]['meta_anual'] = 0;
+                $report_data[$sid]['meta_mensal'] = 0;
+                $report_data[$sid]['user_targets_enabled'] = 1; // Default
             }
+        }
 
-            // 5. Fetch Sales by State
-            $sql_states = "
-                SELECT 
-                    COALESCE(o.estado, c.estado, 'ND') as estado,
-                    SUM(vf.valor_total) as total_vendido
-                FROM vendas_fornecedores vf
-                LEFT JOIN organizacoes o ON vf.organizacao_id = o.id
-                LEFT JOIN clientes_pf c ON vf.cliente_pf_id = c.id
-                WHERE vf.data_venda BETWEEN ? AND ?
-                AND vf.fornecedor_id = ?
-                GROUP BY estado
-            ";
-            $stmt_st = $pdo->prepare($sql_states);
-            $stmt_st->execute([$start_date, $end_date, $supplier_id]);
-            $state_sales = $stmt_st->fetchAll(PDO::FETCH_ASSOC);
+        // 5. Fetch Sales by State for relevant suppliers
+        $sql_states = "
+            SELECT 
+                vf.fornecedor_id,
+                COALESCE(o.estado, c.estado, 'ND') as estado,
+                SUM(vf.valor_total) as total_vendido
+            FROM vendas_fornecedores vf
+            LEFT JOIN organizacoes o ON vf.organizacao_id = o.id
+            LEFT JOIN clientes_pf c ON vf.cliente_pf_id = c.id
+            WHERE vf.data_venda BETWEEN ? AND ?
+            AND vf.fornecedor_id IN ($ph)
+            GROUP BY vf.fornecedor_id, estado
+        ";
+        $params_st = array_merge([$start_date, $end_date], $vals);
 
-            $report_data[$supplier_id]['state_sales'] = [];
-            foreach ($state_sales as $ss) {
-                // Ensure state is valid 2 chars (sometimes ND or empty)
-                $uf = strtoupper(trim($ss['estado']));
-                if (strlen($uf) === 2) {
-                    $report_data[$supplier_id]['state_sales'][$uf] = (float) $ss['total_vendido'];
-                }
+        $stmt_st = $pdo->prepare($sql_states);
+        $stmt_st->execute($params_st);
+        $state_sales = $stmt_st->fetchAll(PDO::FETCH_ASSOC);
+
+        // Map state sales to report_data
+        foreach ($state_sales as $ss) {
+            $sid = $ss['fornecedor_id'];
+            if (!isset($report_data[$sid]['state_sales']))
+                $report_data[$sid]['state_sales'] = [];
+
+            $uf = strtoupper(trim($ss['estado']));
+            if (strlen($uf) === 2) {
+                $report_data[$sid]['state_sales'][$uf] = (float) $ss['total_vendido'];
             }
+        }
 
-            // 6. Fetch State Goals (Target) for Comparison
-            $stmt_st_goals = $pdo->prepare("SELECT estado, meta_anual FROM fornecedor_metas_estados WHERE fornecedor_id = ? AND ano = ?");
-            $stmt_st_goals->execute([$supplier_id, $year]);
-            $state_goals = $stmt_st_goals->fetchAll(PDO::FETCH_ASSOC);
+        // 6. Fetch State Goals
+        $sql_st_goals = "SELECT fornecedor_id, estado, meta_anual FROM fornecedor_metas_estados WHERE fornecedor_id IN ($ph) AND ano = ?";
+        $params_st_goals = array_merge($vals, [$year]);
 
-            $report_data[$supplier_id]['state_goals'] = [];
-            foreach ($state_goals as $sg) {
-                $report_data[$supplier_id]['state_goals'][$sg['estado']] = (float) $sg['meta_anual'];
-            }
+        $stmt_st_goals = $pdo->prepare($sql_st_goals);
+        $stmt_st_goals->execute($params_st_goals);
+        $state_goals = $stmt_st_goals->fetchAll(PDO::FETCH_ASSOC);
 
-        } catch (Exception $e) {
-            // Table might not exist yet. Ignore.
+        foreach ($state_goals as $sg) {
+            $sid = $sg['fornecedor_id'];
+            if (!isset($report_data[$sid]['state_goals']))
+                $report_data[$sid]['state_goals'] = [];
+            $report_data[$sid]['state_goals'][$sg['estado']] = (float) $sg['meta_anual'];
         }
     }
 
     return $report_data;
 }
 
-function get_products_report($pdo, $start_date, $end_date, $supplier_id, $user_id)
+function get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids)
 {
-    // Assuming 'oportunidades' has 'fornecedor_id' (or via some relation) and 'usuario_id'
-    // And 'oportunidade_itens' holds products.
-    // Status 'Ganho' (Assuming id for Ganho, lets check common standard or use status name if table unknown)
-    // Checking `oportunidades` table structure from previous context: it has `fase_id` or similar? 
-    // Assuming 'Ganho' status or filtering generally for now. If table structure uncertain, we'll do best guess.
-    // Actually, report might just list *all* opportunities or just won ones. Let's assume Won/Sold.
-    // However, the user asked for "Products Sold".
+    // Helper to build IN clause
+    $buildIn = function ($ids) {
+        if (empty($ids))
+            return [null, []];
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        return [$placeholders, $ids];
+    };
 
     $sql = "
         SELECT 
@@ -242,22 +282,18 @@ function get_products_report($pdo, $start_date, $end_date, $supplier_id, $user_i
         JOIN fornecedores f ON o.fornecedor_id = f.id
         WHERE o.created_at BETWEEN ? AND ? 
     ";
-    // Ideally use a 'data_fechamento' or similar. Using created_at for now or if 'data_venda' exists.
-    // Sales Logic usually relies on 'vendas_fornecedores'. But that doesn't detail items.
-    // Let's assume 'oportunidades' with status 'Ganho' matches sales.
-    // Let's filter by fase_id if possible. 
-    // IMPORTANT: I will assume all opportunities in timeframe for now, or add status check if I knew the schema better.
-    // Safe bet: Just filter by date.
 
     $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
 
-    if ($supplier_id) {
-        $sql .= " AND o.fornecedor_id = ?";
-        $params[] = $supplier_id;
+    if (!empty($supplier_ids)) {
+        list($ph, $vals) = $buildIn($supplier_ids);
+        $sql .= " AND o.fornecedor_id IN ($ph)";
+        $params = array_merge($params, $vals);
     }
-    if ($user_id) {
-        $sql .= " AND o.usuario_id = ?";
-        $params[] = $user_id;
+    if (!empty($user_ids)) {
+        list($ph, $vals) = $buildIn($user_ids);
+        $sql .= " AND o.usuario_id IN ($ph)";
+        $params = array_merge($params, $vals);
     }
 
     $sql .= " GROUP BY o.fornecedor_id, oi.produto_id, oi.descricao ORDER BY f.nome, valor_total DESC";
@@ -282,10 +318,16 @@ function get_products_report($pdo, $start_date, $end_date, $supplier_id, $user_i
     return $report_data;
 }
 
-function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_id, $user_id)
+function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids)
 {
-    // Fetch opportunities that are Licitations
-    // Filter: modalidade IS NOT NULL or numero_edital IS NOT NULL
+    // Helper to build IN clause
+    $buildIn = function ($ids) {
+        if (empty($ids))
+            return [null, []];
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        return [$placeholders, $ids];
+    };
+
     $sql = "
         SELECT 
             o.id,
@@ -296,7 +338,7 @@ function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_id, $user
             o.objeto,
             o.valor_total,
             o.created_at,
-            o.fase_id -- Assuming status/phase
+            o.fase_id
         FROM oportunidades o
         JOIN fornecedores f ON o.fornecedor_id = f.id
         WHERE (o.numero_edital IS NOT NULL AND o.numero_edital != '')
@@ -305,14 +347,16 @@ function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_id, $user
 
     $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
 
-    if ($supplier_id) {
-        $sql .= " AND o.fornecedor_id = ?";
-        $params[] = $supplier_id;
+    if (!empty($supplier_ids)) {
+        list($ph, $vals) = $buildIn($supplier_ids);
+        $sql .= " AND o.fornecedor_id IN ($ph)";
+        $params = array_merge($params, $vals);
     }
 
-    if ($user_id) {
-        $sql .= " AND o.usuario_id = ?";
-        $params[] = $user_id;
+    if (!empty($user_ids)) {
+        list($ph, $vals) = $buildIn($user_ids);
+        $sql .= " AND o.usuario_id IN ($ph)";
+        $params = array_merge($params, $vals);
     }
 
     $sql .= " ORDER BY f.nome, o.created_at DESC";
@@ -431,10 +475,8 @@ function handle_save_targets($pdo)
         return;
     }
 
+    // 1. Ensure Tables Exist (DDL causes implicit commit, so run before transaction)
     try {
-        $pdo->beginTransaction();
-
-        // 1. Ensure Tables Exist
         $pdo->exec("CREATE TABLE IF NOT EXISTS fornecedor_metas (
             id INT AUTO_INCREMENT PRIMARY KEY,
             fornecedor_id INT NOT NULL,
@@ -461,7 +503,12 @@ function handle_save_targets($pdo)
         } catch (Exception $e) {
             $pdo->exec("ALTER TABLE fornecedor_metas ADD COLUMN user_targets_enabled TINYINT(1) DEFAULT 1");
         }
+    } catch (Exception $e) {
+        // Continue, might failed if table exists or permission issue, but let proper queries fail if so.
+    }
 
+    try {
+        $pdo->beginTransaction();
 
         // 2. Save Supplier Goals
         $stmt = $pdo->prepare("
