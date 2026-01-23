@@ -1488,7 +1488,7 @@ async function handleOpportunityFormSubmit(form) {
 
         } else { // Criando
             appState.opportunities.push(savedOpportunity);
-            if (savedOpportunity.comercial_user_id && savedOpportunity.pre_proposal_number && ['Comercial', 'Gestor', 'Analista'].includes(appState.currentUser.role)) {
+            if (savedOpportunity.comercial_user_id && savedOpportunity.pre_proposal_number && appState.currentUser.permissions.canEdit) {
                 appState.pre_proposals.push(savedOpportunity);
                 if (appState.activeView === 'proposals') {
                     const { renderProposalsView } = await import('./proposals.js');
