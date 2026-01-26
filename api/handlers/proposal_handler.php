@@ -448,6 +448,8 @@ function create_vendas_fornecedores_from_proposal($pdo, $proposta_id, $organizac
 
 /**
  * Sincroniza a etapa da oportunidade baseada no status da proposta.
+ * Suporta múltiplos funis (Vendas, Licitações, etc.) tentando mapear
+ * o status da proposta para etapas equivalentes no funil da oportunidade.
  */
 function sync_opportunity_stage($pdo, $oportunidade_id, $status_proposta)
 {
@@ -455,46 +457,88 @@ function sync_opportunity_stage($pdo, $oportunidade_id, $status_proposta)
         return;
     }
 
-    $mapa_status = [
-        'ENVIADA' => 'Proposta',
-        'Recusada' => 'Recusado',
-        'Aprovada' => 'Fechado',
-        'Negociando' => 'Negociação'
-    ];
+    // 1. Identificar qual Funil a oportunidade pertence
+    // Precisamos do funil_id. A oportunidade tem etapa_id, que liga a etapas_funil, que tem funil_id.
+    try {
+        $stmt_funil = $pdo->prepare("
+            SELECT f.id as funil_id, f.nome as funil_nome 
+            FROM oportunidades o
+            JOIN etapas_funil ef ON o.etapa_id = ef.id
+            JOIN funis f ON ef.funil_id = f.id
+            WHERE o.id = ?
+        ");
+        $stmt_funil->execute([$oportunidade_id]);
+        $funil_data = $stmt_funil->fetch(PDO::FETCH_ASSOC);
 
-    // Verifica se o status atual da proposta tem um mapeamento definido
-    // Pode haver variações de case, então vamos normalizar para comparação se necessário,
-    // mas o array acima usa as chaves exatas fornecidas.
-    // Se o status da proposta não estiver no mapa, não faz nada.
-
-    // Vamos tentar buscar case-insensitive para garantir?
-    // O PHP array keys são case-sensitive. Vamos iterar.
-    $target_stage_name = null;
-    foreach ($mapa_status as $key => $val) {
-        if (strcasecmp($key, $status_proposta) === 0) {
-            $target_stage_name = $val;
-            break;
+        if (!$funil_data) {
+            error_log("[Sync Opp Stage] ERRO: Não foi possível determinar o funil da Oportunidade ID {$oportunidade_id}.");
+            return;
         }
-    }
 
-    if ($target_stage_name) {
-        try {
-            // Busca o ID da etapa correspondente
-            $stmt_stage = $pdo->prepare("SELECT id FROM etapas_funil WHERE nome = ? LIMIT 1");
-            $stmt_stage->execute([$target_stage_name]);
-            $stage_id = $stmt_stage->fetchColumn();
+        $funil_id = $funil_data['funil_id'];
+        $funil_nome = $funil_data['funil_nome'];
 
-            if ($stage_id) {
-                // Atualiza a oportunidade
-                $stmt_update = $pdo->prepare("UPDATE oportunidades SET etapa_id = ?, data_ultima_movimentacao = NOW() WHERE id = ?");
-                $stmt_update->execute([$stage_id, $oportunidade_id]);
-                error_log("[Sync Opp Stage] Opp ID {$oportunidade_id} movida para etapa '{$target_stage_name}' (ID: {$stage_id}) devido ao status da proposta '{$status_proposta}'.");
-            } else {
-                error_log("[Sync Opp Stage] Etapa '{$target_stage_name}' não encontrada no banco.");
+        error_log("[Sync Opp Stage] Sincronizando Opp ID {$oportunidade_id} (Funil: {$funil_nome} [{$funil_id}]) com Status Proposta: '{$status_proposta}'");
+
+        // 2. Definir candidatos de Etapa baseados no status da proposta
+        // Ordem de prioridade importa.
+        $candidatos = [];
+
+        // Normaliza o status para comparação (embora os arrays abaixo usem chaves diretas para mapear)
+        // Mapeamento: Status Proposta -> Lista de possíveis nomes de Etapa
+        $mapa_candidatos = [
+            'ENVIADA' => ['Proposta', 'Envio de Proposta', 'Acolhimento de propostas'],
+            'Recusada' => ['Recusado', 'Desclassificado', 'Perdida', 'Perdido', 'Cancelado', 'Cancelada', 'Fracassado', 'Revogado', 'Anulado', 'Suspenso'],
+            'Aprovada' => ['Fechado', 'Contrato', 'Homologado', 'Empenhado', 'Ganho', 'Vendido'],
+            'Negociando' => ['Negociação', 'Em Negociação', 'Análise']
+        ];
+
+        // Tenta encontrar correspondência exata ou case-insensitive
+        foreach ($mapa_candidatos as $key => $lista) {
+            if (strcasecmp($key, $status_proposta) === 0) {
+                $candidatos = $lista;
+                break;
             }
-        } catch (Exception $e) {
-            error_log("[Sync Opp Stage] Erro ao sincronizar: " . $e->getMessage());
         }
+
+        if (empty($candidatos)) {
+            error_log("[Sync Opp Stage] AVISO: Nenhuma etapa candidata mapeada para o status '{$status_proposta}'.");
+            return;
+        }
+
+        // 3. Buscar a primeira etapa válida no funil atual
+        // Monta placeholders para o IN (?, ?, ...)
+        $placeholders = implode(',', array_fill(0, count($candidatos), '?'));
+
+        // Prepara os parâmetros: funil_id primeiro, depois a lista de candidatos
+        $params = array_merge([$funil_id], $candidatos);
+
+        // Query para buscar Stages que existem neste funil e estão na lista de candidatos.
+        // A ordem do FIELD ajuda a priorizar a ordem definida no array $candidatos, 
+        // mas como são nomes diferentes, geralmente só vai achar um ou outro dependendo do funil.
+        // Se houver conflito, pega o de menor ordem (mais "cedo" no funil? ou usar FIELD).
+        // Vamos confiar que os nomes são distintos o suficiente entre funis ou equivalentes.
+        $sql = "SELECT id, nome FROM etapas_funil WHERE funil_id = ? AND nome IN ($placeholders) LIMIT 1";
+
+        $stmt_search = $pdo->prepare($sql);
+        $stmt_search->execute($params);
+        $found_stage = $stmt_search->fetch(PDO::FETCH_ASSOC);
+
+        if ($found_stage) {
+            $new_stage_id = $found_stage['id'];
+            $new_stage_name = $found_stage['nome'];
+
+            // 4. Atualizar a oportunidade
+            $stmt_update = $pdo->prepare("UPDATE oportunidades SET etapa_id = ?, data_ultima_movimentacao = NOW() WHERE id = ?");
+            $stmt_update->execute([$new_stage_id, $oportunidade_id]);
+
+            error_log("[Sync Opp Stage] SUCESSO: Opp ID {$oportunidade_id} movida para '{$new_stage_name}' (ID: {$new_stage_id}).");
+        } else {
+            error_log("[Sync Opp Stage] FALHA: Nenhuma etapa correspondente encontrada no Funil '{$funil_nome}' para os candidatos: " . implode(', ', $candidatos));
+        }
+
+    } catch (Exception $e) {
+        error_log("[Sync Opp Stage] EXCEPTION: " . $e->getMessage());
     }
 }
 

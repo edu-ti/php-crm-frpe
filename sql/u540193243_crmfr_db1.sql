@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Tempo de geração: 06/01/2026 às 00:20
+-- Tempo de geração: 26/01/2026 às 17:57
 -- Versão do servidor: 11.8.3-MariaDB-log
 -- Versão do PHP: 7.2.34
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Banco de dados: `u540193243_crmfr_db`
+-- Banco de dados: `u540193243_crmfr_db1`
 --
 
 -- --------------------------------------------------------
@@ -44,7 +44,7 @@ CREATE TABLE `agendamentos` (
 --
 
 INSERT INTO `agendamentos` (`id`, `titulo`, `descricao`, `data_inicio`, `data_fim`, `tipo`, `criado_por_id`, `oportunidade_id`, `data_criacao`) VALUES
-(18, 'teste', '', '2026-01-06 15:42:00', NULL, 'Reunião', 1, NULL, '2026-01-05 23:42:48');
+(20, 'teste de notificação de agendamento', '', '2026-01-26 10:00:00', NULL, 'Treinamento', 1, NULL, '2026-01-23 16:46:53');
 
 -- --------------------------------------------------------
 
@@ -62,7 +62,7 @@ CREATE TABLE `agendamento_usuarios` (
 --
 
 INSERT INTO `agendamento_usuarios` (`agendamento_id`, `usuario_id`) VALUES
-(18, 1);
+(20, 1);
 
 -- --------------------------------------------------------
 
@@ -344,7 +344,8 @@ INSERT INTO `clientes_pf` (`id`, `nome`, `cpf`, `data_nascimento`, `email`, `tel
 (270, 'MARIA CICERA NICACIO DE SOUZA', '78800080472', NULL, NULL, '991101653', '57160000', 'R  DAS OSTRAS, 26', NULL, NULL, 'FRANCES', 'Marechal Deodoro', 'AL', '2025-10-28 12:29:54'),
 (271, 'ADSON DE ALMEIDA LOPES', '01119113466', NULL, NULL, '999326666', '57030170', 'AV Doutor Antônio Gouveia, 952', NULL, NULL, 'Pajuçara', 'Maceió', 'AL', '2025-10-28 12:29:54'),
 (272, 'ANA CATARINA DE MORAES BARROS CAMPOS', '04365468413', NULL, NULL, NULL, '50070280', 'R Joaquim de Brito, 240', NULL, NULL, 'Ilha do Leite', 'Recife', 'PE', '2025-10-28 12:29:54'),
-(273, 'DAVYD MARCONDY DE OLIVEIRA ALVES', '', NULL, NULL, '', '55022150', 'Rua João Faustino Vila Nova', '156', NULL, 'Rendeiras', 'Caruaru', 'PE', '2025-12-09 12:52:30');
+(273, 'DAVYD MARCONDY DE OLIVEIRA ALVES', '', NULL, NULL, '', '55022150', 'Rua João Faustino Vila Nova', '156', NULL, 'Rendeiras', 'Caruaru', 'PE', '2025-12-09 12:52:30'),
+(280, 'RENAN FIGUEIREDO', '06516246473', NULL, 'renanffreitas@gmail.com', '83996515455', '58.500000', NULL, NULL, NULL, NULL, 'Monteiro', 'PB', '2026-01-13 12:28:48');
 
 -- --------------------------------------------------------
 
@@ -374,7 +375,10 @@ INSERT INTO `contatos` (`id`, `organizacao_id`, `nome`, `cargo`, `setor`, `email
 (10, 448, 'Jelza', 'secretaria', 'Dr. Audes', NULL, ' 81 99610-4985', '2025-12-01 20:53:31'),
 (11, 917, 'Roger', NULL, 'ADM', NULL, '81994432560', '2025-12-02 18:28:03'),
 (12, 345, 'ARTUR ARAUJO', NULL, 'ADM', NULL, '81982427758', '2025-12-02 18:36:28'),
-(13, 915, 'Adila Aquino', NULL, NULL, NULL, NULL, '2025-12-14 19:43:59');
+(13, 915, 'Adila Aquino', NULL, NULL, NULL, NULL, '2025-12-14 19:43:59'),
+(14, 359, 'Sunderlene Abreu', 'Engenheira', 'Engenharia clínica', 'eclinicahse@gigavida.com.br', '81 33147914/999300164', '2026-01-09 12:42:05'),
+(15, 937, 'Romualdo', NULL, 'compras', 'FINANCEIROEQUIPASAUDE@GMAIL.COM', '(83) 3271-3480 / 83 99404-2316', '2026-01-09 18:51:35'),
+(16, 495, 'GILTON VASCONCELOS', 'secretaria', 'Engenharia clínica', 'SAUDE@TRIUNFO.PE.GOV.BR', '(87) 9105-5012/ (87) 3846-1365 (87)99961-1889', '2026-01-16 14:53:49');
 
 -- --------------------------------------------------------
 
@@ -386,21 +390,35 @@ CREATE TABLE `etapas_funil` (
   `id` int(11) NOT NULL,
   `funil_id` int(11) NOT NULL,
   `nome` varchar(255) NOT NULL,
-  `ordem` int(11) NOT NULL
+  `ordem` int(11) NOT NULL,
+  `cor` varchar(20) DEFAULT '#cccccc'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Despejando dados para a tabela `etapas_funil`
 --
 
-INSERT INTO `etapas_funil` (`id`, `funil_id`, `nome`, `ordem`) VALUES
-(1, 1, 'Prospectando', 1),
-(2, 1, 'Contato', 2),
-(3, 1, 'Treinamentos', 3),
-(4, 1, 'Proposta', 4),
-(5, 1, 'Negociação', 5),
-(6, 1, 'Fechado', 6),
-(7, 1, 'Pós-venda', 7);
+INSERT INTO `etapas_funil` (`id`, `funil_id`, `nome`, `ordem`, `cor`) VALUES
+(1, 1, 'Prospectando', 1, '#cccccc'),
+(2, 1, 'Contato', 2, '#cccccc'),
+(3, 1, 'Treinamentos', 3, '#cccccc'),
+(4, 1, 'Proposta', 4, '#cccccc'),
+(5, 1, 'Negociação', 5, '#cccccc'),
+(6, 1, 'Fechado', 7, '#cccccc'),
+(7, 1, 'Pós-venda', 8, '#cccccc'),
+(8, 1, 'Recusado', 6, '#cccccc'),
+(14, 2, 'Captação de Edital', 1, '#3498db'),
+(15, 2, 'Acolhimento de propostas', 2, '#f1c40f'),
+(17, 2, 'Em análise Técnica', 3, '#9b59b6'),
+(18, 2, 'Homologado', 5, '#27ae60'),
+(19, 2, 'Ata/Carona', 8, '#1abc9c'),
+(20, 2, 'Empenhado', 6, '#2c3e50'),
+(21, 2, 'Contrato', 7, '#c0392b'),
+(22, 2, 'Desclassificado', 4, '#7f8c8d'),
+(23, 2, 'Revogado', 9, '#e74c3c'),
+(24, 2, 'Fracassado', 10, '#95a5a6'),
+(25, 2, 'Anulado', 11, '#34495e'),
+(26, 2, 'Suspenso', 12, '#e67e22');
 
 -- --------------------------------------------------------
 
@@ -430,6 +448,55 @@ INSERT INTO `fornecedores` (`id`, `nome`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Estrutura para tabela `fornecedor_metas`
+--
+
+CREATE TABLE `fornecedor_metas` (
+  `id` int(11) NOT NULL,
+  `fornecedor_id` int(11) NOT NULL,
+  `ano` int(11) NOT NULL,
+  `meta_anual` decimal(15,2) DEFAULT 0.00,
+  `meta_mensal` decimal(15,2) DEFAULT 0.00,
+  `user_targets_enabled` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Despejando dados para a tabela `fornecedor_metas`
+--
+
+INSERT INTO `fornecedor_metas` (`id`, `fornecedor_id`, `ano`, `meta_anual`, `meta_mensal`, `user_targets_enabled`) VALUES
+(1, 1, 2026, 2450000.00, 0.00, 0),
+(7, 2, 2026, 782620.00, 0.00, 0);
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `fornecedor_metas_estados`
+--
+
+CREATE TABLE `fornecedor_metas_estados` (
+  `id` int(11) NOT NULL,
+  `fornecedor_id` int(11) NOT NULL,
+  `ano` int(11) NOT NULL,
+  `estado` varchar(2) NOT NULL,
+  `meta_anual` decimal(15,2) DEFAULT 0.00,
+  `meta_mensal_json` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Despejando dados para a tabela `fornecedor_metas_estados`
+--
+
+INSERT INTO `fornecedor_metas_estados` (`id`, `fornecedor_id`, `ano`, `estado`, `meta_anual`, `meta_mensal_json`) VALUES
+(1, 1, 2026, 'PE', 375000.00, '{\"1\":125000,\"2\":250000,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
+(2, 1, 2026, 'PB', 2075000.00, '{\"1\":25000,\"2\":2050000,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
+(7, 2, 2026, 'PE', 427620.00, '{\"1\":250000,\"2\":152620,\"3\":25000,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
+(8, 2, 2026, 'PB', 95000.00, '{\"1\":50000,\"2\":20000,\"3\":25000,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
+(9, 2, 2026, 'RN', 260000.00, '{\"1\":150000,\"2\":70000,\"3\":40000,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}');
+
+-- --------------------------------------------------------
+
+--
 -- Estrutura para tabela `funis`
 --
 
@@ -444,7 +511,8 @@ CREATE TABLE `funis` (
 --
 
 INSERT INTO `funis` (`id`, `nome`, `descricao`) VALUES
-(1, 'Funil de Vendas Padrão', 'Funil principal para prospecção de novos clientes.');
+(1, 'Funil de Vendas Padrão', 'Funil principal para prospecção de novos clientes.'),
+(2, 'Funil Licitações', NULL);
 
 -- --------------------------------------------------------
 
@@ -493,13 +561,11 @@ CREATE TABLE `leads` (
 INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, `campanha`, `observacao`, `produto`, `produto_interesse`, `form_id`, `leadgen_id`, `dados_brutos`, `status`, `data_chegada`, `oportunidade_id`) VALUES
 (10, 'Lídia Rocha', 'masantos.lidia@outlook.com', '+5581999890075', 'Meta Ads', NULL, NULL, NULL, NULL, NULL, '1814290879464646', '1538095770518569', '{\n    \"created_time\": \"2025-10-14T12:14:50+0000\",\n    \"id\": \"1538095770518569\",\n    \"field_data\": [\n        {\n            \"name\": \"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\n            \"values\": [\n                \"81999890075\"\n            ]\n        },\n        {\n            \"name\": \"email\",\n            \"values\": [\n                \"masantos.lidia@outlook.com\"\n            ]\n        },\n        {\n            \"name\": \"full_name\",\n            \"values\": [\n                \"L\\u00eddia Rocha\"\n            ]\n        },\n        {\n            \"name\": \"phone_number\",\n            \"values\": [\n                \"+5581999890075\"\n            ]\n        }\n    ]\n}', 'novo', '2025-10-14 12:14:56', NULL),
 (11, 'Katia Oliveira', 'nanny_isa@hotmail.com', '+5587991466089', 'Meta Ads', NULL, NULL, NULL, NULL, NULL, '2239635346507878', '1699761530664534', '{\n    \"created_time\": \"2025-10-14T13:45:53+0000\",\n    \"id\": \"1699761530664534\",\n    \"field_data\": [\n        {\n            \"name\": \"email\",\n            \"values\": [\n                \"nanny_isa@hotmail.com\"\n            ]\n        },\n        {\n            \"name\": \"nome_completo\",\n            \"values\": [\n                \"Katia Oliveira\"\n            ]\n        },\n        {\n            \"name\": \"telefone\",\n            \"values\": [\n                \"+5587991466089\"\n            ]\n        },\n        {\n            \"name\": \"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\n            \"values\": [\n                \"87991466089\"\n            ]\n        }\n    ]\n}', 'novo', '2025-10-14 13:45:56', NULL),
-(12, 'Emerson', 'emerson.dejasussilva@gmail.com', '+5575983266776', 'Meta Ads', NULL, NULL, '', '', NULL, '2239635346507878', '2063396501075778', '{\n    \"created_time\": \"2025-10-14T13:57:41+0000\",\n    \"id\": \"2063396501075778\",\n    \"field_data\": [\n        {\n            \"name\": \"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\n            \"values\": [\n                \"75 983266776\"\n            ]\n        },\n        {\n            \"name\": \"email\",\n            \"values\": [\n                \"emerson.dejasussilva@gmail.com\"\n            ]\n        },\n        {\n            \"name\": \"nome_completo\",\n            \"values\": [\n                \"Emerson\"\n            ]\n        },\n        {\n            \"name\": \"telefone\",\n            \"values\": [\n                \"+5575983266776\"\n            ]\n        }\n    ]\n}', 'novo', '2025-10-14 13:57:45', NULL),
 (17, 'Hugo Andrey', 'handreyu@gmail.com', '86999052321', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-14T23:57:30+0000\",\"id\":\"1542638306761067\",\"field_data\":[{\"name\":\"email\",\"values\":[\"handreyu@gmail.com\"]},{\"name\":\"nome_completo\",\"values\":[\"Hugo Andrey\"]},{\"name\":\"telefone\",\"values\":[\"+5586999052321\"]},{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"86999052321\"]}]}', 'Novo', '2025-10-14 23:57:34', NULL),
 (18, 'Luiz Farias Costa', 'lulinha_fariasc@hotmail.com', '82999703465', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-15T12:20:08+0000\",\"id\":\"787420764204101\",\"field_data\":[{\"name\":\"email\",\"values\":[\"lulinha_fariasc@hotmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Luiz Farias Costa\"]},{\"name\":\"phone_number\",\"values\":[\"+5582999703465\"]},{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"82999703465\"]}]}', 'Novo', '2025-10-15 12:20:13', NULL),
 (24, 'Marcos José de Moura', 'mjmmarcosmoura@gmail.com', '84981836429', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-16T14:36:57+0000\",\"id\":\"2223781094780469\",\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"84981836429\"]},{\"name\":\"email\",\"values\":[\"mjmmarcosmoura@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Marcos Jos\\u00e9 de Moura\"]},{\"name\":\"phone_number\",\"values\":[\"+5584981836429\"]}]}', 'Novo', '2025-10-16 14:37:03', NULL),
 (25, 'JPS', 'jpaulosuassuna@gmail.com', '84 999048498', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-16T14:42:29+0000\",\"id\":\"1480502396536408\",\"field_data\":[{\"name\":\"email\",\"values\":[\"jpaulosuassuna@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"JPS\"]},{\"name\":\"phone_number\",\"values\":[\"84999048498\"]},{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"84 999048498\"]}]}', 'Novo', '2025-10-16 14:42:34', NULL),
 (26, 'Gil Montanha', 'gil_gpsf@hotmail.com', '81989060202', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-16T22:08:19+0000\",\"id\":\"1485793766005005\",\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"81989060202\"]},{\"name\":\"email\",\"values\":[\"gil_gpsf@hotmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Gil Montanha\"]},{\"name\":\"phone_number\",\"values\":[\"+5581989060202\"]}]}', 'Novo', '2025-10-16 22:08:23', NULL),
-(28, 'Dyego Jhony', 'dyjhonydiniz@gmail.com', '21989170353', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-17T14:28:46+0000\",\"id\":\"1200717355201642\",\"field_data\":[{\"name\":\"email\",\"values\":[\"dyjhonydiniz@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Dyego Jhony\"]},{\"name\":\"phone_number\",\"values\":[\"+5521989170353\"]},{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"21989170353\"]}]}', 'Novo', '2025-10-17 14:28:50', NULL),
 (29, 'Gabriel', 'gabriel.alencarl29@gmail.com', 'Qual valor? 084981110754', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-18T00:06:00+0000\",\"id\":\"1333681295098853\",\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"Qual valor? 084981110754\"]},{\"name\":\"email\",\"values\":[\"gabriel.alencarl29@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Gabriel\"]},{\"name\":\"phone_number\",\"values\":[\"+5584981110754\"]}]}', 'Cliente Potencial', '2025-10-18 00:06:05', NULL),
 (30, 'Berna Cavalcante', 'dantoncavalcantedesouza@gmail.com', '81985167508', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-18T01:08:02+0000\",\"id\":\"1116608563951202\",\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"81985167508\"]},{\"name\":\"email\",\"values\":[\"dantoncavalcantedesouza@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Berna Cavalcante\"]},{\"name\":\"phone_number\",\"values\":[\"+5581985167508\"]}]}', 'Cliente Potencial', '2025-10-18 01:08:07', NULL),
 (31, 'Felipe Lyra', 'lyra.engenharia@gmail.com', '83 988566384', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-18T01:56:47+0000\",\"id\":\"804951585764617\",\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"83 988566384\"]},{\"name\":\"email\",\"values\":[\"lyra.engenharia@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Felipe Lyra\"]},{\"name\":\"phone_number\",\"values\":[\"+5583988566384\"]}]}', 'Cliente Potencial', '2025-10-18 01:56:52', NULL),
@@ -511,7 +577,6 @@ INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, 
 (37, 'Raqueline Ramos', 'iranipessoa863@gmail.com', '81988023705', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-19T16:04:34+0000\",\"id\":\"1524440855419670\",\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"81988023705\"]},{\"name\":\"email\",\"values\":[\"iranipessoa863@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Raqueline Ramos\"]},{\"name\":\"phone_number\",\"values\":[\"+5581985336232\"]}]}', 'Novo', '2025-10-19 16:04:38', NULL),
 (38, 'Andreza Mara Reinaldo Quirino', 'andrezamara59@gmail.com', '92050057', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-19T16:41:53+0000\",\"id\":\"1136772548604735\",\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"92050057\"]},{\"name\":\"email\",\"values\":[\"andrezamara59@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Andreza Mara Reinaldo Quirino\"]},{\"name\":\"phone_number\",\"values\":[\"+5584992050057\"]}]}', 'Novo', '2025-10-19 16:41:57', NULL),
 (39, 'Renata Patricia', 'renatapatriciaaraujo21@gmail.com', '81988309709', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-19T18:00:05+0000\",\"id\":\"1608841013614941\",\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"81988309709\"]},{\"name\":\"email\",\"values\":[\"renatapatriciaaraujo21@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Renata Patricia\"]},{\"name\":\"phone_number\",\"values\":[\"+5581988309709\"]}]}', 'Novo', '2025-10-19 18:00:09', NULL),
-(40, 'Josicleide Alves', 'josicleide1611@hotmail.com', '96984180180', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-19T18:45:52+0000\",\"id\":\"1375816614066217\",\"field_data\":[{\"name\":\"email\",\"values\":[\"josicleide1611@hotmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Josicleide Alves\"]},{\"name\":\"phone_number\",\"values\":[\"+5596984180180\"]},{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"96984180180\"]}]}', 'Novo', '2025-10-19 18:45:57', NULL),
 (41, 'Thaís Araújo', 'tagomara7@gmail.com', '81996526673', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-20T11:25:36+0000\",\"id\":\"1557844318722613\",\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"81996526673\"]},{\"name\":\"email\",\"values\":[\"tagomara7@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Tha\\u00eds Ara\\u00fajo\"]},{\"name\":\"phone_number\",\"values\":[\"+5581996526674\"]}]}', 'Cliente Potencial', '2025-10-20 11:25:43', NULL),
 (42, 'Jéssica Silva', 'pavsub2023.2@gmail.com', '81985923634', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-20T12:06:27+0000\",\"id\":\"1083929410308459\",\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"81985923634\"]},{\"name\":\"email\",\"values\":[\"pavsub2023.2@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"J\\u00e9ssica Silva\"]},{\"name\":\"phone_number\",\"values\":[\"+5581985923634\"]}]}', 'Novo', '2025-10-20 12:06:32', NULL),
 (43, 'Natalia vilela', 'joaofalcaosobral@hotmail.com', '87996043826', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-20T22:47:23+0000\",\"id\":\"1111710677655280\",\"field_data\":[{\"name\":\"email\",\"values\":[\"joaofalcaosobral@hotmail.com\"]},{\"name\":\"nome_completo\",\"values\":[\"Natalia vilela\"]},{\"name\":\"telefone\",\"values\":[\"+5587996043826\"]},{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"87996043826\"]}]}', 'Novo', '2025-10-20 22:47:28', NULL),
@@ -524,23 +589,17 @@ INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, 
 (50, 'Manuelly Vasconcelos', 'manuandrade105@gmail.com', '81982770698', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-22T01:57:32+0000\",\"id\":\"831659012881818\",\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"81982770698\"]},{\"name\":\"email\",\"values\":[\"manuandrade105@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Manuelly Vasconcelos\"]},{\"name\":\"phone_number\",\"values\":[\"+5581982770698\"]}]}', 'Novo', '2025-10-22 01:57:36', NULL),
 (51, 'Mavio Almeida', 'maviothi@gmail.com', '81985981927', 'Meta Ads', NULL, NULL, NULL, 'Não informado', '', NULL, NULL, '{\"created_time\":\"2025-10-22T02:51:35+0000\",\"id\":\"1356155699459075\",\"field_data\":[{\"name\":\"email\",\"values\":[\"maviothi@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Mavio Almeida\"]},{\"name\":\"phone_number\",\"values\":[\"+5581988021726\"]},{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"81985981927\"]}]}', 'Novo', '2025-10-22 02:51:40', NULL),
 (52, 'Rivonaldo Filho Condutor', 'rjsmonteiro@hotmail.com', 'Qual valor?', 'Meta Ads', NULL, NULL, NULL, 'Não informado', NULL, NULL, NULL, '{\"created_time\":\"2025-10-22T10:44:37+0000\",\"id\":\"4162846903963027\",\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"Qual valor?\"]},{\"name\":\"email\",\"values\":[\"rjsmonteiro@hotmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Rivonaldo Filho Condutor\"]},{\"name\":\"phone_number\",\"values\":[\"+558294045770\"]}]}', 'Novo', '2025-10-22 10:44:42', NULL),
-(56, 'Solange', NULL, '(41) 9624-9904', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (57, 'Paulo', NULL, '(84) 9402-1477', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(58, 'Valdir', NULL, '(75) 9135-3556', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (59, 'Compras HG e HMJ', NULL, '(81) 9257-2119', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (60, 'Euzi', NULL, '(81) 8667-8801', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (61, 'Alessandra', NULL, '(81)9732-2716', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (62, 'Jeisa', NULL, '(81) 9738-5662', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(63, 'Marcio Ferreira', NULL, '(51) 9607-1977', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(64, 'Stéfany Egito', NULL, '(69) 9265-6752', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(65, 'Meire', NULL, '(75) 9831-6404', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (66, 'Gabi', NULL, '(81) 8759-6864', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (67, 'Inaldo Junior - Jmed', NULL, '(81) 8253-8817', 'Enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (68, 'Ivonete', NULL, '(83) 9399-8056', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (69, 'Rejane', NULL, '(81) 8279-3645', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (70, 'Pedro Hapvida Macio', NULL, '(82) 8870-9709', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (71, 'Clube de Campo Alvorada', NULL, '(81) 8758-8176', 'Enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(72, 'Thomaz', NULL, '(71) 8742-1176', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (73, 'José Severino', NULL, '(81) 9466-5108', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (74, 'Alanides', NULL, '(81) 8419-4692', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (75, 'Sandra Alves', NULL, '(81) 9410-4837', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
@@ -552,10 +611,8 @@ INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, 
 (81, 'Lavinha', NULL, '(87) 8160-8764', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (82, 'Souza Filho', NULL, '(81) 9276-9576', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (83, 'Sem nome', NULL, '(81) 8788-3479', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(84, 'Tales Salle', NULL, '(18) 99646-9542', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (85, 'Gilvani Oliveira', NULL, '(81) 8690-9328', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (86, 'Stbio', NULL, '(87) 8109-2494', 'Enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(87, 'Bueno Brandão', NULL, '(35) 9227-0496', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (88, 'Ana Claudia - SCB saude mental', NULL, '(81)  9849-3451', 'Enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (89, 'Henrique', NULL, '(81) 8377-8626', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (90, 'Julio Cesar', NULL, '(81) 9717-7289', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
@@ -565,7 +622,6 @@ INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, 
 (94, 'Dora Laurentino', NULL, '(81) 9962-7938', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (95, 'Jussara - Secretaria de Saude JP', NULL, '(83) 9326-8446', 'Enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (96, 'Eduardo Barbosa', NULL, '(81) 9654-3595', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(97, 'JC SEGURANÇA DO TRABALHO', NULL, '(67) 9814-8643', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (98, 'Bianca - Manutenção Oncologia Dor', NULL, '(81) 8140-3835', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (99, 'Janilene Alves', NULL, '(81) 8652-7693', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (100, 'Clélio Júnior', NULL, '(81) 9606-0640', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
@@ -584,18 +640,15 @@ INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, 
 (113, 'Hospital São Paulo CC', NULL, '(86) 8804-8563', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (114, 'Marta Suelene', NULL, '(81) 9948-9398', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (115, 'Felipe', NULL, '(81) 7308-9706', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(116, 'Ana Lúcia', NULL, '(11) 96753-5754', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (117, 'Marcos Túlio', NULL, '(81) 99676-0743', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (118, 'Evandro Batista da Silva', '1', '(81)98330-2947', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (119, 'Marcone Ramalho', NULL, '(81) 98408-0477', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (120, 'Valéria', NULL, '(81) 98911-6200', 'Não Enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (121, 'Maria do Carmo Gouveia', NULL, '(81) 99890-3912', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (122, 'Não informado', NULL, '(84) 99653-2405', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(123, 'Biju', NULL, '(11) 99649-0976', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (124, 'Ana Luisa', NULL, '(83) 98767-4380', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (125, 'Patricia Valentina', NULL, '(81) 99874-1386', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (126, 'Marcone Ramalho', NULL, '(81) 8408-0477', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(127, 'Alessandro Guerra', NULL, '(62) 9923-5859', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (128, 'Amanda Santos', NULL, '(81) 99885-9910', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (129, 'Sérgio Gomes', NULL, '(81) 98577-6339', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (130, 'Cecilia telles', NULL, '(81) 99628-5700', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
@@ -609,7 +662,6 @@ INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, 
 (138, 'Paiva', NULL, '(81) 99951-3952', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (139, 'Não informado', NULL, '(81) 98364-7268', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (140, 'Roberta', NULL, '(81) 99612-0233', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(141, 'Maria Inês', NULL, '(31) 98484-0243', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (142, 'Katarina', NULL, '(81) 97904-3723', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (143, 'Sanderson', NULL, '(81) 98633-7156', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (144, 'Ana Paula', NULL, '(81) 98349-4120', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
@@ -620,8 +672,6 @@ INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, 
 (149, 'Maria Priscila', NULL, '(81) 99849-3558', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (150, 'Elizete Bernardo', NULL, '(81) 98669-2869', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (151, 'Adriana', NULL, '(87) 99916-2807', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(152, 'Não informado', NULL, '(91) 97731-6170', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(153, 'Cátia', NULL, '(62) 98108-2379', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (154, 'Mary', NULL, '(82) 99611-5589', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (155, 'Não informado', NULL, '(81) 98831-8889', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (156, 'Jardel', NULL, '(81) 99346-1017', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
@@ -638,7 +688,6 @@ INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, 
 (167, 'Sandy Oliveira', NULL, '(81) 98563-7792', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (168, 'Não informado', NULL, '(81) 99847-2966', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (169, 'Diógenes Lima', NULL, '(81) 98155-0348', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(170, 'Lua', NULL, '(94) 99138-7547', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (171, 'Lara Medeiros', NULL, '(82) 99409-8599', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (172, 'Maria Vitória', NULL, '(81) 99286-7123', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (173, 'Dr. Ivany Junior', NULL, '(83) 99982-1545', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
@@ -664,11 +713,9 @@ INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, 
 (193, 'Alyne', NULL, '(81) 99872-3055', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (194, 'Ilka Guerra', NULL, '(81) 99514-0274', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (195, 'Andreia', NULL, '(81) 99227-9234', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(196, 'Saeed Hameed', NULL, '92 343 6337722', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (197, 'Flavia', NULL, '(81) 98667-4495', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (198, 'Vanessa Karina', NULL, '(84) 99948-3812', 'Enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (199, 'Mirela Vaz', NULL, '(87) 99905-9595', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(200, 'Isabella Shamara', NULL, '(61) 99108-5622', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (201, 'Ana Caldas', NULL, '(82) 99640-3132', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (202, 'Nathy', NULL, '(81) 99967-9091', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (203, 'Veronica', NULL, '(81) 99524-0582', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
@@ -698,13 +745,10 @@ INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, 
 (227, 'Anubia', NULL, '(83) 98153-8558', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (228, 'Rita Regis', NULL, '(84) 99959-8959', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (229, 'Fernando', NULL, '(84) 98831-4712', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(230, 'Flávia Biomass Brasil', NULL, '(17) 99639-8946', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (231, 'Eronildo Júnior', NULL, '(81) 99519-9436', 'Enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (232, 'Fernanda', NULL, '(81) 98661-3430', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(233, 'Alaine', NULL, '(71) 9274-7409', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (234, 'Bia Queiroz', NULL, '(81) 9264-8810', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (235, 'Dlania', NULL, '(81) 99498-0560', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(236, 'Carlos', NULL, '(12) 99171-5130', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (237, 'Compras Nordpharma', NULL, '(81) 99625-2093', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (238, 'Edneide', NULL, '(83) 98732-0187', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (239, 'Pedro', NULL, '(81) 99959-4068', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
@@ -712,7 +756,6 @@ INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, 
 (241, 'Cida Claudino', NULL, '(82) 99646-5187', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (242, 'Daniel Santos', NULL, '(81) 99526-8353', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (243, 'Frinscal Distribuidora', NULL, '(81) 99951-2101', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(244, 'Lethicia EF GRUPO', NULL, '(41) 98711-8503', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (245, 'Gilberto', NULL, '(87) 99932-2261', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (246, 'Rita Guilherme', NULL, '(81) 98547-8038', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (247, 'Francisco', NULL, '(84) 99987-7471', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
@@ -727,32 +770,29 @@ INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, 
 (256, 'Lais', NULL, '(81) 99332-6035', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (257, 'Jacinta Rodrigues', NULL, '(83) 98714-0490', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (258, 'Williams Freitas', NULL, '(81) 99212-8089', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(259, 'Alciram', NULL, '(82) 99608-9558', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL);
-INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, `campanha`, `observacao`, `produto`, `produto_interesse`, `form_id`, `leadgen_id`, `dados_brutos`, `status`, `data_chegada`, `oportunidade_id`) VALUES
+(259, 'Alciram', NULL, '(82) 99608-9558', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (260, 'Não informado', NULL, '(88) 99913-6476', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (261, 'Mariana Bezerra', NULL, '(82) 99954-0473', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (262, 'Yenis', NULL, '(83) 99600-1912', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (263, 'Virginia', NULL, '(81) 99609-3653', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(264, 'Não informado', NULL, '(11) 998476-3026', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (265, 'Fabiana Nascimento', NULL, '(81) 98608-2795', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (266, 'Suely', NULL, '(81) 99367-7777', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (267, 'Paulo Dias', NULL, '(84) 99830-3158', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (268, 'Mario Monteio', NULL, '(84) 99619-7058', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (269, 'Vânia Medeiros', NULL, '(84) 99605-3989', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (270, 'João Joenio', NULL, '(83) 99964-3652', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(271, 'Total Service', NULL, '(11) 997893-5401', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (272, 'Andrely', NULL, '(81) 99865-7437', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (273, 'Não informado', NULL, '(83) 99349-2025', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (274, 'Larissa Galindo', NULL, '(81) 98915-7206', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (275, 'Marcos Valença', NULL, '(81) 99927-6533', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (276, 'Não informado', NULL, '(81) 98287-6228', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
-(277, 'Marcos Sandes', NULL, '(79) 99967-4843', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (278, 'Elton Guilherme', NULL, '(83) 98163-3678', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (279, 'Lara Almeida', NULL, '(87) 99992-9700', 'Não enviado', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Novo', '2025-10-22 19:20:02', NULL),
 (281, 'Alexandre Andrade', 'elianee.andrade1965@gmail.com', '82996997815', 'Meta Ads', NULL, NULL, NULL, NULL, 'FR_Oximetro', NULL, NULL, '{\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"82996997815\"]},{\"name\":\"email\",\"values\":[\"elianee.andrade1965@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Alexandre Andrade\"]},{\"name\":\"phone_number\",\"values\":[\"82996997815\"]}],\"form_id\":\"1814290879464646\",\"id\":\"1377837637188782\"}', 'Novo', '2025-10-23 15:41:25', NULL),
 (282, 'Franklin Nascimento', 'franklinre13@gmail.com', 'Oi', 'Meta Ads', NULL, NULL, NULL, NULL, 'FR_Oximetro', NULL, NULL, '{\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"Oi\"]},{\"name\":\"email\",\"values\":[\"franklinre13@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Franklin Nascimento\"]},{\"name\":\"phone_number\",\"values\":[\"+5584991445986\"]}],\"form_id\":\"1814290879464646\",\"id\":\"1998541987650089\"}', 'Novo', '2025-10-23 16:57:52', NULL),
 (283, 'Isabela Fernandes', 'isabela.fernandes@gmail.com', '84996219878', 'Meta Ads', NULL, NULL, NULL, NULL, 'FR_Ultrasoom', NULL, NULL, '{\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"84996219878\"]},{\"name\":\"email\",\"values\":[\"isabela.fernandes@gmail.com\"]},{\"name\":\"nome_completo\",\"values\":[\"Isabela Fernandes\"]},{\"name\":\"telefone\",\"values\":[\"+5584996219878\"]}],\"form_id\":\"2239635346507878\",\"id\":\"1330201108798609\"}', 'Novo', '2025-10-23 20:17:55', NULL),
-(284, 'Jose Ramos Junior', 'juniormed.jsrj@outlook.com', '81985857999', 'Meta Ads', NULL, NULL, NULL, NULL, 'FR_Ultrasoom', NULL, NULL, '{\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"81985857999\"]},{\"name\":\"email\",\"values\":[\"juniormed.jsrj@outlook.com\"]},{\"name\":\"nome_completo\",\"values\":[\"Jose Ramos Junior\"]},{\"name\":\"telefone\",\"values\":[\"+5581985857999\"]}],\"form_id\":\"2239635346507878\",\"id\":\"25288931894033297\"}', 'Novo', '2025-10-23 21:54:41', NULL),
+(284, 'Jose Ramos Junior', 'juniormed.jsrj@outlook.com', '81985857999', 'Meta Ads', NULL, NULL, NULL, NULL, 'FR_Ultrasoom', NULL, NULL, '{\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"81985857999\"]},{\"name\":\"email\",\"values\":[\"juniormed.jsrj@outlook.com\"]},{\"name\":\"nome_completo\",\"values\":[\"Jose Ramos Junior\"]},{\"name\":\"telefone\",\"values\":[\"+5581985857999\"]}],\"form_id\":\"2239635346507878\",\"id\":\"25288931894033297\"}', 'Novo', '2025-10-23 21:54:41', NULL);
+INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, `campanha`, `observacao`, `produto`, `produto_interesse`, `form_id`, `leadgen_id`, `dados_brutos`, `status`, `data_chegada`, `oportunidade_id`) VALUES
 (285, 'Adriana  Amorim', 'dricaamorim@terra.com.br', '81997448840', 'Meta Ads', NULL, NULL, NULL, NULL, 'FR_Ultrasoom', NULL, NULL, '{\"field_data\":[{\"name\":\"email\",\"values\":[\"dricaamorim@terra.com.br\"]},{\"name\":\"nome_completo\",\"values\":[\"Adriana  Amorim\"]},{\"name\":\"telefone\",\"values\":[\"+5581997448840\"]},{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"81997448840\"]}],\"form_id\":\"2239635346507878\",\"id\":\"1846377679599596\"}', 'Novo', '2025-10-24 01:06:28', NULL),
 (286, 'Brando Kayke', 'caiqueherbert281@gmail.com', '84996844405', 'Meta Ads', NULL, NULL, NULL, NULL, 'FR_Oximetro', NULL, NULL, '{\"field_data\":[{\"name\":\"email\",\"values\":[\"caiqueherbert281@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Brando Kayke\"]},{\"name\":\"phone_number\",\"values\":[\"+5584996844405\"]},{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"84996844405\"]}],\"form_id\":\"1814290879464646\",\"id\":\"1481024166464568\"}', 'Novo', '2025-10-24 16:48:09', NULL),
 (287, 'Erivaldo Santos', 'erijose2024@gmail.com', '81995030600', 'Meta Ads', NULL, NULL, NULL, NULL, 'FR_Oximetro', NULL, NULL, '{\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"81995030600\"]},{\"name\":\"email\",\"values\":[\"erijose2024@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Erivaldo Santos\"]},{\"name\":\"phone_number\",\"values\":[\"+5581986802985\"]}],\"form_id\":\"1814290879464646\",\"id\":\"828779252968363\"}', 'Novo', '2025-10-24 19:33:02', NULL),
@@ -762,7 +802,6 @@ INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, 
 (291, 'Claudenice Leal', 'lealclaudenice1@gmail.com', 'Não', 'Meta Ads', NULL, NULL, NULL, NULL, 'FR_Oximetro', NULL, NULL, '{\"field_data\":[{\"name\":\"email\",\"values\":[\"lealclaudenice1@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Claudenice Leal\"]},{\"name\":\"phone_number\",\"values\":[\"+5581985285559\"]},{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"N\\u00e3o\"]}],\"form_id\":\"1814290879464646\",\"id\":\"3275950685902613\"}', 'Novo', '2025-10-25 17:17:33', NULL),
 (292, 'Simoneide Ferreira', 'simoneideferreirasilva95@gmail.com', 'Qual valor', 'Meta Ads', NULL, NULL, NULL, NULL, 'FR_Oximetro', NULL, NULL, '{\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"Qual valor\"]},{\"name\":\"email\",\"values\":[\"simoneideferreirasilva95@gmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Simoneide Ferreira\"]},{\"name\":\"phone_number\",\"values\":[\"+5583993249280\"]}],\"form_id\":\"1814290879464646\",\"id\":\"852061077506486\"}', 'Novo', '2025-10-25 17:28:34', NULL),
 (293, 'Luan Michael', 'luan.machado@hotmail.com', '84981237376', 'Meta Ads', NULL, NULL, NULL, NULL, 'FR_Oximetro', NULL, NULL, '{\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"84981237376\"]},{\"name\":\"email\",\"values\":[\"luan.machado@hotmail.com\"]},{\"name\":\"full_name\",\"values\":[\"Luan Michael\"]},{\"name\":\"phone_number\",\"values\":[\"+84981237376\"]}],\"form_id\":\"1814290879464646\",\"id\":\"4073798886216261\"}', 'Novo', '2025-10-26 00:23:29', NULL),
-(294, 'Jaime Sanchez Jurado', 'mito196070@hotmail.com', '92993884379', 'Meta Ads', NULL, NULL, NULL, NULL, 'FR_Ultrasoom', NULL, NULL, '{\"field_data\":[{\"name\":\"email\",\"values\":[\"mito196070@hotmail.com\"]},{\"name\":\"nome_completo\",\"values\":[\"Jaime Sanchez Jurado\"]},{\"name\":\"telefone\",\"values\":[\"+5592993884379\"]},{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"92993884379\"]}],\"form_id\":\"2239635346507878\",\"id\":\"691442687339194\"}', 'Novo', '2025-10-26 14:22:19', NULL),
 (295, 'Osglauter Izidio Izidio', 'centroodontomedico@bol.com.br', '81 99812-4570', 'Meta Ads', NULL, NULL, NULL, NULL, 'FR_Oximetro', NULL, NULL, '{\"field_data\":[{\"name\":\"poderia_nos_informar_seu_n\\u00famero_de_contato_ou_whatsapp_atualizado,_por_favor?\",\"values\":[\"81 99812-4570\"]},{\"name\":\"email\",\"values\":[\"centroodontomedico@bol.com.br\"]},{\"name\":\"full_name\",\"values\":[\"Osglauter Izidio Izidio\"]},{\"name\":\"phone_number\",\"values\":[\"+5581998124570\"]}],\"form_id\":\"1814290879464646\",\"id\":\"1307042894769737\"}', 'Novo', '2025-10-27 10:44:35', NULL);
 
 -- --------------------------------------------------------
@@ -774,7 +813,10 @@ INSERT INTO `leads` (`id`, `nome`, `email`, `telefone`, `origem`, `sub_origem`, 
 CREATE TABLE `oportunidades` (
   `id` int(11) NOT NULL,
   `titulo` varchar(255) NOT NULL,
+  `numero_edital` varchar(255) DEFAULT NULL,
+  `numero_processo` varchar(255) DEFAULT NULL,
   `organizacao_id` int(11) DEFAULT NULL,
+  `fornecedor_id` int(11) DEFAULT NULL,
   `contato_id` int(11) DEFAULT NULL,
   `cliente_pf_id` int(11) DEFAULT NULL,
   `valor` decimal(20,2) DEFAULT 0.00,
@@ -789,53 +831,92 @@ CREATE TABLE `oportunidades` (
   `quantidade` int(11) DEFAULT 1,
   `valor_unitario` decimal(20,2) DEFAULT 0.00,
   `data_criacao` timestamp NOT NULL DEFAULT current_timestamp(),
-  `data_ultima_movimentacao` timestamp NOT NULL DEFAULT current_timestamp()
+  `data_ultima_movimentacao` timestamp NOT NULL DEFAULT current_timestamp(),
+  `local_disputa` varchar(255) DEFAULT NULL,
+  `uasg` varchar(50) DEFAULT NULL,
+  `data_abertura` date DEFAULT NULL,
+  `hora_disputa` time DEFAULT NULL,
+  `modalidade` varchar(100) DEFAULT NULL,
+  `objeto` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Despejando dados para a tabela `oportunidades`
 --
 
-INSERT INTO `oportunidades` (`id`, `titulo`, `organizacao_id`, `contato_id`, `cliente_pf_id`, `valor`, `etapa_id`, `usuario_id`, `comercial_user_id`, `pre_proposal_number`, `notas`, `descricao_produto`, `fabricante`, `modelo`, `quantidade`, `valor_unitario`, `data_criacao`, `data_ultima_movimentacao`) VALUES
-(61, 'Oportunidade p/ Proposta: HOSPITAL UNIMED RECIFE III', 892, NULL, NULL, 29992.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-10-30 12:32:59', '2025-10-30 12:32:59'),
-(65, 'Oportunidade p/ Proposta: UNIDADE DE DIAGNOSTICO CARDIOLOGICO LTDA', 894, NULL, NULL, 12569.00, 4, 2, NULL, NULL, NULL, 'DESFIBRILADOR ', 'INSTRAMED', 'APOLUS ', 1, 12569.00, '2025-11-04 15:11:04', '2025-11-04 15:11:04'),
-(69, 'Oportunidade p/ Proposta: NEWMED COMERCIO E SERVICOS DE EQUIPAMENTOS HOSPITALARES LTDA', 897, NULL, NULL, 102646.44, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-06 12:26:18', '2025-11-06 12:26:18'),
-(70, 'Oportunidade p/ Proposta: MARINA PORTO DO MAR', 898, NULL, NULL, 8471.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-06 20:49:30', '2025-11-06 20:49:30'),
-(71, 'Oportunidade p/ Proposta: HOSPITAL MEMORIAL GUARARAPES', 384, NULL, NULL, 69000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-07 14:32:57', '2025-11-07 14:32:57'),
-(72, 'Oportunidade p/ Proposta: MAIS VIDA', 336, NULL, NULL, 28000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-07 15:01:42', '2025-11-07 15:01:42'),
-(73, 'Oportunidade p/ Proposta: DORGIVAL HENRIQUES', 850, NULL, NULL, 36308.39, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-10 13:09:13', '2025-11-10 13:09:13'),
-(74, 'Oportunidade p/ Proposta: NEWMED COMERCIO E SERVICOS DE EQUIPAMENTOS HOSPITALARES LTDA', 897, NULL, NULL, 1230.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-10 20:31:38', '2025-11-10 20:31:38'),
-(75, 'Oportunidade p/ Proposta: GRUPO TUBRAN LTDA', 915, NULL, NULL, 46164.00, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-14 19:32:19', '2025-11-14 19:32:19'),
-(76, 'Oportunidade p/ Proposta: HC CARDIO', 591, NULL, NULL, 7990.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-17 17:45:58', '2025-11-17 17:45:58'),
-(77, 'Oportunidade p/ Proposta: HC CARDIO', 591, NULL, NULL, 0.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-17 17:47:12', '2025-11-17 17:47:12'),
-(78, 'Oportunidade p/ Proposta: CENTRO UNIVERSITARIO TIRADENTES DE PERNAMBUCO', 916, 9, NULL, 7990.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-24 12:29:04', '2025-11-24 12:29:04'),
-(79, 'Oportunidade p/ Proposta: THALITA MELO DE BRITO PEREIRA', NULL, NULL, 31, 7990.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-24 20:26:58', '2025-11-24 20:26:58'),
-(80, 'Oportunidade p/ Proposta: RECONCILIAR SPA TERAPEUTICO', 917, NULL, NULL, 23082.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-26 12:08:05', '2025-11-26 12:08:05'),
-(81, 'Oportunidade p/ Proposta: RECONCILIAR SPA TERAPEUTICO', 917, NULL, NULL, 23082.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-26 14:18:32', '2025-11-26 14:18:32'),
-(82, 'Oportunidade p/ Proposta: MAIS VIDA', 336, NULL, NULL, 116528.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-26 20:16:45', '2025-11-26 20:16:45'),
-(83, 'Oportunidade p/ Proposta: FELICITE CHECK UP', 448, 10, NULL, 7990.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-01 21:00:29', '2025-12-01 21:00:29'),
-(84, 'Oportunidade p/ Proposta: FELICITE CHECK UP', 448, 10, NULL, 0.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-01 21:11:15', '2025-12-01 21:11:15'),
-(85, 'Oportunidade p/ Proposta: RECONCILIAR SPA TERAPEUTICO', 917, 11, NULL, 8471.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-02 18:28:57', '2025-12-02 18:28:57'),
-(90, 'Oportunidade p/ Proposta: 13.618.705 ELLYZANDRA KAROLLINE CALAZANS', 221, NULL, NULL, 23082.00, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-02 19:18:40', '2025-12-02 19:18:40'),
-(91, 'Oportunidade p/ Proposta: HOSPITAL DO CANCER DE PERNAMBUCO', 345, 12, NULL, 6840.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-02 19:20:05', '2025-12-02 19:20:05'),
-(92, 'Oportunidade p/ Proposta: IAPES PESQUISA CLINICA', 918, NULL, NULL, 9106.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-03 12:25:59', '2025-12-03 12:25:59'),
-(93, 'Oportunidade p/ Proposta: IAPES PESQUISA CLINICA', 918, NULL, NULL, 12569.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-03 17:06:46', '2025-12-03 17:06:46'),
-(94, 'Oportunidade p/ Proposta: CASA DE SAUDE E MATERNIDADE DE CORURIPE', 923, NULL, NULL, 168000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-04 19:24:32', '2025-12-04 19:24:32'),
-(95, 'Oportunidade p/ Proposta: CASA DE SAUDE E MATERNIDADE DE CORURIPE', 923, NULL, NULL, 2067000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-04 19:26:33', '2025-12-04 19:26:33'),
-(96, 'Oportunidade p/ Proposta: DAVYD MARCONDY DE OLIVEIRA ALVES', NULL, NULL, 273, 16765.85, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-09 13:06:15', '2025-12-09 13:06:15'),
-(97, 'Oportunidade p/ Proposta: MAIS VIDA', 336, NULL, NULL, 55444.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-09 14:46:31', '2025-12-09 14:46:31'),
-(98, 'Oportunidade p/ Proposta: SAFETY MED', 513, NULL, NULL, 10326.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-09 20:40:47', '2025-12-09 20:40:47'),
-(99, 'Oportunidade p/ Proposta: PRODEV EDUCACIONAL', 929, NULL, NULL, 9500.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-11 19:13:44', '2025-12-11 19:13:44'),
-(100, 'Oportunidade p/ Proposta: SEOPE - SERVICO OFTALMOLOGICO DE PERNAMB', 318, NULL, NULL, 12569.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-11 20:47:31', '2025-12-11 20:47:31'),
-(101, 'Oportunidade p/ Proposta: CENTRO UNIVERSITARIO TIRADENTES DE PERNAMBUCO', 916, 9, NULL, 2372.40, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-12 13:04:23', '2025-12-12 13:04:23'),
-(102, 'Oportunidade p/ Proposta: 13.618.705 ELLYZANDRA KAROLLINE CALAZANS', 221, NULL, NULL, 23082.00, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-16 23:25:00', '2025-12-16 23:25:00'),
-(111, 'Proposta para 13.618.705 ELLYZANDRA KAROLLINE CALAZANS', 221, NULL, NULL, 7265.85, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-17 14:36:28', '2025-12-17 14:36:28'),
-(112, 'Oportunidade p/ Proposta: INTERNE HOME CARE', 393, NULL, NULL, 18182.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-17 14:53:20', '2025-12-17 14:53:20'),
-(113, 'Oportunidade p/ Proposta: FERREIRA COSTA', 238, NULL, NULL, 615.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-17 20:10:40', '2025-12-17 20:10:40'),
-(114, 'Oportunidade p/ Proposta: AMAURI PURCINO DA LUZ', 935, NULL, NULL, 9500.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-18 19:54:06', '2025-12-18 19:54:06'),
-(115, 'Oportunidade p/ Proposta: CUPER', 936, NULL, NULL, 19625.85, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-23 17:28:36', '2025-12-23 17:28:36'),
-(118, 'teste', 221, NULL, NULL, 2860.00, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-05 23:22:52', '2026-01-05 23:22:52'),
-(119, 'Oportunidade p/ Proposta: 13.618.705 ELLYZANDRA KAROLLINE CALAZANS', 221, NULL, NULL, 174380.40, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-06 00:08:47', '2026-01-06 00:08:47');
+INSERT INTO `oportunidades` (`id`, `titulo`, `numero_edital`, `numero_processo`, `organizacao_id`, `fornecedor_id`, `contato_id`, `cliente_pf_id`, `valor`, `etapa_id`, `usuario_id`, `comercial_user_id`, `pre_proposal_number`, `notas`, `descricao_produto`, `fabricante`, `modelo`, `quantidade`, `valor_unitario`, `data_criacao`, `data_ultima_movimentacao`, `local_disputa`, `uasg`, `data_abertura`, `hora_disputa`, `modalidade`, `objeto`) VALUES
+(61, 'Oportunidade p/ Proposta: HOSPITAL UNIMED RECIFE III', NULL, NULL, 892, NULL, NULL, NULL, 29992.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-10-30 12:32:59', '2025-10-30 12:32:59', NULL, NULL, NULL, NULL, NULL, NULL),
+(65, 'Oportunidade p/ Proposta: UNIDADE DE DIAGNOSTICO CARDIOLOGICO LTDA', NULL, NULL, 894, NULL, NULL, NULL, 12569.00, 4, 2, NULL, NULL, NULL, 'DESFIBRILADOR ', 'INSTRAMED', 'APOLUS ', 1, 12569.00, '2025-11-04 15:11:04', '2025-11-04 15:11:04', NULL, NULL, NULL, NULL, NULL, NULL),
+(69, 'Oportunidade p/ Proposta: NEWMED COMERCIO E SERVICOS DE EQUIPAMENTOS HOSPITALARES LTDA', NULL, NULL, 897, NULL, NULL, NULL, 102646.44, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-06 12:26:18', '2025-11-06 12:26:18', NULL, NULL, NULL, NULL, NULL, NULL),
+(70, 'Oportunidade p/ Proposta: MARINA PORTO DO MAR', NULL, NULL, 898, NULL, NULL, NULL, 8471.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-06 20:49:30', '2025-11-06 20:49:30', NULL, NULL, NULL, NULL, NULL, NULL),
+(71, 'Oportunidade p/ Proposta: HOSPITAL MEMORIAL GUARARAPES', NULL, NULL, 384, NULL, NULL, NULL, 69000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-07 14:32:57', '2025-11-07 14:32:57', NULL, NULL, NULL, NULL, NULL, NULL),
+(72, 'Oportunidade p/ Proposta: MAIS VIDA', NULL, NULL, 336, NULL, NULL, NULL, 28000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-07 15:01:42', '2025-11-07 15:01:42', NULL, NULL, NULL, NULL, NULL, NULL),
+(73, 'Oportunidade p/ Proposta: DORGIVAL HENRIQUES', NULL, NULL, 850, NULL, NULL, NULL, 36308.39, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-10 13:09:13', '2025-11-10 13:09:13', NULL, NULL, NULL, NULL, NULL, NULL),
+(74, 'Oportunidade p/ Proposta: NEWMED COMERCIO E SERVICOS DE EQUIPAMENTOS HOSPITALARES LTDA', NULL, NULL, 897, NULL, NULL, NULL, 1230.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-10 20:31:38', '2025-11-10 20:31:38', NULL, NULL, NULL, NULL, NULL, NULL),
+(75, 'Oportunidade p/ Proposta: GRUPO TUBRAN LTDA', NULL, NULL, 915, NULL, NULL, NULL, 46164.00, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-14 19:32:19', '2025-11-14 19:32:19', NULL, NULL, NULL, NULL, NULL, NULL),
+(76, 'Oportunidade p/ Proposta: HC CARDIO', NULL, NULL, 591, NULL, NULL, NULL, 7990.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-17 17:45:58', '2025-11-17 17:45:58', NULL, NULL, NULL, NULL, NULL, NULL),
+(77, 'Oportunidade p/ Proposta: HC CARDIO', NULL, NULL, 591, NULL, NULL, NULL, 0.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-17 17:47:12', '2025-11-17 17:47:12', NULL, NULL, NULL, NULL, NULL, NULL),
+(78, 'Oportunidade p/ Proposta: CENTRO UNIVERSITARIO TIRADENTES DE PERNAMBUCO', NULL, NULL, 916, NULL, 9, NULL, 7990.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-24 12:29:04', '2025-11-24 12:29:04', NULL, NULL, NULL, NULL, NULL, NULL),
+(79, 'Oportunidade p/ Proposta: THALITA MELO DE BRITO PEREIRA', NULL, NULL, NULL, NULL, NULL, 31, 7990.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-24 20:26:58', '2025-11-24 20:26:58', NULL, NULL, NULL, NULL, NULL, NULL),
+(80, 'Oportunidade p/ Proposta: RECONCILIAR SPA TERAPEUTICO', NULL, NULL, 917, NULL, NULL, NULL, 23082.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-26 12:08:05', '2025-11-26 12:08:05', NULL, NULL, NULL, NULL, NULL, NULL),
+(81, 'Oportunidade p/ Proposta: RECONCILIAR SPA TERAPEUTICO', NULL, NULL, 917, NULL, NULL, NULL, 23082.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-26 14:18:32', '2025-11-26 14:18:32', NULL, NULL, NULL, NULL, NULL, NULL),
+(82, 'Oportunidade p/ Proposta: MAIS VIDA', NULL, NULL, 336, NULL, NULL, NULL, 116528.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-26 20:16:45', '2025-11-26 20:16:45', NULL, NULL, NULL, NULL, NULL, NULL),
+(83, 'Oportunidade p/ Proposta: FELICITE CHECK UP', NULL, NULL, 448, NULL, 10, NULL, 7990.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-01 21:00:29', '2025-12-01 21:00:29', NULL, NULL, NULL, NULL, NULL, NULL),
+(84, 'Oportunidade p/ Proposta: FELICITE CHECK UP', NULL, NULL, 448, NULL, 10, NULL, 0.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-01 21:11:15', '2025-12-01 21:11:15', NULL, NULL, NULL, NULL, NULL, NULL),
+(85, 'Oportunidade p/ Proposta: RECONCILIAR SPA TERAPEUTICO', NULL, NULL, 917, NULL, 11, NULL, 8471.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-02 18:28:57', '2025-12-02 18:28:57', NULL, NULL, NULL, NULL, NULL, NULL),
+(90, 'Oportunidade p/ Proposta: 13.618.705 ELLYZANDRA KAROLLINE CALAZANS', NULL, NULL, 221, NULL, NULL, NULL, 23082.00, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-02 19:18:40', '2025-12-02 19:18:40', NULL, NULL, NULL, NULL, NULL, NULL),
+(91, 'Oportunidade p/ Proposta: HOSPITAL DO CANCER DE PERNAMBUCO', NULL, NULL, 345, NULL, 12, NULL, 6840.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-02 19:20:05', '2025-12-02 19:20:05', NULL, NULL, NULL, NULL, NULL, NULL),
+(92, 'Oportunidade p/ Proposta: IAPES PESQUISA CLINICA', NULL, NULL, 918, NULL, NULL, NULL, 9106.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-03 12:25:59', '2025-12-03 12:25:59', NULL, NULL, NULL, NULL, NULL, NULL),
+(93, 'Oportunidade p/ Proposta: IAPES PESQUISA CLINICA', NULL, NULL, 918, NULL, NULL, NULL, 12569.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-03 17:06:46', '2025-12-03 17:06:46', NULL, NULL, NULL, NULL, NULL, NULL),
+(94, 'Oportunidade p/ Proposta: CASA DE SAUDE E MATERNIDADE DE CORURIPE', NULL, NULL, 923, NULL, NULL, NULL, 168000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-04 19:24:32', '2025-12-04 19:24:32', NULL, NULL, NULL, NULL, NULL, NULL),
+(95, 'Oportunidade p/ Proposta: CASA DE SAUDE E MATERNIDADE DE CORURIPE', NULL, NULL, 923, NULL, NULL, NULL, 2067000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-04 19:26:33', '2025-12-04 19:26:33', NULL, NULL, NULL, NULL, NULL, NULL),
+(96, 'Oportunidade p/ Proposta: DAVYD MARCONDY DE OLIVEIRA ALVES', NULL, NULL, NULL, NULL, NULL, 273, 16765.85, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-09 13:06:15', '2025-12-09 13:06:15', NULL, NULL, NULL, NULL, NULL, NULL),
+(97, 'Oportunidade p/ Proposta: MAIS VIDA', NULL, NULL, 336, NULL, NULL, NULL, 55444.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-09 14:46:31', '2025-12-09 14:46:31', NULL, NULL, NULL, NULL, NULL, NULL),
+(98, 'Oportunidade p/ Proposta: SAFETY MED', NULL, NULL, 513, NULL, NULL, NULL, 10326.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-09 20:40:47', '2025-12-09 20:40:47', NULL, NULL, NULL, NULL, NULL, NULL),
+(99, 'Oportunidade p/ Proposta: PRODEV EDUCACIONAL', NULL, NULL, 929, NULL, NULL, NULL, 9500.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-11 19:13:44', '2025-12-11 19:13:44', NULL, NULL, NULL, NULL, NULL, NULL),
+(100, 'Oportunidade p/ Proposta: SEOPE - SERVICO OFTALMOLOGICO DE PERNAMB', NULL, NULL, 318, NULL, NULL, NULL, 12569.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-11 20:47:31', '2025-12-11 20:47:31', NULL, NULL, NULL, NULL, NULL, NULL),
+(101, 'Oportunidade p/ Proposta: CENTRO UNIVERSITARIO TIRADENTES DE PERNAMBUCO', NULL, NULL, 916, NULL, 9, NULL, 2372.40, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-12 13:04:23', '2025-12-12 13:04:23', NULL, NULL, NULL, NULL, NULL, NULL),
+(102, 'Oportunidade p/ Proposta: 13.618.705 ELLYZANDRA KAROLLINE CALAZANS', NULL, NULL, 221, NULL, NULL, NULL, 23082.00, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-16 23:25:00', '2025-12-16 23:25:00', NULL, NULL, NULL, NULL, NULL, NULL),
+(111, 'Proposta para 13.618.705 ELLYZANDRA KAROLLINE CALAZANS', NULL, NULL, 221, NULL, NULL, NULL, 7265.85, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-17 14:36:28', '2025-12-17 14:36:28', NULL, NULL, NULL, NULL, NULL, NULL),
+(112, 'Oportunidade p/ Proposta: INTERNE HOME CARE', NULL, NULL, 393, NULL, NULL, NULL, 18182.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-17 14:53:20', '2025-12-17 14:53:20', NULL, NULL, NULL, NULL, NULL, NULL),
+(113, 'Oportunidade p/ Proposta: FERREIRA COSTA', NULL, NULL, 238, NULL, NULL, NULL, 615.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-17 20:10:40', '2025-12-17 20:10:40', NULL, NULL, NULL, NULL, NULL, NULL),
+(114, 'Oportunidade p/ Proposta: AMAURI PURCINO DA LUZ', NULL, NULL, 935, NULL, NULL, NULL, 9500.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-18 19:54:06', '2025-12-18 19:54:06', NULL, NULL, NULL, NULL, NULL, NULL),
+(115, 'Oportunidade p/ Proposta: CUPER', NULL, NULL, 936, NULL, NULL, NULL, 19625.85, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-23 17:28:36', '2025-12-23 17:28:36', NULL, NULL, NULL, NULL, NULL, NULL),
+(119, 'Oportunidade p/ Proposta: 13.618.705 ELLYZANDRA KAROLLINE CALAZANS', NULL, NULL, 221, NULL, NULL, NULL, 174380.40, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-06 00:08:47', '2026-01-06 00:08:47', NULL, NULL, NULL, NULL, NULL, NULL),
+(120, 'Oportunidade p/ Proposta: GIGAVIDA TECNOLOGIA E SERVICO HOSPITALAR LTDA', NULL, NULL, 359, NULL, 14, NULL, 21000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-09 12:48:45', '2026-01-09 12:48:45', NULL, NULL, NULL, NULL, NULL, NULL),
+(124, 'Oportunidade p/ Proposta: RENAN FIGUEIREDO', NULL, NULL, NULL, NULL, NULL, 280, 18596.85, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-13 12:33:28', '2026-01-13 12:33:28', NULL, NULL, NULL, NULL, NULL, NULL),
+(125, 'Oportunidade p/ Proposta: EQUIPASAUDE', NULL, NULL, 937, NULL, 15, NULL, 16942.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-13 16:33:34', '2026-01-13 16:33:34', NULL, NULL, NULL, NULL, NULL, NULL),
+(126, 'Oportunidade p/ Proposta: 31 BATALHAO DE INFANTARIA MOTORIZADO', NULL, NULL, 763, NULL, NULL, NULL, 94384.00, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-13 20:25:56', '2026-01-13 20:25:56', NULL, NULL, NULL, NULL, NULL, NULL),
+(127, 'Oportunidade p/ Proposta: RENAN FIGUEIREDO', NULL, NULL, NULL, NULL, NULL, 280, 9711.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-14 18:34:20', '2026-01-14 18:34:20', NULL, NULL, NULL, NULL, NULL, NULL),
+(128, 'Oportunidade p/ Proposta: RENAN FIGUEIREDO', NULL, NULL, NULL, NULL, NULL, 280, 10749.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-14 18:40:32', '2026-01-14 18:40:32', NULL, NULL, NULL, NULL, NULL, NULL),
+(130, 'Oportunidade p/ Proposta: FUNDO MUNICIPAL DE SAUDE', NULL, NULL, 495, NULL, 16, NULL, 12876.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-16 16:10:44', '2026-01-16 16:10:44', NULL, NULL, NULL, NULL, NULL, NULL),
+(131, 'Oportunidade p/ Proposta: FUNDO MUNICIPAL DE SAUDE TRIUNFO PE', NULL, NULL, 495, NULL, 16, NULL, 0.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-16 16:18:18', '2026-01-16 16:18:18', NULL, NULL, NULL, NULL, NULL, NULL),
+(135, 'Carro para eletrocardiograma', NULL, NULL, 715, NULL, NULL, NULL, 0.00, 1, 10, 7, '0001/2026', 'Encaminhado para o comercial para realizar cotação.', NULL, NULL, NULL, 1, 0.00, '2026-01-19 17:50:13', '2026-01-19 17:50:13', NULL, NULL, NULL, NULL, NULL, NULL),
+(136, 'janson', NULL, NULL, NULL, NULL, NULL, NULL, 23082.00, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-19 17:50:56', '2026-01-19 17:50:56', NULL, NULL, NULL, NULL, NULL, NULL),
+(137, 'Compressor Torácico E6', NULL, NULL, 938, NULL, NULL, NULL, 646150.00, 1, 4, NULL, NULL, 'Aguardando solicitação de carona por ATA', NULL, NULL, NULL, 1, 0.00, '2026-01-19 18:13:46', '2026-01-19 18:13:46', NULL, NULL, NULL, NULL, NULL, NULL),
+(138, 'RAD G ', NULL, NULL, 938, NULL, NULL, NULL, 576000.00, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-19 18:24:25', '2026-01-19 18:24:25', NULL, NULL, NULL, NULL, NULL, NULL),
+(139, 'teste de venda de monitor 1', NULL, NULL, 221, NULL, NULL, NULL, 7720.00, 8, 11, 1, '0002/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 14:24:08', '2026-01-20 18:06:49', NULL, NULL, NULL, NULL, NULL, NULL),
+(140, 'Oportunidade p/ Proposta: 14. BATALHAO LOGISTICO', NULL, NULL, 761, NULL, NULL, NULL, 23082.00, 8, 11, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 14:27:07', '2026-01-20 18:06:44', NULL, NULL, NULL, NULL, NULL, NULL),
+(141, 'US 2 Ai', NULL, NULL, 275, NULL, NULL, NULL, 43200.00, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 15:19:50', '2026-01-20 15:19:50', NULL, NULL, NULL, NULL, NULL, NULL),
+(142, 'US 2 Ai', NULL, NULL, 347, NULL, NULL, NULL, 43200.00, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 15:23:28', '2026-01-20 15:23:28', NULL, NULL, NULL, NULL, NULL, NULL),
+(143, 'US Kosmos', NULL, NULL, 275, NULL, NULL, NULL, 47000.00, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 15:25:29', '2026-01-20 15:25:29', NULL, NULL, NULL, NULL, NULL, NULL),
+(144, 'US Kosmos', NULL, NULL, 347, NULL, NULL, NULL, 188000.00, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 15:27:52', '2026-01-20 15:27:52', NULL, NULL, NULL, NULL, NULL, NULL),
+(145, 'US Kosmos', NULL, NULL, 12, NULL, NULL, NULL, 440000.00, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 15:30:03', '2026-01-20 15:30:03', NULL, NULL, NULL, NULL, NULL, NULL),
+(146, 'LÍDICO FR ', NULL, NULL, 229, NULL, NULL, NULL, 25000.00, 14, 4, 1, NULL, 'Elaborar proposta pela FR, com comodato de 01 Monitor Root', NULL, NULL, NULL, 1, 0.00, '2026-01-20 16:52:39', '2026-01-20 16:52:39', NULL, NULL, NULL, NULL, NULL, NULL),
+(147, 'Monitorização Masimo', NULL, NULL, 890, NULL, NULL, NULL, 0.00, 1, 10, NULL, NULL, 'R$3.894,45. ', NULL, NULL, NULL, 1, 0.00, '2026-01-20 17:33:30', '2026-01-20 17:33:30', NULL, NULL, NULL, NULL, NULL, NULL),
+(148, 'Monitorização ', NULL, NULL, 890, NULL, NULL, NULL, 0.00, 1, 10, NULL, NULL, 'Aguardando data da cirurgia \nR$3.894,45', NULL, NULL, NULL, 1, 0.00, '2026-01-20 17:35:59', '2026-01-20 17:35:59', NULL, NULL, NULL, NULL, NULL, NULL),
+(149, 'Monitorização ', NULL, NULL, 890, NULL, NULL, NULL, 0.00, 1, 10, NULL, NULL, 'Hospital São Lucas ', NULL, NULL, NULL, 1, 0.00, '2026-01-20 17:53:43', '2026-01-20 17:53:43', NULL, NULL, NULL, NULL, NULL, NULL),
+(150, 'Monitorização ', NULL, NULL, 890, NULL, NULL, NULL, 0.00, 1, 10, NULL, NULL, 'R$3894,45', NULL, NULL, NULL, 1, 0.00, '2026-01-20 17:56:41', '2026-01-20 17:56:41', NULL, NULL, NULL, NULL, NULL, NULL),
+(151, 'Oportunidade p/ Proposta: 3R POTIGUAR S.A.', NULL, NULL, 57, NULL, NULL, NULL, 23082.00, 6, 11, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 17:59:04', '2026-01-20 18:01:48', NULL, NULL, NULL, NULL, NULL, NULL),
+(152, 'teste de fornecedor', NULL, NULL, 764, NULL, NULL, NULL, 8358.90, 6, 11, 11, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 18:10:43', '2026-01-20 18:17:54', NULL, NULL, NULL, NULL, NULL, NULL),
+(153, 'Oportunidade p/ Proposta: ABBOTT LABORAT. DO BRASIL LTDA', NULL, NULL, 332, NULL, NULL, NULL, 1290.00, 6, 11, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 18:19:29', '2026-01-20 18:19:51', NULL, NULL, NULL, NULL, NULL, NULL),
+(154, 'Monitorização ', NULL, NULL, 156, NULL, NULL, NULL, 0.00, 1, 10, NULL, NULL, 'Foi enviado o orçamento \nR$7.462,02', NULL, NULL, NULL, 1, 0.00, '2026-01-20 18:20:31', '2026-01-20 18:20:31', NULL, NULL, NULL, NULL, NULL, NULL),
+(155, 'treinamento de monitor ', NULL, NULL, 221, NULL, NULL, NULL, 23082.00, 6, 11, 1, '0003/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-21 11:14:56', '2026-01-22 16:59:20', NULL, NULL, NULL, NULL, NULL, NULL),
+(156, 'licitacao teste', '1234/32125', '8123545', 514, NULL, NULL, NULL, 25138.00, 15, 11, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-21 11:19:15', '2026-01-22 16:58:35', 'COMPRASNET', '324234', '2026-01-23', '10:00:00', 'Pregão Eletrônico', 'teste'),
+(157, 'licitacao tested', '202320/2025', '8888752234', 279, NULL, NULL, NULL, 46845.60, 14, 11, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-21 14:20:34', '2026-01-21 14:20:34', 'COMPRASNET', NULL, NULL, NULL, 'Dispensa de Licitação', 'asdasdasdasd'),
+(158, 'MONITOR DE PRESSÃO ARTERIAL', NULL, NULL, 761, NULL, NULL, NULL, 50310.00, 14, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-22 20:26:00', '2026-01-22 20:26:00', NULL, NULL, NULL, NULL, NULL, NULL),
+(159, 'MONITOR DE PRESSÃO ARTERIAL', NULL, NULL, 764, NULL, NULL, NULL, 129000.00, 5, 1, 1, '0004/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-22 20:28:41', '2026-01-26 17:56:11', NULL, NULL, NULL, NULL, NULL, NULL),
+(165, 'DEA i.on Básico (c/ bateria não recarregável) + Gabinete', NULL, NULL, 235, NULL, NULL, NULL, 23082.00, 1, 1, 1, '0005/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-23 17:53:26', '2026-01-23 17:53:26', NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -864,10 +945,40 @@ CREATE TABLE `oportunidade_itens` (
 -- Despejando dados para a tabela `oportunidade_itens`
 --
 
-INSERT INTO `oportunidade_itens` (`id`, `oportunidade_id`, `produto_id`, `descricao`, `descricao_detalhada`, `fabricante`, `modelo`, `imagem_url`, `quantidade`, `valor_unitario`, `status`, `unidade_medida`, `parametros`) VALUES
-(5, 66, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL),
-(6, 66, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL),
-(16, 118, 31, 'CILINDRO DE O2', 'Capacidade hidráulica 2.8L\nPressão  de serviço 139bar\nAltura 412.8mm\nDiâmetro 111.1mm\nRosca de entrada 3/4 \nPeso 2.3kg ', '', 'GWA15', 'https://frpe.app.br/crm/uploads/products/prod_694ace6e98b05.webp', 1, 2860.00, 'VENDA', 'Unidade', NULL);
+INSERT INTO `oportunidade_itens` (`id`, `oportunidade_id`, `produto_id`, `descricao`, `descricao_detalhada`, `fabricante`, `modelo`, `imagem_url`, `quantidade`, `valor_unitario`, `status`, `unidade_medida`, `parametros`, `meses_locacao`) VALUES
+(5, 66, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, 1),
+(6, 66, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, 1),
+(25, 135, NULL, 'Carro de eletrocardiograma ', '', '', 'Para Dixtal EP/3', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
+(26, 136, NULL, 'cardiomax', '', '', '', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
+(27, 136, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, 1),
+(28, 137, NULL, 'Compressor Torácico E6', 'Compressor Torácico Amoul E6', 'Instramed', 'Amoul E6', '', 5, 129230.00, 'VENDA', 'Unidade', NULL, 1),
+(29, 138, NULL, 'Rad G com temperatura', 'Rad G com temp', 'MASIMO', 'Rad G', 'https://frpe.app.br/crm/uploads/proposal_items/item_696e763a21db1.webp', 60, 9600.00, 'VENDA', 'Unidade', NULL, 1),
+(30, 139, 27, 'MONITOR BLT', 'Configuração ECG, SPO2, PNI', 'INSTRAMED', 'M10', 'https://frpe.app.br/crm/uploads/products/prod_6931df2fb1be3.webp', 1, 7720.00, 'VENDA', 'Unidade', NULL, 1),
+(31, 141, NULL, 'US 2 Ai', 'Tecnologia de IA para Ecocardiografia', 'Brasil Médica', '', '', 1200, 36.00, 'VENDA', 'Unidade', NULL, 1),
+(32, 142, NULL, 'US 2 Ai', 'Tecnologia de IA para ecocardiografia', 'Brasil Médica', '', '', 1200, 36.00, 'VENDA', 'Unidade', NULL, 1),
+(34, 143, NULL, 'US Kosmos', 'Demosntração setor de transplante', 'Brasil Médica', '', 'https://frpe.app.br/crm/uploads/proposal_items/item_696f9e3cba94a.jpeg', 1, 47000.00, 'VENDA', 'Unidade', NULL, 1),
+(35, 144, NULL, 'US Kosmos', 'Demonstração no setor de ecocardiografia', 'Brasil Médica', '', 'https://frpe.app.br/crm/uploads/proposal_items/item_696f9ec8e92b1.jpeg', 4, 47000.00, 'VENDA', 'Unidade', NULL, 1),
+(37, 145, NULL, 'US Kosmos', 'Uso do Kosmos para curso de POCUS', 'Brasil Médica', '', 'https://frpe.app.br/crm/uploads/proposal_items/item_696f9f66c635f.jpeg', 4, 110000.00, 'VENDA', 'Unidade', NULL, 1),
+(42, 148, NULL, 'Monitorização ', 'Paciente de Dr Hernani Gadelha.', 'Masimo', 'Sediline adulto/ Lidico/ O3', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
+(45, 149, NULL, 'Monitorização ', 'Paciente Miguel Guedes Filho ( CAMED) aguardando a data da cirurgia R$3.894,45', 'Masimo', 'Sediline Adulto/ Lidico/O3', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
+(46, 147, NULL, 'Monitorização ', 'Monitorização da Masimo com Lidico para o cliente da CSU ( Paciente: Maria Lúcia Canto )Paciente de Dr . Hernâni Gadelha ) cirurgia dia 30/01', 'Masimo', 'Sediline / Lidico/ O3', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
+(47, 150, NULL, 'Monitorização ', 'Paciente: Maria Lúcia de Morais Alves ( Dr Hernani Gadelha- Ordem Judicial) , será no hospital do Coração. Aguardando liberação ', 'Masimo', 'Sediline Adulto/ Lidico/ O3', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
+(49, 152, 17, 'OXIMETRO', 'Monitor portátil com SPO2, PR, PI, RRP e módulo de temperatura integrado ', 'MASIMO', 'RAD G COM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911dd39c9342.png', 1, 8358.90, 'VENDA', 'Unidade', NULL, 1),
+(50, 154, NULL, 'Monitorização ', 'Paciente: RN de Luiza Amélia Pereira \nDr. Diogo Feraz \nConvênio: Humanas', 'Masimo', 'O3 Pediatrico/  Sensor Y R7 Pediatrico ', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
+(51, 155, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, 1),
+(54, 156, 12, 'DESFIBRILADOR ', 'Principais funções concentradas em apenas um botão seletor. \nRápida inicialização carregamento de 360 J em menos de 6 segundos', 'INSTRAMED', 'APOLUS ', 'https://frpe.app.br/crm/uploads/products/prod_690a099525520.webp', 2, 12569.00, 'VENDA', 'Unidade', NULL, 1),
+(59, 157, 32, 'Módulo de bateria (NiMH) - CardioMax', 'Modulo de bateria recarregável para Cardiomax (NiMH)', 'INSTRAMED', 'CARDIOMAX ', 'https://frpe.app.br/crm/uploads/products/prod_695ff7e024858.jpg', 3, 2750.00, 'VENDA', 'Unidade', NULL, 1),
+(60, 157, 16, 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'Destinado a profissionais da saúde.\nDesign de mesa ideal para consultórios. ​\nModo de medição totalmente automático oscilométrico ou auscultatório.​\nFunção Indicador Zero ​\nPode ser usado com 4 pilhas AA ou com adaptador CA (bivolt automático)​', 'MICROMED', 'OMRON', 'https://frpe.app.br/crm/uploads/products/prod_6911dd100a3fb.webp', 4, 1290.00, 'VENDA', 'Unidade', NULL, 1),
+(61, 157, 17, 'OXIMETRO', 'Monitor portátil com SPO2, PR, PI, RRP e módulo de temperatura integrado ', 'MASIMO', 'RAD G COM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911dd39c9342.png', 4, 8358.90, 'VENDA', 'Unidade', NULL, 1),
+(62, 146, NULL, 'LÍDICO', 'Sensores Lídico com comodato', 'MASIMO', '', '', 10, 2500.00, 'VENDA', 'Unidade', NULL, 1),
+(64, 158, 16, 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'Destinado a profissionais da saúde.\nDesign de mesa ideal para consultórios. ​\nModo de medição totalmente automático oscilométrico ou auscultatório.​\nFunção Indicador Zero ​\nPode ser usado com 4 pilhas AA ou com adaptador CA (bivolt automático)​', 'MICROMED', 'OMRON', 'https://frpe.app.br/crm/uploads/products/prod_6911dd100a3fb.webp', 39, 1290.00, 'VENDA', 'Unidade', NULL, 1),
+(65, 159, 16, 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'Destinado a profissionais da saúde.\nDesign de mesa ideal para consultórios. ​\nModo de medição totalmente automático oscilométrico ou auscultatório.​\nFunção Indicador Zero ​\nPode ser usado com 4 pilhas AA ou com adaptador CA (bivolt automático)​', 'MICROMED', 'OMRON', 'https://frpe.app.br/crm/uploads/products/prod_6911dd100a3fb.webp', 100, 1290.00, 'VENDA', 'Unidade', NULL, 1),
+(66, 160, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, 1),
+(67, 161, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, 1),
+(68, 162, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, 1),
+(70, 163, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, 1),
+(72, 164, 31, 'CILINDRO DE O2', 'Capacidade hidráulica 2.8L\nPressão  de serviço 139bar\nAltura 412.8mm\nDiâmetro 111.1mm\nRosca de entrada 3/4 \nPeso 2.3kg ', 'GASWIDE', 'GWA15', 'https://frpe.app.br/crm/uploads/products/prod_694ace6e98b05.webp', 1, 2860.00, 'VENDA', 'Unidade', NULL, 1),
+(73, 165, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -938,7 +1049,7 @@ INSERT INTO `organizacoes` (`id`, `nome_fantasia`, `razao_social`, `cnpj`, `cep`
 (52, 'ENGEBIO NORDESTE', 'ENGEBIO SERVICOS TECNICOS DE ENGENHARIA LTDA', '06555589000170', '54800000', 'LOC AV DANTAS BARRETO, 2291', NULL, NULL, 'CENTRO', 'Moreno', 'PE', '2025-10-28 12:32:11'),
 (53, 'AMOR SAUDE', 'CLINICAS MEDICAS E ODONTOLOGICA NORDESTE LTDA', '32440913000115', '50750360', 'EST dos Remédios, 800', NULL, NULL, 'Afogados', 'Recife', 'PE', '2025-10-28 12:32:11'),
 (54, 'CLINICA SANTA TEREZINHA POMBAL LTDA', 'CLINICA SANTA TEREZINHA POMBAL LTDA', '47889763000107', '58840000', 'R BACHAREL FRANCISCO DA SILVA ALMEIDA, 217', NULL, NULL, 'CENTRO', 'Pombal', 'PB', '2025-10-28 12:32:11'),
-(55, 'FUNDO MUNICIPAL DE SAUDE', 'FUNDO MUNICIPAL DE SAUDE DE SERRA TALHADA', '10685971000176', '56903450', 'R Irnério Inácio de Oliveira, 132', NULL, NULL, 'Nossa Senhora da Penha', 'Serra Talhada', 'PE', '2025-10-28 12:32:11'),
+(55, 'FUNDO MUNICIPAL DE SAUDE SERRA TALHADA PE', 'FUNDO MUNICIPAL DE SAUDE DE SERRA TALHADA', '10685971000176', '56903450', 'R Irnério Inácio de Oliveira, 132', NULL, NULL, 'Nossa Senhora da Penha', 'Serra Talhada', 'PE', '2025-10-28 12:32:11'),
 (56, 'CLINICA DE ULTRASSOM', 'CLINICA DE ULTRASSOM LTDA', '51727913000145', '58400056', 'R Índios Cariris, 287', NULL, NULL, 'Centro', 'Campina Grande', 'PB', '2025-10-28 12:32:11'),
 (57, '3R POTIGUAR S.A.', '3R POTIGUAR S.A.', '44186763000225', '59598000', 'ROD ROD ROD RN 221 KM 25, S/N', NULL, NULL, 'GUAMRE', 'Guamaré', 'RN', '2025-10-28 12:32:11'),
 (58, 'BRASIL MEDICA', 'BRASIL MEDICA TECHNOLOGIES COMERCIO E IMPORTACAO LTDA', '15711101000148', '88306773', 'AV Osvaldo Reis, 3281', NULL, NULL, 'Praia Brava de Itajaí', 'Itajaí', 'SC', '2025-10-28 12:32:11'),
@@ -1072,7 +1183,7 @@ INSERT INTO `organizacoes` (`id`, `nome_fantasia`, `razao_social`, `cnpj`, `cep`
 (186, 'IMIP HOSPITALAR - UPA GARANHUNS', 'FUNDACAO GESTAO HOSPITALAR MARTINIANO FERNANDES - FGH', '09039744001409', '55295130', 'ROD BR-423, 2000', NULL, NULL, 'São José', 'Garanhuns', 'PE', '2025-10-28 12:32:11'),
 (187, 'ESCOLA SUPERIOR DE EDUCACAO FISICA DE PERNAMBUCO', 'FUNDACAO UNIVERSIDADE DE PERNAMBUCO', '11022597000949', '50100130', 'R Arnóbio Marques, 310', NULL, NULL, 'Santo Amaro', 'Recife', 'PE', '2025-10-28 12:32:11'),
 (188, 'UNIVASF', 'FUNDACAO UNIVERDIDADE FEDERAL DO VALE DO SAO FRANCISCO', '05440725000114', '56304205', 'AV José de Sá Maniçoba, S/N', NULL, NULL, 'Centro', 'Petrolina', 'PE', '2025-10-28 12:32:11'),
-(189, 'FUNDO MUNICIPAL DE SAUDE', 'FUNDO MUNICIPAL DE SAUDE', '08247860000136', '55400000', 'PCA COSTA AZEVEDO, S/N', NULL, NULL, 'CENTRO', 'Catende', 'PE', '2025-10-28 12:32:11'),
+(189, 'FUNDO MUNICIPAL DE SAUDE CATENDE PE', 'FUNDO MUNICIPAL DE SAUDE', '08247860000136', '55400000', 'PCA COSTA AZEVEDO, S/N', NULL, NULL, 'CENTRO', 'Catende', 'PE', '2025-10-28 12:32:11'),
 (190, 'FUNDO MUNICIPAL DE SAUDE DO JABOATAO DOS GUARARAPES', 'FUNDO MUNICIPAL DE SAUDE', '03904395000145', '54330900', 'AV Barreto de Menezes, S/N', NULL, NULL, 'Prazeres', 'Jaboatão dos Guararapes', 'PE', '2025-10-28 12:32:11'),
 (191, 'FUNDO MUNICIPAL DE SAUDE DE ESPERANCA', 'FUNDO MUNICIPAL DE SAUDE', '12011984000195', '58135000', 'R MANOEL HENRIQUE, 217', NULL, NULL, 'CENTRO', 'Esperança', 'PB', '2025-10-28 12:32:11'),
 (192, 'FUNDO MUNICIPAL DE SAUDE DE JURIPIRANGA', 'FUNDO MUNICIPAL DE SAUDE', '11164805000197', '58330000', 'AV BRASIL, 380', NULL, NULL, 'CENTRO', 'Juripiranga', 'PB', '2025-10-28 12:32:11'),
@@ -1243,7 +1354,7 @@ INSERT INTO `organizacoes` (`id`, `nome_fantasia`, `razao_social`, `cnpj`, `cep`
 (356, 'UNICORDS', 'UNICORDS - UNIDADE CARDIOLOGICA DO SERIDO SOCIEDADE SIMPLES', '70338884000174', '59300000', 'AV AV CORONEL MARTINIANO, 0', NULL, NULL, 'CENTRO', 'Caicó', 'RN', '2025-10-28 12:32:12'),
 (357, 'CLINICAL CENTER IMAGEM 2', 'CENTER CLINICAL IMAGEM PNZ II LTDA', '42379384000145', '56330095', 'AV São Francisco, 220', NULL, NULL, 'Areia Branca', 'Petrolina', 'PE', '2025-10-28 12:32:12'),
 (358, 'MP COMERCIO DE PRODUTOS MEDICOS LTDA', 'MP COMERCIO DE PRODUTOS MEDICOS LTDA', '65831943000101', '01401000', 'AV Brigadeiro Luís Antônio, 0', NULL, NULL, 'Jardim Paulista', 'São Paulo', 'SP', '2025-10-28 12:32:12'),
-(359, 'GIGAVIDA TECNOLOGIA E SERVICO HOSPITALAR LTDA', 'GIGAVIDA TECNOLOGIA E SERVICO HOSPITALAR LTDA', '15558946000145', '50830220', 'R Santa Edwirges, 182', NULL, NULL, 'Bongi', 'Recife', 'PE', '2025-10-28 12:32:12'),
+(359, 'GIGAVIDA TECNOLOGIA E SERVICO HOSPITALAR LTDA', 'GIGAVIDA TECNOLOGIA E SERVICO HOSPITALAR LTDA', '15558946000145', '50830220', 'R SANTA EDWIRGES', '182', NULL, 'Bongi', 'Recife', 'PE', '2025-10-28 12:32:12'),
 (360, 'SUL AMERICA', 'SUL AMERICA COMPANHIA DE SEGURO SAUDE', '01685053000822', '51020280', 'R Padre Carapuceiro, 733', NULL, NULL, 'Boa Viagem', 'Recife', 'PE', '2025-10-28 12:32:12'),
 (361, 'CENTRAL NACIONANL UNIMED', 'UNIMED NACIONAL - COOPERATIVA CENTRAL', '02812468000106', '01307003', 'R Frei Caneca, 1355', NULL, NULL, 'Consolação', 'São Paulo', 'SP', '2025-10-28 12:32:12'),
 (362, 'SMILE', 'ESMALE ASSISTENCIA INTERNACIONAL DE SAUDE LTDA (SMILE)', '37135365000133', '57025100', 'R Doutor José Milton Correia, 110', NULL, NULL, 'Poço', 'Maceió', 'AL', '2025-10-28 12:32:12'),
@@ -1346,7 +1457,7 @@ INSERT INTO `organizacoes` (`id`, `nome_fantasia`, `razao_social`, `cnpj`, `cep`
 (459, 'CENTRO HOSPITALAR ALBERT SABIN S/A', 'CENTRO HOSPITALAR ALBERT SABIN S/A', '09866294000103', '50070460', 'RUA RUA SENADOR JOSE HENRIQUE, 141', NULL, NULL, 'ILHA DO LEITE', 'Recife', 'PE', '2025-10-28 12:32:12'),
 (460, 'HAPCLINICA ALECRIM', 'HAPVIDA ASSISTENCIA MEDICA S.A.', '63554067017082', '59022150', 'R Presidente Quaresma, 967', NULL, NULL, 'Lagoa Seca', 'Natal', 'RN', '2025-10-28 12:32:12'),
 (461, 'CONDOMINIO VILA DOS CORAIS', 'CONDOMINIO VILA DOS CORAIS', '17666480000127', '54522125', 'R dos Sapotis, S/N', NULL, NULL, 'Paiva', 'Cabo de Santo Agostinho', 'PE', '2025-10-28 12:32:12'),
-(462, 'FUNDO MUNICIPAL DE SAUDE', 'FUNDO MUNICIPAL DE SAUDE DE CAICO - RN', '12433830000191', '59300000', 'R  HOMERO ALVES, 0', NULL, NULL, 'VILA DO PRINCIPE', 'Caicó', 'RN', '2025-10-28 12:32:12'),
+(462, 'FUNDO MUNICIPAL DE SAUDE CAICO RN', 'FUNDO MUNICIPAL DE SAUDE DE CAICO - RN', '12433830000191', '59300000', 'R  HOMERO ALVES, 0', NULL, NULL, 'VILA DO PRINCIPE', 'Caicó', 'RN', '2025-10-28 12:32:12'),
 (463, 'TEREZA E ESDRAS LTDA', 'TEREZA E ESDRAS LTDA', '23148445000119', '56000000', 'AV AGAMENON MAGALHAES, 692', NULL, NULL, 'SANTO ANTONIO', 'Salgueiro', 'PE', '2025-10-28 12:32:12'),
 (464, 'CENTRO DE SAUDE NOVA ESPERANCA', 'ESCOLA DE ENFERMAGEM NOVA ESPERANCA LTDA', '02949141001071', '58067695', 'AV Frei Galvão, 12', NULL, NULL, 'Gramame', 'João Pessoa', 'PB', '2025-10-28 12:32:12'),
 (465, 'HOSPITAL MEMORIAL ARCOVERDE LTDA', 'HOSPITAL MEMORIAL ARCOVERDE LTDA', '70237227000130', '56512000', 'AVE AVENIDA JOSE BONIFACIO, 1121', NULL, NULL, 'SAO CRISTOVAO', 'Arcoverde', 'PE', '2025-10-28 12:32:12'),
@@ -1379,7 +1490,7 @@ INSERT INTO `organizacoes` (`id`, `nome_fantasia`, `razao_social`, `cnpj`, `cep`
 (492, 'V S COSTA &  CIA LTDA', 'V S COSTA &  CIA LTDA', '05286960000183', '86707040', 'RUA RUA FRANCELHO, 69', NULL, NULL, 'VILA NOVA', 'Arapongas', 'PR', '2025-10-28 12:32:12'),
 (493, 'CARDIOCLINICA- CLINICA DE CARDIOLOGIA COMPLEMENTAR NAO INVAS', 'CARDIOCLINICA- CLINICA DE CARDIOLOGIA COMPLEMENTAR NAO INVAS', '82439746000160', '80030001', 'AV João Gualberto, 1946', NULL, NULL, 'Juvevê', 'Curitiba', 'PR', '2025-10-28 12:32:12'),
 (494, 'FUNDO MUNICIPAL DE SAUDE - REMIGIO - PB', 'FUNDO MUNICIPAL DE SAUDE - REMIGIO - PB', '11376311000176', '58398000', 'R JOSE LAUREANO, 24', NULL, NULL, 'CENTRO', 'Remígio', 'PB', '2025-10-28 12:32:12'),
-(495, 'FUNDO MUNICIPAL DE SAUDE', 'FUNDO MUNICIPAL DE SAUDE', '10334957000128', '56870000', 'PCA MINISTRO MARCOS DE BARROS FREIRE, 0000', NULL, NULL, 'CENTRO', 'Triunfo', 'PE', '2025-10-28 12:32:12'),
+(495, 'FUNDO MUNICIPAL DE SAUDE TRIUNFO PE', 'FUNDO MUNICIPAL DE SAUDE', '10334957000128', '56870000', 'PCA MINISTRO MARCOS DE BARROS FREIRE, 0000', NULL, NULL, 'CENTRO', 'Triunfo', 'PE', '2025-10-28 12:32:12'),
 (496, 'CONDOMINIO DO SHOPPING CENTER GUARARAPES', 'CONDOMINIO DO SHOPPING CENTER GUARARAPES', '41090689000170', '54410100', 'AV Barreto de Menezes, 800', NULL, NULL, 'Piedade', 'Jaboatão dos Guararapes', 'PE', '2025-10-28 12:32:12'),
 (497, 'MEDSPORT', 'MEDSPORT CENTRO AVANCADO DE DIAGNOSTICO POR IMAGEM LTDA', '20147380000107', '58042040', 'R José Florentino Júnior, 69', NULL, NULL, 'Tambauzinho', 'João Pessoa', 'PB', '2025-10-28 12:32:12'),
 (498, 'DIAGNOSTICO ENDOSCOPICO EXAMES E CONSULTAS LTDA', 'DIAGNOSTICO ENDOSCOPICO EXAMES E CONSULTAS LTDA', '06076097000100', '50070525', 'PCA Miguel de Cervantes, 188', NULL, NULL, 'Ilha do Leite', 'Recife', 'PE', '2025-10-28 12:32:12'),
@@ -1748,7 +1859,7 @@ INSERT INTO `organizacoes` (`id`, `nome_fantasia`, `razao_social`, `cnpj`, `cep`
 (859, 'HOSPITAL REGIONAL PROFESSOR AGAMENON MAGALHAES', 'SECRETARIA DE SAUDE', '10572048004387', '56903490', 'R Manoel Pereira da Silva, 955', NULL, NULL, 'Nossa Senhora da Penha', 'Serra Talhada', 'PE', '2025-10-28 12:32:12'),
 (860, 'FES-PE', 'FUNDO ESTADUAL DE SAUDE DE PERNAMBUCO', '11430018000140', '50751530', 'R DONA MARIA AUGUSTA NOGUEIRA, 519', NULL, NULL, 'BONGI', 'Recife', 'PE', '2025-10-28 12:32:12'),
 (861, 'SECRETARIA MUNICIPAL DE SAUDE DE BEZERROS', 'FUNDO MUNICIPAL DE SAUDE DE BEZERROS', '13486604000131', '55660000', 'R  VITORIANO PEREIRA DE LIMA, 84', NULL, NULL, 'CENTRO', 'Bezerros', 'PE', '2025-10-28 12:32:12'),
-(862, 'FUNDO MUNICIPAL DE SAUDE', 'FUNDO MUNICIPAL DE SAUDE', '03061099000120', '55435000', 'R JOAO DE ASSIS MORENO, 01', NULL, NULL, 'CENTRO', 'São João', 'PE', '2025-10-28 12:32:12'),
+(862, 'FUNDO MUNICIPAL DE SAUDE SÃO JOÃO PE', 'FUNDO MUNICIPAL DE SAUDE', '03061099000120', '55435000', 'R JOAO DE ASSIS MORENO, 01', NULL, NULL, 'CENTRO', 'São João', 'PE', '2025-10-28 12:32:12'),
 (863, 'FUNDO ESTADUAL DE SEGURANCA E DEFESA SOCIAL DA PB', 'FUNDO DA SEGURANCA E DA DEFESA SOCIAL DO ESTADO DA PARAIBA -', '36814674000177', '58055018', 'AV Hilton Souto Maior, 01', NULL, NULL, 'Mangabeira', 'João Pessoa', 'PB', '2025-10-28 12:32:12'),
 (864, 'INSTRAMED', 'INSTRAMED INDUSTRIA MEDICO HOSPITALAR LTDA', '90909631000200', '88137290', 'R do Albatroz, 237', NULL, NULL, 'Pedra Branca', 'Palhoça', 'SC', '2025-10-28 12:32:12'),
 (865, 'NANOMEDICA', 'NANOMEDICA TECNOLOGIA COMERCIO E IMPORTACAO LTDA', '32024141000130', '88306773', 'AV Osvaldo Reis, 3281', NULL, NULL, 'Praia Brava de Itajaí', 'Itajaí', 'SC', '2025-10-28 12:32:12'),
@@ -1791,7 +1902,9 @@ INSERT INTO `organizacoes` (`id`, `nome_fantasia`, `razao_social`, `cnpj`, `cep`
 (923, 'CASA DE SAUDE E MATERNIDADE DE CORURIPE', 'INSTITUTO HOSPITAL CARVALHO BELTRAO', '35.642.172/0001-43', '57230000', 'RUA RUA EUCLIDES BAETA', 'SN', NULL, 'JOAO CARVALHO', 'CORURIPE', 'AL', '2025-12-04 19:13:27'),
 (929, 'PRODEV EDUCACIONAL', 'PRODEV EDUCACIONAL LTDA', '37.167.209/0001-54', '50070120', 'RUA LUIZ BARBALHO', '149', NULL, 'BOA VISTA', 'RECIFE', 'PE', '2025-12-11 19:12:10'),
 (935, 'AMAURI PURCINO DA LUZ', '35.823.463 AMAURI PURCINO DA LUZ', '35823463000138', '51160330', 'AVENIDA ANTONIO TORRES GALVAO', '221', NULL, 'IMBIRIBEIRA', 'RECIFE', 'PE', '2025-12-18 19:50:25'),
-(936, 'CUPER', 'CENTRO UROLOGICO PERNAMBUCO LTDA', '01443009000130', '52060000', 'AVENIDA PARNAMIRIM', '95', NULL, 'PARNAMIRIM', 'RECIFE', 'PE', '2025-12-23 15:00:06');
+(936, 'CUPER', 'CENTRO UROLOGICO PERNAMBUCO LTDA', '01443009000130', '52060000', 'AVENIDA PARNAMIRIM', '95', NULL, 'PARNAMIRIM', 'RECIFE', 'PE', '2025-12-23 15:00:06'),
+(937, 'EQUIPASAUDE', 'EQUIPASAUDE PRODUTOS PARA SAUDE LTDA.', '34.836.183/0001-00', '58200000', 'AVENIDA FELICIANO BATISTA DE AMORIM', '1116', NULL, 'JUA', 'GUARABIRA', 'PB', '2026-01-09 18:47:14'),
+(938, 'SAMU Recife', 'SAMU Metropolitano do Recife', '10.565.000/0001-92', '50060-140', 'Av Manoel Borba ', '951', NULL, 'Boa Vista', 'Recife', 'PE', '2026-01-19 18:10:31');
 
 -- --------------------------------------------------------
 
@@ -1816,7 +1929,7 @@ CREATE TABLE `produtos` (
 --
 
 INSERT INTO `produtos` (`id`, `nome_produto`, `fabricante`, `modelo`, `descricao_detalhada`, `valor_unitario`, `unidade_medida`, `imagem_url`, `data_criacao`) VALUES
-(7, 'CARDIOVERSOR ', 'INSTRAMED', 'CARDIOMAX LITE ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\n', 23082.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', '2025-10-30 12:27:49'),
+(7, 'CARDIOVERSOR ', 'INSTRAMED', 'CARDIOMAX LITE ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 23082.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', '2025-10-30 12:27:49'),
 (11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'INSTRAMED', 'I.ON LED', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 8471.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', '2025-10-30 12:43:05'),
 (12, 'DESFIBRILADOR ', 'INSTRAMED', 'APOLUS ', 'Principais funções concentradas em apenas um botão seletor. \nRápida inicialização carregamento de 360 J em menos de 6 segundos', 12569.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_690a099525520.webp', '2025-11-04 14:11:35'),
 (13, 'GABINETE DEA', 'INSTRAMED', 'DEA', 'Gabinete metálico para desfibrilador externo automático (DEA), equipado com alarme sonoro.\n\n', 1737.40, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_690de965c8b36.webp', '2025-11-07 12:46:21'),
@@ -1830,14 +1943,16 @@ INSERT INTO `produtos` (`id`, `nome_produto`, `fabricante`, `modelo`, `descricao
 (21, 'PÁ ADESIVA ADULTO DESCARTAVEL DEA / CARDIOMAX', 'INSTRAMED', 'ADULTO', 'PÁ ADESIVA ADULTO DESCARTÁVEL', 615.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_691249bfe6282.png', '2025-11-10 20:23:56'),
 (22, 'MODULO DE BATERIA CARDIOMAX LI-ON 14,4V 4AH 57,6WH', 'INSTRAMED', 'CARDIOMAX', 'Modulo de bateria recarregável para carDiomax li-on 14,4V 4AH 57,6WH', 3420.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_692f33e61ffc4.jpg', '2025-12-02 18:49:41'),
 (23, 'SUPORTE DE PAREDE EM ACRÍLICO ', 'INSTRAMED', 'I ON ', 'Suporte de parede em acrílico para DEA', 635.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_69302adc0a423.webp', '2025-12-03 12:21:54'),
-(24, 'PLACA ESPAÇO CARDIOPROTEGIDO', NULL, NULL, NULL, 0.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_69302bd5e098a.png', '2025-12-03 12:24:46'),
-(25, 'PLACA PASSO A PASSO ', NULL, NULL, NULL, 0.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_69302dcc1a1e9.png', '2025-12-03 12:32:27'),
+(24, 'PLACA ESPAÇO CARDIOPROTEGIDO', 'FR - GRAFICA RECIFE', NULL, NULL, 80.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_69302bd5e098a.png', '2025-12-03 12:24:46'),
+(25, 'PLACA PASSO A PASSO ', 'FR - GRAFICA RECIFE', NULL, NULL, 120.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_69302dcc1a1e9.png', '2025-12-03 12:32:27'),
 (26, 'VENTILADOR BEIRA LEITO ', 'INSTRAMED', 'VG70', 'Ventilação invasiva e não invasiva \nBateria interna com autonomia de aproximadamente 4 horas \nNebulizador integrado \n', 62900.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_6931ddcc8f088.webp', '2025-12-04 19:16:30'),
 (27, 'MONITOR BLT', 'INSTRAMED', 'M10', 'Configuração ECG, SPO2, PNI', 7720.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_6931df2fb1be3.webp', '2025-12-04 19:22:07'),
 (28, 'CARRO DE PARADA ', 'HEALTH ', 'LT 103', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 7265.85, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', '2025-12-09 13:01:52'),
 (29, 'SENSOR DE FLUXO ', 'AEONMED', NULL, 'Sensor de fluxo para utilização no ventilador pulmonar Shangrila 510S\n', 229.10, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_69383041db97a.webp', '2025-12-09 14:23:41'),
 (30, 'VÁLVULA DE CONTROLE EXALATÓRIO ', 'AEONMED', NULL, 'Válvula de controle do fluxo exalatório compatível com o ventilador Shangrila 510S', 1157.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_69383503a5145.png', '2025-12-09 14:42:53'),
-(31, 'CILINDRO DE O2', NULL, 'GWA15', 'Capacidade hidráulica 2.8L\nPressão  de serviço 139bar\nAltura 412.8mm\nDiâmetro 111.1mm\nRosca de entrada 3/4 \nPeso 2.3kg ', 2860.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_694ace6e98b05.webp', '2025-12-23 17:21:50');
+(31, 'CILINDRO DE O2', 'GASWIDE', 'GWA15', 'Capacidade hidráulica 2.8L\nPressão  de serviço 139bar\nAltura 412.8mm\nDiâmetro 111.1mm\nRosca de entrada 3/4 \nPeso 2.3kg ', 2860.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_694ace6e98b05.webp', '2025-12-23 17:21:50'),
+(32, 'Módulo de bateria (NiMH) - CardioMax', 'INSTRAMED', 'CARDIOMAX ', 'Modulo de bateria recarregável para Cardiomax (NiMH)', 2750.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_695ff7e024858.jpg', '2026-01-08 18:38:32'),
+(33, 'Eletrocardiógrafo de 12 canais', 'EDAN', 'SE 1200 EXPRESS', 'AQUISIÇÃO E IMPRESÃO EM 12 CANAIS SIMUTÂNEOS, INTERPRETATIVO, IMPRESSÃO EM PAPEL TÉRMICO A4, Display Colorido 8”- Teclado QWERTY- Memória 800 exames- Exporta exames em PDF.', 12876.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_696a54b7a29fa.png', '2026-01-16 15:09:56');
 
 -- --------------------------------------------------------
 
@@ -1874,7 +1989,7 @@ CREATE TABLE `propostas` (
 --
 
 INSERT INTO `propostas` (`id`, `numero_proposta`, `oportunidade_id`, `cliente_pf_id`, `organizacao_id`, `contato_id`, `usuario_id`, `valor_total`, `status`, `data_validade`, `faturamento`, `treinamento`, `condicoes_pagamento`, `prazo_entrega`, `garantia_equipamentos`, `garantia_acessorios`, `instalacao`, `assistencia_tecnica`, `observacoes`, `assinatura_url`, `data_criacao`) VALUES
-(60, '001/2025', 61, NULL, 892, NULL, 2, 29992.00, 'Enviada', '2025-11-10', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível de forma contínua, com suporte especializado para manutenção e eventuais ajustes.', 'Nenhuma', NULL, '2025-10-30 12:32:59'),
+(60, '001/2025', 61, NULL, 892, NULL, 2, 23082.00, 'Enviada', '2025-11-10', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível de forma contínua, com suporte especializado para manutenção e eventuais ajustes.', 'Nenhuma', NULL, '2025-10-30 12:32:59'),
 (62, '002/2025', 65, NULL, 894, NULL, 2, 12569.00, 'Enviada', '2025-11-11', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível de forma contínua, com suporte especializado para manutenção e eventuais ajustes.', 'Nenhuma', NULL, '2025-11-04 15:11:04'),
 (65, '003/2025', 69, NULL, 897, NULL, 2, 102646.44, 'Enviada', '2025-11-16', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '30 dias ', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível de forma contínua, com suporte especializado para manutenção e eventuais ajustes.', 'Nenhuma', NULL, '2025-11-06 12:26:18'),
 (66, '004/2025', 70, NULL, 898, NULL, 2, 10208.40, 'Enviada', '2025-11-16', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível de forma contínua, com suporte especializado para manutenção e eventuais ajustes.', 'Nenhuma', NULL, '2025-11-06 20:49:30'),
@@ -1883,9 +1998,9 @@ INSERT INTO `propostas` (`id`, `numero_proposta`, `oportunidade_id`, `cliente_pf
 (69, '007/2025', 73, NULL, 850, NULL, 2, 36308.39, 'Enviada', '2025-11-20', 'Realizado diretamente pela FR Produtos Médicos.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-10 13:09:13'),
 (70, '008/2025', 74, NULL, 897, NULL, 2, 1230.00, 'Enviada', '2025-11-20', 'Realizado diretamente pela fábrica', '', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '', '6 meses, conforme especificações do fabricante.', '.', '', 'Nenhuma', NULL, '2025-11-10 20:31:38'),
 (71, '009/2025', 75, NULL, 915, 7, 1, 50196.00, 'Enviada', '2025-11-28', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'INCLUSO CONJUNTO DE PAS (ADULTO/PEDIÁTRICO)', NULL, '2025-11-14 19:32:19'),
-(72, '010/2025', 76, NULL, 591, 8, 2, 7990.00, 'Enviada', '2025-11-26', 'Realizado diretamente pela  FR Produtos Médicos', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '3 vezes no boleto', '10 dias úteis', '12 meses a partir da data de emissão da nota Fiscal.', 'Tipo: Dióxido de Lítio Manganês (LiMnO2) 18 V, 2800\nmAh.\nDuração da bateria em carga plena (100%) 15 horas\nde monitorização contínua, mais de 300 choques de\n200 J ou mais de 160 choques de 360 J. conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-17 17:45:58'),
-(73, '011/2025', 77, NULL, 591, 8, 2, 11652.80, 'Enviada', '2025-11-26', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', 'Tipo: Li-Ion, 14,4 VDC 4,0 Ah.\nDuração da bateria em carga plena (100%) 18 horas\nde monitorização contínua, mais de 400 choques de\n200 J ou mais de 230 choques de 360J.\nVida útil: 2 anos em stand by. Conforme informações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-17 17:47:12'),
-(74, '012/2025', 78, NULL, 916, 9, 8, 0.00, 'Aprovada', '2025-12-16', 'Realizado diretamente pela FR', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '20/01/2026', 'Até 21/01/26 após a confirmação de pagamento.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Emitir a NF dia 05/01/2026.', NULL, '2025-11-24 12:29:04'),
+(72, '010/2025', 76, NULL, 591, 8, 2, 7990.00, 'Aprovada', '2025-11-26', 'Realizado diretamente pela  FR Produtos Médicos', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '3 vezes no boleto', '10 dias úteis', '12 meses a partir da data de emissão da nota Fiscal.', 'Tipo: Dióxido de Lítio Manganês (LiMnO2) 18 V, 2800\nmAh.\nDuração da bateria em carga plena (100%) 15 horas\nde monitorização contínua, mais de 300 choques de\n200 J ou mais de 160 choques de 360 J. conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-17 17:45:58'),
+(73, '011/2025', 77, NULL, 591, 8, 2, 11652.80, 'Aprovada', '2025-11-26', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', 'Tipo: Li-Ion, 14,4 VDC 4,0 Ah.\nDuração da bateria em carga plena (100%) 18 horas\nde monitorização contínua, mais de 400 choques de\n200 J ou mais de 230 choques de 360J.\nVida útil: 2 anos em stand by. Conforme informações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-17 17:47:12'),
+(74, '012/2025', 78, NULL, 916, 9, 8, 7990.00, 'Aprovada', '2025-12-16', 'Realizado diretamente pela FR', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '20/01/2026', 'Até 21/01/26 após a confirmação de pagamento.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Emitir a NF dia 05/01/2026.', NULL, '2025-11-24 12:29:04'),
 (75, '013/2025', 79, 31, NULL, NULL, 2, 7990.00, 'Aprovada', '2025-11-24', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '10 vezes no boleto ', 'Até 10 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-24 20:26:58'),
 (76, '014/2025', 80, NULL, 917, NULL, 2, 23990.00, 'Enviada', '2025-11-28', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Valor promocional valido até o dia 28/11\n', NULL, '2025-11-26 12:08:05'),
 (77, '015/2025', 81, NULL, 917, NULL, 2, 23082.00, 'Recusada', '2025-12-06', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'À Vista ', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-26 14:18:32'),
@@ -1899,7 +2014,7 @@ INSERT INTO `propostas` (`id`, `numero_proposta`, `oportunidade_id`, `cliente_pf
 (90, '023/2025', 94, NULL, 923, NULL, 2, 168000.00, 'Rascunho', '2025-12-14', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-04 19:24:32'),
 (91, '024/2025', 95, NULL, 923, NULL, 2, 2067000.00, 'Rascunho', '2025-12-14', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-04 19:26:33'),
 (92, '025/2025', 96, 273, NULL, NULL, 2, 16765.85, 'Rascunho', '2025-12-19', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 15 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-09 13:06:15'),
-(93, '026/2025', 97, NULL, 336, NULL, 2, 37200.00, 'Enviada', '2025-12-19', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-09 14:46:31'),
+(93, '026/2025', 97, NULL, 336, NULL, 2, 5580.00, 'Enviada', '2026-01-23', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-09 14:46:31'),
 (94, '027/2025', 98, NULL, 513, NULL, 2, 10326.00, 'Enviada', '2025-12-19', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Imediato.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-09 20:40:47'),
 (95, '028/2025', 99, NULL, 929, NULL, 2, 9500.00, 'Enviada', '2025-12-22', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Imediato', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-11 19:13:44'),
 (96, '029/2025', 100, NULL, 318, NULL, 2, 10055.20, 'Aprovada', '2025-12-22', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '45/60 dias ', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Trade in 20% de desconto', NULL, '2025-12-11 20:47:31'),
@@ -1909,7 +2024,19 @@ INSERT INTO `propostas` (`id`, `numero_proposta`, `oportunidade_id`, `cliente_pf
 (109, '034/2025', 113, NULL, 238, NULL, 2, 615.00, 'Enviada', '2025-12-27', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 20 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-17 20:10:40'),
 (110, '035/2025', 114, NULL, 935, NULL, 2, 9500.00, 'Enviada', '2025-12-28', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Imediato', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-18 19:54:06'),
 (111, '036/2025', 115, NULL, 936, NULL, 2, 19625.85, 'Enviada', '2026-01-03', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-23 17:28:36'),
-(113, '001/2026', 119, NULL, 221, NULL, 1, 174380.40, 'Rascunho', '2026-01-15', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-06 00:08:47');
+(114, '002/2026', 120, NULL, 359, 14, 2, 21320.00, 'Enviada', '2026-01-20', 'Realizado diretamente pela fr', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-09 12:48:45'),
+(116, '003/2026', 124, 280, NULL, NULL, 2, 33207.85, 'Enviada', '2026-01-23', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Frete: FOB', NULL, '2026-01-13 12:33:28'),
+(117, '004/2026', 125, NULL, 937, 15, 2, 16942.00, 'Enviada', '2026-01-23', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'FRETE FOB', NULL, '2026-01-13 16:33:34'),
+(120, '005/2026', 128, 280, NULL, NULL, 8, 10749.00, 'Enviada', '2026-01-21', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-14 18:40:32'),
+(122, '006/2026', 131, NULL, 495, 16, 8, 12876.00, 'Enviada', '2026-01-26', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 10 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-16 16:18:18'),
+(124, '007/2026', 139, NULL, 221, NULL, 11, 7720.00, 'Recusada', '2026-01-22', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-20 14:25:42'),
+(125, '008/2026', 140, NULL, 761, NULL, 11, 553968.00, 'Recusada', '2026-01-21', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-20 14:27:07'),
+(126, '009/2026', 151, NULL, 57, NULL, 11, 23082.00, 'Aprovada', '2026-01-21', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-20 17:59:04'),
+(127, '010/2026', 152, NULL, 764, NULL, 11, 8358.90, 'Aprovada', '2026-01-22', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-20 18:11:37'),
+(128, '011/2026', 153, NULL, 332, NULL, 11, 1290.00, 'Aprovada', '2026-01-22', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-20 18:19:29'),
+(129, '012/2026', 155, NULL, 221, NULL, 11, 23082.00, 'Aprovada', '2026-01-22', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-21 11:15:49'),
+(131, '014/2026', 159, NULL, 764, NULL, 1, 129000.00, 'Negociando', '2026-01-30', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-22 20:29:03'),
+(132, '015/2026', 163, NULL, 57, NULL, 1, 7265.85, 'Aprovada', '2026-01-27', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-23 16:49:58');
 
 -- --------------------------------------------------------
 
@@ -1940,7 +2067,6 @@ CREATE TABLE `proposta_itens` (
 --
 
 INSERT INTO `proposta_itens` (`id`, `proposta_id`, `produto_id`, `descricao`, `descricao_detalhada`, `fabricante`, `modelo`, `imagem_url`, `quantidade`, `valor_unitario`, `status`, `unidade_medida`, `parametros`, `meses_locacao`, `meses`) VALUES
-(175, 60, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\nConfigurações adicionais: Marcapasso + Impressora ', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 29992.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (189, 65, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 18, 5702.58, 'VENDA', 'Unidade', NULL, NULL, 1),
 (190, 62, 12, 'DESFIBRILADOR ', 'Principais funções concentradas em apenas um botão seletor. \nRápida inicialização carregamento de 360 J em menos de 6 segundos', 'INSTRAMED', 'APOLUS ', 'https://frpe.app.br/crm/uploads/products/prod_690a099525520.webp', 1, 12569.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (193, 66, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, NULL, 1),
@@ -1954,14 +2080,11 @@ INSERT INTO `proposta_itens` (`id`, `proposta_id`, `produto_id`, `descricao`, `d
 (208, 70, 21, 'PÁ ADESIVA ADULTO DESCARTAVEL DEA / CARDIOMAX', 'PÁ ADESIVA ADULTO DESCARTÁVEL', 'INSTRAMED', 'ADULTO', 'https://frpe.app.br/crm/uploads/products/prod_691249bfe6282.png', 1, 615.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (209, 70, 20, 'PÁ ADESIVA INFANTIL DESCARTAVEL DEA/CARDIOMAX', 'PÁ ADESIVA INFANTIL DESCARTAVEL - DEA/CARDIOMAX', 'INSTRAMED', 'INFANTIL', 'https://frpe.app.br/crm/uploads/products/prod_69124901583c3.png', 1, 615.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (212, 71, 7, 'CARDIOVERSOR ', 'Configuração Básica (ECG, Resp, Desf, ASC, PMS, Li-ion 4 Ah)', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 2, 25098.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMP (Impressora)\",\"valor\":4152},{\"nome\":\"MP (Marcapasso) \",\"valor\":2758},{\"nome\":\"DEA (Desfibrilador Externo Autom\\u00e1tico) \",\"valor\":1602}]', NULL, 1),
-(228, 72, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (233, 75, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (242, 76, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\nAdicionais: MP + IMP + DEA', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23990.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (245, 78, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 10, 7283.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (246, 78, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 10, 4369.80, 'VENDA', 'Unidade', NULL, NULL, 1),
 (247, 77, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMP \",\"valor\":4152},{\"nome\":\"DEA\",\"valor\":1602}]', NULL, 1),
-(248, 73, NULL, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/proposal_items/item_691b672009fc1.png', 1, 7283.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(249, 73, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 4369.80, 'VENDA', 'Unidade', NULL, NULL, 1),
 (252, 79, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (254, 80, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 12, 500.00, 'LOCAÇÃO', 'mensal', NULL, NULL, 1),
 (255, 81, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, NULL, 1),
@@ -1971,7 +2094,6 @@ INSERT INTO `proposta_itens` (`id`, `proposta_id`, `produto_id`, `descricao`, `d
 (270, 88, 24, 'PLACA ESPAÇO CARDIOPROTEGIDO', '', '', '', 'https://frpe.app.br/crm/uploads/products/prod_69302bd5e098a.png', 1, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (271, 88, 25, 'PLACA PASSO A PASSO ', '', '', '', 'https://frpe.app.br/crm/uploads/products/prod_69302dcc1a1e9.png', 1, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (272, 89, 12, 'DESFIBRILADOR ', 'Principais funções concentradas em apenas um botão seletor. \nRápida inicialização carregamento de 360 J em menos de 6 segundos', 'INSTRAMED', 'APOLUS ', 'https://frpe.app.br/crm/uploads/products/prod_690a099525520.webp', 1, 12569.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(273, 90, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\nParâmetros adicionais: MP + DEA + IMP', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 10, 16800.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (274, 91, 26, 'VENTILADOR BEIRA LEITO ', 'Ventilação invasiva e não invasiva \nBateria interna com autonomia de aproximadamente 4 horas \nNebulizador integrado \n', 'INSTRAMED', 'VG70', 'https://frpe.app.br/crm/uploads/products/prod_6931ddcc8f088.webp', 30, 62900.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (275, 91, 27, 'MONITOR BLT', 'Configuração ECG, SPO2, PNI', 'INSTRAMED', 'M10', 'https://frpe.app.br/crm/uploads/products/prod_6931df2fb1be3.webp', 30, 6000.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (278, 92, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 'VENDA', 'Unidade', NULL, NULL, 1),
@@ -1981,10 +2103,7 @@ INSERT INTO `proposta_itens` (`id`, `proposta_id`, `produto_id`, `descricao`, `d
 (293, 94, 20, 'PÁ ADESIVA INFANTIL DESCARTAVEL DEA/CARDIOMAX', 'PÁ ADESIVA INFANTIL DESCARTAVEL - DEA/CARDIOMAX', 'INSTRAMED', 'INFANTIL', 'https://frpe.app.br/crm/uploads/products/prod_69124901583c3.png', 1, 615.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (295, 97, 23, 'SUPORTE DE PAREDE EM ACRÍLICO ', 'Suporte de parede em acrílico para DEA', 'INSTRAMED', 'I ON ', 'https://frpe.app.br/crm/uploads/products/prod_69302adc0a423.webp', 1, 635.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (296, 97, 13, 'GABINETE DEA', 'Gabinete metálico para desfibrilador externo automático (DEA), equipado com alarme sonoro.\n\n', 'INSTRAMED', 'DEA', 'https://frpe.app.br/crm/uploads/products/prod_690de965c8b36.webp', 1, 1737.40, 'VENDA', 'Unidade', NULL, NULL, 1),
-(300, 74, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 'VENDA', 'Unidade', NULL, 1, 1),
 (307, 96, 12, 'DESFIBRILADOR ', 'Principais funções concentradas em apenas um botão seletor. \nRápida inicialização carregamento de 360 J em menos de 6 segundos', 'INSTRAMED', 'APOLUS ', 'https://frpe.app.br/crm/uploads/products/prod_690a099525520.webp', 1, 10055.20, 'VENDA', 'Unidade', NULL, 1, 1),
-(310, 93, 29, 'SENSOR DE FLUXO ', 'Sensor de fluxo para utilização no ventilador pulmonar Shangrila 510S\n', 'AEONMED', '', 'https://frpe.app.br/crm/uploads/products/prod_69383041db97a.webp', 40, 155.00, 'VENDA', 'Unidade', NULL, 1, 1),
-(311, 93, 30, 'VÁLVULA DE CONTROLE EXALATÓRIO ', 'Válvula de controle do fluxo exalatório compatível com o ventilador Shangrila 510S', 'AEONMED', '', 'https://frpe.app.br/crm/uploads/products/prod_69383503a5145.png', 40, 775.00, 'VENDA', 'Unidade', NULL, 1, 1),
 (316, 98, NULL, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMP\",\"valor\":4152}]', 1, 1),
 (317, 108, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9711.00, 'VENDA', 'Unidade', NULL, 1, 1),
 (318, 108, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, 1, 1),
@@ -1993,7 +2112,30 @@ INSERT INTO `proposta_itens` (`id`, `proposta_id`, `produto_id`, `descricao`, `d
 (321, 111, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, 1, 1),
 (322, 111, 31, 'CILINDRO DE O2', 'Capacidade hidráulica 2.8L\nPressão  de serviço 139bar\nAltura 412.8mm\nDiâmetro 111.1mm\nRosca de entrada 3/4 \nPeso 2.3kg ', '', 'GWA15', 'https://frpe.app.br/crm/uploads/products/prod_694ace6e98b05.webp', 1, 2860.00, 'VENDA', 'Unidade', NULL, 1, 1),
 (323, 111, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 'VENDA', 'Unidade', NULL, 1, 1),
-(326, 113, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'LOCAÇÃO', 'Unidade', NULL, 1, 1);
+(337, 114, 32, 'Módulo de bateria (NiMH) - CardioMax', 'Modulo de bateria recarregável para Cardiomax (NiMH)', 'INSTRAMED', 'CARDIOMAX ', 'https://frpe.app.br/crm/uploads/products/prod_695ff7e024858.jpg', 6, 2900.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(338, 114, 22, 'MODULO DE BATERIA CARDIOMAX LI-ON 14,4V 4AH 57,6WH', 'Modulo de bateria recarregável para carDiomax li-on 14,4V 4AH 57,6WH', 'INSTRAMED', 'CARDIOMAX', 'https://frpe.app.br/crm/uploads/products/prod_692f33e61ffc4.jpg', 1, 3920.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(340, 73, NULL, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/proposal_items/item_691b672009fc1.png', 1, 7283.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(341, 73, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 4369.80, 'VENDA', 'Unidade', NULL, NULL, 1),
+(342, 72, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(343, 74, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(350, 116, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, NULL, 1),
+(351, 116, 31, 'CILINDRO DE O2 (vazio)', 'Capacidade hidráulica 2.8L\nPressão  de serviço 139bar\nAltura 412.8mm\nDiâmetro 111.1mm\nRosca de entrada 3/4 \nPeso 2.3kg ', '', 'GWA15', 'https://frpe.app.br/crm/uploads/products/prod_694ace6e98b05.webp', 1, 2860.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(352, 116, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS. \n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMPRESSORA\",\"valor\":4152},{\"nome\":\"MARCAPASSO\",\"valor\":2758},{\"nome\":\"DEA\",\"valor\":1602}]', NULL, 1),
+(353, 90, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS \nParâmetros adicionais: MP + DEA + IMP', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 10, 16800.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(356, 117, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 2, 8471.00, 'VENDA', 'Unidade', '[{\"nome\":\"FUN\\u00c7\\u00c3O 3V (MONITORIZA\\u00c7\\u00c3O ATRAVES DE CABO DE ECG 3VIAS)\",\"valor\":1253},{\"nome\":\"CONECTOR PARA RCP (SOMENTE CONECTOR)\",\"valor\":1253},{\"nome\":\"RCP MAESTRO (COM DISPLAY)\",\"valor\":4174},{\"nome\":\"GRAVADOR DE SOM AMBIENTE (MICROFONE) \",\"valor\":317}]', NULL, 1),
+(364, 120, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA  RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LCD', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 10749.00, 'VENDA', 'Unidade', '[{\"nome\":\"Fun\\u00e7\\u00e3o 3V Monitora\\u00e7\\u00e3o atraves cabo ECG 3vias\",\"valor\":1253},{\"nome\":\"Conector para RCP (somente conector)\",\"valor\":752}]', NULL, 1),
+(369, 122, 33, 'Eletrocardiógrafo de 12 canais', 'AQUISIÇÃO E IMPRESÃO EM 12 CANAIS SIMUTÂNEOS, INTERPRETATIVO, IMPRESSÃO EM PAPEL TÉRMICO A4, Display Colorido 8”- Teclado QWERTY- Memória 800 exames- Exporta exames em PDF.', 'EDAN', 'SE 1200 EXPRESS', 'https://frpe.app.br/crm/uploads/products/prod_696a54b7a29fa.png', 1, 12876.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(370, 60, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"Marcapasso\",\"valor\":2758},{\"nome\":\"Impressora\",\"valor\":4152}]', NULL, 1),
+(377, 93, 29, 'SENSOR DE FLUXO ', 'Sensor de fluxo para utilização no ventilador pulmonar Shangrila 510S\n', 'AEONMED', '', 'https://frpe.app.br/crm/uploads/products/prod_69383041db97a.webp', 6, 155.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(378, 93, 30, 'VÁLVULA DE CONTROLE EXALATÓRIO ', 'Válvula de controle do fluxo exalatório compatível com o ventilador Shangrila 510S', 'AEONMED', '', 'https://frpe.app.br/crm/uploads/products/prod_69383503a5145.png', 6, 775.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(387, 126, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(391, 125, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 2, 23082.00, 'LOCAÇÃO', 'Mês', NULL, 12, 1),
+(392, 124, 27, 'MONITOR BLT', 'Configuração ECG, SPO2, PNI', 'INSTRAMED', 'M10', 'https://frpe.app.br/crm/uploads/products/prod_6931df2fb1be3.webp', 1, 7720.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(394, 127, 17, 'OXIMETRO', 'Monitor portátil com SPO2, PR, PI, RRP e módulo de temperatura integrado ', 'MASIMO', 'RAD G COM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911dd39c9342.png', 1, 8358.90, 'VENDA', 'Unidade', NULL, NULL, 1),
+(396, 128, 16, 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'Destinado a profissionais da saúde.\nDesign de mesa ideal para consultórios. ​\nModo de medição totalmente automático oscilométrico ou auscultatório.​\nFunção Indicador Zero ​\nPode ser usado com 4 pilhas AA ou com adaptador CA (bivolt automático)​', 'MICROMED', 'OMRON', 'https://frpe.app.br/crm/uploads/products/prod_6911dd100a3fb.webp', 1, 1290.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(400, 129, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(407, 132, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, NULL, 1),
+(408, 131, 16, 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'Destinado a profissionais da saúde.\nDesign de mesa ideal para consultórios. ​\nModo de medição totalmente automático oscilométrico ou auscultatório.​\nFunção Indicador Zero ​\nPode ser usado com 4 pilhas AA ou com adaptador CA (bivolt automático)​', 'MICROMED', 'OMRON', 'https://frpe.app.br/crm/uploads/products/prod_6911dd100a3fb.webp', 100, 1290.00, 'VENDA', 'Unidade', NULL, NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -2019,11 +2161,14 @@ CREATE TABLE `usuarios` (
 INSERT INTO `usuarios` (`id`, `nome`, `email`, `telefone`, `senha`, `role`, `status`, `data_criacao`) VALUES
 (1, 'Eduardo Cabral', 'licitacao@frpe.com.br', '(81) 99555-0880', '$2y$10$WkzOh.1X0fch7tATSm4S6O909ZQJkco.V8EWd9e7rN969cIlZgqc.', 'Analista', 'Ativo', '2025-09-22 17:47:11'),
 (2, 'Laylla Costa', 'frpe@frpe.com.br', '8199181-2762', '$2y$10$bqCebYDYud5ruK2Gwo29U.FI8LBiYq45wsDq/CiNJ0DTEE2axzAK.', 'Comercial', 'Ativo', '2025-09-29 10:59:25'),
-(3, 'Mateus Brito', 'mateusbrito@frpe.com.br', '81 99921-7832', '$2y$10$Bx1NmR0KFfRu16jqTBCho.E0dtdSPea.u9RGyl58Nwwoa7JSiDRMS', 'Especialista', 'Ativo', '2025-09-29 13:56:47'),
-(4, 'Paulo Quintino', 'paulo@frpe.com.br', '81 99163-1034', '$2y$10$zKHWGl9yeENWnwQZFD9OO.QtjhTnPJD7JJWu2ImXdeOwGw5TgGNKu', 'Vendedor', 'Ativo', '2025-09-29 13:57:22'),
-(6, 'Marketing', 'marketing@frpe.com.br', '81988888888', '$2y$10$ZHMusmVXvjuLCWPgcwjLZOq4hFsB.qVPOh5C1HK9wjD5wBrh9ZmdS', 'Marketing', 'Inativo', '2025-10-16 01:32:43'),
-(7, 'Rubens Arantes ', 'rubensjr@frpe.com.br', '81 9978-6252', '$2y$10$3JyfS5AppoDWOkOvMjybn.PI03mKtrMwUZTUepdM.OUmI2waj3.O6', 'Gestor', 'Ativo', '2025-10-17 12:17:54'),
-(8, 'Sandra Remigio', 'sandra@frpe.com.br', '81 99290-9200', '$2y$10$.WjtoMgDh5Pdvx7U5LCon.K7Pl6kG50tZVMqMi9WYTwYBAMS03xSC', 'Gestor', 'Ativo', '2025-11-10 20:58:55');
+(3, 'Mateus Brito', 'mateusbrito@frpe.com.br', '81 99921-7832', '$2y$10$DCI6XFAVfguwFtllPYkNsetvQhl1JmcjxV/9GAjPJnLx8uMy.BzBC', 'Especialista', 'Ativo', '2025-09-29 13:56:47'),
+(4, 'Paulo Quintino', 'paulo@frpe.com.br', '81 99163-1034', '$2y$10$65Q5asKCHOsC00W9uihGZuuNGO6eLjZcy0eW.QuTxG7lWqYYhowzi', 'Vendedor', 'Ativo', '2025-09-29 13:57:22'),
+(6, 'Gustavo Miguel', 'gustavo@frpe.com.br', '(81) 9996-70423', '$2y$10$9zfom.2Lg00kkUbSyACDBOfDJQVYLmdDKeKV6h3OBL3.eE1c3F1oi', 'Vendedor', 'Ativo', '2025-10-16 01:32:43'),
+(7, 'Rubens Arantes Júnior', 'rubensjr@frpe.com.br', '81 9978-6252', '$2y$10$n16/G4GRJyjRVbjNVsey7.mQl4cHOiTmbM7VFxPXZNaxmZlZbJeum', 'Gestor', 'Ativo', '2025-10-17 12:17:54'),
+(8, 'Sandra Remigio', 'sandra@frpe.com.br', '81 99290-9200', '$2y$10$.WjtoMgDh5Pdvx7U5LCon.K7Pl6kG50tZVMqMi9WYTwYBAMS03xSC', 'Gestor', 'Ativo', '2025-11-10 20:58:55'),
+(9, 'Dyara ', 'dyara@frpe.com.br', '84 98730-3243', '$2y$10$IoSBau78YoB/QzX1vNbTm.b1I9TWFA7zlJxNVoWOFdPfh3HoNEXVG', 'Vendedor', 'Ativo', '2026-01-09 14:52:48'),
+(10, 'Betânia ', 'betania@frpe.com.br', '84 99407-3545', '$2y$10$Oc30.vk.MCYpNf0NJDZbnOGzmOT/BpCn5SlSXUHmo35riKbe607iu', 'Vendedor', 'Ativo', '2026-01-09 14:54:30'),
+(11, 'Eduardo', 'frpe@frpe.app.br', '81995550880', '$2y$10$4h0UR4NQvhaf4ffDPUt4Ze4d/w/9kZm5tVljKMG9sVWj17vWa7.Tu', 'Vendedor', 'Ativo', '2026-01-19 16:58:06');
 
 -- --------------------------------------------------------
 
@@ -2058,7 +2203,152 @@ CREATE TABLE `vendas_fornecedores` (
 INSERT INTO `vendas_fornecedores` (`id`, `titulo`, `fornecedor_id`, `organizacao_id`, `origem`, `descricao_produto`, `fabricante_marca`, `modelo`, `quantidade`, `valor_unitario`, `valor_total`, `notas`, `data_venda`, `usuario_id`, `proposta_ref_id`, `data_criacao`, `cliente_pf_id`) VALUES
 (13, 'Venda via Proposta #75 - DESFIBRILADOR EXTERNO AUTOMATICO  ', 1, NULL, 'Proposta Aprovada', 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'INSTRAMED', 'I.ON LED', 1, 7990.00, 7990.00, 'Gerado automaticamente a partir da Proposta ID 75.', '2025-11-24', 2, 75, '2025-11-24 20:28:39', 31),
 (14, 'Venda via Proposta #96 - DESFIBRILADOR ', 1, 318, 'Proposta Aprovada', 'DESFIBRILADOR ', 'INSTRAMED', 'APOLUS ', 1, 10055.20, 10055.20, 'Gerado automaticamente a partir da Proposta ID 96.', '2025-12-16', 2, 96, '2025-12-16 14:57:54', NULL),
-(15, 'Venda via Proposta #74 - DESFIBRILADOR EXTERNO AUTOMATICO  ', 1, 916, 'Proposta Aprovada', 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'INSTRAMED', 'I.ON LED', 1, 7990.00, 7990.00, 'Gerado automaticamente a partir da Proposta ID 74.', '2025-12-16', 8, 74, '2025-12-16 17:14:56', NULL);
+(15, 'Venda via Proposta #74 - DESFIBRILADOR EXTERNO AUTOMATICO  ', 1, 916, 'Proposta Aprovada', 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'INSTRAMED', 'I.ON LED', 1, 7990.00, 7990.00, 'Gerado automaticamente a partir da Proposta ID 74.', '2025-12-16', 8, 74, '2025-12-16 17:14:56', NULL),
+(16, 'Venda via Proposta #73 - DESFIBRILADOR EXTERNO AUTOMATICO  ', 1, 591, 'Proposta Aprovada', 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'INSTRAMED', 'I.ON LED', 1, 7283.00, 7283.00, 'Gerado automaticamente a partir da Proposta ID 73.', '2026-01-12', 2, 73, '2026-01-12 18:37:05', NULL),
+(17, 'Venda via Proposta #73 - DESFIBRILADOR EXTERNO AUTOMATICO  ', 1, 591, 'Proposta Aprovada', 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'INSTRAMED', 'I.ON LED', 1, 4369.80, 4369.80, 'Gerado automaticamente a partir da Proposta ID 73.', '2026-01-12', 2, 73, '2026-01-12 18:37:05', NULL),
+(18, 'Venda via Proposta #72 - DESFIBRILADOR EXTERNO AUTOMATICO  ', 1, 591, 'Proposta Aprovada', 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'INSTRAMED', 'I.ON LED', 1, 7990.00, 7990.00, 'Gerado automaticamente a partir da Proposta ID 72.', '2026-01-12', 2, 72, '2026-01-12 18:37:28', NULL),
+(20, 'Venda via Proposta #125 - CARDIOVERSOR ', 1, 761, 'Proposta Aprovada', 'CARDIOVERSOR ', 'INSTRAMED', 'CARDIOMAX LITE ', 2, 23082.00, 46164.00, 'Gerado automaticamente a partir da Proposta ID 125.', '2026-01-20', 11, 125, '2026-01-20 17:56:19', NULL),
+(21, 'Venda via Proposta #126 - CARDIOVERSOR ', 1, 57, 'Proposta Aprovada', 'CARDIOVERSOR ', 'INSTRAMED', 'CARDIOMAX LITE ', 1, 23082.00, 23082.00, 'Gerado automaticamente a partir da Proposta ID 126.', '2026-01-20', 11, 126, '2026-01-20 18:01:48', NULL),
+(22, 'Venda via Proposta #127 - OXIMETRO', 5, 764, 'Proposta Aprovada', 'OXIMETRO', 'MASIMO', 'RAD G COM TEMPERATURA ', 1, 8358.90, 8358.90, 'Gerado automaticamente a partir da Proposta ID 127.', '2026-01-20', 11, 127, '2026-01-20 18:17:54', NULL),
+(23, 'Venda via Proposta #128 - MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 2, 332, 'Proposta Aprovada', 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'MICROMED', 'OMRON', 1, 1290.00, 1290.00, 'Gerado automaticamente a partir da Proposta ID 128.', '2026-01-20', 11, 128, '2026-01-20 18:19:51', NULL),
+(24, 'Venda via Proposta #129 - CARDIOVERSOR ', 1, 221, 'Proposta Aprovada', 'CARDIOVERSOR ', 'INSTRAMED', 'CARDIOMAX LITE ', 1, 23082.00, 23082.00, 'Gerado automaticamente a partir da Proposta ID 129.', '2026-01-21', 11, 129, '2026-01-21 11:16:26', NULL),
+(25, 'Venda via Proposta #129 - CARDIOVERSOR ', 1, 221, 'Proposta Aprovada', 'CARDIOVERSOR ', 'INSTRAMED', 'CARDIOMAX LITE ', 1, 23082.00, 23082.00, 'Gerado automaticamente a partir da Proposta ID 129.', '2026-01-22', 11, 129, '2026-01-22 16:59:20', NULL),
+(26, 'Venda via Proposta #131 - MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 2, 764, 'Proposta Aprovada', 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'MICROMED', 'OMRON', 100, 1290.00, 129000.00, 'Gerado automaticamente a partir da Proposta ID 131.', '2026-01-22', 1, 131, '2026-01-22 20:29:03', NULL),
+(27, 'Venda via Proposta #132 - CARRO DE PARADA ', 7, 57, 'Proposta Aprovada', 'CARRO DE PARADA ', 'HEALTH', 'LT 103', 1, 7265.85, 7265.85, 'Gerado automaticamente a partir da Proposta ID 132.', '2026-01-26', 1, 132, '2026-01-26 17:53:45', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `vendas_objetivos`
+--
+
+CREATE TABLE `vendas_objetivos` (
+  `id` int(11) NOT NULL,
+  `usuario_id` int(11) NOT NULL,
+  `fornecedor_id` int(11) NOT NULL,
+  `ano` int(11) NOT NULL,
+  `mes` int(11) NOT NULL,
+  `valor_meta` decimal(15,2) DEFAULT 0.00,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+--
+-- Despejando dados para a tabela `vendas_objetivos`
+--
+
+INSERT INTO `vendas_objetivos` (`id`, `usuario_id`, `fornecedor_id`, `ano`, `mes`, `valor_meta`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 2026, 1, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(2, 1, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(3, 1, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(4, 1, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(5, 1, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(6, 1, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(7, 1, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(8, 1, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(9, 1, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(10, 1, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(11, 1, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(12, 1, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(13, 2, 1, 2026, 1, 499999.00, '2026-01-22 17:22:16', '2026-01-22 17:31:22'),
+(14, 2, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(15, 2, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(16, 2, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(17, 2, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(18, 2, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(19, 2, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(20, 2, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(21, 2, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(22, 2, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(23, 2, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(24, 2, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(25, 4, 1, 2026, 1, 499999.00, '2026-01-22 17:22:16', '2026-01-22 17:31:22'),
+(26, 4, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(27, 4, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(28, 4, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(29, 4, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(30, 4, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(31, 4, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(32, 4, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(33, 4, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(34, 4, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(35, 4, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(36, 4, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(37, 6, 1, 2026, 1, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(38, 6, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(39, 6, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(40, 6, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(41, 6, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(42, 6, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(43, 6, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(44, 6, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(45, 6, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(46, 6, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(47, 6, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(48, 6, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(49, 7, 1, 2026, 1, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(50, 7, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(51, 7, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(52, 7, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(53, 7, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(54, 7, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(55, 7, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(56, 7, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(57, 7, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(58, 7, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(59, 7, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(60, 7, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(61, 8, 1, 2026, 1, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(62, 8, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(63, 8, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(64, 8, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(65, 8, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(66, 8, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(67, 8, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(68, 8, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(69, 8, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(70, 8, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(71, 8, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(72, 8, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(73, 9, 1, 2026, 1, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(74, 9, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(75, 9, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(76, 9, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(77, 9, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(78, 9, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(79, 9, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(80, 9, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(81, 9, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(82, 9, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(83, 9, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(84, 9, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(85, 10, 1, 2026, 1, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(86, 10, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(87, 10, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(88, 10, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(89, 10, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(90, 10, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(91, 10, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(92, 10, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(93, 10, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(94, 10, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(95, 10, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(96, 10, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(97, 11, 1, 2026, 1, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(98, 11, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(99, 11, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(100, 11, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(101, 11, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(102, 11, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(103, 11, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(104, 11, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(105, 11, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(106, 11, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(107, 11, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(108, 11, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
+(325, 1, 2, 2026, 1, 50000.00, '2026-01-22 20:24:11', '2026-01-22 20:24:11'),
+(326, 1, 2, 2026, 2, 25000.00, '2026-01-22 20:24:11', '2026-01-22 20:24:11'),
+(327, 1, 2, 2026, 3, 75000.00, '2026-01-22 20:24:11', '2026-01-22 20:24:11');
 
 --
 -- Índices para tabelas despejadas
@@ -2107,6 +2397,20 @@ ALTER TABLE `fornecedores`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Índices de tabela `fornecedor_metas`
+--
+ALTER TABLE `fornecedor_metas`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_forn_ano` (`fornecedor_id`,`ano`);
+
+--
+-- Índices de tabela `fornecedor_metas_estados`
+--
+ALTER TABLE `fornecedor_metas_estados`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_forn_ano_est` (`fornecedor_id`,`ano`,`estado`);
+
+--
 -- Índices de tabela `funis`
 --
 ALTER TABLE `funis`
@@ -2137,7 +2441,8 @@ ALTER TABLE `oportunidades`
   ADD KEY `usuario_id` (`usuario_id`),
   ADD KEY `organizacao_id` (`organizacao_id`),
   ADD KEY `contato_id` (`contato_id`),
-  ADD KEY `cliente_pf_id` (`cliente_pf_id`);
+  ADD KEY `cliente_pf_id` (`cliente_pf_id`),
+  ADD KEY `fk_oportunidades_fornecedor` (`fornecedor_id`);
 
 --
 -- Índices de tabela `oportunidade_itens`
@@ -2197,6 +2502,14 @@ ALTER TABLE `vendas_fornecedores`
   ADD KEY `fk_venda_proposta_ref` (`proposta_ref_id`);
 
 --
+-- Índices de tabela `vendas_objetivos`
+--
+ALTER TABLE `vendas_objetivos`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_meta` (`usuario_id`,`fornecedor_id`,`ano`,`mes`),
+  ADD KEY `fornecedor_id` (`fornecedor_id`);
+
+--
 -- AUTO_INCREMENT para tabelas despejadas
 --
 
@@ -2204,25 +2517,25 @@ ALTER TABLE `vendas_fornecedores`
 -- AUTO_INCREMENT de tabela `agendamentos`
 --
 ALTER TABLE `agendamentos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT de tabela `clientes_pf`
 --
 ALTER TABLE `clientes_pf`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=280;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=281;
 
 --
 -- AUTO_INCREMENT de tabela `contatos`
 --
 ALTER TABLE `contatos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT de tabela `etapas_funil`
 --
 ALTER TABLE `etapas_funil`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT de tabela `fornecedores`
@@ -2231,10 +2544,22 @@ ALTER TABLE `fornecedores`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
+-- AUTO_INCREMENT de tabela `fornecedor_metas`
+--
+ALTER TABLE `fornecedor_metas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT de tabela `fornecedor_metas_estados`
+--
+ALTER TABLE `fornecedor_metas_estados`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+
+--
 -- AUTO_INCREMENT de tabela `funis`
 --
 ALTER TABLE `funis`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de tabela `historico_atribuicao`
@@ -2252,49 +2577,55 @@ ALTER TABLE `leads`
 -- AUTO_INCREMENT de tabela `oportunidades`
 --
 ALTER TABLE `oportunidades`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=120;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=166;
 
 --
 -- AUTO_INCREMENT de tabela `oportunidade_itens`
 --
 ALTER TABLE `oportunidade_itens`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
 
 --
 -- AUTO_INCREMENT de tabela `organizacoes`
 --
 ALTER TABLE `organizacoes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=937;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=939;
 
 --
 -- AUTO_INCREMENT de tabela `produtos`
 --
 ALTER TABLE `produtos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
 -- AUTO_INCREMENT de tabela `propostas`
 --
 ALTER TABLE `propostas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=114;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=133;
 
 --
 -- AUTO_INCREMENT de tabela `proposta_itens`
 --
 ALTER TABLE `proposta_itens`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=327;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=409;
 
 --
 -- AUTO_INCREMENT de tabela `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT de tabela `vendas_fornecedores`
 --
 ALTER TABLE `vendas_fornecedores`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+
+--
+-- AUTO_INCREMENT de tabela `vendas_objetivos`
+--
+ALTER TABLE `vendas_objetivos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=328;
 
 --
 -- Restrições para tabelas despejadas
@@ -2339,6 +2670,7 @@ ALTER TABLE `historico_atribuicao`
 -- Restrições para tabelas `oportunidades`
 --
 ALTER TABLE `oportunidades`
+  ADD CONSTRAINT `fk_oportunidades_fornecedor` FOREIGN KEY (`fornecedor_id`) REFERENCES `fornecedores` (`id`),
   ADD CONSTRAINT `oportunidades_ibfk_1` FOREIGN KEY (`etapa_id`) REFERENCES `etapas_funil` (`id`),
   ADD CONSTRAINT `oportunidades_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`),
   ADD CONSTRAINT `oportunidades_ibfk_3` FOREIGN KEY (`organizacao_id`) REFERENCES `organizacoes` (`id`) ON DELETE SET NULL,
@@ -2346,37 +2678,11 @@ ALTER TABLE `oportunidades`
   ADD CONSTRAINT `oportunidades_ibfk_5` FOREIGN KEY (`cliente_pf_id`) REFERENCES `clientes_pf` (`id`) ON DELETE SET NULL;
 
 --
--- Restrições para tabelas `oportunidade_itens`
+-- Restrições para tabelas `vendas_objetivos`
 --
-ALTER TABLE `oportunidade_itens`
-  ADD CONSTRAINT `fk_opp_item_oportunidade` FOREIGN KEY (`oportunidade_id`) REFERENCES `oportunidades` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_opp_item_produto` FOREIGN KEY (`produto_id`) REFERENCES `produtos` (`id`) ON DELETE SET NULL;
-
---
--- Restrições para tabelas `propostas`
---
-ALTER TABLE `propostas`
-  ADD CONSTRAINT `fk_proposta_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `propostas_ibfk_1` FOREIGN KEY (`organizacao_id`) REFERENCES `organizacoes` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `propostas_ibfk_2` FOREIGN KEY (`contato_id`) REFERENCES `contatos` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `propostas_ibfk_3` FOREIGN KEY (`cliente_pf_id`) REFERENCES `clientes_pf` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `propostas_ibfk_4` FOREIGN KEY (`oportunidade_id`) REFERENCES `oportunidades` (`id`) ON DELETE SET NULL;
-
---
--- Restrições para tabelas `proposta_itens`
---
-ALTER TABLE `proposta_itens`
-  ADD CONSTRAINT `fk_item_produto` FOREIGN KEY (`produto_id`) REFERENCES `produtos` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `proposta_itens_ibfk_1` FOREIGN KEY (`proposta_id`) REFERENCES `propostas` (`id`) ON DELETE CASCADE;
-
---
--- Restrições para tabelas `vendas_fornecedores`
---
-ALTER TABLE `vendas_fornecedores`
-  ADD CONSTRAINT `fk_venda_proposta_ref` FOREIGN KEY (`proposta_ref_id`) REFERENCES `propostas` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `vendas_fornecedores_ibfk_1` FOREIGN KEY (`fornecedor_id`) REFERENCES `fornecedores` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `vendas_fornecedores_ibfk_2` FOREIGN KEY (`organizacao_id`) REFERENCES `organizacoes` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `vendas_fornecedores_ibfk_3` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
+ALTER TABLE `vendas_objetivos`
+  ADD CONSTRAINT `vendas_objetivos_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`),
+  ADD CONSTRAINT `vendas_objetivos_ibfk_2` FOREIGN KEY (`fornecedor_id`) REFERENCES `fornecedores` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
