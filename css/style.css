@@ -190,10 +190,11 @@ main {
         justify-content: space-between;
         align-items: center;
         text-align: right;
-        padding: 0.5rem 1rem;
+        padding: 0.25rem 0.5rem;
+        /* Reduzido padding vertical */
         border-bottom: 1px solid #e2e8f0;
-        min-height: 2.5rem;
-        /* Altura mínima para toque */
+        min-height: 2rem;
+        /* Altura mínima reduzida */
     }
 
     .responsive-table td:last-child {
@@ -209,14 +210,14 @@ main {
         text-align: left;
         margin-right: auto;
         /* Empurra o conteúdo para a direita */
-        padding-right: 1rem;
-        /* Remove posicionamento absoluto e largura fixa */
+        padding-right: 0.5rem;
+        /* Reduzido padding */
     }
 
     .responsive-table .actions-cell {
         justify-content: flex-end;
         /* Garante ações à direita */
-        padding-left: 1rem;
+        padding-left: 0.5rem;
     }
 
     .responsive-table .actions-cell::before {

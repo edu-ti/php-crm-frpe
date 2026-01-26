@@ -8,7 +8,8 @@ import { renderModal, closeModal } from '../ui.js';
 let localState = {
     searchTerm: '',
     selectedFornecedor: '', // Estado para o filtro de fornecedor
-    editingProduct: null
+    editingProduct: null,
+    currentPage: 1
 };
 
 export function renderCatalogView() {
@@ -45,7 +46,7 @@ export function renderCatalogView() {
                 </div>
                  <!-- --- Fim do Filtro --- -->
                 ${permissions.canCreateProduct ? `
-                <button id="add-product-btn" class="btn btn-primary flex-shrink-0 w-full sm:w-auto"><i class="fas fa-plus mr-2"></i>Novo Produto</button>
+                <button id="add-product-btn" class="btn btn-primary flex-shrink-0 w-auto"><i class="fas fa-plus mr-2"></i>Novo Produto</button>
                 ` : ''}
             </div>
         </div>
@@ -76,6 +77,16 @@ function renderProductList() {
         return matchesSearch && matchesFornecedor;
     });
 
+    // --- PAGINAÇÃO ---
+    const itemsPerPage = 5;
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+    // Garante que a página atual não exceda o total
+    if (localState.currentPage > totalPages && totalPages > 0) localState.currentPage = totalPages;
+    if (localState.currentPage < 1) localState.currentPage = 1;
+
+    const paginatedItems = filteredProducts.slice((localState.currentPage - 1) * itemsPerPage, localState.currentPage * itemsPerPage);
+    // --- FIM PAGINAÇÃO ---
+
     container.innerHTML = `
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 responsive-table">
@@ -91,7 +102,7 @@ function renderProductList() {
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    ${filteredProducts.map(p => `
+                    ${paginatedItems.map(p => `
                         <tr class="responsive-table-row">
                             <td data-label="Imagem" class="table-cell">
                                 <img src="${p.imagem_url || 'https://placehold.co/100x100/e2e8f0/64748b?text=Sem+Img'}" 
@@ -116,9 +127,39 @@ function renderProductList() {
                 </tbody>
             </table>
         </div>
+        <!-- Controles de Paginação -->
+        <div class="p-4 flex justify-between items-center border-t">
+            <span class="text-sm text-gray-600">Mostrando ${paginatedItems.length} de ${filteredProducts.length} produtos</span>
+            <div class="flex items-center space-x-2">
+                <button id="cat-prev-page-btn" class="btn btn-secondary" ${localState.currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>
+                <span class="text-sm font-medium">Página ${localState.currentPage} de ${totalPages || 1}</span>
+                <button id="cat-next-page-btn" class="btn btn-secondary" ${localState.currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
     `;
 
     addProductListEventListeners();
+
+    // Listeners Paginação
+    const prevBtn = document.getElementById('cat-prev-page-btn');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (localState.currentPage > 1) {
+                localState.currentPage--;
+                renderProductList();
+            }
+        });
+    }
+
+    const nextBtn = document.getElementById('cat-next-page-btn');
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            if (localState.currentPage < totalPages) {
+                localState.currentPage++;
+                renderProductList();
+            }
+        });
+    }
 }
 
 function addCatalogEventListeners() {
@@ -263,44 +304,3 @@ async function saveProduct(form) {
         }
 
         showToast(successMessage);
-        closeModal();
-        renderCatalogView(); // Re-renderiza a view inteira para atualizar o filtro de fornecedores
-    } catch (error) {
-        // O erro já é exibido pelo apiCall
-    }
-}
-
-function openDeleteProductModal(productId) {
-    const product = appState.products.find(p => p.id == productId);
-    if (!product) return;
-
-    Swal.fire({
-        title: 'Tem certeza?',
-        text: `Você tem certeza que deseja excluir o produto "${product.nome_produto}"? Esta ação não pode ser desfeita.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Apagar',
-        cancelButtonText: 'Cancelar',
-        backdrop: `rgba(0,0,0,0.8)`
-    }).then(async (result) => {
-        if (result.isConfirmed) {
-            try {
-                Swal.fire({
-                    title: 'Excluindo...',
-                    text: 'Aguarde...',
-                    allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading(); }
-                });
-                await apiCall('delete_product', { method: 'POST', body: JSON.stringify({ id: productId }) });
-                appState.products = appState.products.filter(p => p.id != productId);
-                Swal.fire('Excluído!', 'Produto excluído com sucesso!', 'success');
-                renderCatalogView(); // Re-renderiza a view inteira para atualizar o filtro
-            } catch (error) {
-                Swal.fire('Erro!', 'Ocorreu um erro ao excluir.', 'error');
-            }
-        }
-    });
-}
-

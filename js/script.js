@@ -14,6 +14,7 @@ import { renderEmailMarketingView } from './views/email_marketing.js';
 
 
 // O estado da aplicação
+// Cache bust: 2026-01-26-2
 export let appState = {
     currentUser: null,
     users: [],

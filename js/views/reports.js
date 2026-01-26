@@ -21,8 +21,8 @@ export async function renderReportsView(state) {
                     </h2>
                     
                     <div class="flex space-x-2 mt-2 md:mt-0 w-full md:w-auto">
-                        <!-- Botão Toggle Filtros (Mobile) -->
-                        <button id="toggle-filters-btn" class="md:hidden btn btn-secondary text-sm flex-grow">
+                        <!-- Botão Toggle Filtros (Visível em todos dipositivos) -->
+                        <button id="toggle-filters-btn" class="btn btn-secondary text-sm flex-grow md:flex-grow-0">
                             <i class="fas fa-filter mr-2"></i> Filtros
                         </button>
 
@@ -33,8 +33,9 @@ export async function renderReportsView(state) {
                     </div>
                 </div>
 
-                <!-- Barra de Filtros (Collapsible on Mobile) -->
-                <div id="reports-filters-container" class="hidden md:flex flex-wrap items-end gap-4 mb-4 md:mb-0 transition-all duration-300 ease-in-out">
+                <!-- Barra de Filtros (Collapsible - Default Hidden) -->
+                <!-- Removido md:flex para iniciar oculto também no desktop -->
+                <div id="reports-filters-container" class="hidden flex-wrap items-end gap-4 mb-4 md:mb-0 transition-all duration-300 ease-in-out">
                     <div class="w-full md:w-auto">
                         <select id="report-type" class="form-select border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-full md:w-40">
                             <option value="sales">Vendas Gerais</option>
@@ -192,16 +193,24 @@ export async function renderReportsView(state) {
     document.getElementById('print-report-btn').addEventListener('click', () => window.print());
     document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
 
-    // Toggle Filters Mobile
-    document.getElementById('toggle-filters-btn')?.addEventListener('click', () => {
-        const container = document.getElementById('reports-filters-container');
-        container.classList.toggle('hidden');
-    });
+    // Toggle Filters Mobile & Desktop
+    const toggleBtn = document.getElementById('toggle-filters-btn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            const container = document.getElementById('reports-filters-container');
+            container.classList.toggle('hidden');
+            container.classList.toggle('flex'); // Add flex when visible to maintain layout
+        });
+    }
 
     // Mobile Target Button Listener
-    document.getElementById('set-targets-btn-mobile')?.addEventListener('click', () => {
-        document.getElementById('set-targets-btn').click(); // Reuses desktop logic
-    });
+    const mobileTargetBtn = document.getElementById('set-targets-btn-mobile');
+    if (mobileTargetBtn) {
+        mobileTargetBtn.addEventListener('click', () => {
+            const targetBtn = document.getElementById('set-targets-btn');
+            if (targetBtn) targetBtn.click();
+        });
+    }
 
     // Modal
     setupModalLinks();
@@ -348,7 +357,6 @@ async function loadReportData() {
         const params = {
             report_type: type,
             start_date: `${start}-01`,
-            end_date: formattedEnd,
             end_date: formattedEnd,
             supplier_id: supplierPayload,
             user_id: userPayload
@@ -730,16 +738,19 @@ function setupModalLinks() {
     const close = modal.querySelector('.close-modal');
     const closeBtn = modal.querySelector('.close-modal.btn'); // Cancel button
 
-    document.getElementById('set-targets-btn')?.addEventListener('click', () => {
-        modal.classList.remove('hidden');
-        const supSelect = document.getElementById('target-supplier-select');
-        const suppliers = appState.fornecedores || [];
-        supSelect.innerHTML = '<option value="">Selecione...</option>' +
-            suppliers.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
+    const setTargetsBtn = document.getElementById('set-targets-btn');
+    if (setTargetsBtn) {
+        setTargetsBtn.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            const supSelect = document.getElementById('target-supplier-select');
+            const suppliers = appState.fornecedores || [];
+            supSelect.innerHTML = '<option value="">Selecione...</option>' +
+                suppliers.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
 
-        document.getElementById('targets-grid-container').innerHTML = '<p class="text-gray-500 italic p-4">Selecione um fornecedor para editar (Necessário selecionar Data Inicial).</p>';
-        supSelect.onchange = (e) => loadTargetsEditor(e.target.value);
-    });
+            document.getElementById('targets-grid-container').innerHTML = '<p class="text-gray-500 italic p-4">Selecione um fornecedor para editar (Necessário selecionar Data Inicial).</p>';
+            supSelect.onchange = (e) => loadTargetsEditor(e.target.value);
+        });
+    }
 
     const hide = () => modal.classList.add('hidden');
     if (close) close.addEventListener('click', hide);
@@ -1103,13 +1114,18 @@ async function saveTargets() {
     // Re-query inputs? No, we use specific collectors below.
 
     const supplierId = document.getElementById('target-supplier-select').value;
-    const year = document.getElementById('target-year-input')?.value || new Date().getFullYear();
+
+    // year
+    const yearInput = document.getElementById('target-year-input');
+    const year = yearInput ? yearInput.value : new Date().getFullYear();
 
     // Supplier Goals
-    const supAnnual = parseFloat(document.getElementById('sup-meta-annual')?.value) || 0;
+    const supAnnualInput = document.getElementById('sup-meta-annual');
+    const supAnnual = parseFloat(supAnnualInput ? supAnnualInput.value : 0) || 0;
 
     // User Enabled
-    const userTargetsEnabled = document.getElementById('toggle-user-targets')?.checked;
+    const userTargetsToggle = document.getElementById('toggle-user-targets');
+    const userTargetsEnabled = userTargetsToggle ? userTargetsToggle.checked : false;
 
     // State Targets
     const stateTargets = {};

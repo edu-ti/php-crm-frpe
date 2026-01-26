@@ -30,13 +30,13 @@ export function renderClientsView() {
              </div>
         </div>
         <div class="border-b border-gray-200 mb-4 overflow-x-auto">
-            <nav class="-mb-px flex space-x-6 min-w-max pb-2" aria-label="Tabs">
+            <nav class="-mb-px flex flex-wrap gap-2 pb-2" aria-label="Tabs">
                 <button data-tab="organizations" class="client-tab-btn ${activeTab === 'organizations' ? 'active' : ''}">${titleMap.organizations}</button>
                 <button data-tab="contacts" class="client-tab-btn ${activeTab === 'contacts' ? 'active' : ''}">${titleMap.contacts}</button>
                 <button data-tab="clients_pf" class="client-tab-btn ${activeTab === 'clients_pf' ? 'active' : ''}">${titleMap.clients_pf}</button>
             </nav>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
             <div id="client-list-container" class="lg:col-span-2 bg-white p-4 rounded-lg shadow-sm border"></div>
             <div id="client-form-container" class="lg:col-span-3"></div>
         </div>
@@ -110,8 +110,8 @@ function renderClientList() {
     const lowercasedSearch = searchTerm.toLowerCase();
 
     const dataMap = { organizations: appState.organizations, contacts: appState.contacts, clients_pf: appState.clients_pf };
-    // --- CORREÇÃO: Define botão "Novo" texto baseado na aba ---
-    const newButtonText = `Novo ${singularTitleMap[activeTab]}`;
+    // --- CORREÇÃO: Texto responsivo para botão Novo ---
+    const newButtonText = `<span class="hidden sm:inline">Novo ${singularTitleMap[activeTab]}</span><span class="sm:hidden">Novo</span>`;
     // --- FIM DA CORREÇÃO ---
 
     const data = dataMap[activeTab] || [];
@@ -164,10 +164,7 @@ function renderClientList() {
     container.innerHTML = `
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-bold">${titleMap[activeTab]}</h2>
-            <!-- --- CORREÇÃO: Mostra o botão "+ Novo" para todas as abas --- --!>
-            <!-- --- CORREÇÃO: Botão reduzido para btn-sm --- --!>
-            ${permissions.canCreateClient ? `<button id="add-client-btn" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> ${newButtonText}</button>` : ''}
-             <!-- --- FIM DA CORREÇÃO --- --!>
+            ${permissions.canCreateClient ? `<button id="add-client-btn" class="btn btn-primary btn-sm flex-shrink-0"><i class="fas fa-plus mr-1"></i> ${newButtonText}</button>` : ''}
              <!-- --- FIM DA CORREÇÃO --- --!>
         </div>
         <!-- Adicionado max-h e overflow --!>

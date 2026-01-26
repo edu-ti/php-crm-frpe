@@ -42,7 +42,7 @@ export function renderProposalsView() {
     let preProposalsSection = '';
     if (appState.pre_proposals && appState.pre_proposals.length > 0) {
         const preProposalItems = appState.pre_proposals.map(op => `
-            <div class="p-3 mb-2 border rounded-md bg-yellow-50 border-yellow-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <div class="p-2 mb-1 border rounded-md bg-yellow-50 border-yellow-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
                     <p class="font-semibold text-yellow-800">${op.titulo} (${op.organizacao_nome || op.cliente_pf_nome || 'N/A'})</p>
                     <p class="text-xs text-yellow-700">Solicitado por: ${op.vendedor_nome} | Nº Pré-proposta: ${op.pre_proposal_number}</p>
@@ -83,12 +83,12 @@ export function renderProposalsView() {
                     <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 </div>
                 ${permissions.canCreate ? `
-                <button id="add-proposal-btn" class="btn btn-primary btn-sm flex-shrink-0 w-full sm:w-auto"><i class="fas fa-plus mr-2"></i>Criar Nova</button>
+                <button id="add-proposal-btn" class="btn btn-primary btn-sm flex-shrink-0 w-auto"><i class="fas fa-plus mr-2"></i>Criar Nova</button>
                 ` : ''}
             </div>
         </div>
-        <!-- Adicionado flex-grow e min-h-0 para garantir visibilidade no layout flex -->
-        <div id="proposals-list-container" class="bg-white rounded-lg shadow-sm border overflow-hidden responsive-table-container flex-grow min-h-0"></div>
+        <!-- Adicionado min-h para garantir visibilidade da tabela mesmo sem flex-grow funcionando corretamente -->
+        <div id="proposals-list-container" class="bg-white rounded-lg shadow-sm border overflow-hidden responsive-table-container min-h-[500px]"></div>
         
         <div id="proposal-form-container" class="mt-6 ${p.isEditing || p.oportunidade_id ? '' : 'hidden'}">
             <div class="bg-white p-6 rounded-lg shadow-sm border">
