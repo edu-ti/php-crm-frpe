@@ -17,6 +17,7 @@ $version = time();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CRM FR Produtos Médicos</title>
+    <link rel="manifest" href="manifest.json">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Fontes e Ícones -->
@@ -58,6 +59,20 @@ $version = time();
 
     <!-- Script principal com versionamento dinâmico para forçar a atualização do cache  -->
     <script type="module" src="js/script.js?v=<?php echo $version; ?>"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
 </body>
 
 </html>
