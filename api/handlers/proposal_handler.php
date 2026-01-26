@@ -73,7 +73,7 @@ function handle_create_proposal($pdo, $data)
 
         // Insere a proposta principal
         // MODIFICADO: Usa $proposal_owner_id em vez de $_SESSION['user_id']
-        $sql = "INSERT INTO propostas (oportunidade_id, cliente_pf_id, organizacao_id, contato_id, usuario_id, valor_total, status, data_validade, faturamento, treinamento, condicoes_pagamento, prazo_entrega, garantia_equipamentos, garantia_acessorios, instalacao, assistencia_tecnica, observacoes, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        $sql = "INSERT INTO propostas (oportunidade_id, cliente_pf_id, organizacao_id, contato_id, usuario_id, valor_total, status, data_validade, faturamento, treinamento, condicoes_pagamento, prazo_entrega, garantia_equipamentos, garantia_acessorios, instalacao, assistencia_tecnica, observacoes, motivo_status, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         $stmt = $pdo->prepare($sql);
 
         $stmt->execute([
@@ -93,7 +93,9 @@ function handle_create_proposal($pdo, $data)
             $data['garantia_acessorios'] ?? null,
             $data['instalacao'] ?? null,
             $data['assistencia_tecnica'] ?? null,
-            $data['observacoes'] ?? null
+            $data['assistencia_tecnica'] ?? null,
+            $data['observacoes'] ?? null,
+            $data['motivo_status'] ?? null
         ]);
         $proposta_id = $pdo->lastInsertId();
 
@@ -229,7 +231,7 @@ function handle_update_proposal($pdo, $data)
         $contato_id = ($clientType === 'pj' && isset($client['contact'])) ? $client['contact']['id'] : null;
 
         // Atualiza a proposta principal
-        $sql = "UPDATE propostas SET cliente_pf_id = ?, organizacao_id = ?, contato_id = ?, valor_total = ?, status = ?, data_validade = ?, faturamento = ?, treinamento = ?, condicoes_pagamento = ?, prazo_entrega = ?, garantia_equipamentos = ?, garantia_acessorios = ?, instalacao = ?, assistencia_tecnica = ?, observacoes = ? WHERE id = ?";
+        $sql = "UPDATE propostas SET cliente_pf_id = ?, organizacao_id = ?, contato_id = ?, valor_total = ?, status = ?, data_validade = ?, faturamento = ?, treinamento = ?, condicoes_pagamento = ?, prazo_entrega = ?, garantia_equipamentos = ?, garantia_acessorios = ?, instalacao = ?, assistencia_tecnica = ?, observacoes = ?, motivo_status = ? WHERE id = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             $cliente_pf_id,
@@ -247,6 +249,7 @@ function handle_update_proposal($pdo, $data)
             $data['instalacao'] ?? null,
             $data['assistencia_tecnica'] ?? null,
             $data['observacoes'] ?? null,
+            $data['motivo_status'] ?? null,
             $proposalId
         ]);
 
@@ -639,10 +642,8 @@ function handle_upload_image()
         $destination_path = $destination_dir . $new_filename;
 
         if (move_uploaded_file($_FILES['image']['tmp_name'], $destination_path)) {
-            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-            $script_dir = dirname($_SERVER['SCRIPT_NAME']);
-            $base_url_path = rtrim(str_replace('/api', '', $script_dir), '/'); // Remove /api se existir
-            $url = $protocol . $_SERVER['HTTP_HOST'] . $base_url_path . '/' . $upload_dir . $new_filename;
+            // Retorna apenas o caminho relativo
+            $url = $upload_dir . $new_filename;
             json_response(['success' => true, 'url' => $url]);
         } else {
             json_response(['success' => false, 'error' => 'Falha ao mover o arquivo.'], 500);

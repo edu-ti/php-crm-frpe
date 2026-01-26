@@ -4,7 +4,8 @@
 /**
  * Função para lidar com o upload da imagem de um produto.
  */
-function handle_upload_product_image() {
+function handle_upload_product_image()
+{
     if (isset($_FILES['product_image']) && $_FILES['product_image']['error'] == 0) {
         $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
         $filename = $_FILES['product_image']['name'];
@@ -30,15 +31,12 @@ function handle_upload_product_image() {
         $destination_path = $destination_dir . $new_filename;
 
         if (move_uploaded_file($_FILES['product_image']['tmp_name'], $destination_path)) {
-             $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-             // Obtém o diretório base do script atual (api.php) e remove o '/api'
-             $script_dir = dirname($_SERVER['SCRIPT_NAME']);
-             $base_url_path = rtrim(str_replace('/api', '', $script_dir), '/'); // Remove /api se existir
-             // Constrói a URL completa
-             $url = $protocol . $_SERVER['HTTP_HOST'] . $base_url_path . '/' . $upload_dir . $new_filename;
-             
-             json_response(['success' => true, 'url' => $url]);
-             return;
+            // Retorna apenas o caminho relativo (ex: uploads/products/arquivo.jpg)
+            // Isso previne links quebrados se o IP/Domínio mudar
+            $url = $upload_dir . $new_filename;
+
+            json_response(['success' => true, 'url' => $url]);
+            return;
         } else {
             json_response(['success' => false, 'error' => 'Falha ao mover o ficheiro.'], 500);
             return;
@@ -51,30 +49,31 @@ function handle_upload_product_image() {
  * Função para criar um novo produto no catálogo.
  * REMOVIDA a lógica de 'parametros'.
  */
-function handle_create_product($pdo, $data) {
+function handle_create_product($pdo, $data)
+{
     $required = ['nome_produto'];
     if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Especialista'])) {
         json_response(['success' => false, 'error' => 'Acesso negado: Perfil não autorizado a criar produtos.'], 403);
         return;
     }
 
-    foreach($required as $field) {
-        if(!isset($data[$field])) {
+    foreach ($required as $field) {
+        if (!isset($data[$field])) {
             json_response(['success' => false, 'error' => "Campo obrigatório ausente: {$field}"], 400);
             return;
         }
     }
-    
+
     // --- CORREÇÃO: Permite valor 0.00 ---
-    if(!isset($data['valor_unitario']) || !is_numeric($data['valor_unitario'])) {
-         json_response(['success' => false, 'error' => "Valor unitário é obrigatório e deve ser numérico (pode ser 0)."], 400);
-         return;
+    if (!isset($data['valor_unitario']) || !is_numeric($data['valor_unitario'])) {
+        json_response(['success' => false, 'error' => "Valor unitário é obrigatório e deve ser numérico (pode ser 0)."], 400);
+        return;
     }
     // --- FIM CORREÇÃO ---
 
     $sql = "INSERT INTO produtos (nome_produto, fabricante, modelo, descricao_detalhada, valor_unitario, unidade_medida, imagem_url) VALUES (?, ?, ?, ?, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
-    
+
     $success = $stmt->execute([
         $data['nome_produto'],
         empty($data['fabricante']) ? null : $data['fabricante'],
@@ -85,7 +84,7 @@ function handle_create_product($pdo, $data) {
         empty($data['imagem_url']) ? null : $data['imagem_url'],
     ]);
 
-    if($success) {
+    if ($success) {
         $lastId = $pdo->lastInsertId();
         $stmt = $pdo->prepare("SELECT * FROM produtos WHERE id = ?");
         $stmt->execute([$lastId]);
@@ -101,21 +100,22 @@ function handle_create_product($pdo, $data) {
  * Função para atualizar um produto existente no catálogo.
  * REMOVIDA a lógica de 'parametros'.
  */
-function handle_update_product($pdo, $data) {
-    if(empty($data['id'])) {
+function handle_update_product($pdo, $data)
+{
+    if (empty($data['id'])) {
         json_response(['success' => false, 'error' => 'ID do produto é obrigatório para atualização.'], 400);
         return;
     }
-    
+
     if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Especialista'])) {
         json_response(['success' => false, 'error' => 'Acesso negado: Perfil não autorizado a editar produtos.'], 403);
         return;
     }
-    
+
     // --- CORREÇÃO: Permite valor 0.00 ---
-    if(!isset($data['valor_unitario']) || !is_numeric($data['valor_unitario'])) {
-         json_response(['success' => false, 'error' => "Valor unitário é obrigatório e deve ser numérico (pode ser 0)."], 400);
-         return;
+    if (!isset($data['valor_unitario']) || !is_numeric($data['valor_unitario'])) {
+        json_response(['success' => false, 'error' => "Valor unitário é obrigatório e deve ser numérico (pode ser 0)."], 400);
+        return;
     }
     // --- FIM CORREÇÃO ---
 
@@ -128,7 +128,7 @@ function handle_update_product($pdo, $data) {
                 unidade_medida = ?, 
                 imagem_url = ?
             WHERE id = ?";
-    
+
     $stmt = $pdo->prepare($sql);
     $success = $stmt->execute([
         $data['nome_produto'],
@@ -140,8 +140,8 @@ function handle_update_product($pdo, $data) {
         empty($data['imagem_url']) ? null : $data['imagem_url'],
         $data['id']
     ]);
-    
-    if($success) {
+
+    if ($success) {
         $stmt = $pdo->prepare("SELECT * FROM produtos WHERE id = ?");
         $stmt->execute([$data['id']]);
         json_response(['success' => true, 'product' => $stmt->fetch(PDO::FETCH_ASSOC)]);
@@ -155,8 +155,9 @@ function handle_update_product($pdo, $data) {
 /**
  * Função para excluir um produto do catálogo.
  */
-function handle_delete_product($pdo, $data) {
-    if(empty($data['id'])) {
+function handle_delete_product($pdo, $data)
+{
+    if (empty($data['id'])) {
         json_response(['success' => false, 'error' => 'ID do produto é obrigatório para exclusão.'], 400);
         return;
     }
@@ -175,25 +176,25 @@ function handle_delete_product($pdo, $data) {
     $stmt = $pdo->prepare("DELETE FROM produtos WHERE id = ?");
     $success = $stmt->execute([$data['id']]);
 
-    if($success) {
+    if ($success) {
         // Se o produto foi excluído e tinha uma imagem, tenta apagar o ficheiro.
         if ($image_url) {
             // Constrói o caminho local do ficheiro a partir da URL.
-             $base_path = dirname(__DIR__, 2); // Raiz do projeto
-             $url_path = parse_url($image_url, PHP_URL_PATH);
-            
+            $base_path = dirname(__DIR__, 2); // Raiz do projeto
+            $url_path = parse_url($image_url, PHP_URL_PATH);
+
             // Remove o caminho base do script (que pode ser /api ou /)
-             $script_dir = dirname($_SERVER['SCRIPT_NAME']);
-             $base_url_path = rtrim(str_replace('/api', '', $script_dir), '/');
-             
-             // Remove o caminho base da URL para obter o caminho relativo ao sistema de arquivos
-             $relative_path = ltrim(str_replace($base_url_path, '', $url_path), '/');
-             $full_path = $base_path . '/' . $relative_path;
-            
+            $script_dir = dirname($_SERVER['SCRIPT_NAME']);
+            $base_url_path = rtrim(str_replace('/api', '', $script_dir), '/');
+
+            // Remove o caminho base da URL para obter o caminho relativo ao sistema de arquivos
+            $relative_path = ltrim(str_replace($base_url_path, '', $url_path), '/');
+            $full_path = $base_path . '/' . $relative_path;
+
             if (file_exists($full_path)) {
                 @unlink($full_path); // O "@" suprime erros caso o ficheiro não possa ser apagado.
             } else {
-                 error_log("Tentativa de apagar imagem do produto falhou: Arquivo não encontrado em " . $full_path);
+                error_log("Tentativa de apagar imagem do produto falhou: Arquivo não encontrado em " . $full_path);
             }
         }
         json_response(['success' => true]);
@@ -204,4 +205,3 @@ function handle_delete_product($pdo, $data) {
 
 
 ?>
-

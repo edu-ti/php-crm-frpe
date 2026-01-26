@@ -24,7 +24,9 @@ export function resetProposalState() {
         garantia_acessorios: '6 meses, conforme especificações do fabricante.',
         instalacao: 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.',
         assistencia_tecnica: 'Disponível com suporte especializado para manutenção e pós garantia.',
-        observacoes: 'Nenhuma'
+        assistencia_tecnica: 'Disponível com suporte especializado para manutenção e pós garantia.',
+        observacoes: 'Nenhuma',
+        motivo_status: ''
     };
     appState.proposalsView.currentPage = 1;
     // --- Padrão de ordenação: Data desc (mais recente primeiro) ---
@@ -96,7 +98,7 @@ export function renderProposalsView() {
             <div class="bg-white p-6 rounded-lg shadow-sm border">
                 <h2 id="proposal-form-title" class="text-xl font-bold mb-4">${p.id ? `Editando Proposta ${p.numero_proposta || ''}` : 'Criar Nova Proposta'}</h2>
                 <form id="proposal-form" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-4">
+                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 border-b pb-4">
                         <div>
                             <label class="form-label">Data de Criação</label>
                             <input type="date" name="created_at" value="${p.created_at.split(' ')[0]}" readonly class="form-input bg-gray-100">
@@ -108,6 +110,10 @@ export function renderProposalsView() {
                          <div>
                             <label class="form-label">Status</label>
                             <select name="status" class="form-input">${statusOptions}</select>
+                        </div>
+                        <div>
+                            <label class="form-label">Motivo</label>
+                            <input type="text" name="motivo_status" class="form-input" value="${p.motivo_status || ''}" placeholder="Ex: Preço alto...">
                         </div>
                     </div>
                     <div id="proposal-client-selection" class="border-b pb-4"></div>
@@ -230,7 +236,10 @@ function renderProposalsList() {
                             <td data-label="Contato" class="table-cell">${contactName}</td>
                             <td data-label="CNPJ/CPF" class="table-cell">${p.cnpj || p.cpf || 'N/A'}</td>
                             <td data-label="Valor" class="table-cell">${formatCurrency(p.valor_total)}</td>
-                            <td data-label="Status" class="table-cell"><span class="status-badge status-${(p.status || '').toLowerCase().replace('ç', 'c').replace('ã', 'a')}">${p.status}</span></td>
+                            <td data-label="Status" class="table-cell">
+                                <span class="status-badge status-${(p.status || '').toLowerCase().replace('ç', 'c').replace('ã', 'a')}">${p.status}</span>
+                                ${p.motivo_status ? `<div class="text-xs text-red-600 mt-1 font-medium">${p.motivo_status}</div>` : ''}
+                            </td>
                             <td data-label="Etapa Funil" class="table-cell">${p.etapa_funil_nome || 'N/A'}</td>
                             <td data-label="Ações" class="table-cell text-right space-x-2 actions-cell">
                                 <button class="action-btn view-proposal-btn" title="Visualizar" data-id="${p.id}"><i class="fas fa-eye text-blue-500 hover:text-blue-700"></i></button>
@@ -1036,7 +1045,7 @@ async function handleProposalFormSubmit(e) {
     const data = { ...appState.proposal };
 
     ['data_validade', 'status', 'faturamento', 'treinamento', 'condicoes_pagamento', 'prazo_entrega',
-        'garantia_equipamentos', 'garantia_acessorios', 'instalacao', 'assistencia_tecnica', 'observacoes']
+        'garantia_equipamentos', 'garantia_acessorios', 'instalacao', 'assistencia_tecnica', 'observacoes', 'motivo_status']
         .forEach(key => data[key] = formData.get(key));
 
     if (!data.currentClient) return showToast('Por favor, selecione um cliente.', 'error');
