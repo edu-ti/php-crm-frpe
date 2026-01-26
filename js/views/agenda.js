@@ -24,8 +24,8 @@ export function renderAgendaView() {
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Agenda</h1>
             ${permissions.canCreateSchedule ? `
-            <button id="add-agendamento-btn" class="btn btn-primary">
-                <i class="fas fa-plus mr-2"></i> Novo Agendamento
+            <button id="add-agendamento-btn" class="btn btn-primary btn-sm flex-shrink-0">
+                <i class="fas fa-plus mr-2"></i> Novo
             </button>
             ` : ''}
         </div>

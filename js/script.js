@@ -289,7 +289,7 @@ function renderUI() {
                         </div>
                     </div>
                 </header>
-                <div id="main-content" class="flex-1 overflow-y-auto p-6"></div>
+                <div id="main-content" class="flex-1 overflow-y-auto p-2 md:p-6"></div>
             </main>
         </div>
     `;

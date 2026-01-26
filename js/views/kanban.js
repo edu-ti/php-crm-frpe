@@ -22,11 +22,11 @@ export function renderFunilView() {
     // We might need to ensure appState.funilView has a sensible default.
 
     container.innerHTML = `
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2 flex-shrink-0"> <!-- Adicionado flex-shrink-0 (compacto) -->
-             <div class="flex items-center space-x-1">
-                 <button class="funil-tab-btn ${activeTab === 'vendas' ? 'active' : ''}" data-tab="vendas">Funil de Vendas</button>
-                 <button class="funil-tab-btn ${activeTab === 'fornecedores' ? 'active' : ''}" data-tab="fornecedores">Funil de Fornecedores</button>
-                 <button class="funil-tab-btn ${activeTab === 'licitacoes' ? 'active' : ''}" data-tab="licitacoes">Funil Licitações</button>
+        <div class="flex justify-between items-start sm:items-center mb-3 gap-2 flex-shrink-0 responsive-stack"> <!-- Adicionado responsive-stack -->
+             <div class="flex items-center space-x-1 overflow-x-auto pb-1 max-w-full">
+                 <button class="funil-tab-btn flex-shrink-0 ${activeTab === 'vendas' ? 'active' : ''}" data-tab="vendas">Funil de Vendas</button>
+                 <button class="funil-tab-btn flex-shrink-0 ${activeTab === 'fornecedores' ? 'active' : ''}" data-tab="fornecedores">Funil de Fornecedores</button>
+                 <button class="funil-tab-btn flex-shrink-0 ${activeTab === 'licitacoes' ? 'active' : ''}" data-tab="licitacoes">Funil Licitações</button>
              </div>
              <div class="flex items-center gap-2">
                   ${permissions.canCreateOpportunity ? `
@@ -219,27 +219,28 @@ function renderLicitacoesHeader() {
     `;
 
     headerContainer.innerHTML = `
-         <div class="flex flex-col md:flex-row justify-between items-center flex-wrap gap-4">
+         <div class="flex flex-col gap-2 justify-center items-center w-full">
+             
              <!-- Filtro de Fornecedores -->
-             <div class="flex items-center space-x-2 flex-wrap gap-2">
+             <div class="flex items-center space-x-1 flex-wrap gap-1 justify-center w-full mb-1">
                  ${allBtn}
                  ${fornecedorTabs}
              </div>
              
              <!-- Filtro de Mês e Ano -->
-             <div class="flex items-center gap-4 flex-shrink-0">
+             <div class="flex items-center gap-2 justify-center flex-wrap">
                  <!-- Selector de Mês -->
-                 <div class="flex items-center space-x-2">
-                     <button id="prev-month-lic-btn" class="year-btn rounded-full p-1 hover:bg-gray-100"><i class="fas fa-chevron-left text-xs"></i></button>
-                     <span class="px-3 py-1 bg-[#206a9b] text-white rounded-md font-bold text-xs min-w-[80px] text-center">${meses[licitacaoMonth]}</span>
-                     <button id="next-month-lic-btn" class="year-btn rounded-full p-1 hover:bg-gray-100"><i class="fas fa-chevron-right text-xs"></i></button>
+                 <div class="flex items-center space-x-1">
+                     <button id="prev-month-lic-btn" class="year-btn rounded-full p-1 hover:bg-gray-100 flex items-center justify-center"><i class="fas fa-chevron-left text-[10px]"></i></button>
+                     <span class="px-2 py-1 bg-[#206a9b] text-white rounded-md font-bold text-[10px] min-w-[60px] text-center uppercase leading-none flex items-center justify-center h-6">${meses[licitacaoMonth]}</span>
+                     <button id="next-month-lic-btn" class="year-btn rounded-full p-1 hover:bg-gray-100 flex items-center justify-center"><i class="fas fa-chevron-right text-[10px]"></i></button>
                  </div>
                  
                  <!-- Selector de Ano -->
-                 <div class="flex items-center space-x-2">
-                     <button id="prev-year-lic-btn" class="year-btn rounded-full p-1 hover:bg-gray-100"><i class="fas fa-chevron-left text-xs"></i></button>
-                     <span class="px-3 py-1 bg-[#206a9b] text-white rounded-md font-bold text-xs">${licitacaoYear}</span>
-                     <button id="next-year-lic-btn" class="year-btn rounded-full p-1 hover:bg-gray-100"><i class="fas fa-chevron-right text-xs"></i></button>
+                 <div class="flex items-center space-x-1">
+                     <button id="prev-year-lic-btn" class="year-btn rounded-full p-1 hover:bg-gray-100 flex items-center justify-center"><i class="fas fa-chevron-left text-[10px]"></i></button>
+                     <span class="px-2 py-1 bg-[#206a9b] text-white rounded-md font-bold text-[10px] min-w-[40px] text-center leading-none flex items-center justify-center h-6">${licitacaoYear}</span>
+                     <button id="next-year-lic-btn" class="year-btn rounded-full p-1 hover:bg-gray-100 flex items-center justify-center"><i class="fas fa-chevron-right text-[10px]"></i></button>
                  </div>
              </div>
          </div>
@@ -568,7 +569,7 @@ function renderFornecedoresHeader() {
 
     headerContainer.innerHTML = `
          <div class="flex flex-col md:flex-row justify-between items-center flex-wrap gap-4">
-             <div class="flex items-center space-x-2 flex-wrap gap-2">
+             <div class="flex items-center space-x-2 flex-wrap gap-2 justify-center w-full">
                  ${fornecedorTabs}
              </div>
              <div class="flex items-center space-x-2 flex-shrink-0">

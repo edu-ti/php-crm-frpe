@@ -20,58 +20,67 @@ export async function renderReportsView(state) {
                         <i class="fas fa-chart-line mr-2 text-indigo-600"></i>Relatórios
                     </h2>
                     
-                    <div class="flex space-x-2 mt-2 md:mt-0">
+                    <div class="flex space-x-2 mt-2 md:mt-0 w-full md:w-auto">
+                        <!-- Botão Toggle Filtros (Mobile) -->
+                        <button id="toggle-filters-btn" class="md:hidden btn btn-secondary text-sm flex-grow">
+                            <i class="fas fa-filter mr-2"></i> Filtros
+                        </button>
+
                          <!-- Botão de Metas (Apenas Gestor) -->
-                        <button id="set-targets-btn" class="btn bg-purple-600 text-white hover:bg-purple-700 text-sm">
+                        <button id="set-targets-btn" class="btn bg-purple-600 text-white hover:bg-purple-700 text-sm hidden md:inline-flex">
                             <i class="fas fa-bullseye mr-2"></i>Definir Objetivos
                         </button>
                     </div>
                 </div>
 
-                <!-- Barra de Filtros -->
-                <div class="flex flex-wrap items-end gap-4 mb-4 md:mb-0">
-                    <div>
-                        <select id="report-type" class="form-select border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-40">
+                <!-- Barra de Filtros (Collapsible on Mobile) -->
+                <div id="reports-filters-container" class="hidden md:flex flex-wrap items-end gap-4 mb-4 md:mb-0 transition-all duration-300 ease-in-out">
+                    <div class="w-full md:w-auto">
+                        <select id="report-type" class="form-select border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-full md:w-40">
                             <option value="sales">Vendas Gerais</option>
                             <option value="products">Vendas por Produto</option>
                             <option value="licitacoes">Licitações</option>
                         </select>
                     </div>
 
-                    <div class="flex space-x-2">
-                         <div class="flex flex-col">
+                    <div class="flex space-x-2 w-full md:w-auto">
+                         <div class="flex flex-col flex-1">
                             <label class="text-xs text-gray-500 mb-1">De</label>
-                            <input type="month" id="filter-start-date" class="form-input text-sm border-gray-300 rounded-md shadow-sm w-48 font-semibold text-gray-700">
+                            <input type="month" id="filter-start-date" class="form-input text-sm border-gray-300 rounded-md shadow-sm w-full md:w-48 font-semibold text-gray-700">
                         </div>
-                        <div class="flex flex-col">
+                        <div class="flex flex-col flex-1">
                             <label class="text-xs text-gray-500 mb-1">Até</label>
-                            <input type="month" id="filter-end-date" class="form-input text-sm border-gray-300 rounded-md shadow-sm w-48 font-semibold text-gray-700">
+                            <input type="month" id="filter-end-date" class="form-input text-sm border-gray-300 rounded-md shadow-sm w-full md:w-48 font-semibold text-gray-700">
                         </div>
                     </div>
 
-                    <div>
+                    <div class="w-full md:w-auto">
                         <label class="block text-xs font-bold text-gray-700 mb-1">Fornecedor</label>
-                        <div id="filter-supplier-container" class="w-64 relative">
+                        <div id="filter-supplier-container" class="w-full md:w-64 relative">
                             <!-- Custom Multi-select injected here -->
                         </div>
                     </div>
 
-                    <div>
+                    <div class="w-full md:w-auto">
                         <label class="block text-xs font-bold text-gray-700 mb-1">Vendedor</label>
-                         <div id="filter-user-container" class="w-64 relative">
+                         <div id="filter-user-container" class="w-full md:w-64 relative">
                             <!-- Custom Multi-select injected here -->
                         </div>
                     </div>
 
-                    <div class="flex space-x-2 flex-grow md:flex-grow-0 ml-auto">
-                        <button id="refresh-report-btn" class="btn btn-primary text-sm py-2 px-4 shadow-sm hover:shadow-md transition-shadow" title="Filtrar">
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto ml-auto">
+                        <button id="refresh-report-btn" class="btn btn-primary text-sm py-2 px-4 shadow-sm hover:shadow-md transition-shadow flex-grow md:flex-grow-0" title="Filtrar">
                              <i class="fas fa-filter mr-1"></i>Filtrar
                         </button>
-                        <button id="export-excel-btn" class="btn bg-green-600 text-white hover:bg-green-700 text-sm py-2 px-4 shadow-sm hover:shadow-md transition-shadow" title="Excel">
+                        <button id="export-excel-btn" class="btn bg-green-600 text-white hover:bg-green-700 text-sm py-2 px-4 shadow-sm hover:shadow-md transition-shadow flex-grow md:flex-grow-0" title="Excel">
                              <i class="fas fa-file-excel mr-1"></i>XLS
                         </button>
-                        <button id="print-report-btn" class="btn btn-secondary text-sm py-2 px-4 shadow-sm hover:shadow-md transition-shadow" title="Imprimir/PDF">
+                        <button id="print-report-btn" class="btn btn-secondary text-sm py-2 px-4 shadow-sm hover:shadow-md transition-shadow flex-grow md:flex-grow-0" title="Imprimir/PDF">
                              <i class="fas fa-print mr-1"></i>PDF
+                        </button>
+                         <!-- Botão Metas no Mobile dentro do menu -->
+                        <button id="set-targets-btn-mobile" class="md:hidden btn bg-purple-600 text-white hover:bg-purple-700 text-sm flex-grow w-full mt-2">
+                            <i class="fas fa-bullseye mr-2"></i>Definir Objetivos
                         </button>
                     </div>
                 </div>
@@ -182,6 +191,17 @@ export async function renderReportsView(state) {
     // document.getElementById('filter-user').addEventListener('change', loadReportData); // Removed standard select
     document.getElementById('print-report-btn').addEventListener('click', () => window.print());
     document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
+
+    // Toggle Filters Mobile
+    document.getElementById('toggle-filters-btn')?.addEventListener('click', () => {
+        const container = document.getElementById('reports-filters-container');
+        container.classList.toggle('hidden');
+    });
+
+    // Mobile Target Button Listener
+    document.getElementById('set-targets-btn-mobile')?.addEventListener('click', () => {
+        document.getElementById('set-targets-btn').click(); // Reuses desktop logic
+    });
 
     // Modal
     setupModalLinks();

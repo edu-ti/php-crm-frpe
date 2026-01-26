@@ -15,22 +15,22 @@ export function renderClientsView() {
     const { permissions } = appState.currentUser; // Obtém permissões aqui
 
     container.innerHTML = `
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+        <div class="flex justify-between items-start sm:items-center mb-4 gap-4 responsive-stack">
             <h1 class="text-2xl font-bold text-gray-800">Gestão de Clientes</h1>
-            <div class="flex items-center gap-2">
-                 <div class="relative w-full md:w-auto">
+            <div class="flex items-center gap-2 w-full sm:w-auto responsive-stack">
+                 <div class="relative w-full sm:w-auto flex-grow">
                     <input type="text" id="client-search-input" placeholder="Pesquisar..." class="form-input w-full md:w-64" value="${searchTerm}">
                     <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 </div>
                  ${permissions.canCreateClient ? `
-                 <button id="import-clients-btn" class="btn btn-secondary flex-shrink-0">
+                 <button id="import-clients-btn" class="btn btn-secondary btn-sm flex-shrink-0 w-full sm:w-auto">
                     <i class="fas fa-upload mr-2"></i>Importar
                  </button>
                  ` : ''}
              </div>
         </div>
-        <div class="border-b border-gray-200 mb-4">
-            <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+        <div class="border-b border-gray-200 mb-4 overflow-x-auto">
+            <nav class="-mb-px flex space-x-6 min-w-max pb-2" aria-label="Tabs">
                 <button data-tab="organizations" class="client-tab-btn ${activeTab === 'organizations' ? 'active' : ''}">${titleMap.organizations}</button>
                 <button data-tab="contacts" class="client-tab-btn ${activeTab === 'contacts' ? 'active' : ''}">${titleMap.contacts}</button>
                 <button data-tab="clients_pf" class="client-tab-btn ${activeTab === 'clients_pf' ? 'active' : ''}">${titleMap.clients_pf}</button>
@@ -165,7 +165,9 @@ function renderClientList() {
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-bold">${titleMap[activeTab]}</h2>
             <!-- --- CORREÇÃO: Mostra o botão "+ Novo" para todas as abas --- --!>
+            <!-- --- CORREÇÃO: Botão reduzido para btn-sm --- --!>
             ${permissions.canCreateClient ? `<button id="add-client-btn" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i> ${newButtonText}</button>` : ''}
+             <!-- --- FIM DA CORREÇÃO --- --!>
              <!-- --- FIM DA CORREÇÃO --- --!>
         </div>
         <!-- Adicionado max-h e overflow --!>

@@ -75,19 +75,20 @@ export function renderProposalsView() {
 
     container.innerHTML = `
         ${preProposalsSection}
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div class="flex justify-between items-start sm:items-center mb-6 gap-4 responsive-stack">
             <h1 class="text-2xl font-bold text-gray-800">Propostas</h1>
-            <div class="flex items-center space-x-4 w-full sm:w-auto">
-                <div class="relative flex-grow">
+            <div class="flex items-center space-x-4 w-full sm:w-auto responsive-stack">
+                <div class="relative flex-grow w-full sm:w-auto">
                     <input type="text" id="proposal-search" placeholder="Pesquisar..." class="form-input w-full">
                     <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 </div>
                 ${permissions.canCreate ? `
-                <button id="add-proposal-btn" class="btn btn-primary flex-shrink-0"><i class="fas fa-plus mr-2"></i>Criar Nova</button>
+                <button id="add-proposal-btn" class="btn btn-primary btn-sm flex-shrink-0 w-full sm:w-auto"><i class="fas fa-plus mr-2"></i>Criar Nova</button>
                 ` : ''}
             </div>
         </div>
-        <div id="proposals-list-container" class="bg-white rounded-lg shadow-sm border overflow-hidden responsive-table-container"></div>
+        <!-- Adicionado flex-grow e min-h-0 para garantir visibilidade no layout flex -->
+        <div id="proposals-list-container" class="bg-white rounded-lg shadow-sm border overflow-hidden responsive-table-container flex-grow min-h-0"></div>
         
         <div id="proposal-form-container" class="mt-6 ${p.isEditing || p.oportunidade_id ? '' : 'hidden'}">
             <div class="bg-white p-6 rounded-lg shadow-sm border">

@@ -29,9 +29,9 @@ export function renderCatalogView() {
     // --- Fim da lógica do filtro ---
 
     container.innerHTML = `
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div class="flex justify-between items-start sm:items-center mb-6 gap-4 responsive-stack">
             <h1 class="text-2xl font-bold text-gray-800">Catálogo de Produtos</h1>
-            <div class="flex items-center space-x-2 w-full sm:w-auto">
+            <div class="flex items-center space-x-2 w-full sm:w-auto responsive-stack">
                 <div class="relative flex-grow">
                     <input type="text" id="product-search" placeholder="Pesquisar produtos..." class="form-input w-full" value="${localState.searchTerm || ''}">
                     <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
@@ -45,7 +45,7 @@ export function renderCatalogView() {
                 </div>
                  <!-- --- Fim do Filtro --- -->
                 ${permissions.canCreateProduct ? `
-                <button id="add-product-btn" class="btn btn-primary flex-shrink-0"><i class="fas fa-plus mr-2"></i>Novo Produto</button>
+                <button id="add-product-btn" class="btn btn-primary flex-shrink-0 w-full sm:w-auto"><i class="fas fa-plus mr-2"></i>Novo Produto</button>
                 ` : ''}
             </div>
         </div>
