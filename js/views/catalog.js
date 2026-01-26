@@ -30,15 +30,15 @@ export function renderCatalogView() {
     // --- Fim da lógica do filtro ---
 
     container.innerHTML = `
-        <div class="flex justify-between items-start sm:items-center mb-6 gap-4 responsive-stack">
-            <h1 class="text-2xl font-bold text-gray-800">Catálogo de Produtos</h1>
-            <div class="flex items-center space-x-2 w-full sm:w-auto responsive-stack">
-                <div class="relative flex-grow">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <h1 class="text-2xl font-bold text-gray-800 self-start sm:self-center">Catálogo de Produtos</h1>
+            <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                <div class="relative w-full sm:w-64">
                     <input type="text" id="product-search" placeholder="Pesquisar produtos..." class="form-input w-full" value="${localState.searchTerm || ''}">
                     <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 </div>
                 <!-- --- Filtro de Fornecedor Adicionado --- -->
-                <div class="flex-grow sm:flex-grow-0">
+                <div class="w-full sm:w-auto">
                      <select id="fornecedor-filter" class="form-input w-full sm:w-48">
                          <option value="">Todos Fornecedores</option>
                          ${fornecedorOptions}
@@ -46,7 +46,7 @@ export function renderCatalogView() {
                 </div>
                  <!-- --- Fim do Filtro --- -->
                 ${permissions.canCreateProduct ? `
-                <button id="add-product-btn" class="btn btn-primary flex-shrink-0 w-auto"><i class="fas fa-plus mr-2"></i>Novo Produto</button>
+                <button id="add-product-btn" class="btn btn-primary btn-sm w-full sm:w-auto text-center justify-center"><i class="fas fa-plus mr-2"></i>Novo Produto</button>
                 ` : ''}
             </div>
         </div>
@@ -111,8 +111,10 @@ function renderProductList() {
                                      onerror="this.onerror=null;this.src='https://placehold.co/100x100/e2e8f0/64748b?text=Erro'">
                             </td>
                             <td data-label="Produto" class="table-cell">
-                                <p class="font-bold text-gray-900">${p.nome_produto || 'Nome não definido'}</p>
-                                <p class="text-sm text-gray-500">${p.modelo || ''}</p>
+                                <div class="text-left">
+                                    <p class="font-bold text-gray-900">${p.nome_produto || 'Nome não definido'}</p>
+                                    <p class="text-sm text-gray-500">${p.modelo || ''}</p>
+                                </div>
                             </td>
                             <!-- --- Coluna Fabricante Adicionada --- -->
                             <td data-label="Fabricante" class="table-cell">${p.fabricante || 'N/A'}</td>
@@ -304,3 +306,8 @@ async function saveProduct(form) {
         }
 
         showToast(successMessage);
+        closeModal();
+    } catch (error) {
+        // Erro já tratado no apiCall
+    }
+}

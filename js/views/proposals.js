@@ -27,6 +27,8 @@ export function resetProposalState() {
         observacoes: 'Nenhuma'
     };
     appState.proposalsView.currentPage = 1;
+    // --- Padrão de ordenação: Data desc (mais recente primeiro) ---
+    appState.proposalSort = { column: 'data_criacao', direction: 'desc' };
 }
 
 export function renderProposalsView() {
@@ -75,20 +77,20 @@ export function renderProposalsView() {
 
     container.innerHTML = `
         ${preProposalsSection}
-        <div class="flex justify-between items-start sm:items-center mb-6 gap-4 responsive-stack">
-            <h1 class="text-2xl font-bold text-gray-800">Propostas</h1>
-            <div class="flex items-center space-x-4 w-full sm:w-auto responsive-stack">
-                <div class="relative flex-grow w-full sm:w-auto">
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <h1 class="text-2xl font-bold text-gray-800 self-start sm:self-center">Propostas</h1>
+            <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                <div class="relative w-full sm:w-64">
                     <input type="text" id="proposal-search" placeholder="Pesquisar..." class="form-input w-full">
                     <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 </div>
                 ${permissions.canCreate ? `
-                <button id="add-proposal-btn" class="btn btn-primary btn-sm flex-shrink-0 w-auto"><i class="fas fa-plus mr-2"></i>Criar Nova</button>
+                <button id="add-proposal-btn" class="btn btn-primary btn-sm w-full sm:w-auto text-center justify-center"><i class="fas fa-plus mr-2"></i>Criar Nova</button>
                 ` : ''}
             </div>
         </div>
         <!-- Adicionado min-h para garantir visibilidade da tabela mesmo sem flex-grow funcionando corretamente -->
-        <div id="proposals-list-container" class="bg-white rounded-lg shadow-sm border overflow-hidden responsive-table-container min-h-[500px]"></div>
+        <div id="proposals-list-container" class="bg-white rounded-lg shadow-sm border responsive-table-container min-h-[500px]"></div>
         
         <div id="proposal-form-container" class="mt-6 ${p.isEditing || p.oportunidade_id ? '' : 'hidden'}">
             <div class="bg-white p-6 rounded-lg shadow-sm border">
@@ -184,8 +186,16 @@ function renderProposalsList() {
     const { currentPage } = appState.proposalsView;
     const itemsPerPage = 5;
     const totalPages = Math.ceil(filteredProposals.length / itemsPerPage);
-    const paginatedItems = filteredProposals.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+    // --- CORREÇÃO: Garante que a página atual não exceda o total (Igual ao Catálogo) ---
+    if (appState.proposalsView.currentPage > totalPages && totalPages > 0) {
+        appState.proposalsView.currentPage = totalPages;
+        // Re-executa para pegar o slice correto na próxima passada ou ajusta aqui
+        // Como o render é síncrono, ajustamos a var local também para exibir certo agora
+    }
+    const safeCurrentPage = appState.proposalsView.currentPage;
+
+    const paginatedItems = filteredProposals.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage);
 
     const getSortIcon = (col) => {
         if (column !== col) return '<i class="fas fa-sort text-gray-400 ml-2"></i>';
@@ -223,6 +233,7 @@ function renderProposalsList() {
                             <td data-label="Status" class="table-cell"><span class="status-badge status-${(p.status || '').toLowerCase().replace('ç', 'c').replace('ã', 'a')}">${p.status}</span></td>
                             <td data-label="Etapa Funil" class="table-cell">${p.etapa_funil_nome || 'N/A'}</td>
                             <td data-label="Ações" class="table-cell text-right space-x-2 actions-cell">
+                                <button class="action-btn view-proposal-btn" title="Visualizar" data-id="${p.id}"><i class="fas fa-eye text-blue-500 hover:text-blue-700"></i></button>
                                 ${permissions.canEdit ? `<button class="action-btn edit-proposal-btn" title="Editar" data-id="${p.id}"><i class="fas fa-pencil-alt"></i></button>` : ''}
                                 ${permissions.canDelete ? `<button class="action-btn delete-proposal-btn" title="Excluir" data-id="${p.id}"><i class="fas fa-trash-alt text-red-500 hover:text-red-700"></i></button>` : ''}
                                 ${permissions.canPrint ? `<button class="action-btn download-proposal-btn" title="Imprimir" data-id="${p.id}"><i class="fas fa-print"></i></button>` : ''}
@@ -235,9 +246,9 @@ function renderProposalsList() {
          <div class="p-4 flex justify-between items-center border-t">
             <span class="text-sm text-gray-600">Mostrando ${paginatedItems.length} de ${filteredProposals.length} propostas</span>
             <div class="flex items-center space-x-2">
-                <button id="prev-page-btn" class="btn btn-secondary" ${currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>
-                <span class="text-sm font-medium">Página ${currentPage} de ${totalPages || 1}</span>
-                <button id="next-page-btn" class="btn btn-secondary" ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>
+                <button id="prop-prev-page-btn" class="btn btn-secondary" ${safeCurrentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>
+                <span class="text-sm font-medium">Página ${safeCurrentPage} de ${totalPages || 1}</span>
+                <button id="prop-next-page-btn" class="btn btn-secondary" ${safeCurrentPage === totalPages || totalPages === 0 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>
             </div>
         </div>
     `;
@@ -257,14 +268,14 @@ function renderProposalsList() {
         });
     });
 
-    document.getElementById('prev-page-btn').addEventListener('click', () => {
+    document.getElementById('prop-prev-page-btn').addEventListener('click', () => {
         if (appState.proposalsView.currentPage > 1) {
             appState.proposalsView.currentPage--;
             renderProposalsList();
         }
     });
 
-    document.getElementById('next-page-btn').addEventListener('click', () => {
+    document.getElementById('prop-next-page-btn').addEventListener('click', () => {
         if (appState.proposalsView.currentPage < totalPages) {
             appState.proposalsView.currentPage++;
             renderProposalsList();
@@ -312,6 +323,13 @@ function addProposalCardEventListeners() {
                 }
                 renderProposalsView();
             } catch (error) { }
+        });
+    });
+
+    document.querySelectorAll('.view-proposal-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+            const id = e.currentTarget.dataset.id;
+            window.open(`imprimir_proposta.php?id=${id}`, '_blank');
         });
     });
 

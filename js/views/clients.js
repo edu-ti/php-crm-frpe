@@ -29,11 +29,11 @@ export function renderClientsView() {
                  ` : ''}
              </div>
         </div>
-        <div class="border-b border-gray-200 mb-4 overflow-x-auto">
-            <nav class="-mb-px flex flex-wrap gap-2 pb-2" aria-label="Tabs">
-                <button data-tab="organizations" class="client-tab-btn ${activeTab === 'organizations' ? 'active' : ''}">${titleMap.organizations}</button>
-                <button data-tab="contacts" class="client-tab-btn ${activeTab === 'contacts' ? 'active' : ''}">${titleMap.contacts}</button>
-                <button data-tab="clients_pf" class="client-tab-btn ${activeTab === 'clients_pf' ? 'active' : ''}">${titleMap.clients_pf}</button>
+        <div class="mb-4">
+            <nav class="flex flex-wrap gap-2 pb-2 border-b border-gray-200" aria-label="Tabs">
+                <button data-tab="organizations" class="client-tab-btn flex-1 sm:flex-none ${activeTab === 'organizations' ? 'active' : ''}">${titleMap.organizations}</button>
+                <button data-tab="contacts" class="client-tab-btn flex-1 sm:flex-none ${activeTab === 'contacts' ? 'active' : ''}">${titleMap.contacts}</button>
+                <button data-tab="clients_pf" class="client-tab-btn flex-1 sm:flex-none ${activeTab === 'clients_pf' ? 'active' : ''}">${titleMap.clients_pf}</button>
             </nav>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">

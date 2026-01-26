@@ -183,18 +183,23 @@ main {
         border-radius: 0.5rem;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         background-color: white;
+        /* Mobile Table Style Update */
     }
 
     .responsive-table td {
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-start;
+        /* Alinhamento à esquerda */
         align-items: center;
-        text-align: right;
+        text-align: left;
+        /* Alinhamento à esquerda */
         padding: 0.25rem 0.5rem;
         /* Reduzido padding vertical */
         border-bottom: 1px solid #e2e8f0;
         min-height: 2rem;
         /* Altura mínima reduzida */
+        flex-wrap: wrap;
+        /* Permite quebra de linha se necessário */
     }
 
     .responsive-table td:last-child {
@@ -208,16 +213,21 @@ main {
         font-weight: 600;
         color: #374151;
         text-align: left;
-        margin-right: auto;
-        /* Empurra o conteúdo para a direita */
-        padding-right: 0.5rem;
-        /* Reduzido padding */
+        margin-right: 0.5rem;
+        /* Espaço fixo entre label e valor */
+        padding-right: 0;
+        min-width: 40%;
+        /* Largura fixa para alinhar os valores */
+        flex-shrink: 0;
+        /* Impede que o label encolha demais */
     }
 
     .responsive-table .actions-cell {
         justify-content: flex-end;
         /* Garante ações à direita */
         padding-left: 0.5rem;
+        width: 100%;
+        /* Ocupa largura total para alinhar botões à direita */
     }
 
     .responsive-table .actions-cell::before {
