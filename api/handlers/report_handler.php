@@ -3,6 +3,9 @@
 
 function handle_get_report_data($pdo)
 {
+    // Ensure schema is up to date (Lazy Migration)
+    ensure_meta_columns($pdo);
+
     $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-01-01');
     $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-12-31');
 
@@ -187,7 +190,7 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids
         list($ph, $vals) = $buildIn($supplier_keys);
 
         // Fetch all metas for relevant suppliers
-        $sql_sup = "SELECT fornecedor_id, meta_anual, meta_mensal, user_targets_enabled FROM fornecedor_metas WHERE fornecedor_id IN ($ph) AND ano = ?";
+        $sql_sup = "SELECT fornecedor_id, meta_anual, meta_mensal, meta_mensal_json, user_targets_enabled FROM fornecedor_metas WHERE fornecedor_id IN ($ph) AND ano = ?";
         $params_sup = array_merge($vals, [$year]);
 
         $stmt_sup = $pdo->prepare($sql_sup);
@@ -200,10 +203,12 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids
                 $m = $sup_metas[$sid][0];
                 $report_data[$sid]['meta_anual'] = (float) $m['meta_anual'];
                 $report_data[$sid]['meta_mensal'] = (float) $m['meta_mensal'];
+                $report_data[$sid]['meta_mensal_detailed'] = !empty($m['meta_mensal_json']) ? json_decode($m['meta_mensal_json'], true) : [];
                 $report_data[$sid]['user_targets_enabled'] = (int) ($m['user_targets_enabled'] ?? 1);
             } else {
                 $report_data[$sid]['meta_anual'] = 0;
                 $report_data[$sid]['meta_mensal'] = 0;
+                $report_data[$sid]['meta_mensal_detailed'] = [];
                 $report_data[$sid]['user_targets_enabled'] = 1; // Default
             }
         }
@@ -383,6 +388,7 @@ function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $use
 
 function handle_get_supplier_targets($pdo)
 {
+    ensure_meta_columns($pdo);
     $supplier_id = isset($_GET['supplier_id']) ? (int) $_GET['supplier_id'] : null;
     $year = isset($_GET['year']) ? (int) $_GET['year'] : date('Y');
 
@@ -393,13 +399,14 @@ function handle_get_supplier_targets($pdo)
 
     try {
         // 1. Fetch Supplier Goals
-        $stmt_sup = $pdo->prepare("SELECT meta_anual, meta_mensal, user_targets_enabled FROM fornecedor_metas WHERE fornecedor_id = ? AND ano = ?");
+        $stmt_sup = $pdo->prepare("SELECT meta_anual, meta_mensal, meta_mensal_json, user_targets_enabled FROM fornecedor_metas WHERE fornecedor_id = ? AND ano = ?");
         $stmt_sup->execute([$supplier_id, $year]);
         $sup_meta = $stmt_sup->fetch(PDO::FETCH_ASSOC);
 
         $result = [
             'meta_anual' => $sup_meta ? (float) $sup_meta['meta_anual'] : 0,
             'meta_mensal' => $sup_meta ? (float) $sup_meta['meta_mensal'] : 0,
+            'meta_mensal_detailed' => ($sup_meta && !empty($sup_meta['meta_mensal_json'])) ? json_decode($sup_meta['meta_mensal_json'], true) : [],
             'user_targets_enabled' => $sup_meta ? (int) ($sup_meta['user_targets_enabled'] ?? 1) : 1,
             'state_targets' => [],
             'targets' => []
@@ -503,6 +510,14 @@ function handle_save_targets($pdo)
         } catch (Exception $e) {
             $pdo->exec("ALTER TABLE fornecedor_metas ADD COLUMN user_targets_enabled TINYINT(1) DEFAULT 1");
         }
+
+        // Add column meta_mensal_json if missing (New for Seasonality)
+        try {
+            $pdo->query("SELECT meta_mensal_json FROM fornecedor_metas LIMIT 1");
+        } catch (Exception $e) {
+            $pdo->exec("ALTER TABLE fornecedor_metas ADD COLUMN meta_mensal_json TEXT DEFAULT NULL");
+        }
+
     } catch (Exception $e) {
         // Continue, might failed if table exists or permission issue, but let proper queries fail if so.
     }
@@ -511,15 +526,18 @@ function handle_save_targets($pdo)
         $pdo->beginTransaction();
 
         // 2. Save Supplier Goals
+        $monthlyDetailedJson = isset($supGoals['monthly_detailed']) ? json_encode($supGoals['monthly_detailed']) : null;
+
         $stmt = $pdo->prepare("
-            INSERT INTO fornecedor_metas (fornecedor_id, ano, meta_anual, meta_mensal, user_targets_enabled)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO fornecedor_metas (fornecedor_id, ano, meta_anual, meta_mensal, meta_mensal_json, user_targets_enabled)
+            VALUES (?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE 
                 meta_anual = VALUES(meta_anual),
                 meta_mensal = VALUES(meta_mensal),
+                meta_mensal_json = VALUES(meta_mensal_json),
                 user_targets_enabled = VALUES(user_targets_enabled)
         ");
-        $stmt->execute([$supplier_id, $year, $supGoals['annual'], $supGoals['monthly'], $userTargetsEnabled]);
+        $stmt->execute([$supplier_id, $year, $supGoals['annual'], $supGoals['monthly'], $monthlyDetailedJson, $userTargetsEnabled]);
 
 
         // 3. Save State Goals
@@ -563,7 +581,66 @@ function handle_save_targets($pdo)
         // Log error
         file_put_contents(__DIR__ . '/../../api_debug_log.txt', date('[Y-m-d H:i:s] ') . "Error saving targets: " . $e->getMessage() . PHP_EOL, FILE_APPEND);
 
+    }
+}
+
+function handle_get_report_kpis($pdo)
+{
+    try {
+        // 1. Total Sales (Current Year)
+        $stmt_sales = $pdo->query("SELECT SUM(valor_total) FROM vendas_fornecedores WHERE YEAR(data_venda) = YEAR(CURDATE())");
+        $total_sales = $stmt_sales->fetchColumn() ?: 0;
+
+        // 2. Lost Sales (Current Year) - Proposals with status 'Recusada'
+        // Adjust status string if needed based on your DB (e.g., 'Recusada', 'Perdido')
+        $stmt_lost = $pdo->query("SELECT SUM(valor_total) FROM propostas WHERE status LIKE 'Recusada%' AND YEAR(data_criacao) = YEAR(CURDATE())");
+        $lost_sales = $stmt_lost->fetchColumn() ?: 0;
+
+        // 3. Active Bids (Opportunities that are Bids/Licitacao and not Closed)
+        // Assuming 'Fechado', 'Perdido', 'Fracassado' are the closing stages. Adjust names if needed.
+        $stmt_bids = $pdo->query("
+            SELECT COUNT(*) FROM oportunidades o 
+            LEFT JOIN etapas_funil ef ON o.etapa_id = ef.id
+            WHERE o.numero_edital IS NOT NULL 
+            AND o.numero_edital != '' 
+            AND ef.nome NOT IN ('Fechado', 'Perdido', 'Fracassado')
+        ");
+        $active_bids = $stmt_bids->fetchColumn() ?: 0;
+
+        json_response([
+            'success' => true,
+            'kpis' => [
+                'total_sales_year' => (float) $total_sales,
+                'lost_sales_year' => (float) $lost_sales,
+                'active_bids' => (int) $active_bids
+            ]
+        ]);
+
+    } catch (Exception $e) {
+        // Log error
+        file_put_contents(__DIR__ . '/../../api_debug_log.txt', date('[Y-m-d H:i:s] ') . "Error fetching KPIs: " . $e->getMessage() . PHP_EOL, FILE_APPEND);
         json_response(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+}
+
+function ensure_meta_columns($pdo)
+{
+    try {
+        // Add column user_targets_enabled if missing
+        try {
+            $pdo->query("SELECT user_targets_enabled FROM fornecedor_metas LIMIT 1");
+        } catch (Exception $e) {
+            $pdo->exec("ALTER TABLE fornecedor_metas ADD COLUMN user_targets_enabled TINYINT(1) DEFAULT 1");
+        }
+
+        // Add column meta_mensal_json if missing
+        try {
+            $pdo->query("SELECT meta_mensal_json FROM fornecedor_metas LIMIT 1");
+        } catch (Exception $e) {
+            $pdo->exec("ALTER TABLE fornecedor_metas ADD COLUMN meta_mensal_json TEXT DEFAULT NULL");
+        }
+    } catch (Exception $e) {
+        // Ignore general errors, let main queries fail if strictly necessary
     }
 }
 ?>

@@ -2,6 +2,7 @@ import { apiCall } from '../api.js';
 import { formatCurrency as formatCurrencyUtil, showToast, showLoading } from '../utils.js';
 
 let appState = {};
+let chartInstance = null;
 
 export async function renderReportsView(state) {
     if (state) appState = state;
@@ -13,6 +14,56 @@ export async function renderReportsView(state) {
     const viewContainer = document.getElementById('reports-view');
     viewContainer.innerHTML = `
         <div class="flex flex-col h-full">
+            <!-- KPI Cards Section -->
+            <div id="kpi-cards-container" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 no-print">
+                <!-- Card 1: Vendas no Ano -->
+                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-xs text-gray-500 font-bold uppercase">Vendas no Ano (${currentYear})</p>
+                            <p id="kpi-total-sales" class="text-2xl font-bold text-gray-800">R$ 0,00</p>
+                        </div>
+                        <div class="bg-green-100 p-2 rounded-full text-green-600">
+                            <i class="fas fa-dollar-sign text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Vendas Perdidas -->
+                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-xs text-gray-500 font-bold uppercase">Vendas Perdidas (${currentYear})</p>
+                            <p id="kpi-lost-sales" class="text-2xl font-bold text-gray-800">R$ 0,00</p>
+                        </div>
+                        <div class="bg-red-100 p-2 rounded-full text-red-600">
+                            <i class="fas fa-thumbs-down text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Licitações Ativas -->
+                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-xs text-gray-500 font-bold uppercase">Licitações Ativas</p>
+                            <p id="kpi-active-bids" class="text-2xl font-bold text-gray-800">0</p>
+                        </div>
+                        <div class="bg-blue-100 p-2 rounded-full text-blue-600">
+                            <i class="fas fa-gavel text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Section (Hidden by default, shown when data loaded) -->
+            <div id="chart-container-wrapper" class="bg-white p-4 rounded-lg shadow mb-4 hidden no-print">
+                <h3 class="text-lg font-bold text-gray-700 mb-2">Evolução de Vendas vs Metas</h3>
+                <div class="h-64 w-full">
+                    <canvas id="sales-chart"></canvas>
+                </div>
+            </div>
+
             <!-- Header e Filtros -->
             <div class="bg-white p-4 rounded-lg shadow mb-4 no-print border-l-4 border-indigo-600">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
@@ -130,12 +181,14 @@ export async function renderReportsView(state) {
                 .print-container { overflow: visible !important; box-shadow: none !important; }
                 
                 table { page-break-inside: auto; width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 20px; }
+                thead { display: table-header-group; }
                 tr { page-break-inside: avoid; page-break-after: auto; }
                 th, td { border: 1px solid #000; padding: 4px; text-align: right; }
                 th { background-color: #f3f4f6 !important; font-weight: bold; text-align: center; }
                 
                 .supplier-header { background-color: #4f46e5 !important; color: white !important; font-size: 14px; text-align: left; padding: 8px; -webkit-print-color-adjust: exact; }
                 .total-row td { background-color: #ffffcc !important; font-weight: bold; }
+                .break-inside-avoid { page-break-inside: avoid; }
             }
             
             /* Tabela Padrão */
@@ -217,6 +270,27 @@ export async function renderReportsView(state) {
 
     // Carrega Inicial
     loadReportData();
+    loadKPIData();
+}
+
+async function loadKPIData() {
+    try {
+        const response = await apiCall('get_report_kpis');
+        if (response.success && response.kpis) {
+            const { total_sales_year, lost_sales_year, active_bids } = response.kpis;
+
+            const elTotal = document.getElementById('kpi-total-sales');
+            if (elTotal) elTotal.innerText = formatCurrencyUtil(total_sales_year);
+
+            const elLost = document.getElementById('kpi-lost-sales');
+            if (elLost) elLost.innerText = formatCurrencyUtil(lost_sales_year);
+
+            const elBids = document.getElementById('kpi-active-bids');
+            if (elBids) elBids.innerText = active_bids;
+        }
+    } catch (e) {
+        console.error("Erro ao carregar KPIs:", e);
+    }
 }
 
 let currentReportData = [];
@@ -337,6 +411,15 @@ async function loadReportData() {
     const supplierPayload = supplierIds.length > 0 ? supplierIds.join(',') : '';
     const userPayload = userIds.length > 0 ? userIds.join(',') : '';
 
+    // Save Filters to LocalStorage
+    localStorage.setItem('reports_filters', JSON.stringify({
+        type: type,
+        start: start,
+        end: end,
+        suppliers: supplierIds,
+        users: userIds
+    }));
+
     if (!start || !end) {
         showToast('Selecione o período.', 'warning');
         return;
@@ -390,6 +473,11 @@ function renderReports(data, container, type, startStr, endStr) {
 
     const monthsRange = getMonthsBetween(startStr, endStr);
 
+    // Render Chart
+    if (typeof renderSalesChart === 'function') {
+        renderSalesChart(data, monthsRange, type);
+    }
+
     data.forEach(group => {
         const wrapper = document.createElement('div');
         wrapper.className = "mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid";
@@ -418,6 +506,129 @@ function renderReports(data, container, type, startStr, endStr) {
         wrapper.appendChild(tableContainer);
 
         container.appendChild(wrapper);
+    });
+}
+
+function renderSalesChart(data, monthsRange, type) {
+    const ctx = document.getElementById('sales-chart');
+    const container = document.getElementById('chart-container-wrapper');
+
+    if (!ctx || !container) return;
+
+    // Only show chart for Sales report
+    if (type !== 'sales' || !data || data.length === 0) {
+        container.classList.add('hidden');
+        return;
+    }
+
+    container.classList.remove('hidden');
+
+    // Destroy existing chart if any
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+
+    // Process Data
+    const labels = monthsRange.map(m => m.label);
+    const monthKeys = monthsRange.map(m => m.key);
+
+    // Aggregating Totals
+    const salesData = monthKeys.map(key => {
+        let sum = 0;
+        data.forEach(group => {
+            (group.rows || []).forEach(row => {
+                const cell = row.dados_mes[key];
+                if (cell) sum += (parseFloat(cell.venda) || 0);
+            });
+        });
+        return sum;
+    });
+
+    const goalsData = monthKeys.map(key => {
+        let sum = 0;
+        data.forEach(group => {
+            // Check if user targets are enabled
+            const userTargetsEnabled = group.user_targets_enabled !== 0; // Default true
+
+            if (userTargetsEnabled) {
+                // Sum individual user targets
+                (group.rows || []).forEach(row => {
+                    const cell = row.dados_mes[key];
+                    if (cell) sum += (parseFloat(cell.meta) || 0);
+                });
+            } else {
+                // Use monthly meta from supplier (flat)
+                // Note: Logic in table uses 'meta_mensal' from supplier for total row if targets disabled
+                sum += (parseFloat(group.meta_mensal) || 0);
+            }
+        });
+        return sum;
+    });
+
+    // Chart Configuration
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Vendas Realizadas',
+                    data: salesData,
+                    borderColor: '#059669', // Green-600
+                    backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: true
+                },
+                {
+                    label: 'Meta',
+                    data: goalsData,
+                    borderColor: '#DC2626', // Red-600
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [5, 5], // Dashed line
+                    tension: 0.1,
+                    pointRadius: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function (value) {
+                            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumSignificantDigits: 3 }).format(value);
+                        }
+                    }
+                }
+            }
+        }
     });
 }
 
