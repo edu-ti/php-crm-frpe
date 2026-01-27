@@ -29,6 +29,16 @@ try {
     $database = new Database();
     $pdo = $database->getConnection();
 
+    // [NOVO] Buscar dados do usuário logado (quem está imprimindo/salvando)
+    $current_user_name = 'Usuário Desconhecido';
+    try {
+        $stmt_user = $pdo->prepare("SELECT nome FROM usuarios WHERE id = ?");
+        $stmt_user->execute([$_SESSION['user_id']]);
+        $current_user_name = $stmt_user->fetchColumn();
+    } catch (Exception $e) {
+        // Ignora erro se não conseguir buscar
+    }
+
     $proposal_stmt = $pdo->prepare("
         SELECT p.*, 
                o.nome_fantasia as organizacao_nome, o.razao_social, o.cnpj, o.logradouro, o.numero as org_numero, o.complemento as org_complemento, o.bairro as org_bairro, o.cidade as org_cidade, o.estado as org_estado, o.cep as org_cep,
@@ -557,20 +567,38 @@ function format_date($value, $format = 'd/m/Y') {
         <?php endif; ?>
 
         <!-- Signatures (Grid can be tricky, using Flex instead for better safety if needed, but break-inside-avoid helps) -->
-        <div class="grid grid-cols-2 gap-10 mt-8 pt-4 break-inside-avoid text-[8pt]">
-            <div>
-                    <p class="font-bold text-[#2e2a78] text-[8pt] mb-1"><?php echo htmlspecialchars($proposal['vendedor_nome']); ?></p>
-                    <p class="uppercase text-slate-500 text-[6pt] mb-1"><?php echo htmlspecialchars($proposal['vendedor_role']); ?></p>
-                    <p class="text-slate-600">Fone: <?php echo htmlspecialchars($proposal['vendedor_telefone']); ?></p>
+        <div class="break-inside-avoid mt-8 pt-4 border-t border-gray-200">
+            <div class="grid grid-cols-2 gap-8 text-[8pt]">
+                
+                <div>
+                    <p class="text-[7pt] text-slate-400 uppercase mb-1">Responsável Comercial</p>
+                    <p class="font-bold text-[#2e2a78] text-[9pt] mb-0.5"><?php echo htmlspecialchars($proposal['vendedor_nome']); ?></p>
+                    <p class="uppercase text-slate-500 text-[7pt] mb-1"><?php echo htmlspecialchars($proposal['vendedor_role']); ?></p>
+                    <p class="text-slate-600 mb-0.5">Fone: <?php echo htmlspecialchars($proposal['vendedor_telefone']); ?></p>
                     <p class="text-slate-600">E-mail: <?php echo htmlspecialchars($proposal['vendedor_email']); ?></p>
-            </div>
-            <div class="flex flex-col items-end">
-                    <div class="border-b border-black w-full mb-2"></div>
-                    <div class="w-full flex justify-between items-center text-slate-600">
-                        <span>Data: ____/____/________</span>
-                        <span class="font-bold text-slate-800">De Acordo</span>
+                </div>
+
+                <div class="flex flex-col justify-between items-end">
+                    <!-- Spacer to push signature down if needed, or just alignment -->
+                    <div class="h-2"></div>
+
+                    <div class="w-full">
+                        <div class="border-b border-black w-full mb-2"></div>
+                        <div class="w-full flex justify-between items-center text-slate-600">
+                            <span>Data: ____/____/________</span>
+                            <span class="font-bold text-slate-800">De Acordo</span>
+                        </div>
                     </div>
+                </div>
             </div>
+            
+            <?php if ($current_user_name && $current_user_name !== $proposal['vendedor_nome']): ?>
+                <div class="mt-2 text-left">
+                    <p class="text-[6pt] text-slate-300 italic">
+                        Impresso por <span class="font-medium"><?php echo htmlspecialchars($current_user_name); ?></span> em <?php echo date('d/m/Y \à\s H:i'); ?>
+                    </p>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 

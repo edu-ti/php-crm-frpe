@@ -16,7 +16,7 @@ export function renderSettingsView() {
             </button>
             ` : ''}
         </div>
-        <div id="users-list-container" class="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <div id="users-list-container" class="bg-white rounded-lg shadow-sm border overflow-auto">
             ${renderUsersList()}
         </div>
     `;

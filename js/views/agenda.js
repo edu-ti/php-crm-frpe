@@ -32,8 +32,8 @@ export function renderAgendaView() {
         <div class="bg-white p-6 rounded-lg shadow-sm border flex flex-col flex-grow min-h-0"> <!-- flex flex-col flex-grow min-h-0 -->
             <div id="calendar-header" class="flex justify-between items-center mb-4 flex-shrink-0"></div> <!-- flex-shrink-0 -->
             <!-- Adiciona container para grid com overflow -->
-            <div id="calendar-grid-container" class="flex-grow overflow-hidden">
-                 <div id="calendar-grid" class="grid grid-cols-7 gap-px bg-gray-200 border border-gray-200 h-full"> <!-- h-full -->
+            <div id="calendar-grid-container" class="flex-grow overflow-y-auto">
+                 <div id="calendar-grid" class="grid grid-cols-7 gap-px bg-gray-200 border border-gray-200"> <!-- h-full -->
                     <!-- Dias da semana e dias do mês serão renderizados aqui -->
                  </div>
             </div>
@@ -149,13 +149,19 @@ function renderCalendar(month, year) {
             </div>`;
     }
 
-    // Completa a última semana com células vazias se necessário
-    const totalCells = firstDayOfMonth + daysInMonth;
-    const remainingCells = (7 - (totalCells % 7)) % 7;
-    for (let i = 0; i < remainingCells; i++) {
-        dayCellsHtml += `<div class="bg-gray-50 border-t border-gray-200"></div>`;
-    }
+    // Completa a grade para ter sempre 5 ou 6 linhas cheias (35 ou 42 células) para visual consistente
+    const totalCellsFilled = firstDayOfMonth + daysInMonth;
+    const infoForRemaining = totalCellsFilled % 7;
+    const remainingCells = infoForRemaining === 0 ? 0 : 7 - infoForRemaining;
 
+    // Adicione linhas extras se a grade estiver muito curta (opcional, mas bom para uniformidade visual)
+    // Se total + remaining < 35, adiciona mais 7 (mas o cálculo acima já fecha a linha atual)
+    // Opcional: forçar 6 linhas sempre? 
+    // Vamos apenas garantir que fecha a semana atual corretamente.
+
+    for (let i = 0; i < remainingCells; i++) {
+        dayCellsHtml += `<div class="bg-gray-50 border-t border-gray-200 min-h-[100px]"></div>`;
+    }
 
     calendarGrid.innerHTML = headerHtml + dayCellsHtml;
 }

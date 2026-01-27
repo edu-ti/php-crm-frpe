@@ -230,8 +230,8 @@ function handle_update_proposal($pdo, $data)
         $organizacao_id = ($clientType === 'pj') ? $client['id'] : null;
         $contato_id = ($clientType === 'pj' && isset($client['contact'])) ? $client['contact']['id'] : null;
 
-        // Atualiza a proposta principal
-        $sql = "UPDATE propostas SET cliente_pf_id = ?, organizacao_id = ?, contato_id = ?, valor_total = ?, status = ?, data_validade = ?, faturamento = ?, treinamento = ?, condicoes_pagamento = ?, prazo_entrega = ?, garantia_equipamentos = ?, garantia_acessorios = ?, instalacao = ?, assistencia_tecnica = ?, observacoes = ?, motivo_status = ? WHERE id = ?";
+        // Atualiza a proposta principal (Incluindo atualizado_por_id)
+        $sql = "UPDATE propostas SET cliente_pf_id = ?, organizacao_id = ?, contato_id = ?, valor_total = ?, status = ?, data_validade = ?, faturamento = ?, treinamento = ?, condicoes_pagamento = ?, prazo_entrega = ?, garantia_equipamentos = ?, garantia_acessorios = ?, instalacao = ?, assistencia_tecnica = ?, observacoes = ?, motivo_status = ?, atualizado_por_id = ? WHERE id = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             $cliente_pf_id,
@@ -250,6 +250,7 @@ function handle_update_proposal($pdo, $data)
             $data['assistencia_tecnica'] ?? null,
             $data['observacoes'] ?? null,
             $data['motivo_status'] ?? null,
+            $_SESSION['user_id'], // salva quem atualizou
             $proposalId
         ]);
 

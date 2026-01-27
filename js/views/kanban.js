@@ -542,8 +542,9 @@ function renderFornecedoresView() {
         return;
     }
 
-    if (selectedFornecedorId === null && fornecedores.length > 0) {
-        appState.funilView.selectedFornecedorId = fornecedores[0].id;
+    // Permite que selectedFornecedorId seja null (Todos). Apenas inicializa se undefined.
+    if (appState.funilView.selectedFornecedorId === undefined && fornecedores.length > 0) {
+        appState.funilView.selectedFornecedorId = null; // Default to 'Todos' or specific one if desired. Let's default to Todos (null).
     }
     renderFornecedoresHeader();
     renderFornecedoresGrid();
@@ -567,15 +568,25 @@ function renderFornecedoresHeader() {
          <button class="fornecedor-tab-btn ${f.id == selectedFornecedorId ? 'active' : ''}" data-id="${f.id}">${f.nome}</button>
      `).join('');
 
+    // Botão "Todos"
+    const allBtn = `
+        <button class="fornecedor-tab-btn ${!selectedFornecedorId ? 'active' : ''}" data-id="">Todos</button>
+    `;
+
     headerContainer.innerHTML = `
          <div class="flex flex-col md:flex-row justify-between items-center flex-wrap gap-4">
-             <div class="flex items-center space-x-2 flex-wrap gap-2 justify-center w-full">
-                 ${fornecedorTabs}
-             </div>
-             <div class="flex items-center space-x-2 flex-shrink-0">
-                 <button id="prev-year-btn" class="year-btn"><i class="fas fa-chevron-left text-xs"></i></button>
-                 <span class="px-3 py-1 bg-[#206a9b] text-white rounded-md font-bold text-sm">${year}</span>
-                 <button id="next-year-btn" class="year-btn"><i class="fas fa-chevron-right text-xs"></i></button>
+             <div class="flex items-center space-x-2 flex-wrap gap-2 justify-center w-full"> <!-- Centralizado -->
+                 <div class="flex items-center space-x-2 flex-wrap gap-2">
+                    ${allBtn}
+                    ${fornecedorTabs}
+                 </div>
+                 
+                 <!-- Year Selector moved here -->
+                 <div class="flex items-center space-x-2 flex-shrink-0 ml-4">
+                     <button id="prev-year-btn" class="year-btn"><i class="fas fa-chevron-left text-xs"></i></button>
+                     <span class="px-3 py-1 bg-[#206a9b] text-white rounded-md font-bold text-sm">${year}</span>
+                     <button id="next-year-btn" class="year-btn"><i class="fas fa-chevron-right text-xs"></i></button>
+                 </div>
              </div>
          </div>
      `;
@@ -584,7 +595,9 @@ function renderFornecedoresHeader() {
         const newBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(newBtn, btn);
         newBtn.addEventListener('click', () => {
-            appState.funilView.selectedFornecedorId = newBtn.dataset.id;
+            // Se o ID for vazio (botão Todos), define como null
+            const id = newBtn.dataset.id;
+            appState.funilView.selectedFornecedorId = id === "" ? null : id;
             renderFornecedoresView();
         });
     });
@@ -619,7 +632,11 @@ function renderFornecedoresGrid() {
         // Considera a data como UTC para evitar problemas de fuso horário na comparação
         const vendaDate = new Date(venda.data_venda + 'T00:00:00Z');
         const vendaYear = vendaDate.getUTCFullYear();
-        return String(venda.fornecedor_id) == String(selectedFornecedorId) && vendaYear === year;
+
+        // Se selectedFornecedorId for null, traz todos. Se não, filtra pelo ID.
+        const matchFornecedor = !selectedFornecedorId || String(venda.fornecedor_id) == String(selectedFornecedorId);
+
+        return matchFornecedor && vendaYear === year;
     });
 
 
