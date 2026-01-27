@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Tempo de geração: 26/01/2026 às 17:57
+-- Tempo de geração: 27/01/2026 às 13:13
 -- Versão do servidor: 11.8.3-MariaDB-log
 -- Versão do PHP: 7.2.34
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Banco de dados: `u540193243_crmfr_db1`
+-- Banco de dados: `u540193243_crmfr_db`
 --
 
 -- --------------------------------------------------------
@@ -39,13 +39,6 @@ CREATE TABLE `agendamentos` (
   `data_criacao` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Despejando dados para a tabela `agendamentos`
---
-
-INSERT INTO `agendamentos` (`id`, `titulo`, `descricao`, `data_inicio`, `data_fim`, `tipo`, `criado_por_id`, `oportunidade_id`, `data_criacao`) VALUES
-(20, 'teste de notificação de agendamento', '', '2026-01-26 10:00:00', NULL, 'Treinamento', 1, NULL, '2026-01-23 16:46:53');
-
 -- --------------------------------------------------------
 
 --
@@ -56,13 +49,6 @@ CREATE TABLE `agendamento_usuarios` (
   `agendamento_id` int(11) NOT NULL,
   `usuario_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Despejando dados para a tabela `agendamento_usuarios`
---
-
-INSERT INTO `agendamento_usuarios` (`agendamento_id`, `usuario_id`) VALUES
-(20, 1);
 
 -- --------------------------------------------------------
 
@@ -378,7 +364,11 @@ INSERT INTO `contatos` (`id`, `organizacao_id`, `nome`, `cargo`, `setor`, `email
 (13, 915, 'Adila Aquino', NULL, NULL, NULL, NULL, '2025-12-14 19:43:59'),
 (14, 359, 'Sunderlene Abreu', 'Engenheira', 'Engenharia clínica', 'eclinicahse@gigavida.com.br', '81 33147914/999300164', '2026-01-09 12:42:05'),
 (15, 937, 'Romualdo', NULL, 'compras', 'FINANCEIROEQUIPASAUDE@GMAIL.COM', '(83) 3271-3480 / 83 99404-2316', '2026-01-09 18:51:35'),
-(16, 495, 'GILTON VASCONCELOS', 'secretaria', 'Engenharia clínica', 'SAUDE@TRIUNFO.PE.GOV.BR', '(87) 9105-5012/ (87) 3846-1365 (87)99961-1889', '2026-01-16 14:53:49');
+(16, 495, 'GILTON VASCONCELOS', 'secretaria', 'Engenharia clínica', 'SAUDE@TRIUNFO.PE.GOV.BR', '(87) 9105-5012/ (87) 3846-1365 (87)99961-1889', '2026-01-16 14:53:49'),
+(17, 271, 'Jair', 'Gerente', NULL, NULL, '81 99954-9183', '2026-01-21 14:12:25'),
+(18, 939, 'DIOGO FEITOSA ', 'Engenheiro', 'Engenharia clínica', 'engenhariaclinica@saudecaruaru.pe.gov.br', ' (81) 3701-2400/ (81) 3701-2437  (84) 99846-8546', '2026-01-23 21:11:33'),
+(19, 936, 'a', NULL, NULL, 'FINANCEIROCUPER2@GMAIL.COM', '(81) 9223-6919', '2026-01-26 15:35:07'),
+(20, 513, 'Pedro', 'Encarregado', 'Financeiro', NULL, ' 81 99195-6800 Pedro / 81 99955-9113 Edson', '2026-01-26 15:59:47');
 
 -- --------------------------------------------------------
 
@@ -460,14 +450,6 @@ CREATE TABLE `fornecedor_metas` (
   `user_targets_enabled` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Despejando dados para a tabela `fornecedor_metas`
---
-
-INSERT INTO `fornecedor_metas` (`id`, `fornecedor_id`, `ano`, `meta_anual`, `meta_mensal`, `user_targets_enabled`) VALUES
-(1, 1, 2026, 2450000.00, 0.00, 0),
-(7, 2, 2026, 782620.00, 0.00, 0);
-
 -- --------------------------------------------------------
 
 --
@@ -482,17 +464,6 @@ CREATE TABLE `fornecedor_metas_estados` (
   `meta_anual` decimal(15,2) DEFAULT 0.00,
   `meta_mensal_json` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Despejando dados para a tabela `fornecedor_metas_estados`
---
-
-INSERT INTO `fornecedor_metas_estados` (`id`, `fornecedor_id`, `ano`, `estado`, `meta_anual`, `meta_mensal_json`) VALUES
-(1, 1, 2026, 'PE', 375000.00, '{\"1\":125000,\"2\":250000,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
-(2, 1, 2026, 'PB', 2075000.00, '{\"1\":25000,\"2\":2050000,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
-(7, 2, 2026, 'PE', 427620.00, '{\"1\":250000,\"2\":152620,\"3\":25000,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
-(8, 2, 2026, 'PB', 95000.00, '{\"1\":50000,\"2\":20000,\"3\":25000,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
-(9, 2, 2026, 'RN', 260000.00, '{\"1\":150000,\"2\":70000,\"3\":40000,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}');
 
 -- --------------------------------------------------------
 
@@ -845,78 +816,68 @@ CREATE TABLE `oportunidades` (
 --
 
 INSERT INTO `oportunidades` (`id`, `titulo`, `numero_edital`, `numero_processo`, `organizacao_id`, `fornecedor_id`, `contato_id`, `cliente_pf_id`, `valor`, `etapa_id`, `usuario_id`, `comercial_user_id`, `pre_proposal_number`, `notas`, `descricao_produto`, `fabricante`, `modelo`, `quantidade`, `valor_unitario`, `data_criacao`, `data_ultima_movimentacao`, `local_disputa`, `uasg`, `data_abertura`, `hora_disputa`, `modalidade`, `objeto`) VALUES
-(61, 'Oportunidade p/ Proposta: HOSPITAL UNIMED RECIFE III', NULL, NULL, 892, NULL, NULL, NULL, 29992.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-10-30 12:32:59', '2025-10-30 12:32:59', NULL, NULL, NULL, NULL, NULL, NULL),
+(61, 'Oportunidade p/ Proposta: HOSPITAL UNIMED RECIFE III', NULL, NULL, 892, NULL, NULL, NULL, 29992.00, 8, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-10-30 12:32:59', '2026-01-27 01:17:09', NULL, NULL, NULL, NULL, NULL, NULL),
 (65, 'Oportunidade p/ Proposta: UNIDADE DE DIAGNOSTICO CARDIOLOGICO LTDA', NULL, NULL, 894, NULL, NULL, NULL, 12569.00, 4, 2, NULL, NULL, NULL, 'DESFIBRILADOR ', 'INSTRAMED', 'APOLUS ', 1, 12569.00, '2025-11-04 15:11:04', '2025-11-04 15:11:04', NULL, NULL, NULL, NULL, NULL, NULL),
 (69, 'Oportunidade p/ Proposta: NEWMED COMERCIO E SERVICOS DE EQUIPAMENTOS HOSPITALARES LTDA', NULL, NULL, 897, NULL, NULL, NULL, 102646.44, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-06 12:26:18', '2025-11-06 12:26:18', NULL, NULL, NULL, NULL, NULL, NULL),
 (70, 'Oportunidade p/ Proposta: MARINA PORTO DO MAR', NULL, NULL, 898, NULL, NULL, NULL, 8471.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-06 20:49:30', '2025-11-06 20:49:30', NULL, NULL, NULL, NULL, NULL, NULL),
-(71, 'Oportunidade p/ Proposta: HOSPITAL MEMORIAL GUARARAPES', NULL, NULL, 384, NULL, NULL, NULL, 69000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-07 14:32:57', '2025-11-07 14:32:57', NULL, NULL, NULL, NULL, NULL, NULL),
+(71, 'Oportunidade p/ Proposta: HOSPITAL MEMORIAL GUARARAPES', NULL, NULL, 384, NULL, NULL, NULL, 69000.00, 8, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-07 14:32:57', '2026-01-27 01:16:52', NULL, NULL, NULL, NULL, NULL, NULL),
 (72, 'Oportunidade p/ Proposta: MAIS VIDA', NULL, NULL, 336, NULL, NULL, NULL, 28000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-07 15:01:42', '2025-11-07 15:01:42', NULL, NULL, NULL, NULL, NULL, NULL),
 (73, 'Oportunidade p/ Proposta: DORGIVAL HENRIQUES', NULL, NULL, 850, NULL, NULL, NULL, 36308.39, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-10 13:09:13', '2025-11-10 13:09:13', NULL, NULL, NULL, NULL, NULL, NULL),
 (74, 'Oportunidade p/ Proposta: NEWMED COMERCIO E SERVICOS DE EQUIPAMENTOS HOSPITALARES LTDA', NULL, NULL, 897, NULL, NULL, NULL, 1230.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-10 20:31:38', '2025-11-10 20:31:38', NULL, NULL, NULL, NULL, NULL, NULL),
 (75, 'Oportunidade p/ Proposta: GRUPO TUBRAN LTDA', NULL, NULL, 915, NULL, NULL, NULL, 46164.00, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-14 19:32:19', '2025-11-14 19:32:19', NULL, NULL, NULL, NULL, NULL, NULL),
-(76, 'Oportunidade p/ Proposta: HC CARDIO', NULL, NULL, 591, NULL, NULL, NULL, 7990.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-17 17:45:58', '2025-11-17 17:45:58', NULL, NULL, NULL, NULL, NULL, NULL),
-(77, 'Oportunidade p/ Proposta: HC CARDIO', NULL, NULL, 591, NULL, NULL, NULL, 0.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-17 17:47:12', '2025-11-17 17:47:12', NULL, NULL, NULL, NULL, NULL, NULL),
-(78, 'Oportunidade p/ Proposta: CENTRO UNIVERSITARIO TIRADENTES DE PERNAMBUCO', NULL, NULL, 916, NULL, 9, NULL, 7990.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-24 12:29:04', '2025-11-24 12:29:04', NULL, NULL, NULL, NULL, NULL, NULL),
-(79, 'Oportunidade p/ Proposta: THALITA MELO DE BRITO PEREIRA', NULL, NULL, NULL, NULL, NULL, 31, 7990.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-24 20:26:58', '2025-11-24 20:26:58', NULL, NULL, NULL, NULL, NULL, NULL),
+(76, 'Oportunidade p/ Proposta: HC CARDIO', NULL, NULL, 591, NULL, NULL, NULL, 7990.00, 6, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-17 17:45:58', '2026-01-27 01:16:34', NULL, NULL, NULL, NULL, NULL, NULL),
+(77, 'Oportunidade p/ Proposta: HC CARDIO', NULL, NULL, 591, NULL, NULL, NULL, 0.00, 6, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-17 17:47:12', '2026-01-27 01:16:26', NULL, NULL, NULL, NULL, NULL, NULL),
+(78, 'Oportunidade p/ Proposta: CENTRO UNIVERSITARIO TIRADENTES DE PERNAMBUCO', NULL, NULL, 916, NULL, 9, NULL, 7990.00, 6, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-24 12:29:04', '2026-01-27 01:16:17', NULL, NULL, NULL, NULL, NULL, NULL),
+(79, 'Oportunidade p/ Proposta: THALITA MELO DE BRITO PEREIRA', NULL, NULL, NULL, NULL, NULL, 31, 7990.00, 6, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-24 20:26:58', '2026-01-27 01:16:03', NULL, NULL, NULL, NULL, NULL, NULL),
 (80, 'Oportunidade p/ Proposta: RECONCILIAR SPA TERAPEUTICO', NULL, NULL, 917, NULL, NULL, NULL, 23082.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-26 12:08:05', '2025-11-26 12:08:05', NULL, NULL, NULL, NULL, NULL, NULL),
-(81, 'Oportunidade p/ Proposta: RECONCILIAR SPA TERAPEUTICO', NULL, NULL, 917, NULL, NULL, NULL, 23082.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-26 14:18:32', '2025-11-26 14:18:32', NULL, NULL, NULL, NULL, NULL, NULL),
+(81, 'Oportunidade p/ Proposta: RECONCILIAR SPA TERAPEUTICO', NULL, NULL, 917, NULL, NULL, NULL, 23082.00, 8, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-26 14:18:32', '2026-01-27 01:15:47', NULL, NULL, NULL, NULL, NULL, NULL),
 (82, 'Oportunidade p/ Proposta: MAIS VIDA', NULL, NULL, 336, NULL, NULL, NULL, 116528.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-11-26 20:16:45', '2025-11-26 20:16:45', NULL, NULL, NULL, NULL, NULL, NULL),
-(83, 'Oportunidade p/ Proposta: FELICITE CHECK UP', NULL, NULL, 448, NULL, 10, NULL, 7990.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-01 21:00:29', '2025-12-01 21:00:29', NULL, NULL, NULL, NULL, NULL, NULL),
-(84, 'Oportunidade p/ Proposta: FELICITE CHECK UP', NULL, NULL, 448, NULL, 10, NULL, 0.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-01 21:11:15', '2025-12-01 21:11:15', NULL, NULL, NULL, NULL, NULL, NULL),
+(83, 'Oportunidade p/ Proposta: FELICITE CHECK UP', NULL, NULL, 448, NULL, 10, NULL, 7990.00, 6, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-01 21:00:29', '2026-01-27 01:15:34', NULL, NULL, NULL, NULL, NULL, NULL),
+(84, 'Oportunidade p/ Proposta: FELICITE CHECK UP', NULL, NULL, 448, NULL, 10, NULL, 0.00, 8, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-01 21:11:15', '2026-01-27 01:15:21', NULL, NULL, NULL, NULL, NULL, NULL),
 (85, 'Oportunidade p/ Proposta: RECONCILIAR SPA TERAPEUTICO', NULL, NULL, 917, NULL, 11, NULL, 8471.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-02 18:28:57', '2025-12-02 18:28:57', NULL, NULL, NULL, NULL, NULL, NULL),
-(90, 'Oportunidade p/ Proposta: 13.618.705 ELLYZANDRA KAROLLINE CALAZANS', NULL, NULL, 221, NULL, NULL, NULL, 23082.00, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-02 19:18:40', '2025-12-02 19:18:40', NULL, NULL, NULL, NULL, NULL, NULL),
 (91, 'Oportunidade p/ Proposta: HOSPITAL DO CANCER DE PERNAMBUCO', NULL, NULL, 345, NULL, 12, NULL, 6840.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-02 19:20:05', '2025-12-02 19:20:05', NULL, NULL, NULL, NULL, NULL, NULL),
 (92, 'Oportunidade p/ Proposta: IAPES PESQUISA CLINICA', NULL, NULL, 918, NULL, NULL, NULL, 9106.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-03 12:25:59', '2025-12-03 12:25:59', NULL, NULL, NULL, NULL, NULL, NULL),
 (93, 'Oportunidade p/ Proposta: IAPES PESQUISA CLINICA', NULL, NULL, 918, NULL, NULL, NULL, 12569.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-03 17:06:46', '2025-12-03 17:06:46', NULL, NULL, NULL, NULL, NULL, NULL),
 (94, 'Oportunidade p/ Proposta: CASA DE SAUDE E MATERNIDADE DE CORURIPE', NULL, NULL, 923, NULL, NULL, NULL, 168000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-04 19:24:32', '2025-12-04 19:24:32', NULL, NULL, NULL, NULL, NULL, NULL),
 (95, 'Oportunidade p/ Proposta: CASA DE SAUDE E MATERNIDADE DE CORURIPE', NULL, NULL, 923, NULL, NULL, NULL, 2067000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-04 19:26:33', '2025-12-04 19:26:33', NULL, NULL, NULL, NULL, NULL, NULL),
 (96, 'Oportunidade p/ Proposta: DAVYD MARCONDY DE OLIVEIRA ALVES', NULL, NULL, NULL, NULL, NULL, 273, 16765.85, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-09 13:06:15', '2025-12-09 13:06:15', NULL, NULL, NULL, NULL, NULL, NULL),
-(97, 'Oportunidade p/ Proposta: MAIS VIDA', NULL, NULL, 336, NULL, NULL, NULL, 55444.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-09 14:46:31', '2025-12-09 14:46:31', NULL, NULL, NULL, NULL, NULL, NULL),
-(98, 'Oportunidade p/ Proposta: SAFETY MED', NULL, NULL, 513, NULL, NULL, NULL, 10326.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-09 20:40:47', '2025-12-09 20:40:47', NULL, NULL, NULL, NULL, NULL, NULL),
-(99, 'Oportunidade p/ Proposta: PRODEV EDUCACIONAL', NULL, NULL, 929, NULL, NULL, NULL, 9500.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-11 19:13:44', '2025-12-11 19:13:44', NULL, NULL, NULL, NULL, NULL, NULL),
-(100, 'Oportunidade p/ Proposta: SEOPE - SERVICO OFTALMOLOGICO DE PERNAMB', NULL, NULL, 318, NULL, NULL, NULL, 12569.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-11 20:47:31', '2025-12-11 20:47:31', NULL, NULL, NULL, NULL, NULL, NULL),
-(101, 'Oportunidade p/ Proposta: CENTRO UNIVERSITARIO TIRADENTES DE PERNAMBUCO', NULL, NULL, 916, NULL, 9, NULL, 2372.40, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-12 13:04:23', '2025-12-12 13:04:23', NULL, NULL, NULL, NULL, NULL, NULL),
-(102, 'Oportunidade p/ Proposta: 13.618.705 ELLYZANDRA KAROLLINE CALAZANS', NULL, NULL, 221, NULL, NULL, NULL, 23082.00, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-16 23:25:00', '2025-12-16 23:25:00', NULL, NULL, NULL, NULL, NULL, NULL),
-(111, 'Proposta para 13.618.705 ELLYZANDRA KAROLLINE CALAZANS', NULL, NULL, 221, NULL, NULL, NULL, 7265.85, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-17 14:36:28', '2025-12-17 14:36:28', NULL, NULL, NULL, NULL, NULL, NULL),
-(112, 'Oportunidade p/ Proposta: INTERNE HOME CARE', NULL, NULL, 393, NULL, NULL, NULL, 18182.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-17 14:53:20', '2025-12-17 14:53:20', NULL, NULL, NULL, NULL, NULL, NULL),
+(97, 'Oportunidade p/ Proposta: MAIS VIDA', NULL, NULL, 336, NULL, NULL, NULL, 55444.00, 6, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-09 14:46:31', '2026-01-27 01:14:30', NULL, NULL, NULL, NULL, NULL, NULL),
+(98, 'Oportunidade p/ Proposta: SAFETY MED', NULL, NULL, 513, NULL, NULL, NULL, 10326.00, 6, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-09 20:40:47', '2026-01-27 01:14:20', NULL, NULL, NULL, NULL, NULL, NULL),
+(99, 'Oportunidade p/ Proposta: PRODEV EDUCACIONAL', NULL, NULL, 929, NULL, NULL, NULL, 9500.00, 8, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-11 19:13:44', '2026-01-27 01:13:58', NULL, NULL, NULL, NULL, NULL, NULL),
+(100, 'Oportunidade p/ Proposta: SEOPE - SERVICO OFTALMOLOGICO DE PERNAMB', NULL, NULL, 318, NULL, NULL, NULL, 12569.00, 6, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-11 20:47:31', '2026-01-27 01:14:08', NULL, NULL, NULL, NULL, NULL, NULL),
+(101, 'Oportunidade p/ Proposta: CENTRO UNIVERSITARIO TIRADENTES DE PERNAMBUCO', NULL, NULL, 916, NULL, 9, NULL, 2372.40, 6, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-12 13:04:23', '2026-01-27 01:12:34', NULL, NULL, NULL, NULL, NULL, NULL),
+(112, 'Oportunidade p/ Proposta: INTERNE HOME CARE', NULL, NULL, 393, NULL, NULL, NULL, 18182.00, 8, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-17 14:53:20', '2026-01-27 01:13:35', NULL, NULL, NULL, NULL, NULL, NULL),
 (113, 'Oportunidade p/ Proposta: FERREIRA COSTA', NULL, NULL, 238, NULL, NULL, NULL, 615.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-17 20:10:40', '2025-12-17 20:10:40', NULL, NULL, NULL, NULL, NULL, NULL),
-(114, 'Oportunidade p/ Proposta: AMAURI PURCINO DA LUZ', NULL, NULL, 935, NULL, NULL, NULL, 9500.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-18 19:54:06', '2025-12-18 19:54:06', NULL, NULL, NULL, NULL, NULL, NULL),
+(114, 'Oportunidade p/ Proposta: AMAURI PURCINO DA LUZ', NULL, NULL, 935, NULL, NULL, NULL, 9500.00, 8, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-18 19:54:06', '2026-01-27 01:13:19', NULL, NULL, NULL, NULL, NULL, NULL),
 (115, 'Oportunidade p/ Proposta: CUPER', NULL, NULL, 936, NULL, NULL, NULL, 19625.85, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2025-12-23 17:28:36', '2025-12-23 17:28:36', NULL, NULL, NULL, NULL, NULL, NULL),
-(119, 'Oportunidade p/ Proposta: 13.618.705 ELLYZANDRA KAROLLINE CALAZANS', NULL, NULL, 221, NULL, NULL, NULL, 174380.40, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-06 00:08:47', '2026-01-06 00:08:47', NULL, NULL, NULL, NULL, NULL, NULL),
 (120, 'Oportunidade p/ Proposta: GIGAVIDA TECNOLOGIA E SERVICO HOSPITALAR LTDA', NULL, NULL, 359, NULL, 14, NULL, 21000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-09 12:48:45', '2026-01-09 12:48:45', NULL, NULL, NULL, NULL, NULL, NULL),
 (124, 'Oportunidade p/ Proposta: RENAN FIGUEIREDO', NULL, NULL, NULL, NULL, NULL, 280, 18596.85, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-13 12:33:28', '2026-01-13 12:33:28', NULL, NULL, NULL, NULL, NULL, NULL),
-(125, 'Oportunidade p/ Proposta: EQUIPASAUDE', NULL, NULL, 937, NULL, 15, NULL, 16942.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-13 16:33:34', '2026-01-13 16:33:34', NULL, NULL, NULL, NULL, NULL, NULL),
-(126, 'Oportunidade p/ Proposta: 31 BATALHAO DE INFANTARIA MOTORIZADO', NULL, NULL, 763, NULL, NULL, NULL, 94384.00, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-13 20:25:56', '2026-01-13 20:25:56', NULL, NULL, NULL, NULL, NULL, NULL),
+(125, 'Oportunidade p/ Proposta: EQUIPASAUDE', NULL, NULL, 937, NULL, 15, NULL, 16942.00, 8, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-13 16:33:34', '2026-01-27 01:13:01', NULL, NULL, NULL, NULL, NULL, NULL),
 (127, 'Oportunidade p/ Proposta: RENAN FIGUEIREDO', NULL, NULL, NULL, NULL, NULL, 280, 9711.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-14 18:34:20', '2026-01-14 18:34:20', NULL, NULL, NULL, NULL, NULL, NULL),
 (128, 'Oportunidade p/ Proposta: RENAN FIGUEIREDO', NULL, NULL, NULL, NULL, NULL, 280, 10749.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-14 18:40:32', '2026-01-14 18:40:32', NULL, NULL, NULL, NULL, NULL, NULL),
 (130, 'Oportunidade p/ Proposta: FUNDO MUNICIPAL DE SAUDE', NULL, NULL, 495, NULL, 16, NULL, 12876.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-16 16:10:44', '2026-01-16 16:10:44', NULL, NULL, NULL, NULL, NULL, NULL),
-(131, 'Oportunidade p/ Proposta: FUNDO MUNICIPAL DE SAUDE TRIUNFO PE', NULL, NULL, 495, NULL, 16, NULL, 0.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-16 16:18:18', '2026-01-16 16:18:18', NULL, NULL, NULL, NULL, NULL, NULL),
-(135, 'Carro para eletrocardiograma', NULL, NULL, 715, NULL, NULL, NULL, 0.00, 1, 10, 7, '0001/2026', 'Encaminhado para o comercial para realizar cotação.', NULL, NULL, NULL, 1, 0.00, '2026-01-19 17:50:13', '2026-01-19 17:50:13', NULL, NULL, NULL, NULL, NULL, NULL),
+(131, 'Oportunidade p/ Proposta: FUNDO MUNICIPAL DE SAUDE TRIUNFO PE', NULL, NULL, 495, NULL, 16, NULL, 0.00, 8, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-16 16:18:18', '2026-01-27 01:05:07', NULL, NULL, NULL, NULL, NULL, NULL),
 (136, 'janson', NULL, NULL, NULL, NULL, NULL, NULL, 23082.00, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-19 17:50:56', '2026-01-19 17:50:56', NULL, NULL, NULL, NULL, NULL, NULL),
 (137, 'Compressor Torácico E6', NULL, NULL, 938, NULL, NULL, NULL, 646150.00, 1, 4, NULL, NULL, 'Aguardando solicitação de carona por ATA', NULL, NULL, NULL, 1, 0.00, '2026-01-19 18:13:46', '2026-01-19 18:13:46', NULL, NULL, NULL, NULL, NULL, NULL),
 (138, 'RAD G ', NULL, NULL, 938, NULL, NULL, NULL, 576000.00, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-19 18:24:25', '2026-01-19 18:24:25', NULL, NULL, NULL, NULL, NULL, NULL),
-(139, 'teste de venda de monitor 1', NULL, NULL, 221, NULL, NULL, NULL, 7720.00, 8, 11, 1, '0002/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 14:24:08', '2026-01-20 18:06:49', NULL, NULL, NULL, NULL, NULL, NULL),
-(140, 'Oportunidade p/ Proposta: 14. BATALHAO LOGISTICO', NULL, NULL, 761, NULL, NULL, NULL, 23082.00, 8, 11, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 14:27:07', '2026-01-20 18:06:44', NULL, NULL, NULL, NULL, NULL, NULL),
 (141, 'US 2 Ai', NULL, NULL, 275, NULL, NULL, NULL, 43200.00, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 15:19:50', '2026-01-20 15:19:50', NULL, NULL, NULL, NULL, NULL, NULL),
 (142, 'US 2 Ai', NULL, NULL, 347, NULL, NULL, NULL, 43200.00, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 15:23:28', '2026-01-20 15:23:28', NULL, NULL, NULL, NULL, NULL, NULL),
 (143, 'US Kosmos', NULL, NULL, 275, NULL, NULL, NULL, 47000.00, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 15:25:29', '2026-01-20 15:25:29', NULL, NULL, NULL, NULL, NULL, NULL),
 (144, 'US Kosmos', NULL, NULL, 347, NULL, NULL, NULL, 188000.00, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 15:27:52', '2026-01-20 15:27:52', NULL, NULL, NULL, NULL, NULL, NULL),
 (145, 'US Kosmos', NULL, NULL, 12, NULL, NULL, NULL, 440000.00, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 15:30:03', '2026-01-20 15:30:03', NULL, NULL, NULL, NULL, NULL, NULL),
-(146, 'LÍDICO FR ', NULL, NULL, 229, NULL, NULL, NULL, 25000.00, 14, 4, 1, NULL, 'Elaborar proposta pela FR, com comodato de 01 Monitor Root', NULL, NULL, NULL, 1, 0.00, '2026-01-20 16:52:39', '2026-01-20 16:52:39', NULL, NULL, NULL, NULL, NULL, NULL),
+(146, 'LÍDICO FR ', NULL, NULL, 229, NULL, NULL, NULL, 25000.00, 1, 4, NULL, NULL, 'Elaborar proposta pela FR, com comodato de 01 Monitor Root', NULL, NULL, NULL, 1, 0.00, '2026-01-20 16:52:39', '2026-01-20 16:52:39', NULL, NULL, NULL, NULL, NULL, NULL),
 (147, 'Monitorização Masimo', NULL, NULL, 890, NULL, NULL, NULL, 0.00, 1, 10, NULL, NULL, 'R$3.894,45. ', NULL, NULL, NULL, 1, 0.00, '2026-01-20 17:33:30', '2026-01-20 17:33:30', NULL, NULL, NULL, NULL, NULL, NULL),
 (148, 'Monitorização ', NULL, NULL, 890, NULL, NULL, NULL, 0.00, 1, 10, NULL, NULL, 'Aguardando data da cirurgia \nR$3.894,45', NULL, NULL, NULL, 1, 0.00, '2026-01-20 17:35:59', '2026-01-20 17:35:59', NULL, NULL, NULL, NULL, NULL, NULL),
 (149, 'Monitorização ', NULL, NULL, 890, NULL, NULL, NULL, 0.00, 1, 10, NULL, NULL, 'Hospital São Lucas ', NULL, NULL, NULL, 1, 0.00, '2026-01-20 17:53:43', '2026-01-20 17:53:43', NULL, NULL, NULL, NULL, NULL, NULL),
 (150, 'Monitorização ', NULL, NULL, 890, NULL, NULL, NULL, 0.00, 1, 10, NULL, NULL, 'R$3894,45', NULL, NULL, NULL, 1, 0.00, '2026-01-20 17:56:41', '2026-01-20 17:56:41', NULL, NULL, NULL, NULL, NULL, NULL),
-(151, 'Oportunidade p/ Proposta: 3R POTIGUAR S.A.', NULL, NULL, 57, NULL, NULL, NULL, 23082.00, 6, 11, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 17:59:04', '2026-01-20 18:01:48', NULL, NULL, NULL, NULL, NULL, NULL),
-(152, 'teste de fornecedor', NULL, NULL, 764, NULL, NULL, NULL, 8358.90, 6, 11, 11, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 18:10:43', '2026-01-20 18:17:54', NULL, NULL, NULL, NULL, NULL, NULL),
-(153, 'Oportunidade p/ Proposta: ABBOTT LABORAT. DO BRASIL LTDA', NULL, NULL, 332, NULL, NULL, NULL, 1290.00, 6, 11, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-20 18:19:29', '2026-01-20 18:19:51', NULL, NULL, NULL, NULL, NULL, NULL),
 (154, 'Monitorização ', NULL, NULL, 156, NULL, NULL, NULL, 0.00, 1, 10, NULL, NULL, 'Foi enviado o orçamento \nR$7.462,02', NULL, NULL, NULL, 1, 0.00, '2026-01-20 18:20:31', '2026-01-20 18:20:31', NULL, NULL, NULL, NULL, NULL, NULL),
-(155, 'treinamento de monitor ', NULL, NULL, 221, NULL, NULL, NULL, 23082.00, 6, 11, 1, '0003/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-21 11:14:56', '2026-01-22 16:59:20', NULL, NULL, NULL, NULL, NULL, NULL),
-(156, 'licitacao teste', '1234/32125', '8123545', 514, NULL, NULL, NULL, 25138.00, 15, 11, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-21 11:19:15', '2026-01-22 16:58:35', 'COMPRASNET', '324234', '2026-01-23', '10:00:00', 'Pregão Eletrônico', 'teste'),
-(157, 'licitacao tested', '202320/2025', '8888752234', 279, NULL, NULL, NULL, 46845.60, 14, 11, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-21 14:20:34', '2026-01-21 14:20:34', 'COMPRASNET', NULL, NULL, NULL, 'Dispensa de Licitação', 'asdasdasdasd'),
-(158, 'MONITOR DE PRESSÃO ARTERIAL', NULL, NULL, 761, NULL, NULL, NULL, 50310.00, 14, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-22 20:26:00', '2026-01-22 20:26:00', NULL, NULL, NULL, NULL, NULL, NULL),
-(159, 'MONITOR DE PRESSÃO ARTERIAL', NULL, NULL, 764, NULL, NULL, NULL, 129000.00, 5, 1, 1, '0004/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-22 20:28:41', '2026-01-26 17:56:11', NULL, NULL, NULL, NULL, NULL, NULL),
-(165, 'DEA i.on Básico (c/ bateria não recarregável) + Gabinete', NULL, NULL, 235, NULL, NULL, NULL, 23082.00, 1, 1, 1, '0005/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-23 17:53:26', '2026-01-23 17:53:26', NULL, NULL, NULL, NULL, NULL, NULL);
+(155, 'Oportunidade p/ Proposta: HNSN EPITACIO LTDA', NULL, NULL, 271, NULL, 17, NULL, 25000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-21 14:17:23', '2026-01-21 14:17:23', NULL, NULL, NULL, NULL, NULL, NULL),
+(156, 'US Kosmos', NULL, NULL, 275, NULL, NULL, NULL, 70000.00, 1, 4, NULL, NULL, 'Equipamento em demonstração com o Dr Carlos Antonio', NULL, NULL, NULL, 1, 0.00, '2026-01-22 18:05:05', '2026-01-22 18:05:05', NULL, NULL, NULL, NULL, NULL, NULL),
+(157, 'Oportunidade p/ Proposta: FUNDO MUNICIPAL DE SAUDE DE CARUARU', NULL, NULL, 939, NULL, 18, NULL, 80250.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-23 21:29:59', '2026-01-23 21:29:59', NULL, NULL, NULL, NULL, NULL, NULL),
+(158, 'Monitorização / placas de externo ', NULL, NULL, 156, NULL, NULL, NULL, 0.00, 1, 10, NULL, NULL, 'Cirurgia programada para dia 26/01 às 13:00 horas.', NULL, NULL, NULL, 1, 0.00, '2026-01-26 13:32:31', '2026-01-26 13:32:31', NULL, NULL, NULL, NULL, NULL, NULL),
+(159, 'Oportunidade p/ Proposta: FUNDO MUNICIPAL DE SAUDE DE CARUARU', NULL, NULL, 939, NULL, 18, NULL, 23082.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-26 18:45:51', '2026-01-26 18:45:51', NULL, NULL, NULL, NULL, NULL, NULL),
+(160, 'Oportunidade p/ Proposta: CASA DE SAUDE E MATERNIDADE DE CORURIPE', NULL, NULL, 923, NULL, NULL, NULL, 23082.00, 4, 8, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-26 18:59:01', '2026-01-26 18:59:01', NULL, NULL, NULL, NULL, NULL, NULL),
+(166, 'TESTE VENDA', NULL, NULL, 221, NULL, NULL, NULL, 9648.90, 1, 1, 1, '0001/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-01-27 13:08:54', '2026-01-27 13:08:54', NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -948,37 +909,25 @@ CREATE TABLE `oportunidade_itens` (
 INSERT INTO `oportunidade_itens` (`id`, `oportunidade_id`, `produto_id`, `descricao`, `descricao_detalhada`, `fabricante`, `modelo`, `imagem_url`, `quantidade`, `valor_unitario`, `status`, `unidade_medida`, `parametros`, `meses_locacao`) VALUES
 (5, 66, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, 1),
 (6, 66, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, 1),
-(25, 135, NULL, 'Carro de eletrocardiograma ', '', '', 'Para Dixtal EP/3', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
 (26, 136, NULL, 'cardiomax', '', '', '', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
 (27, 136, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, 1),
 (28, 137, NULL, 'Compressor Torácico E6', 'Compressor Torácico Amoul E6', 'Instramed', 'Amoul E6', '', 5, 129230.00, 'VENDA', 'Unidade', NULL, 1),
 (29, 138, NULL, 'Rad G com temperatura', 'Rad G com temp', 'MASIMO', 'Rad G', 'https://frpe.app.br/crm/uploads/proposal_items/item_696e763a21db1.webp', 60, 9600.00, 'VENDA', 'Unidade', NULL, 1),
-(30, 139, 27, 'MONITOR BLT', 'Configuração ECG, SPO2, PNI', 'INSTRAMED', 'M10', 'https://frpe.app.br/crm/uploads/products/prod_6931df2fb1be3.webp', 1, 7720.00, 'VENDA', 'Unidade', NULL, 1),
 (31, 141, NULL, 'US 2 Ai', 'Tecnologia de IA para Ecocardiografia', 'Brasil Médica', '', '', 1200, 36.00, 'VENDA', 'Unidade', NULL, 1),
 (32, 142, NULL, 'US 2 Ai', 'Tecnologia de IA para ecocardiografia', 'Brasil Médica', '', '', 1200, 36.00, 'VENDA', 'Unidade', NULL, 1),
 (34, 143, NULL, 'US Kosmos', 'Demosntração setor de transplante', 'Brasil Médica', '', 'https://frpe.app.br/crm/uploads/proposal_items/item_696f9e3cba94a.jpeg', 1, 47000.00, 'VENDA', 'Unidade', NULL, 1),
 (35, 144, NULL, 'US Kosmos', 'Demonstração no setor de ecocardiografia', 'Brasil Médica', '', 'https://frpe.app.br/crm/uploads/proposal_items/item_696f9ec8e92b1.jpeg', 4, 47000.00, 'VENDA', 'Unidade', NULL, 1),
 (37, 145, NULL, 'US Kosmos', 'Uso do Kosmos para curso de POCUS', 'Brasil Médica', '', 'https://frpe.app.br/crm/uploads/proposal_items/item_696f9f66c635f.jpeg', 4, 110000.00, 'VENDA', 'Unidade', NULL, 1),
+(38, 146, NULL, 'LÍDICO', 'Sensores Lídico com comodato', 'MASIMO', '', '', 10, 2500.00, 'VENDA', 'Unidade', NULL, 1),
 (42, 148, NULL, 'Monitorização ', 'Paciente de Dr Hernani Gadelha.', 'Masimo', 'Sediline adulto/ Lidico/ O3', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
 (45, 149, NULL, 'Monitorização ', 'Paciente Miguel Guedes Filho ( CAMED) aguardando a data da cirurgia R$3.894,45', 'Masimo', 'Sediline Adulto/ Lidico/O3', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
-(46, 147, NULL, 'Monitorização ', 'Monitorização da Masimo com Lidico para o cliente da CSU ( Paciente: Maria Lúcia Canto )Paciente de Dr . Hernâni Gadelha ) cirurgia dia 30/01', 'Masimo', 'Sediline / Lidico/ O3', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
-(47, 150, NULL, 'Monitorização ', 'Paciente: Maria Lúcia de Morais Alves ( Dr Hernani Gadelha- Ordem Judicial) , será no hospital do Coração. Aguardando liberação ', 'Masimo', 'Sediline Adulto/ Lidico/ O3', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
-(49, 152, 17, 'OXIMETRO', 'Monitor portátil com SPO2, PR, PI, RRP e módulo de temperatura integrado ', 'MASIMO', 'RAD G COM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911dd39c9342.png', 1, 8358.90, 'VENDA', 'Unidade', NULL, 1),
 (50, 154, NULL, 'Monitorização ', 'Paciente: RN de Luiza Amélia Pereira \nDr. Diogo Feraz \nConvênio: Humanas', 'Masimo', 'O3 Pediatrico/  Sensor Y R7 Pediatrico ', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
-(51, 155, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, 1),
-(54, 156, 12, 'DESFIBRILADOR ', 'Principais funções concentradas em apenas um botão seletor. \nRápida inicialização carregamento de 360 J em menos de 6 segundos', 'INSTRAMED', 'APOLUS ', 'https://frpe.app.br/crm/uploads/products/prod_690a099525520.webp', 2, 12569.00, 'VENDA', 'Unidade', NULL, 1),
-(59, 157, 32, 'Módulo de bateria (NiMH) - CardioMax', 'Modulo de bateria recarregável para Cardiomax (NiMH)', 'INSTRAMED', 'CARDIOMAX ', 'https://frpe.app.br/crm/uploads/products/prod_695ff7e024858.jpg', 3, 2750.00, 'VENDA', 'Unidade', NULL, 1),
-(60, 157, 16, 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'Destinado a profissionais da saúde.\nDesign de mesa ideal para consultórios. ​\nModo de medição totalmente automático oscilométrico ou auscultatório.​\nFunção Indicador Zero ​\nPode ser usado com 4 pilhas AA ou com adaptador CA (bivolt automático)​', 'MICROMED', 'OMRON', 'https://frpe.app.br/crm/uploads/products/prod_6911dd100a3fb.webp', 4, 1290.00, 'VENDA', 'Unidade', NULL, 1),
-(61, 157, 17, 'OXIMETRO', 'Monitor portátil com SPO2, PR, PI, RRP e módulo de temperatura integrado ', 'MASIMO', 'RAD G COM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911dd39c9342.png', 4, 8358.90, 'VENDA', 'Unidade', NULL, 1),
-(62, 146, NULL, 'LÍDICO', 'Sensores Lídico com comodato', 'MASIMO', '', '', 10, 2500.00, 'VENDA', 'Unidade', NULL, 1),
-(64, 158, 16, 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'Destinado a profissionais da saúde.\nDesign de mesa ideal para consultórios. ​\nModo de medição totalmente automático oscilométrico ou auscultatório.​\nFunção Indicador Zero ​\nPode ser usado com 4 pilhas AA ou com adaptador CA (bivolt automático)​', 'MICROMED', 'OMRON', 'https://frpe.app.br/crm/uploads/products/prod_6911dd100a3fb.webp', 39, 1290.00, 'VENDA', 'Unidade', NULL, 1),
-(65, 159, 16, 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'Destinado a profissionais da saúde.\nDesign de mesa ideal para consultórios. ​\nModo de medição totalmente automático oscilométrico ou auscultatório.​\nFunção Indicador Zero ​\nPode ser usado com 4 pilhas AA ou com adaptador CA (bivolt automático)​', 'MICROMED', 'OMRON', 'https://frpe.app.br/crm/uploads/products/prod_6911dd100a3fb.webp', 100, 1290.00, 'VENDA', 'Unidade', NULL, 1),
-(66, 160, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, 1),
-(67, 161, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, 1),
-(68, 162, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, 1),
-(70, 163, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, 1),
-(72, 164, 31, 'CILINDRO DE O2', 'Capacidade hidráulica 2.8L\nPressão  de serviço 139bar\nAltura 412.8mm\nDiâmetro 111.1mm\nRosca de entrada 3/4 \nPeso 2.3kg ', 'GASWIDE', 'GWA15', 'https://frpe.app.br/crm/uploads/products/prod_694ace6e98b05.webp', 1, 2860.00, 'VENDA', 'Unidade', NULL, 1),
-(73, 165, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, 1);
+(51, 147, NULL, 'Monitorização ', 'Monitorização da Masimo com Lidico para o cliente da CSU ( Paciente: Maria Lúcia Canto )Paciente de Dr . Hernâni Gadelha ) cirurgia dia 30/01', 'Masimo', 'Sediline / Lidico/ O3', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
+(52, 150, NULL, 'Monitorização ', 'Paciente: Maria Lúcia de Morais Alves ( Dr Hernani Gadelha- Ordem Judicial) , será no hospital do Coração. Aguardando liberação ', 'Masimo', 'Sediline Adulto/ Lidico/ O3', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
+(54, 156, NULL, 'US Kosmos', 'Aquisição por verba palamentar ', 'Brasil Médica', 'Torso + Bridge', 'https://frpe.app.br/crm/uploads/proposal_items/item_69726f1da4e5e.jpeg', 1, 70000.00, 'VENDA', 'Unidade', NULL, 1),
+(56, 158, NULL, 'Sensor Sediline/ O3/ Lidico e placas de externo + parafusos ', 'Paciente: André Luís - Petrobras \nDr . Diogo Ferraz, enviado orçamento R$51.005,83.', 'Masimo / Externofix', '', 'https://frpe.app.br/crm/uploads/proposal_items/item_69776c8f2d7de.jpeg', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
+(74, 166, 16, 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'Destinado a profissionais da saúde.\nDesign de mesa ideal para consultórios. ​\nModo de medição totalmente automático oscilométrico ou auscultatório.​\nFunção Indicador Zero ​\nPode ser usado com 4 pilhas AA ou com adaptador CA (bivolt automático)​', 'MICROMED', 'OMRON', 'https://frpe.app.br/crm/uploads/products/prod_6911dd100a3fb.webp', 1, 1290.00, 'VENDA', 'Unidade', NULL, 1),
+(75, 166, 17, 'OXIMETRO', 'Monitor portátil com SPO2, PR, PI, RRP e módulo de temperatura integrado ', 'MASIMO', 'RAD G COM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911dd39c9342.png', 1, 8358.90, 'VENDA', 'Unidade', NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -1734,7 +1683,7 @@ INSERT INTO `organizacoes` (`id`, `nome_fantasia`, `razao_social`, `cnpj`, `cep`
 (735, 'UNIVERSIDADE FEDERAL DE PERNAMBUCO', 'UNIVERSIDADE FEDERAL DE PERNAMBUCO', '24134488000108', '50670420', 'AV Professor Moraes Rego, 1235', NULL, NULL, 'Várzea', 'Recife', 'PE', '2025-10-28 12:32:12'),
 (736, 'MENDES E ROSAS DIAGNOSTICO POR IMAGEM LTDA', 'MENDES E ROSAS DIAGNOSTICO POR IMAGEM LTDA', '11149864000196', '58400560', 'R Capitão João Alves de Lira, 742', NULL, NULL, 'Prata', 'Campina Grande', 'PB', '2025-10-28 12:32:12'),
 (737, 'FUNDACAO GOVERNADOR FLAVIO RIBEIRO COUTINHO', 'FUNDACAO GOVERNADOR FLAVIO RIBEIRO COUTINHO', '09433715000102', '58302515', 'R Sá Andrade, 202', NULL, NULL, 'Municípios', 'Santa Rita', 'PB', '2025-10-28 12:32:12'),
-(738, 'FMS - FUNDO MUNICIPAL DE SAUDE', 'FUNDO MUNICIPAL DE SAUDE', '08715618000140', '58040000', 'AV Presidente Epitácio Pessoa, 0000', NULL, NULL, 'Torre', 'João Pessoa', 'PB', '2025-10-28 12:32:12'),
+(738, 'FMS - FUNDO MUNICIPAL DE SAUDE JPA', 'FUNDO MUNICIPAL DE SAUDE JOÃO PESSOA', '08715618000140', '58040000', 'AV Presidente Epitácio Pessoa, 0000', NULL, NULL, 'Torre', 'João Pessoa', 'PB', '2025-10-28 12:32:12'),
 (739, 'PATOS PREF GABINE E DO PREFEITO', 'MUNICIPIO DE PATOS', '09084815000170', '58700020', 'R Presidente Epitácio Pessoa, 0000', NULL, NULL, 'Centro', 'Patos', 'PB', '2025-10-28 12:32:12'),
 (740, 'GHJ SERVICOS MEDICOS', 'GHJ SERVICOS MEDICOS LTDA', '54785699000171', '52050340', 'R da Angustura, 126', NULL, NULL, 'Aflitos', 'Recife', 'PE', '2025-10-28 12:32:12'),
 (741, 'CLINICA DO RIM DE VITORIA DE SANTO ANTAO LTDA', 'CLINICA DO RIM DE VITORIA DE SANTO ANTAO LTDA', '70077797000100', '55604070', 'AV Doutor Agamenon Magalhães, 000', NULL, NULL, 'São Vicente de Paulo', 'Vitória de Santo Antão', 'PE', '2025-10-28 12:32:12'),
@@ -1904,7 +1853,8 @@ INSERT INTO `organizacoes` (`id`, `nome_fantasia`, `razao_social`, `cnpj`, `cep`
 (935, 'AMAURI PURCINO DA LUZ', '35.823.463 AMAURI PURCINO DA LUZ', '35823463000138', '51160330', 'AVENIDA ANTONIO TORRES GALVAO', '221', NULL, 'IMBIRIBEIRA', 'RECIFE', 'PE', '2025-12-18 19:50:25'),
 (936, 'CUPER', 'CENTRO UROLOGICO PERNAMBUCO LTDA', '01443009000130', '52060000', 'AVENIDA PARNAMIRIM', '95', NULL, 'PARNAMIRIM', 'RECIFE', 'PE', '2025-12-23 15:00:06'),
 (937, 'EQUIPASAUDE', 'EQUIPASAUDE PRODUTOS PARA SAUDE LTDA.', '34.836.183/0001-00', '58200000', 'AVENIDA FELICIANO BATISTA DE AMORIM', '1116', NULL, 'JUA', 'GUARABIRA', 'PB', '2026-01-09 18:47:14'),
-(938, 'SAMU Recife', 'SAMU Metropolitano do Recife', '10.565.000/0001-92', '50060-140', 'Av Manoel Borba ', '951', NULL, 'Boa Vista', 'Recife', 'PE', '2026-01-19 18:10:31');
+(938, 'SAMU Recife', 'SAMU Metropolitano do Recife', '10.565.000/0001-92', '50060-140', 'Av Manoel Borba ', '951', NULL, 'Boa Vista', 'Recife', 'PE', '2026-01-19 18:10:31'),
+(939, 'FUNDO MUNICIPAL DE SAUDE DE CARUARU', 'FUNDO MUNICIPAL DE SAUDE ', '11.371.082/0001-05', '55.008-000', 'Avenida Vera Cruz', '654', '3 ANDAR', 'São Francisco', 'Caruaru', 'PE', '2026-01-23 20:55:40');
 
 -- --------------------------------------------------------
 
@@ -1952,7 +1902,9 @@ INSERT INTO `produtos` (`id`, `nome_produto`, `fabricante`, `modelo`, `descricao
 (30, 'VÁLVULA DE CONTROLE EXALATÓRIO ', 'AEONMED', NULL, 'Válvula de controle do fluxo exalatório compatível com o ventilador Shangrila 510S', 1157.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_69383503a5145.png', '2025-12-09 14:42:53'),
 (31, 'CILINDRO DE O2', 'GASWIDE', 'GWA15', 'Capacidade hidráulica 2.8L\nPressão  de serviço 139bar\nAltura 412.8mm\nDiâmetro 111.1mm\nRosca de entrada 3/4 \nPeso 2.3kg ', 2860.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_694ace6e98b05.webp', '2025-12-23 17:21:50'),
 (32, 'Módulo de bateria (NiMH) - CardioMax', 'INSTRAMED', 'CARDIOMAX ', 'Modulo de bateria recarregável para Cardiomax (NiMH)', 2750.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_695ff7e024858.jpg', '2026-01-08 18:38:32'),
-(33, 'Eletrocardiógrafo de 12 canais', 'EDAN', 'SE 1200 EXPRESS', 'AQUISIÇÃO E IMPRESÃO EM 12 CANAIS SIMUTÂNEOS, INTERPRETATIVO, IMPRESSÃO EM PAPEL TÉRMICO A4, Display Colorido 8”- Teclado QWERTY- Memória 800 exames- Exporta exames em PDF.', 12876.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_696a54b7a29fa.png', '2026-01-16 15:09:56');
+(33, 'Eletrocardiógrafo de 12 canais', 'EDAN', 'SE 1200 EXPRESS', 'AQUISIÇÃO E IMPRESÃO EM 12 CANAIS SIMUTÂNEOS, INTERPRETATIVO, IMPRESSÃO EM PAPEL TÉRMICO A4, Display Colorido 8”- Teclado QWERTY- Memória 800 exames- Exporta exames em PDF.', 12876.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_696a54b7a29fa.png', '2026-01-16 15:09:56'),
+(34, 'SENSOR LÍDICO', 'MASIMO ', 'RD Raimbow set2 4026', 'SENSOR LIDICO (Em comodato acompanha; Monitor multiparamétrico compacto Root® com Modulo Cabo).', 2500.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_6970da50f1c05.png', '2026-01-21 13:53:33'),
+(35, 'MONITOR BLT12', 'INSTRAMED', 'InMax 12', 'Configuração ECG, Resp, PMS, ST, SPO2, PNI Z, 2 Temp, Bateria', 13890.00, 'Unidade', 'https://frpe.app.br/crm/uploads/products/prod_6977be1fe2567.png', '2026-01-26 19:10:47');
 
 -- --------------------------------------------------------
 
@@ -1970,6 +1922,7 @@ CREATE TABLE `propostas` (
   `usuario_id` int(11) DEFAULT NULL,
   `valor_total` decimal(20,2) NOT NULL DEFAULT 0.00,
   `status` varchar(50) NOT NULL DEFAULT 'Rascunho',
+  `motivo_status` text DEFAULT NULL,
   `data_validade` date DEFAULT NULL,
   `faturamento` text DEFAULT NULL,
   `treinamento` text DEFAULT NULL,
@@ -1981,62 +1934,59 @@ CREATE TABLE `propostas` (
   `assistencia_tecnica` text DEFAULT NULL,
   `observacoes` text DEFAULT NULL,
   `assinatura_url` varchar(512) DEFAULT NULL,
-  `data_criacao` timestamp NOT NULL DEFAULT current_timestamp()
+  `data_criacao` timestamp NOT NULL DEFAULT current_timestamp(),
+  `atualizado_por_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Despejando dados para a tabela `propostas`
 --
 
-INSERT INTO `propostas` (`id`, `numero_proposta`, `oportunidade_id`, `cliente_pf_id`, `organizacao_id`, `contato_id`, `usuario_id`, `valor_total`, `status`, `data_validade`, `faturamento`, `treinamento`, `condicoes_pagamento`, `prazo_entrega`, `garantia_equipamentos`, `garantia_acessorios`, `instalacao`, `assistencia_tecnica`, `observacoes`, `assinatura_url`, `data_criacao`) VALUES
-(60, '001/2025', 61, NULL, 892, NULL, 2, 23082.00, 'Enviada', '2025-11-10', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível de forma contínua, com suporte especializado para manutenção e eventuais ajustes.', 'Nenhuma', NULL, '2025-10-30 12:32:59'),
-(62, '002/2025', 65, NULL, 894, NULL, 2, 12569.00, 'Enviada', '2025-11-11', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível de forma contínua, com suporte especializado para manutenção e eventuais ajustes.', 'Nenhuma', NULL, '2025-11-04 15:11:04'),
-(65, '003/2025', 69, NULL, 897, NULL, 2, 102646.44, 'Enviada', '2025-11-16', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '30 dias ', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível de forma contínua, com suporte especializado para manutenção e eventuais ajustes.', 'Nenhuma', NULL, '2025-11-06 12:26:18'),
-(66, '004/2025', 70, NULL, 898, NULL, 2, 10208.40, 'Enviada', '2025-11-16', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível de forma contínua, com suporte especializado para manutenção e eventuais ajustes.', 'Nenhuma', NULL, '2025-11-06 20:49:30'),
-(67, '005/2025', 71, NULL, 384, NULL, 2, 69000.00, 'Enviada', '2025-11-17', 'Realizado diretamente pela FR Produtos Médicos.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '10 x no boleto', 'Até 10 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-07 14:32:57'),
-(68, '006/2025', 72, NULL, 336, NULL, 2, 28000.00, 'Rascunho', '2025-11-17', 'Realizado diretamente pela FR Produtos Médicos.', '', 'A vista', 'Até 15 dias após a confirmação do pedido de compra.', '', '30dd, conforme especificações do fabricante.', '', '', '', NULL, '2025-11-07 15:01:42'),
-(69, '007/2025', 73, NULL, 850, NULL, 2, 36308.39, 'Enviada', '2025-11-20', 'Realizado diretamente pela FR Produtos Médicos.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-10 13:09:13'),
-(70, '008/2025', 74, NULL, 897, NULL, 2, 1230.00, 'Enviada', '2025-11-20', 'Realizado diretamente pela fábrica', '', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '', '6 meses, conforme especificações do fabricante.', '.', '', 'Nenhuma', NULL, '2025-11-10 20:31:38'),
-(71, '009/2025', 75, NULL, 915, 7, 1, 50196.00, 'Enviada', '2025-11-28', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'INCLUSO CONJUNTO DE PAS (ADULTO/PEDIÁTRICO)', NULL, '2025-11-14 19:32:19'),
-(72, '010/2025', 76, NULL, 591, 8, 2, 7990.00, 'Aprovada', '2025-11-26', 'Realizado diretamente pela  FR Produtos Médicos', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '3 vezes no boleto', '10 dias úteis', '12 meses a partir da data de emissão da nota Fiscal.', 'Tipo: Dióxido de Lítio Manganês (LiMnO2) 18 V, 2800\nmAh.\nDuração da bateria em carga plena (100%) 15 horas\nde monitorização contínua, mais de 300 choques de\n200 J ou mais de 160 choques de 360 J. conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-17 17:45:58'),
-(73, '011/2025', 77, NULL, 591, 8, 2, 11652.80, 'Aprovada', '2025-11-26', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', 'Tipo: Li-Ion, 14,4 VDC 4,0 Ah.\nDuração da bateria em carga plena (100%) 18 horas\nde monitorização contínua, mais de 400 choques de\n200 J ou mais de 230 choques de 360J.\nVida útil: 2 anos em stand by. Conforme informações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-17 17:47:12'),
-(74, '012/2025', 78, NULL, 916, 9, 8, 7990.00, 'Aprovada', '2025-12-16', 'Realizado diretamente pela FR', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '20/01/2026', 'Até 21/01/26 após a confirmação de pagamento.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Emitir a NF dia 05/01/2026.', NULL, '2025-11-24 12:29:04'),
-(75, '013/2025', 79, 31, NULL, NULL, 2, 7990.00, 'Aprovada', '2025-11-24', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '10 vezes no boleto ', 'Até 10 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-24 20:26:58'),
-(76, '014/2025', 80, NULL, 917, NULL, 2, 23990.00, 'Enviada', '2025-11-28', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Valor promocional valido até o dia 28/11\n', NULL, '2025-11-26 12:08:05'),
-(77, '015/2025', 81, NULL, 917, NULL, 2, 23082.00, 'Recusada', '2025-12-06', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'À Vista ', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-26 14:18:32'),
-(78, '016/2025', 82, NULL, 336, NULL, 2, 116528.00, 'Enviada', '2025-11-28', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-26 20:16:45'),
-(79, '017/2025', 83, NULL, 448, 10, 8, 8471.00, 'Enviada', '2025-12-11', 'Realizado diretamente pela FR ', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 10 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-01 21:00:29'),
-(80, '018/2025', 84, NULL, 448, 10, 8, 144000.00, 'Enviada', '2025-12-11', 'Realizado diretamente pela FR Produtos Médico', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'Pagamento mensal. \nPrazo de locação 12 meses', 'Até 5 dias após a confirmação do contrato de locação.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'As pás adesivas seguem junto com equipamento, não está incluso no contrato de locação.\nEm caso de uso deverá será faturada.', NULL, '2025-12-01 21:11:15'),
-(81, '019/2025', 85, NULL, 917, 11, 8, 8471.00, 'Enviada', '2025-12-12', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-02 18:28:57'),
-(87, '020/2025', 91, NULL, 345, 12, 8, 6840.00, 'Enviada', '2025-12-11', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '3 meses a partir da data de emissão da nota Fiscal.', '3 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-02 19:20:05'),
-(88, '021/2025', 92, NULL, 918, NULL, 2, 9106.00, 'Enviada', '2025-12-13', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '10 vezes ', 'Imediato ', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', ' A placa será enviada gratuitamente como brinde', NULL, '2025-12-03 12:25:59'),
-(89, '022/2025', 93, NULL, 918, NULL, 2, 12569.00, 'Enviada', '2025-12-13', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '40% de entrada + 5 parcelas ', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-03 17:06:46'),
-(90, '023/2025', 94, NULL, 923, NULL, 2, 168000.00, 'Rascunho', '2025-12-14', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-04 19:24:32'),
-(91, '024/2025', 95, NULL, 923, NULL, 2, 2067000.00, 'Rascunho', '2025-12-14', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-04 19:26:33'),
-(92, '025/2025', 96, 273, NULL, NULL, 2, 16765.85, 'Rascunho', '2025-12-19', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 15 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-09 13:06:15'),
-(93, '026/2025', 97, NULL, 336, NULL, 2, 5580.00, 'Enviada', '2026-01-23', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-09 14:46:31'),
-(94, '027/2025', 98, NULL, 513, NULL, 2, 10326.00, 'Enviada', '2025-12-19', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Imediato.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-09 20:40:47'),
-(95, '028/2025', 99, NULL, 929, NULL, 2, 9500.00, 'Enviada', '2025-12-22', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Imediato', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-11 19:13:44'),
-(96, '029/2025', 100, NULL, 318, NULL, 2, 10055.20, 'Aprovada', '2025-12-22', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '45/60 dias ', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Trade in 20% de desconto', NULL, '2025-12-11 20:47:31'),
-(97, '030/2025', 101, NULL, 916, 9, 2, 2372.40, 'Enviada', '2025-12-30', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '30 Dias ', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-12 13:04:23'),
-(98, '031/2025', 102, NULL, 28, NULL, 1, 23082.00, 'Enviada', '2025-12-27', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-16 23:25:00'),
-(108, '033/2025', 112, NULL, 393, NULL, 2, 18182.00, 'Enviada', '2025-12-27', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-17 14:53:20'),
-(109, '034/2025', 113, NULL, 238, NULL, 2, 615.00, 'Enviada', '2025-12-27', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 20 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-17 20:10:40'),
-(110, '035/2025', 114, NULL, 935, NULL, 2, 9500.00, 'Enviada', '2025-12-28', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Imediato', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-18 19:54:06'),
-(111, '036/2025', 115, NULL, 936, NULL, 2, 19625.85, 'Enviada', '2026-01-03', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-23 17:28:36'),
-(114, '002/2026', 120, NULL, 359, 14, 2, 21320.00, 'Enviada', '2026-01-20', 'Realizado diretamente pela fr', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-09 12:48:45'),
-(116, '003/2026', 124, 280, NULL, NULL, 2, 33207.85, 'Enviada', '2026-01-23', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Frete: FOB', NULL, '2026-01-13 12:33:28'),
-(117, '004/2026', 125, NULL, 937, 15, 2, 16942.00, 'Enviada', '2026-01-23', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'FRETE FOB', NULL, '2026-01-13 16:33:34'),
-(120, '005/2026', 128, 280, NULL, NULL, 8, 10749.00, 'Enviada', '2026-01-21', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-14 18:40:32'),
-(122, '006/2026', 131, NULL, 495, 16, 8, 12876.00, 'Enviada', '2026-01-26', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 10 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-16 16:18:18'),
-(124, '007/2026', 139, NULL, 221, NULL, 11, 7720.00, 'Recusada', '2026-01-22', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-20 14:25:42'),
-(125, '008/2026', 140, NULL, 761, NULL, 11, 553968.00, 'Recusada', '2026-01-21', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-20 14:27:07'),
-(126, '009/2026', 151, NULL, 57, NULL, 11, 23082.00, 'Aprovada', '2026-01-21', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-20 17:59:04'),
-(127, '010/2026', 152, NULL, 764, NULL, 11, 8358.90, 'Aprovada', '2026-01-22', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-20 18:11:37'),
-(128, '011/2026', 153, NULL, 332, NULL, 11, 1290.00, 'Aprovada', '2026-01-22', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-20 18:19:29'),
-(129, '012/2026', 155, NULL, 221, NULL, 11, 23082.00, 'Aprovada', '2026-01-22', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-21 11:15:49'),
-(131, '014/2026', 159, NULL, 764, NULL, 1, 129000.00, 'Negociando', '2026-01-30', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-22 20:29:03'),
-(132, '015/2026', 163, NULL, 57, NULL, 1, 7265.85, 'Aprovada', '2026-01-27', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-23 16:49:58');
+INSERT INTO `propostas` (`id`, `numero_proposta`, `oportunidade_id`, `cliente_pf_id`, `organizacao_id`, `contato_id`, `usuario_id`, `valor_total`, `status`, `motivo_status`, `data_validade`, `faturamento`, `treinamento`, `condicoes_pagamento`, `prazo_entrega`, `garantia_equipamentos`, `garantia_acessorios`, `instalacao`, `assistencia_tecnica`, `observacoes`, `assinatura_url`, `data_criacao`, `atualizado_por_id`) VALUES
+(60, '001/2025', 61, NULL, 892, NULL, 2, 23082.00, 'Recusada', 'Preço alto', '2025-11-10', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível de forma contínua, com suporte especializado para manutenção e eventuais ajustes.', 'Nenhuma\n\nNão aprovou orçamento.', NULL, '2025-10-30 12:32:59', 1),
+(62, '002/2025', 65, NULL, 894, NULL, 2, 12569.00, 'Enviada', NULL, '2025-11-11', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível de forma contínua, com suporte especializado para manutenção e eventuais ajustes.', 'Nenhuma', NULL, '2025-11-04 15:11:04', NULL),
+(65, '003/2025', 69, NULL, 897, NULL, 2, 102646.44, 'Enviada', NULL, '2025-11-16', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '30 dias ', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível de forma contínua, com suporte especializado para manutenção e eventuais ajustes.', 'Nenhuma', NULL, '2025-11-06 12:26:18', NULL),
+(66, '004/2025', 70, NULL, 898, NULL, 2, 10208.40, 'Enviada', NULL, '2025-11-16', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível de forma contínua, com suporte especializado para manutenção e eventuais ajustes.', 'Nenhuma', NULL, '2025-11-06 20:49:30', NULL),
+(67, '005/2025', 71, NULL, 384, NULL, 2, 69000.00, 'Recusada', 'Preço alto', '2025-11-17', 'Realizado diretamente pela FR Produtos Médicos.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '10 x no boleto', 'Até 10 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma\n\nDesistiu', NULL, '2025-11-07 14:32:57', 1),
+(68, '006/2025', 72, NULL, 336, NULL, 2, 28000.00, 'Rascunho', NULL, '2025-11-17', 'Realizado diretamente pela FR Produtos Médicos.', '', 'A vista', 'Até 15 dias após a confirmação do pedido de compra.', '', '30dd, conforme especificações do fabricante.', '', '', '', NULL, '2025-11-07 15:01:42', NULL),
+(69, '007/2025', 73, NULL, 850, NULL, 2, 36308.39, 'Enviada', NULL, '2025-11-20', 'Realizado diretamente pela FR Produtos Médicos.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-10 13:09:13', NULL),
+(70, '008/2025', 74, NULL, 897, NULL, 2, 1230.00, 'Enviada', NULL, '2025-11-20', 'Realizado diretamente pela fábrica', '', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '', '6 meses, conforme especificações do fabricante.', '.', '', 'Nenhuma', NULL, '2025-11-10 20:31:38', NULL),
+(71, '009/2025', 75, NULL, 915, 7, 1, 50196.00, 'Enviada', NULL, '2025-11-28', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'INCLUSO CONJUNTO DE PAS (ADULTO/PEDIÁTRICO)', NULL, '2025-11-14 19:32:19', NULL),
+(72, '010/2025', 76, NULL, 591, 8, 2, 7990.00, 'Aprovada', '', '2025-11-26', 'Realizado diretamente pela  FR Produtos Médicos', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '3 vezes no boleto', '10 dias úteis', '12 meses a partir da data de emissão da nota Fiscal.', 'Tipo: Dióxido de Lítio Manganês (LiMnO2) 18 V, 2800\nmAh.\nDuração da bateria em carga plena (100%) 15 horas\nde monitorização contínua, mais de 300 choques de\n200 J ou mais de 160 choques de 360 J. conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-17 17:45:58', 1),
+(73, '011/2025', 77, NULL, 591, 8, 2, 11652.80, 'Aprovada', '', '2025-11-26', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', 'Tipo: Li-Ion, 14,4 VDC 4,0 Ah.\nDuração da bateria em carga plena (100%) 18 horas\nde monitorização contínua, mais de 400 choques de\n200 J ou mais de 230 choques de 360J.\nVida útil: 2 anos em stand by. Conforme informações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-17 17:47:12', 1),
+(74, '012/2025', 78, NULL, 916, 9, 8, 7990.00, 'Aprovada', '', '2025-12-16', 'Realizado diretamente pela FR', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '20/01/2026', 'Até 21/01/26 após a confirmação de pagamento.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Emitir a NF dia 05/01/2026.', NULL, '2025-11-24 12:29:04', 1),
+(75, '013/2025', 79, 31, NULL, NULL, 2, 7990.00, 'Aprovada', '', '2025-11-24', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '10 vezes no boleto ', 'Até 10 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-24 20:26:58', 1),
+(76, '014/2025', 80, NULL, 917, NULL, 2, 23990.00, 'Enviada', NULL, '2025-11-28', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Valor promocional valido até o dia 28/11\n', NULL, '2025-11-26 12:08:05', NULL),
+(77, '015/2025', 81, NULL, 917, NULL, 2, 23082.00, 'Recusada', 'Preço alto', '2025-12-06', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'À Vista ', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-26 14:18:32', 1),
+(78, '016/2025', 82, NULL, 336, NULL, 2, 116528.00, 'Enviada', NULL, '2025-11-28', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-11-26 20:16:45', NULL),
+(79, '017/2025', 83, NULL, 448, 10, 8, 8471.00, 'Aprovada', '', '2025-12-11', 'Realizado diretamente pela FR ', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 10 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-01 21:00:29', 1),
+(80, '018/2025', 84, NULL, 448, 10, 8, 72000.00, 'Recusada', 'Preço alto', '2025-12-11', 'Realizado diretamente pela FR Produtos Médico', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'Pagamento mensal. \nPrazo de locação 12 meses', 'Até 5 dias após a confirmação do contrato de locação.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'As pás adesivas seguem junto com equipamento, não está incluso no contrato de locação.\nEm caso de uso deverá será faturada.\n\nEfetuou compra de um equipamento', NULL, '2025-12-01 21:11:15', 1),
+(81, '019/2025', 85, NULL, 917, 11, 8, 8471.00, 'Enviada', NULL, '2025-12-12', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-02 18:28:57', NULL),
+(87, '020/2025', 91, NULL, 345, 12, 8, 6840.00, 'Enviada', NULL, '2025-12-11', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '3 meses a partir da data de emissão da nota Fiscal.', '3 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-02 19:20:05', NULL),
+(88, '021/2025', 92, NULL, 918, NULL, 2, 9106.00, 'Enviada', NULL, '2025-12-13', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '10 vezes ', 'Imediato ', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', ' A placa será enviada gratuitamente como brinde', NULL, '2025-12-03 12:25:59', NULL),
+(89, '022/2025', 93, NULL, 918, NULL, 2, 12569.00, 'Enviada', NULL, '2025-12-13', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '40% de entrada + 5 parcelas ', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-03 17:06:46', NULL),
+(90, '023/2025', 94, NULL, 923, NULL, 2, 168000.00, 'Rascunho', NULL, '2025-12-14', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-04 19:24:32', NULL),
+(91, '024/2025', 95, NULL, 923, NULL, 2, 2067000.00, 'Rascunho', NULL, '2025-12-14', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-04 19:26:33', NULL),
+(92, '025/2025', 96, 273, NULL, NULL, 2, 16765.85, 'Rascunho', NULL, '2025-12-19', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 15 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-09 13:06:15', NULL),
+(93, '026/2025', 97, NULL, 336, NULL, 2, 930.00, 'Aprovada', '', '2026-01-23', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-09 14:46:31', 1),
+(94, '027/2025', 98, NULL, 513, 20, 2, 10326.00, 'Aprovada', '', '2025-12-19', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Imediato.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-09 20:40:47', 1),
+(95, '028/2025', 99, NULL, 929, NULL, 2, 9500.00, 'Recusada', 'Preço alto', '2025-12-22', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Imediato', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma\n\nSolicitou orçamento para compra pq havia comprado um Apolo e estava demorando, mas apos a chegada, não tem mais interesse.', NULL, '2025-12-11 19:13:44', 1),
+(96, '029/2025', 100, NULL, 318, NULL, 2, 10055.20, 'Aprovada', '', '2025-12-22', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '45/60 dias ', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Trade in 20% de desconto', NULL, '2025-12-11 20:47:31', 1),
+(97, '030/2025', 101, NULL, 916, 9, 2, 2372.40, 'Aprovada', '', '2025-12-30', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '30 Dias ', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-12 13:04:23', 1),
+(98, '031/2025', 102, NULL, 28, NULL, 1, 23082.00, 'Enviada', NULL, '2025-12-27', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-16 23:25:00', NULL),
+(108, '033/2025', 112, NULL, 393, NULL, 2, 18182.00, 'Recusada', 'Preço alto', '2025-12-27', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma\n\nOptou por locação.', NULL, '2025-12-17 14:53:20', 1),
+(109, '034/2025', 113, NULL, 238, NULL, 2, 615.00, 'Enviada', NULL, '2025-12-27', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 20 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-17 20:10:40', NULL),
+(110, '035/2025', 114, NULL, 935, NULL, 2, 9500.00, 'Recusada', 'Preço alto', '2025-12-28', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Imediato', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'em busca de equipamento usado.', NULL, '2025-12-18 19:54:06', 1),
+(111, '036/2025', 115, NULL, 936, NULL, 2, 19625.85, 'Enviada', NULL, '2026-01-03', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2025-12-23 17:28:36', NULL),
+(114, '002/2026', 120, NULL, 359, 14, 2, 21320.00, 'Enviada', NULL, '2026-01-20', 'Realizado diretamente pela fr', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-09 12:48:45', NULL),
+(116, '003/2026', 124, 280, NULL, NULL, 2, 33207.85, 'Enviada', NULL, '2026-01-23', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Frete: FOB', NULL, '2026-01-13 12:33:28', NULL),
+(117, '004/2026', 125, NULL, 937, 15, 2, 16942.00, 'Recusada', 'Preço alto', '2026-01-23', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'FRETE FOB\n\nCliente optou por menor preço.\n', NULL, '2026-01-13 16:33:34', 1),
+(120, '005/2026', 128, 280, NULL, NULL, 8, 10749.00, 'Enviada', NULL, '2026-01-21', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-14 18:40:32', NULL),
+(122, '006/2026', 131, NULL, 495, 16, 8, 12876.00, 'Recusada', 'Preço alto', '2026-01-26', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 10 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-16 16:18:18', 1),
+(129, '011/2026', 155, NULL, 271, 17, 2, 25000.00, 'Enviada', NULL, '2026-01-30', 'Realizado diretamente pela FR', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '30 dias', 'Até 05 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', 'Conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-21 14:17:23', NULL),
+(130, '012/2026', 157, NULL, 939, 18, 2, 80250.00, 'Rascunho', NULL, '2026-01-30', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'conforme ATA Nº 0057/2025', 'conforme ATA Nº 0057/2025', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Os valores aqui apresentados correspondem ao processo nº 1756.2024.AC 05.PE.0537.SAD.HAM - PREGÃO ELETRÔNICO PARA REGISTRO DE PREÇOS Nº 0537 - ATA Nº 0057/2025.', NULL, '2026-01-23 21:29:59', NULL),
+(131, '013/2026', 159, NULL, 939, 18, 8, 115410.00, 'Enviada', NULL, '2026-01-30', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '30dd', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-26 18:45:51', NULL),
+(132, '014/2026', 160, NULL, 923, NULL, 8, 2349420.00, 'Enviada', NULL, '2026-01-30', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-01-26 18:59:01', NULL);
 
 -- --------------------------------------------------------
 
@@ -2071,7 +2021,6 @@ INSERT INTO `proposta_itens` (`id`, `proposta_id`, `produto_id`, `descricao`, `d
 (190, 62, 12, 'DESFIBRILADOR ', 'Principais funções concentradas em apenas um botão seletor. \nRápida inicialização carregamento de 360 J em menos de 6 segundos', 'INSTRAMED', 'APOLUS ', 'https://frpe.app.br/crm/uploads/products/prod_690a099525520.webp', 1, 12569.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (193, 66, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (194, 66, 13, 'GABINETE DEA', 'Gabinete metálico para desfibrilador externo automático (DEA), equipado com alarme sonoro.\n\n', 'INSTRAMED', 'DEA', 'https://frpe.app.br/crm/uploads/products/prod_690de965c8b36.webp', 1, 1737.40, 'VENDA', 'Unidade', NULL, NULL, 1),
-(195, 67, 14, 'VENTILADOR ', 'Tela sensível ao toque de 18,5 com interface intuitiva, projetada para agilizar a configuração em situações críticas.\nSeu design versátil permite a utilização em múltiplos ambientes hospitalares da UTI adulta à neonatologia com uma única unidade, otimizando recursos e garantindo continuidade no cuidado ao paciente.', 'TECME', 'BRINA', 'https://frpe.app.br/crm/uploads/products/prod_690df701cb457.png', 1, 69000.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (199, 68, 15, 'Traqueia pediátrica 1200MM X 15MM com 1 conector reto 15mm', 'Circuito para ventilação pediátrico.', 'GLOBALTEC', 'Traqueia pediátrica 1200MM X 15MM  c/1 conector reto.', '', 80, 350.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (204, 69, 19, 'OXIMETRO ', 'Monitor portátil com SPO2, PR, PI, RRP', 'MASIMO ', 'RAD G SEM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911e01074fe3.png', 1, 6600.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (205, 69, 17, 'OXIMETRO', 'Monitor portátil com SPO2, PR, PI, RRP e módulo de temperatura integrado ', 'MASIMO', 'RAD G COM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911dd39c9342.png', 1, 8358.90, 'VENDA', 'Unidade', NULL, NULL, 1),
@@ -2080,13 +2029,9 @@ INSERT INTO `proposta_itens` (`id`, `proposta_id`, `produto_id`, `descricao`, `d
 (208, 70, 21, 'PÁ ADESIVA ADULTO DESCARTAVEL DEA / CARDIOMAX', 'PÁ ADESIVA ADULTO DESCARTÁVEL', 'INSTRAMED', 'ADULTO', 'https://frpe.app.br/crm/uploads/products/prod_691249bfe6282.png', 1, 615.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (209, 70, 20, 'PÁ ADESIVA INFANTIL DESCARTAVEL DEA/CARDIOMAX', 'PÁ ADESIVA INFANTIL DESCARTAVEL - DEA/CARDIOMAX', 'INSTRAMED', 'INFANTIL', 'https://frpe.app.br/crm/uploads/products/prod_69124901583c3.png', 1, 615.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (212, 71, 7, 'CARDIOVERSOR ', 'Configuração Básica (ECG, Resp, Desf, ASC, PMS, Li-ion 4 Ah)', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 2, 25098.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMP (Impressora)\",\"valor\":4152},{\"nome\":\"MP (Marcapasso) \",\"valor\":2758},{\"nome\":\"DEA (Desfibrilador Externo Autom\\u00e1tico) \",\"valor\":1602}]', NULL, 1),
-(233, 75, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (242, 76, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\nAdicionais: MP + IMP + DEA', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23990.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (245, 78, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 10, 7283.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (246, 78, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 10, 4369.80, 'VENDA', 'Unidade', NULL, NULL, 1),
-(247, 77, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMP \",\"valor\":4152},{\"nome\":\"DEA\",\"valor\":1602}]', NULL, 1),
-(252, 79, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(254, 80, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 12, 500.00, 'LOCAÇÃO', 'mensal', NULL, NULL, 1),
 (255, 81, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (257, 87, 22, 'MODULO DE BATERIA CARDIOMAX LI-ON 14,4V 4AH 57,6WH', 'Modulo de bateria recarregável para carDiomax li-on 14,4V 4AH 57,6WH', 'INSTRAMED', 'CARDIOMAX', 'https://frpe.app.br/crm/uploads/products/prod_692f33e61ffc4.jpg', 2, 3420.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (268, 88, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, NULL, 1),
@@ -2098,44 +2043,46 @@ INSERT INTO `proposta_itens` (`id`, `proposta_id`, `produto_id`, `descricao`, `d
 (275, 91, 27, 'MONITOR BLT', 'Configuração ECG, SPO2, PNI', 'INSTRAMED', 'M10', 'https://frpe.app.br/crm/uploads/products/prod_6931df2fb1be3.webp', 30, 6000.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (278, 92, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (279, 92, 28, 'CARRO DE PARADA ', 'Estrutura interna em aço carbono, revestido em polímero de alto impacto ABS com nano tecnologia anti-bacteriana.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, NULL, 1),
-(286, 95, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(292, 94, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9711.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(293, 94, 20, 'PÁ ADESIVA INFANTIL DESCARTAVEL DEA/CARDIOMAX', 'PÁ ADESIVA INFANTIL DESCARTAVEL - DEA/CARDIOMAX', 'INSTRAMED', 'INFANTIL', 'https://frpe.app.br/crm/uploads/products/prod_69124901583c3.png', 1, 615.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(295, 97, 23, 'SUPORTE DE PAREDE EM ACRÍLICO ', 'Suporte de parede em acrílico para DEA', 'INSTRAMED', 'I ON ', 'https://frpe.app.br/crm/uploads/products/prod_69302adc0a423.webp', 1, 635.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(296, 97, 13, 'GABINETE DEA', 'Gabinete metálico para desfibrilador externo automático (DEA), equipado com alarme sonoro.\n\n', 'INSTRAMED', 'DEA', 'https://frpe.app.br/crm/uploads/products/prod_690de965c8b36.webp', 1, 1737.40, 'VENDA', 'Unidade', NULL, NULL, 1),
-(307, 96, 12, 'DESFIBRILADOR ', 'Principais funções concentradas em apenas um botão seletor. \nRápida inicialização carregamento de 360 J em menos de 6 segundos', 'INSTRAMED', 'APOLUS ', 'https://frpe.app.br/crm/uploads/products/prod_690a099525520.webp', 1, 10055.20, 'VENDA', 'Unidade', NULL, 1, 1),
 (316, 98, NULL, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMP\",\"valor\":4152}]', 1, 1),
-(317, 108, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9711.00, 'VENDA', 'Unidade', NULL, 1, 1),
-(318, 108, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, 1, 1),
 (319, 109, 21, 'PÁ ADESIVA ADULTO DESCARTAVEL DEA / CARDIOMAX', 'PÁ ADESIVA ADULTO DESCARTÁVEL', 'INSTRAMED', 'ADULTO', 'https://frpe.app.br/crm/uploads/products/prod_691249bfe6282.png', 1, 615.00, 'VENDA', 'Unidade', NULL, 1, 1),
-(320, 110, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 'VENDA', 'Unidade', NULL, 1, 1),
 (321, 111, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, 1, 1),
 (322, 111, 31, 'CILINDRO DE O2', 'Capacidade hidráulica 2.8L\nPressão  de serviço 139bar\nAltura 412.8mm\nDiâmetro 111.1mm\nRosca de entrada 3/4 \nPeso 2.3kg ', '', 'GWA15', 'https://frpe.app.br/crm/uploads/products/prod_694ace6e98b05.webp', 1, 2860.00, 'VENDA', 'Unidade', NULL, 1, 1),
 (323, 111, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 'VENDA', 'Unidade', NULL, 1, 1),
 (337, 114, 32, 'Módulo de bateria (NiMH) - CardioMax', 'Modulo de bateria recarregável para Cardiomax (NiMH)', 'INSTRAMED', 'CARDIOMAX ', 'https://frpe.app.br/crm/uploads/products/prod_695ff7e024858.jpg', 6, 2900.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (338, 114, 22, 'MODULO DE BATERIA CARDIOMAX LI-ON 14,4V 4AH 57,6WH', 'Modulo de bateria recarregável para carDiomax li-on 14,4V 4AH 57,6WH', 'INSTRAMED', 'CARDIOMAX', 'https://frpe.app.br/crm/uploads/products/prod_692f33e61ffc4.jpg', 1, 3920.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(340, 73, NULL, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/proposal_items/item_691b672009fc1.png', 1, 7283.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(341, 73, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 4369.80, 'VENDA', 'Unidade', NULL, NULL, 1),
-(342, 72, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(343, 74, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (350, 116, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, NULL, 1),
 (351, 116, 31, 'CILINDRO DE O2 (vazio)', 'Capacidade hidráulica 2.8L\nPressão  de serviço 139bar\nAltura 412.8mm\nDiâmetro 111.1mm\nRosca de entrada 3/4 \nPeso 2.3kg ', '', 'GWA15', 'https://frpe.app.br/crm/uploads/products/prod_694ace6e98b05.webp', 1, 2860.00, 'VENDA', 'Unidade', NULL, NULL, 1),
 (352, 116, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS. \n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMPRESSORA\",\"valor\":4152},{\"nome\":\"MARCAPASSO\",\"valor\":2758},{\"nome\":\"DEA\",\"valor\":1602}]', NULL, 1),
 (353, 90, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS \nParâmetros adicionais: MP + DEA + IMP', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 10, 16800.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(356, 117, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 2, 8471.00, 'VENDA', 'Unidade', '[{\"nome\":\"FUN\\u00c7\\u00c3O 3V (MONITORIZA\\u00c7\\u00c3O ATRAVES DE CABO DE ECG 3VIAS)\",\"valor\":1253},{\"nome\":\"CONECTOR PARA RCP (SOMENTE CONECTOR)\",\"valor\":1253},{\"nome\":\"RCP MAESTRO (COM DISPLAY)\",\"valor\":4174},{\"nome\":\"GRAVADOR DE SOM AMBIENTE (MICROFONE) \",\"valor\":317}]', NULL, 1),
 (364, 120, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA  RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LCD', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 10749.00, 'VENDA', 'Unidade', '[{\"nome\":\"Fun\\u00e7\\u00e3o 3V Monitora\\u00e7\\u00e3o atraves cabo ECG 3vias\",\"valor\":1253},{\"nome\":\"Conector para RCP (somente conector)\",\"valor\":752}]', NULL, 1),
-(369, 122, 33, 'Eletrocardiógrafo de 12 canais', 'AQUISIÇÃO E IMPRESÃO EM 12 CANAIS SIMUTÂNEOS, INTERPRETATIVO, IMPRESSÃO EM PAPEL TÉRMICO A4, Display Colorido 8”- Teclado QWERTY- Memória 800 exames- Exporta exames em PDF.', 'EDAN', 'SE 1200 EXPRESS', 'https://frpe.app.br/crm/uploads/products/prod_696a54b7a29fa.png', 1, 12876.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(370, 60, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"Marcapasso\",\"valor\":2758},{\"nome\":\"Impressora\",\"valor\":4152}]', NULL, 1),
-(377, 93, 29, 'SENSOR DE FLUXO ', 'Sensor de fluxo para utilização no ventilador pulmonar Shangrila 510S\n', 'AEONMED', '', 'https://frpe.app.br/crm/uploads/products/prod_69383041db97a.webp', 6, 155.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(378, 93, 30, 'VÁLVULA DE CONTROLE EXALATÓRIO ', 'Válvula de controle do fluxo exalatório compatível com o ventilador Shangrila 510S', 'AEONMED', '', 'https://frpe.app.br/crm/uploads/products/prod_69383503a5145.png', 6, 775.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(387, 126, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(391, 125, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 2, 23082.00, 'LOCAÇÃO', 'Mês', NULL, 12, 1),
-(392, 124, 27, 'MONITOR BLT', 'Configuração ECG, SPO2, PNI', 'INSTRAMED', 'M10', 'https://frpe.app.br/crm/uploads/products/prod_6931df2fb1be3.webp', 1, 7720.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(394, 127, 17, 'OXIMETRO', 'Monitor portátil com SPO2, PR, PI, RRP e módulo de temperatura integrado ', 'MASIMO', 'RAD G COM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911dd39c9342.png', 1, 8358.90, 'VENDA', 'Unidade', NULL, NULL, 1),
-(396, 128, 16, 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'Destinado a profissionais da saúde.\nDesign de mesa ideal para consultórios. ​\nModo de medição totalmente automático oscilométrico ou auscultatório.​\nFunção Indicador Zero ​\nPode ser usado com 4 pilhas AA ou com adaptador CA (bivolt automático)​', 'MICROMED', 'OMRON', 'https://frpe.app.br/crm/uploads/products/prod_6911dd100a3fb.webp', 1, 1290.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(400, 129, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(407, 132, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, NULL, 1),
-(408, 131, 16, 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'Destinado a profissionais da saúde.\nDesign de mesa ideal para consultórios. ​\nModo de medição totalmente automático oscilométrico ou auscultatório.​\nFunção Indicador Zero ​\nPode ser usado com 4 pilhas AA ou com adaptador CA (bivolt automático)​', 'MICROMED', 'OMRON', 'https://frpe.app.br/crm/uploads/products/prod_6911dd100a3fb.webp', 100, 1290.00, 'VENDA', 'Unidade', NULL, NULL, 1);
+(399, 129, 34, 'SENSOR LÍDICO', 'SENSOR LIDICO (Em comodato acompanha; Monitor multiparamétrico compacto Root® com Modulo Cabo).', 'MASIMO ', 'RD Raimbow set2 4026', 'https://frpe.app.br/crm/uploads/products/prod_6970da50f1c05.png', 10, 2500.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(400, 130, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, MP , Li-ion 4Ah \n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 5, 16050.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(419, 131, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 5, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"marcapasso\",\"valor\":2758}]', NULL, 1),
+(421, 132, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 10, 23082.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(422, 132, 27, 'MONITOR BLT', 'Configuração ECG, SPO2, PNI', 'INSTRAMED', 'M10', 'https://frpe.app.br/crm/uploads/products/prod_6931df2fb1be3.webp', 30, 7720.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(423, 132, 26, 'VENTILADOR BEIRA LEITO ', 'Ventilação invasiva e não invasiva \nBateria interna com autonomia de aproximadamente 4 horas \nNebulizador integrado \n', 'INSTRAMED', 'VG70', 'https://frpe.app.br/crm/uploads/products/prod_6931ddcc8f088.webp', 30, 62900.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(424, 122, 33, 'Eletrocardiógrafo de 12 canais', 'AQUISIÇÃO E IMPRESÃO EM 12 CANAIS SIMUTÂNEOS, INTERPRETATIVO, IMPRESSÃO EM PAPEL TÉRMICO A4, Display Colorido 8”- Teclado QWERTY- Memória 800 exames- Exporta exames em PDF.', 'EDAN', 'SE 1200 EXPRESS', 'https://frpe.app.br/crm/uploads/products/prod_696a54b7a29fa.png', 1, 12876.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(425, 97, 23, 'SUPORTE DE PAREDE EM ACRÍLICO ', 'Suporte de parede em acrílico para DEA', 'INSTRAMED', 'I ON ', 'https://frpe.app.br/crm/uploads/products/prod_69302adc0a423.webp', 1, 635.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(426, 97, 13, 'GABINETE DEA', 'Gabinete metálico para desfibrilador externo automático (DEA), equipado com alarme sonoro.\n\n', 'INSTRAMED', 'DEA', 'https://frpe.app.br/crm/uploads/products/prod_690de965c8b36.webp', 1, 1737.40, 'VENDA', 'Unidade', NULL, NULL, 1),
+(427, 117, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 2, 8471.00, 'VENDA', 'Unidade', '[{\"nome\":\"FUN\\u00c7\\u00c3O 3V (MONITORIZA\\u00c7\\u00c3O ATRAVES DE CABO DE ECG 3VIAS)\",\"valor\":1253},{\"nome\":\"CONECTOR PARA RCP (SOMENTE CONECTOR)\",\"valor\":1253},{\"nome\":\"RCP MAESTRO (COM DISPLAY)\",\"valor\":4174},{\"nome\":\"GRAVADOR DE SOM AMBIENTE (MICROFONE) \",\"valor\":317}]', NULL, 1),
+(428, 110, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(429, 108, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9711.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(430, 108, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(431, 95, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(432, 96, 12, 'DESFIBRILADOR ', 'Principais funções concentradas em apenas um botão seletor. \nRápida inicialização carregamento de 360 J em menos de 6 segundos', 'INSTRAMED', 'APOLUS ', 'https://frpe.app.br/crm/uploads/products/prod_690a099525520.webp', 1, 10055.20, 'VENDA', 'Unidade', NULL, NULL, 1),
+(433, 94, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9711.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(434, 94, 20, 'PÁ ADESIVA INFANTIL DESCARTAVEL DEA/CARDIOMAX', 'PÁ ADESIVA INFANTIL DESCARTAVEL - DEA/CARDIOMAX', 'INSTRAMED', 'INFANTIL', 'https://frpe.app.br/crm/uploads/products/prod_69124901583c3.png', 1, 615.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(435, 93, 29, 'SENSOR DE FLUXO ', 'Sensor de fluxo para utilização no ventilador pulmonar Shangrila 510S\n', 'AEONMED', '', 'https://frpe.app.br/crm/uploads/products/prod_69383041db97a.webp', 6, 155.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(436, 80, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 12, 500.00, 'LOCAÇÃO', 'mensal', NULL, 12, 1),
+(437, 79, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(438, 77, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMP \",\"valor\":4152},{\"nome\":\"DEA\",\"valor\":1602}]', NULL, 1),
+(439, 75, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(440, 74, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(441, 73, NULL, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/proposal_items/item_691b672009fc1.png', 1, 7283.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(442, 73, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 4369.80, 'VENDA', 'Unidade', NULL, NULL, 1),
+(443, 72, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(444, 67, 14, 'VENTILADOR ', 'Tela sensível ao toque de 18,5 com interface intuitiva, projetada para agilizar a configuração em situações críticas.\nSeu design versátil permite a utilização em múltiplos ambientes hospitalares da UTI adulta à neonatologia com uma única unidade, otimizando recursos e garantindo continuidade no cuidado ao paciente.', 'TECME', 'BRINA', 'https://frpe.app.br/crm/uploads/products/prod_690df701cb457.png', 1, 69000.00, 'VENDA', 'Unidade', NULL, NULL, 1),
+(445, 60, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"Marcapasso\",\"valor\":2758},{\"nome\":\"Impressora\",\"valor\":4152}]', NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -2167,8 +2114,7 @@ INSERT INTO `usuarios` (`id`, `nome`, `email`, `telefone`, `senha`, `role`, `sta
 (7, 'Rubens Arantes Júnior', 'rubensjr@frpe.com.br', '81 9978-6252', '$2y$10$n16/G4GRJyjRVbjNVsey7.mQl4cHOiTmbM7VFxPXZNaxmZlZbJeum', 'Gestor', 'Ativo', '2025-10-17 12:17:54'),
 (8, 'Sandra Remigio', 'sandra@frpe.com.br', '81 99290-9200', '$2y$10$.WjtoMgDh5Pdvx7U5LCon.K7Pl6kG50tZVMqMi9WYTwYBAMS03xSC', 'Gestor', 'Ativo', '2025-11-10 20:58:55'),
 (9, 'Dyara ', 'dyara@frpe.com.br', '84 98730-3243', '$2y$10$IoSBau78YoB/QzX1vNbTm.b1I9TWFA7zlJxNVoWOFdPfh3HoNEXVG', 'Vendedor', 'Ativo', '2026-01-09 14:52:48'),
-(10, 'Betânia ', 'betania@frpe.com.br', '84 99407-3545', '$2y$10$Oc30.vk.MCYpNf0NJDZbnOGzmOT/BpCn5SlSXUHmo35riKbe607iu', 'Vendedor', 'Ativo', '2026-01-09 14:54:30'),
-(11, 'Eduardo', 'frpe@frpe.app.br', '81995550880', '$2y$10$4h0UR4NQvhaf4ffDPUt4Ze4d/w/9kZm5tVljKMG9sVWj17vWa7.Tu', 'Vendedor', 'Ativo', '2026-01-19 16:58:06');
+(10, 'Betânia ', 'betania@frpe.com.br', '84 99407-3545', '$2y$10$Oc30.vk.MCYpNf0NJDZbnOGzmOT/BpCn5SlSXUHmo35riKbe607iu', 'Vendedor', 'Ativo', '2026-01-09 14:54:30');
 
 -- --------------------------------------------------------
 
@@ -2207,14 +2153,15 @@ INSERT INTO `vendas_fornecedores` (`id`, `titulo`, `fornecedor_id`, `organizacao
 (16, 'Venda via Proposta #73 - DESFIBRILADOR EXTERNO AUTOMATICO  ', 1, 591, 'Proposta Aprovada', 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'INSTRAMED', 'I.ON LED', 1, 7283.00, 7283.00, 'Gerado automaticamente a partir da Proposta ID 73.', '2026-01-12', 2, 73, '2026-01-12 18:37:05', NULL),
 (17, 'Venda via Proposta #73 - DESFIBRILADOR EXTERNO AUTOMATICO  ', 1, 591, 'Proposta Aprovada', 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'INSTRAMED', 'I.ON LED', 1, 4369.80, 4369.80, 'Gerado automaticamente a partir da Proposta ID 73.', '2026-01-12', 2, 73, '2026-01-12 18:37:05', NULL),
 (18, 'Venda via Proposta #72 - DESFIBRILADOR EXTERNO AUTOMATICO  ', 1, 591, 'Proposta Aprovada', 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'INSTRAMED', 'I.ON LED', 1, 7990.00, 7990.00, 'Gerado automaticamente a partir da Proposta ID 72.', '2026-01-12', 2, 72, '2026-01-12 18:37:28', NULL),
-(20, 'Venda via Proposta #125 - CARDIOVERSOR ', 1, 761, 'Proposta Aprovada', 'CARDIOVERSOR ', 'INSTRAMED', 'CARDIOMAX LITE ', 2, 23082.00, 46164.00, 'Gerado automaticamente a partir da Proposta ID 125.', '2026-01-20', 11, 125, '2026-01-20 17:56:19', NULL),
-(21, 'Venda via Proposta #126 - CARDIOVERSOR ', 1, 57, 'Proposta Aprovada', 'CARDIOVERSOR ', 'INSTRAMED', 'CARDIOMAX LITE ', 1, 23082.00, 23082.00, 'Gerado automaticamente a partir da Proposta ID 126.', '2026-01-20', 11, 126, '2026-01-20 18:01:48', NULL),
-(22, 'Venda via Proposta #127 - OXIMETRO', 5, 764, 'Proposta Aprovada', 'OXIMETRO', 'MASIMO', 'RAD G COM TEMPERATURA ', 1, 8358.90, 8358.90, 'Gerado automaticamente a partir da Proposta ID 127.', '2026-01-20', 11, 127, '2026-01-20 18:17:54', NULL),
-(23, 'Venda via Proposta #128 - MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 2, 332, 'Proposta Aprovada', 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'MICROMED', 'OMRON', 1, 1290.00, 1290.00, 'Gerado automaticamente a partir da Proposta ID 128.', '2026-01-20', 11, 128, '2026-01-20 18:19:51', NULL),
-(24, 'Venda via Proposta #129 - CARDIOVERSOR ', 1, 221, 'Proposta Aprovada', 'CARDIOVERSOR ', 'INSTRAMED', 'CARDIOMAX LITE ', 1, 23082.00, 23082.00, 'Gerado automaticamente a partir da Proposta ID 129.', '2026-01-21', 11, 129, '2026-01-21 11:16:26', NULL),
-(25, 'Venda via Proposta #129 - CARDIOVERSOR ', 1, 221, 'Proposta Aprovada', 'CARDIOVERSOR ', 'INSTRAMED', 'CARDIOMAX LITE ', 1, 23082.00, 23082.00, 'Gerado automaticamente a partir da Proposta ID 129.', '2026-01-22', 11, 129, '2026-01-22 16:59:20', NULL),
-(26, 'Venda via Proposta #131 - MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 2, 764, 'Proposta Aprovada', 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'MICROMED', 'OMRON', 100, 1290.00, 129000.00, 'Gerado automaticamente a partir da Proposta ID 131.', '2026-01-22', 1, 131, '2026-01-22 20:29:03', NULL),
-(27, 'Venda via Proposta #132 - CARRO DE PARADA ', 7, 57, 'Proposta Aprovada', 'CARRO DE PARADA ', 'HEALTH', 'LT 103', 1, 7265.85, 7265.85, 'Gerado automaticamente a partir da Proposta ID 132.', '2026-01-26', 1, 132, '2026-01-26 17:53:45', NULL);
+(20, 'Venda via Proposta #125 - CARDIOVERSOR ', 1, 761, 'Proposta Aprovada', 'CARDIOVERSOR ', 'INSTRAMED', 'CARDIOMAX LITE ', 2, 23082.00, 46164.00, 'Gerado automaticamente a partir da Proposta ID 125.', '2026-01-20', 11, NULL, '2026-01-20 17:56:19', NULL),
+(21, 'Venda via Proposta #126 - CARDIOVERSOR ', 1, 57, 'Proposta Aprovada', 'CARDIOVERSOR ', 'INSTRAMED', 'CARDIOMAX LITE ', 1, 23082.00, 23082.00, 'Gerado automaticamente a partir da Proposta ID 126.', '2026-01-20', 11, NULL, '2026-01-20 18:01:48', NULL),
+(22, 'Venda via Proposta #127 - OXIMETRO', 5, 764, 'Proposta Aprovada', 'OXIMETRO', 'MASIMO', 'RAD G COM TEMPERATURA ', 1, 8358.90, 8358.90, 'Gerado automaticamente a partir da Proposta ID 127.', '2026-01-20', 11, NULL, '2026-01-20 18:17:54', NULL),
+(23, 'Venda via Proposta #128 - MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 2, 332, 'Proposta Aprovada', 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'MICROMED', 'OMRON', 1, 1290.00, 1290.00, 'Gerado automaticamente a partir da Proposta ID 128.', '2026-01-20', 11, NULL, '2026-01-20 18:19:51', NULL),
+(24, 'Venda via Proposta #97 - SUPORTE DE PAREDE EM ACRÍLICO ', 1, 916, 'Proposta Aprovada', 'SUPORTE DE PAREDE EM ACRÍLICO ', 'INSTRAMED', 'I ON ', 1, 635.00, 635.00, 'Gerado automaticamente a partir da Proposta ID 97.', '2026-01-26', 2, 97, '2026-01-26 15:46:21', NULL),
+(25, 'Venda via Proposta #97 - GABINETE DEA', 1, 916, 'Proposta Aprovada', 'GABINETE DEA', 'INSTRAMED', 'DEA', 1, 1737.40, 1737.40, 'Gerado automaticamente a partir da Proposta ID 97.', '2026-01-26', 2, 97, '2026-01-26 15:46:21', NULL),
+(26, 'Venda via Proposta #94 - DESFIBRILADOR EXTERNO AUTOMATICO  ', 1, 513, 'Proposta Aprovada', 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'INSTRAMED', 'I.ON LED', 1, 9711.00, 9711.00, 'Gerado automaticamente a partir da Proposta ID 94.', '2026-01-26', 2, 94, '2026-01-26 16:03:15', NULL),
+(27, 'Venda via Proposta #94 - PÁ ADESIVA INFANTIL DESCARTAVEL DEA/CARDIOMAX', 1, 513, 'Proposta Aprovada', 'PÁ ADESIVA INFANTIL DESCARTAVEL DEA/CARDIOMAX', 'INSTRAMED', 'INFANTIL', 1, 615.00, 615.00, 'Gerado automaticamente a partir da Proposta ID 94.', '2026-01-26', 2, 94, '2026-01-26 16:03:15', NULL),
+(28, 'Venda via Proposta #79 - DESFIBRILADOR EXTERNO AUTOMATICO  ', 1, 448, 'Proposta Aprovada', 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'INSTRAMED', 'I.ON LED', 1, 8471.00, 8471.00, 'Gerado automaticamente a partir da Proposta ID 79.', '2026-01-26', 8, 79, '2026-01-26 18:21:14', NULL);
 
 -- --------------------------------------------------------
 
@@ -2232,123 +2179,6 @@ CREATE TABLE `vendas_objetivos` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
---
--- Despejando dados para a tabela `vendas_objetivos`
---
-
-INSERT INTO `vendas_objetivos` (`id`, `usuario_id`, `fornecedor_id`, `ano`, `mes`, `valor_meta`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 2026, 1, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(2, 1, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(3, 1, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(4, 1, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(5, 1, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(6, 1, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(7, 1, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(8, 1, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(9, 1, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(10, 1, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(11, 1, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(12, 1, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(13, 2, 1, 2026, 1, 499999.00, '2026-01-22 17:22:16', '2026-01-22 17:31:22'),
-(14, 2, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(15, 2, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(16, 2, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(17, 2, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(18, 2, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(19, 2, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(20, 2, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(21, 2, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(22, 2, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(23, 2, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(24, 2, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(25, 4, 1, 2026, 1, 499999.00, '2026-01-22 17:22:16', '2026-01-22 17:31:22'),
-(26, 4, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(27, 4, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(28, 4, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(29, 4, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(30, 4, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(31, 4, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(32, 4, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(33, 4, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(34, 4, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(35, 4, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(36, 4, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(37, 6, 1, 2026, 1, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(38, 6, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(39, 6, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(40, 6, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(41, 6, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(42, 6, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(43, 6, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(44, 6, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(45, 6, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(46, 6, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(47, 6, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(48, 6, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(49, 7, 1, 2026, 1, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(50, 7, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(51, 7, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(52, 7, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(53, 7, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(54, 7, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(55, 7, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(56, 7, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(57, 7, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(58, 7, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(59, 7, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(60, 7, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(61, 8, 1, 2026, 1, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(62, 8, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(63, 8, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(64, 8, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(65, 8, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(66, 8, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(67, 8, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(68, 8, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(69, 8, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(70, 8, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(71, 8, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(72, 8, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(73, 9, 1, 2026, 1, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(74, 9, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(75, 9, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(76, 9, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(77, 9, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(78, 9, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(79, 9, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(80, 9, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(81, 9, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(82, 9, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(83, 9, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(84, 9, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(85, 10, 1, 2026, 1, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(86, 10, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(87, 10, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(88, 10, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(89, 10, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(90, 10, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(91, 10, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(92, 10, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(93, 10, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(94, 10, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(95, 10, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(96, 10, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(97, 11, 1, 2026, 1, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(98, 11, 1, 2026, 2, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(99, 11, 1, 2026, 3, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(100, 11, 1, 2026, 4, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(101, 11, 1, 2026, 5, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(102, 11, 1, 2026, 6, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(103, 11, 1, 2026, 7, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(104, 11, 1, 2026, 8, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(105, 11, 1, 2026, 9, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(106, 11, 1, 2026, 10, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(107, 11, 1, 2026, 11, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(108, 11, 1, 2026, 12, 0.00, '2026-01-22 17:22:16', '2026-01-22 17:22:16'),
-(325, 1, 2, 2026, 1, 50000.00, '2026-01-22 20:24:11', '2026-01-22 20:24:11'),
-(326, 1, 2, 2026, 2, 25000.00, '2026-01-22 20:24:11', '2026-01-22 20:24:11'),
-(327, 1, 2, 2026, 3, 75000.00, '2026-01-22 20:24:11', '2026-01-22 20:24:11');
 
 --
 -- Índices para tabelas despejadas
@@ -2474,7 +2304,8 @@ ALTER TABLE `propostas`
   ADD KEY `contato_id` (`contato_id`),
   ADD KEY `cliente_pf_id` (`cliente_pf_id`),
   ADD KEY `oportunidade_id` (`oportunidade_id`),
-  ADD KEY `fk_proposta_usuario` (`usuario_id`);
+  ADD KEY `fk_proposta_usuario` (`usuario_id`),
+  ADD KEY `fk_propostas_atualizado_por` (`atualizado_por_id`);
 
 --
 -- Índices de tabela `proposta_itens`
@@ -2529,7 +2360,7 @@ ALTER TABLE `clientes_pf`
 -- AUTO_INCREMENT de tabela `contatos`
 --
 ALTER TABLE `contatos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT de tabela `etapas_funil`
@@ -2547,13 +2378,13 @@ ALTER TABLE `fornecedores`
 -- AUTO_INCREMENT de tabela `fornecedor_metas`
 --
 ALTER TABLE `fornecedor_metas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT de tabela `fornecedor_metas_estados`
 --
 ALTER TABLE `fornecedor_metas_estados`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT de tabela `funis`
@@ -2577,25 +2408,25 @@ ALTER TABLE `leads`
 -- AUTO_INCREMENT de tabela `oportunidades`
 --
 ALTER TABLE `oportunidades`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=166;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=167;
 
 --
 -- AUTO_INCREMENT de tabela `oportunidade_itens`
 --
 ALTER TABLE `oportunidade_itens`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=76;
 
 --
 -- AUTO_INCREMENT de tabela `organizacoes`
 --
 ALTER TABLE `organizacoes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=939;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=940;
 
 --
 -- AUTO_INCREMENT de tabela `produtos`
 --
 ALTER TABLE `produtos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT de tabela `propostas`
@@ -2607,7 +2438,7 @@ ALTER TABLE `propostas`
 -- AUTO_INCREMENT de tabela `proposta_itens`
 --
 ALTER TABLE `proposta_itens`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=409;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=446;
 
 --
 -- AUTO_INCREMENT de tabela `usuarios`
@@ -2619,7 +2450,7 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de tabela `vendas_fornecedores`
 --
 ALTER TABLE `vendas_fornecedores`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT de tabela `vendas_objetivos`
@@ -2676,6 +2507,12 @@ ALTER TABLE `oportunidades`
   ADD CONSTRAINT `oportunidades_ibfk_3` FOREIGN KEY (`organizacao_id`) REFERENCES `organizacoes` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `oportunidades_ibfk_4` FOREIGN KEY (`contato_id`) REFERENCES `contatos` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `oportunidades_ibfk_5` FOREIGN KEY (`cliente_pf_id`) REFERENCES `clientes_pf` (`id`) ON DELETE SET NULL;
+
+--
+-- Restrições para tabelas `propostas`
+--
+ALTER TABLE `propostas`
+  ADD CONSTRAINT `fk_propostas_atualizado_por` FOREIGN KEY (`atualizado_por_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL;
 
 --
 -- Restrições para tabelas `vendas_objetivos`
