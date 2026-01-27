@@ -93,7 +93,6 @@ function handle_create_proposal($pdo, $data)
             $data['garantia_acessorios'] ?? null,
             $data['instalacao'] ?? null,
             $data['assistencia_tecnica'] ?? null,
-            $data['assistencia_tecnica'] ?? null,
             $data['observacoes'] ?? null,
             $data['motivo_status'] ?? null
         ]);

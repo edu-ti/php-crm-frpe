@@ -66,7 +66,9 @@ function handle_get_data($pdo)
              cont.email as contato_email,    -- Email do contato
              cont.telefone as contato_telefone, -- Telefone do contato
              u.nome as vendedor_nome,
-             ef.nome as etapa_funil_nome
+             ef.nome as etapa_funil_nome,
+             (SELECT GROUP_CONCAT(DISTINCT descricao SEPARATOR ', ') FROM proposta_itens WHERE proposta_id = p.id) as itens_descricao,
+             (SELECT GROUP_CONCAT(DISTINCT fabricante SEPARATOR ', ') FROM proposta_itens WHERE proposta_id = p.id) as itens_fabricante
          FROM propostas p
          LEFT JOIN organizacoes o ON p.organizacao_id = o.id
          LEFT JOIN clientes_pf c_pf ON p.cliente_pf_id = c_pf.id

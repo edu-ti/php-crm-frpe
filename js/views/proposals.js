@@ -97,6 +97,11 @@ export function renderProposalsView() {
         <div id="proposal-form-container" class="mt-6 ${p.isEditing || p.oportunidade_id ? '' : 'hidden'}">
             <div class="bg-white p-6 rounded-lg shadow-sm border">
                 <h2 id="proposal-form-title" class="text-xl font-bold mb-4">${p.id ? `Editando Proposta ${p.numero_proposta || ''}` : 'Criar Nova Proposta'}</h2>
+                <div class="flex justify-end space-x-4 mb-4">
+                    <button type="button" id="close-proposal-top-btn" class="btn btn-outline-secondary">Fechar</button>
+                    <button type="button" id="cancel-proposal-top-btn" class="btn btn-secondary">Cancelar</button>
+                    <button type="button" id="save-proposal-top-btn" class="btn btn-primary">${p.id ? 'Salvar Alterações' : 'Criar Proposta'}</button>
+                </div>
                 <form id="proposal-form" class="space-y-6">
                      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 border-b pb-4">
                         <div>
@@ -133,6 +138,7 @@ export function renderProposalsView() {
                          </div>
                     </div>
                      <div class="flex justify-end space-x-4 pt-4 border-t">
+                        <button type="button" id="close-proposal-bottom-btn" class="btn btn-outline-secondary">Fechar</button>
                         <button type="button" id="cancel-proposal-edit-btn" class="btn btn-secondary">Cancelar</button>
                         <button type="submit" class="btn btn-primary">${p.id ? 'Salvar Alterações' : 'Criar Proposta'}</button>
                     </div>
@@ -163,12 +169,18 @@ function renderProposalsList() {
         const status = p.status || '';
         const date = formatDate(p.data_criacao);
 
+        const obs = (p.observacoes || '').toLowerCase(); // Opcional, se quiser buscar nas observações
+        const itensDesc = (p.itens_descricao || '').toLowerCase();
+        const itensFab = (p.itens_fabricante || '').toLowerCase();
+
         return clientName.toLowerCase().includes(searchTerm) ||
             proposalNumber.toLowerCase().includes(searchTerm) ||
             contactName.toLowerCase().includes(searchTerm) ||
             docNumber.toLowerCase().includes(searchTerm) ||
             status.toLowerCase().includes(searchTerm) ||
-            date.includes(searchTerm);
+            date.includes(searchTerm) ||
+            itensDesc.includes(searchTerm) ||
+            itensFab.includes(searchTerm);
     });
 
     const { column, direction } = appState.proposalSort;
@@ -902,6 +914,19 @@ async function handleImageUpload(e) {
 }
 
 function addProposalEventListeners() {
+    // --- Listeners para os botões do formulário (Topo e Rodapé) ---
+    const closeProposal = () => {
+        resetProposalState();
+        renderProposalsView();
+    };
+    document.getElementById('close-proposal-top-btn')?.addEventListener('click', closeProposal);
+    document.getElementById('cancel-proposal-top-btn')?.addEventListener('click', closeProposal);
+    document.getElementById('close-proposal-bottom-btn')?.addEventListener('click', closeProposal);
+
+    document.getElementById('save-proposal-top-btn')?.addEventListener('click', () => {
+        document.getElementById('proposal-form')?.requestSubmit();
+    });
+
     document.getElementById('proposal-form')?.addEventListener('submit', handleProposalFormSubmit);
     document.getElementById('cancel-proposal-edit-btn')?.addEventListener('click', () => {
         resetProposalState();
