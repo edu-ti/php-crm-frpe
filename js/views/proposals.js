@@ -28,9 +28,7 @@ export function resetProposalState() {
         observacoes: 'Nenhuma',
         motivo_status: ''
     };
-    appState.proposalsView.currentPage = 1;
-    // --- Padrão de ordenação: Data desc (mais recente primeiro) ---
-    appState.proposalSort = { column: 'data_criacao', direction: 'desc' };
+    // Mantemos a paginação e a ordenação atuais
 }
 
 export function renderProposalsView() {
