@@ -13,7 +13,7 @@ export async function renderReportsView(state) {
 
     const viewContainer = document.getElementById('reports-view');
     viewContainer.innerHTML = `
-        <div class="flex flex-col h-full">
+        <div class="flex flex-col">
             <!-- KPI Cards Section -->
             <div id="kpi-cards-container" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 no-print">
                 <!-- Card 1: Vendas no Ano -->
@@ -90,6 +90,10 @@ export async function renderReportsView(state) {
                     <div class="w-full md:w-auto">
                         <select id="report-type" class="form-select border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-full md:w-40">
                             <option value="sales">Vendas Gerais</option>
+                            <option value="forecast">Forecast (Previsão)</option>
+                            <option value="funnel">Funil de Vendas</option>
+                            <option value="lost_reasons">Motivos de Perda</option>
+                            <option value="clients">Ranking de Clientes (Curva ABC)</option>
                             <option value="products">Vendas por Produto</option>
                             <option value="licitacoes">Licitações</option>
                         </select>
@@ -120,6 +124,24 @@ export async function renderReportsView(state) {
                         </div>
                     </div>
 
+                    <!-- Novos Filtros (Fase 2) -->
+                    <div class="w-full md:w-auto">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Etapa</label>
+                        <div id="filter-etapa-container" class="w-full md:w-48 relative"></div>
+                    </div>
+                    <div class="w-full md:w-auto">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Origem</label>
+                        <div id="filter-origem-container" class="w-full md:w-48 relative"></div>
+                    </div>
+                    <div class="w-full md:w-auto">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">UF</label>
+                        <div id="filter-uf-container" class="w-full md:w-32 relative"></div>
+                    </div>
+                    <div class="w-full md:w-auto">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Status</label>
+                        <div id="filter-status-container" class="w-full md:w-32 relative"></div>
+                    </div>
+
                     <div class="flex flex-wrap gap-2 w-full md:w-auto ml-auto">
                         <button id="refresh-report-btn" class="btn btn-primary text-sm py-2 px-4 shadow-sm hover:shadow-md transition-shadow flex-grow md:flex-grow-0" title="Filtrar">
                              <i class="fas fa-filter mr-1"></i>Filtrar
@@ -139,7 +161,7 @@ export async function renderReportsView(state) {
             </div>
 
             <!-- Área de Relatórios (Tabelas) -->
-            <div id="reports-output-area" class="flex-1 overflow-y-auto print-container space-y-8 pb-8">
+            <div id="reports-output-area" class="print-container space-y-8 pb-8">
                 <div id="report-loading" class="text-center p-8 hidden">
                     <i class="fas fa-spinner fa-spin text-3xl text-indigo-600"></i>
                     <p class="mt-2 text-gray-500">Processando dados...</p>
@@ -303,6 +325,27 @@ function populateFilters() {
     const sellers = users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista'].includes(u.role));
     renderMultiSelect('filter-user-container', 'user-select', sellers.map(u => ({ value: u.id, label: u.nome })), 'Todos os Vendedores');
 
+    // --- Novos Filtros ---
+
+    // Etapas
+    const stages = appState.stages || [];
+    // Flatten funnels if structured differently, but appState.stages usually is flat list or we extract from funnels
+    // If appState.stages is just list of objects with id/nome
+    renderMultiSelect('filter-etapa-container', 'etapa-select', stages.map(s => ({ value: s.id, label: s.nome })), 'Todas as Etapas');
+
+    // Origem
+    const origens = ['Indicação', 'Google', 'Site', 'Instagram', 'Facebook', 'Email Marketing', 'Feira/Evento', 'Importado', 'Outros'];
+    renderMultiSelect('filter-origem-container', 'origem-select', origens.map(o => ({ value: o, label: o })), 'Todas as Origens');
+
+    // UF (Extract from Organizations)
+    const orgs = appState.organizations || [];
+    const ufs = [...new Set(orgs.map(o => o.estado).filter(uf => uf))].sort(); // Unique non-empty UFs
+    renderMultiSelect('filter-uf-container', 'uf-select', ufs.map(uf => ({ value: uf, label: uf })), 'Todos os Estados');
+
+    // Status
+    const statuses = ['Aberto', 'Ganho', 'Perdido'];
+    renderMultiSelect('filter-status-container', 'status-select', statuses.map(s => ({ value: s, label: s })), 'Todos os Status');
+
     // Close dropdowns on outside click
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.multiselect-dropdown')) {
@@ -402,6 +445,10 @@ async function loadReportData() {
     // Get Multi-select values
     const supplierIds = window.getMultiSelectValues('supplier-select');
     const userIds = window.getMultiSelectValues('user-select');
+    const etapaIds = window.getMultiSelectValues('etapa-select');
+    const origemIds = window.getMultiSelectValues('origem-select');
+    const ufIds = window.getMultiSelectValues('uf-select');
+    const statusIds = window.getMultiSelectValues('status-select');
 
     // If empty is "All", let's pass empty array/null.
     // If user explicitly unchecks all, it implies "None"? Or "All"? 
@@ -410,6 +457,10 @@ async function loadReportData() {
 
     const supplierPayload = supplierIds.length > 0 ? supplierIds.join(',') : '';
     const userPayload = userIds.length > 0 ? userIds.join(',') : '';
+    const etapaPayload = etapaIds.length > 0 ? etapaIds.join(',') : '';
+    const origemPayload = origemIds.length > 0 ? origemIds.join(',') : '';
+    const ufPayload = ufIds.length > 0 ? ufIds.join(',') : '';
+    const statusPayload = statusIds.length > 0 ? statusIds.join(',') : '';
 
     // Save Filters to LocalStorage
     localStorage.setItem('reports_filters', JSON.stringify({
@@ -417,7 +468,11 @@ async function loadReportData() {
         start: start,
         end: end,
         suppliers: supplierIds,
-        users: userIds
+        users: userIds,
+        etapas: etapaIds,
+        origens: origemIds,
+        ufs: ufIds,
+        statuses: statusIds
     }));
 
     if (!start || !end) {
@@ -442,7 +497,11 @@ async function loadReportData() {
             start_date: `${start}-01`,
             end_date: formattedEnd,
             supplier_id: supplierPayload,
-            user_id: userPayload
+            user_id: userPayload,
+            etapa_id: etapaPayload,
+            origem: origemPayload, // API expects 'origem' (plural handled by explode) or 'origem_id'? Handler has 'origei' typo variable but gets 'origem'.
+            uf: ufPayload,
+            status: statusPayload
         };
         const response = await apiCall('get_report_data', { params });
 
@@ -476,6 +535,33 @@ function renderReports(data, container, type, startStr, endStr) {
     // Render Chart
     if (typeof renderSalesChart === 'function') {
         renderSalesChart(data, monthsRange, type);
+    }
+
+    if (type === 'clients') {
+        // Clients report is flat, not grouped
+        const html = renderClientsTable(data);
+        container.innerHTML = html;
+        return;
+    }
+
+    if (type === 'forecast') {
+        renderSalesChart(data); // Using the main chart area, no separate table for now or maybe a simple summary
+        // For forecast, we might want a simple summary table below too.
+        const html = renderForecastTable(data);
+        container.innerHTML = html;
+        return;
+    }
+
+    if (type === 'funnel') {
+        const html = renderFunnelTable(data);
+        container.innerHTML = html;
+        return;
+    }
+
+    if (type === 'lost_reasons') {
+        const html = renderLostReasonsTable(data);
+        container.innerHTML = html;
+        return;
     }
 
     data.forEach(group => {
@@ -515,8 +601,8 @@ function renderSalesChart(data, monthsRange, type) {
 
     if (!ctx || !container) return;
 
-    // Only show chart for Sales report
-    if (type !== 'sales' || !data || data.length === 0) {
+    // Show chart for Sales, Clients, Funnel, Lost Reasons, Forecast
+    if (!['sales', 'clients', 'funnel', 'lost_reasons', 'forecast'].includes(type) || !data || data.length === 0) {
         container.classList.add('hidden');
         return;
     }
@@ -528,6 +614,206 @@ function renderSalesChart(data, monthsRange, type) {
         chartInstance.destroy();
     }
 
+    // --- FORECAST CHART ---
+    if (type === 'forecast') {
+        const labels = data.map(r => r.mes);
+        const forecastValues = data.map(r => parseFloat(r.forecast_ponderado) || 0);
+        const pipelineValues = data.map(r => parseFloat(r.pipeline_total) || 0);
+
+        const titleEl = container.querySelector('h3');
+        if (titleEl) titleEl.innerText = "Forecast vs Pipeline Total";
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Previsão Ponderada',
+                        data: forecastValues,
+                        backgroundColor: 'rgba(124, 58, 237, 0.6)', // Purple-600
+                        borderColor: 'rgba(124, 58, 237, 1)',
+                        borderWidth: 1,
+                        order: 2
+                    },
+                    {
+                        type: 'line',
+                        label: 'Pipeline Total',
+                        data: pipelineValues,
+                        borderColor: 'rgba(156, 163, 175, 1)', // Gray-400
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.1,
+                        order: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        return;
+    }
+
+    // --- LOST REASONS CHART ---
+    if (type === 'lost_reasons') {
+        const labels = data.map(r => r.motivo);
+        const values = data.map(r => parseInt(r.qtd));
+
+        const titleEl = container.querySelector('h3');
+        if (titleEl) titleEl.innerText = "Distribuição de Motivos de Perda";
+
+        const backgroundColors = [
+            'rgb(255, 99, 132)',
+            'rgb(54, 162, 235)',
+            'rgb(255, 205, 86)',
+            'rgb(201, 203, 207)',
+            'rgb(75, 192, 192)',
+            'rgb(153, 102, 255)',
+            'rgb(255, 159, 64)'
+        ];
+
+        chartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: backgroundColors,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // Important for fitting
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    }
+                }
+            }
+        });
+        return;
+    }
+
+    // --- FUNNEL CHART ---
+    if (type === 'funnel') {
+        const labels = data.map(r => r.etapa_nome);
+        const values = data.map(r => parseInt(r.qtd_oportunidades));
+        // const valuesVal = data.map(r => parseFloat(r.valor_total)); // Maybe toggle between count/value?
+
+        const titleEl = container.querySelector('h3');
+        if (titleEl) titleEl.innerText = "Funil de Vendas (Quantidade)";
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Oportunidades',
+                    data: values,
+                    backgroundColor: 'rgba(20, 184, 166, 0.6)', // Teal-500
+                    borderColor: 'rgba(20, 184, 166, 1)',
+                    borderWidth: 1,
+                    barPercentage: 0.8, // Make bars thicker
+                }]
+            },
+            options: {
+                indexAxis: 'y', // Horizontal
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return context.raw + ' Oportunidades';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { beginAtZero: true }
+                }
+            }
+        });
+        return;
+    }
+
+    // --- CLIENT CLASSIFICATION CHART ---
+    if (type === 'clients') {
+        const topClients = data.slice(0, 10); // Top 10
+        const labels = topClients.map(c => c.cliente_nome);
+        const values = topClients.map(c => parseFloat(c.valor_total) || 0);
+
+        // Update Title (Hack: We might want to make title dynamic in HTML, but here we go)
+        const titleEl = container.querySelector('h3');
+        if (titleEl) titleEl.innerText = "Top 10 Clientes (Valor Total)";
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Valor Comprado',
+                    data: values,
+                    backgroundColor: 'rgba(79, 70, 229, 0.6)', // Indigo-600
+                    borderColor: 'rgba(79, 70, 229, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y', // Horizontal Bar
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.raw);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function (value) {
+                                return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: "compact" }).format(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        return;
+    } else {
+        // Reset Title for Sales
+        const titleEl = container.querySelector('h3');
+        if (titleEl) titleEl.innerText = "Evolução de Vendas vs Metas";
+    }
+
+    // --- SALES CHART (Existing Logic) ---
     // Process Data
     const labels = monthsRange.map(m => m.label);
     const monthKeys = monthsRange.map(m => m.key);
@@ -822,6 +1108,232 @@ function renderStateReport(group) {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+    `;
+}
+
+function renderClientsTable(data) {
+    const container = document.getElementById('report-results'); // Main container, actually in renderReports we use 'tableContainer' inside wrapper. 
+    // But data for clients comes as a flat array in 'data', unlike sales which is grouped?
+    // Wait, backend returns 'data' as array of rows. 
+    // update renderReports to handle this structure difference.
+
+    // For clients report, 'data' is the array of clients.
+    // We shouldn't be using the 'group' loop if type is clients because it's not grouped by supplier in the same way?
+    // Actually the backend code for 'clients' returns `['data' => $rows, 'type' => 'clients']`.
+    // And `loadReportData` calls `renderReports(currentReportData, ...)`.
+    // If 'clients', `currentReportData` is the array of rows.
+
+    // In renderReports (line 482): `data.forEach(group => { ... })`
+    // This expects grouping.
+    // My backend implementation for 'clients' returned flat rows. 
+    // So `renderReports` will break iterate over rows thinking they are groups?
+    // I need to intercept inside renderReports BEFORE the forEach loop.
+
+    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+    const totalRevenue = data.reduce((acc, row) => acc + (parseFloat(row.valor_total) || 0), 0);
+
+    return `
+        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
+            <div class="px-6 py-4 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
+                <h3 class="font-bold text-indigo-700">Ranking de Clientes (Curva ABC)</h3>
+                <span class="text-xs bg-indigo-200 text-indigo-800 px-2 py-1 rounded-full">Top ${data.length}</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">#</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd Vendas</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Total</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">% Part.</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${data.map((row, index) => {
+        const val = parseFloat(row.valor_total) || 0;
+        const percent = totalRevenue > 0 ? (val / totalRevenue) * 100 : 0;
+        return `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-3 text-center font-bold text-gray-500 border-r border-gray-100">${index + 1}</td>
+                                    <td class="px-6 py-3 text-left font-medium text-gray-700">
+                                        ${row.cliente_nome}
+                                        ${index < 3 ? '<i class="fas fa-trophy text-yellow-500 ml-2"></i>' : ''}
+                                    </td>
+                                    <td class="px-6 py-3 text-center text-gray-600">${row.qtd_vendas}</td>
+                                    <td class="px-6 py-3 text-right font-bold text-gray-800">${format(val)}</td>
+                                    <td class="px-6 py-3 text-right text-gray-500">${percent.toFixed(1)}%</td>
+                                </tr>
+                            `;
+    }).join('')}
+                        <tr class="bg-gray-100 font-bold border-t-2 border-gray-200">
+                            <td colspan="2" class="px-6 py-3 text-right text-gray-900">TOTAL</td>
+                            <td class="px-6 py-3 text-center text-gray-900">${data.reduce((acc, r) => acc + parseInt(r.qtd_vendas), 0)}</td>
+                            <td class="px-6 py-3 text-right text-gray-900">${format(totalRevenue)}</td>
+                            <td class="px-6 py-3 text-right text-gray-900">100.0%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function renderFunnelTable(data) {
+    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    const totalRevenue = data.reduce((acc, row) => acc + (parseFloat(row.valor_total) || 0), 0);
+    const totalCount = data.reduce((acc, row) => acc + parseInt(row.qtd_oportunidades), 0);
+
+    return `
+        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
+            <div class="px-6 py-4 bg-teal-50 border-b border-teal-100 flex justify-between items-center">
+                <h3 class="font-bold text-teal-700">Funil de Vendas (Conversão)</h3>
+                <span class="text-xs bg-teal-200 text-teal-800 px-2 py-1 rounded-full">${totalCount} Oportunidades</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Etapa</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor em Pipeline</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">% (Volume)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${data.map((row, index) => {
+        const val = parseFloat(row.valor_total) || 0;
+        const count = parseInt(row.qtd_oportunidades) || 0;
+        const percent = totalCount > 0 ? (count / totalCount) * 100 : 0;
+
+        // Color Logic for Funnel visualization (Optional, creates a gradient effect)
+        // const opacity = 1 - (index * 0.1); 
+        // style="background-color: rgba(20, 184, 166, ${Math.max(0.1, opacity)})"
+
+        return `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 text-left font-medium text-gray-700">
+                                        <div class="flex items-center">
+                                            <span class="w-6 h-6 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-xs mr-3 font-bold">${index + 1}</span>
+                                            ${row.etapa_nome}
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center text-gray-600 font-bold">${count}</td>
+                                    <td class="px-6 py-4 text-right text-gray-800">${format(val)}</td>
+                                    <td class="px-6 py-4 text-right text-gray-500">
+                                        <div class="flex items-center justify-end">
+                                            <span class="mr-2">${percent.toFixed(1)}%</span>
+                                            <div class="w-16 bg-gray-200 rounded-full h-1.5">
+                                                <div class="bg-teal-500 h-1.5 rounded-full" style="width: ${percent}%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+    }).join('')}
+                        <tr class="bg-gray-100 font-bold border-t-2 border-gray-200">
+                            <td class="px-6 py-4 text-right text-gray-900">TOTAL</td>
+                            <td class="px-6 py-4 text-center text-gray-900">${totalCount}</td>
+                            <td class="px-6 py-4 text-right text-gray-900">${format(totalRevenue)}</td>
+                            <td class="px-6 py-4 text-right text-gray-900">100%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function renderLostReasonsTable(data) {
+    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    const totalCount = data.reduce((acc, row) => acc + parseInt(row.qtd), 0);
+
+    return `
+        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
+            <div class="px-6 py-4 bg-red-50 border-b border-red-100 flex justify-between items-center">
+                <h3 class="font-bold text-red-700">Análise de Motivos de Perda</h3>
+                <span class="text-xs bg-red-200 text-red-800 px-2 py-1 rounded-full">${totalCount} Perdidas</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+                <!-- Tabela -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">%</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${data.map((row, index) => {
+        const count = parseInt(row.qtd) || 0;
+        const percent = totalCount > 0 ? (count / totalCount) * 100 : 0;
+        return `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3 text-sm font-medium text-gray-700">${row.motivo}</td>
+                                        <td class="px-4 py-3 text-sm text-center text-gray-600">${count}</td>
+                                        <td class="px-4 py-3 text-sm text-right text-gray-500">${percent.toFixed(1)}%</td>
+                                    </tr>
+                                `;
+    }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Chart Area (Managed by separate canvas in main container usually, but let's try embedding specific here or use the main one) -->
+                <!-- Note: The main chart logic uses #sales-chart which is outside this container. -->
+                <!-- For Pie chart, it's better to use the main chart area. -->
+                <div class="flex items-center justify-center text-gray-400 text-sm italic">
+                    (Visualize o gráfico acima)
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Fallback logic to prevent "is not defined" errors during cache updates
+window.renderForecastChart = function (data) {
+    if (typeof renderSalesChart === 'function') {
+        renderSalesChart(data, [], 'forecast');
+    }
+}
+
+function renderForecastTable(data) {
+    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    const totalForecast = data.reduce((acc, row) => acc + (parseFloat(row.forecast_ponderado) || 0), 0);
+    const totalPipeline = data.reduce((acc, row) => acc + (parseFloat(row.pipeline_total) || 0), 0);
+
+    return `
+        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
+            <div class="px-6 py-4 bg-purple-50 border-b border-purple-100 flex justify-between items-center">
+                <h3 class="font-bold text-purple-700">Forecast (Previsão de Fechamento)</h3>
+                <span class="text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full">Total Ponderado: ${format(totalForecast)}</span>
+            </div>
+            <div class="p-6">
+                <!-- Forecast Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                        <span class="block text-xs font-semibold text-gray-400 uppercase">Pipeline Total</span>
+                        <span class="block text-xl font-bold text-gray-800">${format(totalPipeline)}</span>
+                    </div>
+                    <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200 text-center">
+                        <span class="block text-xs font-semibold text-indigo-400 uppercase">Forecast Ponderado</span>
+                        <span class="block text-xl font-bold text-indigo-700">${format(totalForecast)}</span>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-200 text-center">
+                        <span class="block text-xs font-semibold text-green-400 uppercase">Confiança Geral</span>
+                        <span class="block text-xl font-bold text-green-700">${totalPipeline > 0 ? ((totalForecast / totalPipeline) * 100).toFixed(1) + '%' : '0%'}</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-center text-gray-400 text-sm italic">
+                    (Visualize a evolução temporal no gráfico acima)
+                </div>
             </div>
         </div>
     `;

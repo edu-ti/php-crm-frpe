@@ -216,7 +216,8 @@ function handle_update_opportunity($pdo, $data)
                 hora_disputa = ?,
                 modalidade = ?,
                 objeto = ?,
-                etapa_id = ?
+                etapa_id = ?,
+                motivo_perda = ?
             WHERE id = ?";
 
     $pdo->beginTransaction();
@@ -239,6 +240,7 @@ function handle_update_opportunity($pdo, $data)
             $data['modalidade'] ?? null,
             $data['objeto'] ?? null,
             $data['etapa_id'] ?? 1, // Ensure etapa_id is updated if sent
+            $data['motivo_perda'] ?? null,
             $data['id']
         ]);
 
@@ -298,7 +300,7 @@ function handle_update_opportunity($pdo, $data)
 
     } catch (Exception $e) {
         $pdo->rollBack();
-        error_log("Erro DB (Update Opportunity): " . $e->getMessage() . " | Data: " . json_encode($data));
+        file_put_contents(__DIR__ . '/../../api_debug_log.txt', date('[Y-m-d H:i:s] ') . "Erro Update Opportunity: " . $e->getMessage() . "\n", FILE_APPEND);
         json_response(['success' => false, 'error' => 'Falha ao atualizar oportunidade e seus itens.'], 500);
     }
 }
