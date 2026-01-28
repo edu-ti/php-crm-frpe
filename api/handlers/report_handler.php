@@ -67,12 +67,12 @@ function handle_get_report_data($pdo)
 
             $sql = "
             SELECT 
-                DATE_FORMAT(COALESCE(o.data_abertura, o.created_at), '%Y-%m') as mes,
+                DATE_FORMAT(COALESCE(o.data_abertura, o.data_criacao), '%Y-%m') as mes,
                 SUM(o.valor * (COALESCE(ef.probabilidade, 0) / 100)) as forecast_ponderado,
                 SUM(o.valor) as pipeline_total
             FROM oportunidades o
             LEFT JOIN etapas_funil ef ON o.etapa_id = ef.id
-            WHERE COALESCE(o.data_abertura, o.created_at) BETWEEN ? AND ?
+            WHERE COALESCE(o.data_abertura, o.data_criacao) BETWEEN ? AND ?
         ";
 
             $params = [$start_date, $end_date];
@@ -98,14 +98,14 @@ function handle_get_report_data($pdo)
 
             $sql = "
             SELECT 
-                COALESCE(NULLIF(motivo_perda, ''), 'Não Informado') as motivo,
-                COUNT(id) as qtd,
-                SUM(valor) as valor_total
+                COALESCE(ef.nome, 'Não Informado') as motivo,
+                COUNT(o.id) as qtd,
+                SUM(o.valor) as valor_total
             FROM oportunidades o
+            LEFT JOIN etapas_funil ef ON o.etapa_id = ef.id
             WHERE o.data_criacao BETWEEN ? AND ?
               AND (
-                  o.etapa_id IN (SELECT id FROM etapas_funil WHERE nome LIKE '%Perdida%' OR nome LIKE '%Recusada%' OR nome LIKE '%Lost%')
-                  OR o.motivo_perda IS NOT NULL
+                  ef.nome LIKE '%Perdida%' OR ef.nome LIKE '%Recusada%' OR ef.nome LIKE '%Lost%'
               )
         ";
 
@@ -413,27 +413,27 @@ function get_products_report($pdo, $start_date, $end_date, $supplier_ids = [], $
     // Corrected Query: Link via Items -> Products -> Suppliers
     $sql = "
         SELECT 
-            p.fornecedor_id,
+            o.fornecedor_id,
             f.nome as fornecedor_nome,
             oi.produto_id,
-            p.nome as produto_nome,
+            p.nome_produto as produto_nome,
             SUM(oi.quantidade) as quantidade,
             AVG(oi.valor_unitario) as valor_unitario,
             MAX(oi.valor_unitario) as valor_max,
-            SUM(oi.valor_total) as valor_total
+            SUM(oi.quantidade * oi.valor_unitario) as valor_total
         FROM oportunidades o
         JOIN oportunidade_itens oi ON o.id = oi.oportunidade_id
         JOIN produtos p ON oi.produto_id = p.id
-        JOIN fornecedores f ON p.fornecedor_id = f.id
-        WHERE o.created_at BETWEEN ? AND ?
+        JOIN fornecedores f ON o.fornecedor_id = f.id
+        WHERE o.data_criacao BETWEEN ? AND ?
     ";
 
     $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
 
-    // Apply Supplier Filter manually on 'p'
+    // Apply Supplier Filter manually on 'o' (fixed table alias)
     if (!empty($supplier_ids)) {
         $in_params = trim(str_repeat('?,', count($supplier_ids)), ',');
-        $sql .= " AND p.fornecedor_id IN ($in_params)";
+        $sql .= " AND o.fornecedor_id IN ($in_params)";
         foreach ($supplier_ids as $id)
             $params[] = $id;
     }
@@ -441,7 +441,7 @@ function get_products_report($pdo, $start_date, $end_date, $supplier_ids = [], $
     // Apply other filters on 'o'
     apply_report_filters_helper($sql, $params, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
 
-    $sql .= " GROUP BY p.fornecedor_id, oi.produto_id, p.nome ORDER BY f.nome, valor_total DESC";
+    $sql .= " GROUP BY o.fornecedor_id, oi.produto_id, p.nome_produto ORDER BY f.nome, valor_total DESC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -477,22 +477,22 @@ function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids = [],
     $sql = "
         SELECT 
             o.id,
-            p.fornecedor_id,
+            o.fornecedor_id,
             f.nome as fornecedor_nome,
             o.numero_edital,
             o.uasg,
             o.objeto,
-            SUM(oi.valor_total) as valor_total, 
-            o.created_at,
+            SUM(oi.quantidade * oi.valor_unitario) as valor_total, 
+            o.data_criacao as created_at,
             o.etapa_id,
             ef.nome as fase_nome
         FROM oportunidades o
         JOIN oportunidade_itens oi ON o.id = oi.oportunidade_id
         JOIN produtos p ON oi.produto_id = p.id
-        JOIN fornecedores f ON p.fornecedor_id = f.id
+        JOIN fornecedores f ON o.fornecedor_id = f.id
         LEFT JOIN etapas_funil ef ON o.etapa_id = ef.id
         WHERE (o.numero_edital IS NOT NULL AND o.numero_edital != '')
-        AND o.created_at BETWEEN ? AND ?
+        AND o.data_criacao BETWEEN ? AND ?
     ";
 
     $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
@@ -500,7 +500,7 @@ function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids = [],
     // Apply Supplier Filter on 'p'
     if (!empty($supplier_ids)) {
         $in_params = trim(str_repeat('?,', count($supplier_ids)), ',');
-        $sql .= " AND p.fornecedor_id IN ($in_params)";
+        $sql .= " AND o.fornecedor_id IN ($in_params)";
         foreach ($supplier_ids as $id)
             $params[] = $id;
     }
@@ -508,7 +508,7 @@ function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids = [],
     // Apply other filters on 'o'
     apply_report_filters_helper($sql, $params, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
 
-    $sql .= " GROUP BY o.id, p.fornecedor_id ORDER BY f.nome, o.created_at DESC";
+    $sql .= " GROUP BY o.id, o.fornecedor_id ORDER BY f.nome, o.data_criacao DESC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
