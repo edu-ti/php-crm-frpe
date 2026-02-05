@@ -122,7 +122,7 @@ function renderProductList() {
                             <td data-label="Unidade" class="table-cell">${p.unidade_medida || 'Unidade'}</td>
                             <td data-label="Ações" class="table-cell text-right space-x-2 actions-cell">
                                 ${permissions.canCreateProduct ? `<button class="action-btn edit-product-btn" title="Editar" data-id="${p.id}"><i class="fas fa-pencil-alt"></i></button>` : ''}
-                                ${permissions.canDelete ? `<button class="action-btn delete-product-btn" title="Excluir" data-id="${p.id}"><i class="fas fa-trash-alt text-red-500 hover:text-red-700"></i></button>` : ''}
+                                ${permissions.canDeleteProduct ? `<button class="action-btn delete-product-btn" title="Excluir" data-id="${p.id}"><i class="fas fa-trash-alt text-red-500 hover:text-red-700"></i></button>` : ''}
                             </td>
                         </tr>
                     `).join('') || `<tr><td colspan="6" class="text-center py-4 text-gray-500">Nenhum produto encontrado.</td></tr>`}

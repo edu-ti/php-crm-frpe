@@ -31,12 +31,13 @@ function handle_get_data($pdo)
         // Permissões Específicas
         'canCreateOpportunity' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
         'canCreateClient' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
-        'canCreateProduct' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Especialista', 'Vendedor']), // Vendedor agora pode
+        'canCreateProduct' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Especialista']), // Vendedor removido
+        'canDeleteProduct' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Especialista']), // Nova permissão específica
         'canEditOwnedItems' => in_array($current_user_role, ['Vendedor', 'Especialista', 'Representante']),
         'canManageLeads' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Marketing', 'Vendedor', 'Especialista']), // Permissão para gerir leads
         'canCreateSchedule' => true,
         'canEditSchedule' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista', 'Representante']),
-        'canSeeReports' => in_array($current_user_role, ['Gestor', 'Analista']), // Nova permissão
+        'canSeeReports' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial']), // Adicionado Comercial
     ];
     $currentUser['permissions'] = $permissions;
 
