@@ -26,7 +26,9 @@ export function resetProposalState() {
         assistencia_tecnica: 'Disponível com suporte especializado para manutenção e pós garantia.',
         assistencia_tecnica: 'Disponível com suporte especializado para manutenção e pós garantia.',
         observacoes: 'Nenhuma',
-        motivo_status: ''
+        motivo_status: '',
+        frete_tipo: 'CIF',
+        frete_valor: 0
     };
     // Mantemos a paginação e a ordenação atuais
 }
@@ -604,6 +606,9 @@ function renderProposalItemsSection() {
         const imageUrl = item.imagem_url || 'https://placehold.co/100x100/e2e8f0/64748b?text=Imagem';
         // --- FIM: Lógica de Cálculo de Valor ---
 
+        // --- CÁLCULO DO FRETE (Adicionado ao Loop, mas aplicado ao Total Geral fora dele) ---
+        // (Nada a fazer dentro do loop de itens)
+
         // --- INÍCIO: Renderização dos Parâmetros ---
         let paramsHtml = '';
         if (item.parametros && Array.isArray(item.parametros) && item.parametros.length > 0) {
@@ -693,15 +698,35 @@ function renderProposalItemsSection() {
          </div>
          <!-- --- Fim: Busca Catálogo --- -->
 
-         <div id="proposal-items-list">${itemsHtml || '<p class="text-center text-gray-500 py-4">Nenhum item adicionado.</p>'}</div>
-         
-         <div class="flex justify-between items-center mt-4">
-            <div>
-                <button type="button" id="toggle-prop-catalog-btn" class="btn btn-secondary"><i class="fas fa-book-open mr-2"></i>Do Catálogo</button>
-                <button type="button" id="add-manual-item-btn" class="btn btn-secondary"><i class="fas fa-plus mr-2"></i>Manual</button>
-            </div>
-            <div class="text-xl font-bold">Total: <span id="proposal-total">${formatCurrency(totalProposta)}</span></div>
-        </div>
+          <div id="proposal-items-list">${itemsHtml || '<p class="text-center text-gray-500 py-4">Nenhum item adicionado.</p>'}</div>
+          
+          <!-- --- INÍCIO: Seção de Frete (Nova) --- -->
+          <div class="mt-4 p-4 bg-gray-100 rounded-md border flex flex-col md:flex-row justify-between items-center gap-4">
+              <div class="flex items-center gap-4 w-full md:w-auto">
+                  <div class="w-full md:w-48">
+                      <label class="form-label font-bold">Frete*</label>
+                      <select name="frete_tipo" id="proposal-frete-tipo" class="form-input">
+                          <option value="CIF" ${appState.proposal.frete_tipo === 'CIF' ? 'selected' : ''}>CIF (Pago pelo Remetente)</option>
+                          <option value="FOB" ${appState.proposal.frete_tipo === 'FOB' ? 'selected' : ''}>FOB (Pago pelo Destinatário)</option>
+                      </select>
+                  </div>
+                  <div class="w-full md:w-48">
+                      <label class="form-label font-bold">Valor do Frete</label>
+                      <input type="text" name="frete_valor" id="proposal-frete-valor" class="form-input text-right" 
+                             value="${formatCurrency(appState.proposal.frete_valor)}" 
+                             ${appState.proposal.frete_tipo === 'CIF' ? 'disabled' : ''}>
+                  </div>
+              </div>
+          </div>
+          <!-- --- FIM: Seção de Frete --- -->
+
+          <div class="flex justify-between items-center mt-4">
+             <div>
+                 <button type="button" id="toggle-prop-catalog-btn" class="btn btn-secondary"><i class="fas fa-book-open mr-2"></i>Do Catálogo</button>
+                 <button type="button" id="add-manual-item-btn" class="btn btn-secondary"><i class="fas fa-plus mr-2"></i>Manual</button>
+             </div>
+             <div class="text-xl font-bold">Total: <span id="proposal-total">${formatCurrency(totalProposta + (parseFloat(appState.proposal.frete_valor) || 0))}</span></div>
+         </div>
     `;
 
     // --- Adiciona Listeners ---
@@ -788,6 +813,37 @@ function renderProposalItemsSection() {
         });
     });
     // --- Fim: Listeners de Parâmetros ---
+
+    // --- INÍCIO: Listeners de Frete ---
+    const freteTipoSelect = document.getElementById('proposal-frete-tipo');
+    const freteValorInput = document.getElementById('proposal-frete-valor');
+
+    if (freteTipoSelect && freteValorInput) {
+        freteTipoSelect.addEventListener('change', (e) => {
+            appState.proposal.frete_tipo = e.target.value;
+            if (e.target.value === 'CIF') {
+                appState.proposal.frete_valor = 0;
+                freteValorInput.value = formatCurrency(0);
+                freteValorInput.disabled = true;
+            } else {
+                freteValorInput.disabled = false;
+            }
+            renderProposalItemsSection(); // Re-renderiza para atualizar o total
+        });
+
+        freteValorInput.addEventListener('blur', (e) => {
+            const valor = parseCurrency(e.target.value);
+            appState.proposal.frete_valor = valor;
+            e.target.value = formatCurrency(valor); // Formata input
+            renderProposalItemsSection(); // Re-renderiza para atualizar o total
+        });
+
+        // Bloqueia caracteres não numéricos enquanto digita, mas mantém a formatação no blur
+        freteValorInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/[^0-9,]/g, '');
+        });
+    }
+    // --- FIM: Listeners de Frete ---
 }
 
 // --- NOVA FUNÇÃO: Renderiza resultados da busca do catálogo (EMBUTIDO) ---
@@ -1070,6 +1126,10 @@ async function handleProposalFormSubmit(e) {
     ['data_validade', 'status', 'faturamento', 'treinamento', 'condicoes_pagamento', 'prazo_entrega',
         'garantia_equipamentos', 'garantia_acessorios', 'instalacao', 'assistencia_tecnica', 'observacoes', 'motivo_status']
         .forEach(key => data[key] = formData.get(key));
+
+    // Adiciona campos de frete explicitamente (já estão no appState, mas por garantia)
+    data.frete_tipo = appState.proposal.frete_tipo;
+    data.frete_valor = appState.proposal.frete_valor;
 
     if (!data.currentClient) return showToast('Por favor, selecione um cliente.', 'error');
     if (!data.items || data.items.length === 0) return showToast('Adicione pelo menos um item à proposta.', 'error');

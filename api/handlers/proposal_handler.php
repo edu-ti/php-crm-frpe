@@ -20,6 +20,10 @@ function handle_create_proposal($pdo, $data)
             $valor_total += (($item['quantidade'] ?? 1) * ($item['valor_unitario'] ?? 0) * $multiplicador);
         }
 
+        // Adiciona o valor do frete ao total
+        $frete_valor = (float) ($data['frete_valor'] ?? 0);
+        $valor_total += $frete_valor;
+
         $cliente_pf_id = ($clientType === 'pf') ? $client['id'] : null;
         $organizacao_id = ($clientType === 'pj') ? $client['id'] : null;
         $contato_id = ($clientType === 'pj' && isset($client['contact'])) ? $client['contact']['id'] : null;
@@ -73,7 +77,8 @@ function handle_create_proposal($pdo, $data)
 
         // Insere a proposta principal
         // MODIFICADO: Usa $proposal_owner_id em vez de $_SESSION['user_id']
-        $sql = "INSERT INTO propostas (oportunidade_id, cliente_pf_id, organizacao_id, contato_id, usuario_id, valor_total, status, data_validade, faturamento, treinamento, condicoes_pagamento, prazo_entrega, garantia_equipamentos, garantia_acessorios, instalacao, assistencia_tecnica, observacoes, motivo_status, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        // Adicionado: frete_tipo, frete_valor
+        $sql = "INSERT INTO propostas (oportunidade_id, cliente_pf_id, organizacao_id, contato_id, usuario_id, valor_total, status, data_validade, faturamento, treinamento, condicoes_pagamento, prazo_entrega, garantia_equipamentos, garantia_acessorios, instalacao, assistencia_tecnica, observacoes, motivo_status, frete_tipo, frete_valor, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         $stmt = $pdo->prepare($sql);
 
         $stmt->execute([
@@ -94,7 +99,10 @@ function handle_create_proposal($pdo, $data)
             $data['instalacao'] ?? null,
             $data['assistencia_tecnica'] ?? null,
             $data['observacoes'] ?? null,
-            $data['motivo_status'] ?? null
+            $data['observacoes'] ?? null,
+            $data['motivo_status'] ?? null,
+            $data['frete_tipo'] ?? 'CIF',
+            $data['frete_valor'] ?? 0
         ]);
         $proposta_id = $pdo->lastInsertId();
 
@@ -238,13 +246,17 @@ function handle_update_proposal($pdo, $data)
             $valor_total += (($item['quantidade'] ?? 1) * ($item['valor_unitario'] ?? 0) * $multiplicador);
         }
 
+        // Adiciona o valor do frete ao total
+        $frete_valor = (float) ($data['frete_valor'] ?? 0);
+        $valor_total += $frete_valor;
+
         // Determina IDs de cliente
         $cliente_pf_id = ($clientType === 'pf') ? $client['id'] : null;
         $organizacao_id = ($clientType === 'pj') ? $client['id'] : null;
         $contato_id = ($clientType === 'pj' && isset($client['contact'])) ? $client['contact']['id'] : null;
 
         // Atualiza a proposta principal (Incluindo atualizado_por_id)
-        $sql = "UPDATE propostas SET cliente_pf_id = ?, organizacao_id = ?, contato_id = ?, valor_total = ?, status = ?, data_validade = ?, faturamento = ?, treinamento = ?, condicoes_pagamento = ?, prazo_entrega = ?, garantia_equipamentos = ?, garantia_acessorios = ?, instalacao = ?, assistencia_tecnica = ?, observacoes = ?, motivo_status = ?, atualizado_por_id = ? WHERE id = ?";
+        $sql = "UPDATE propostas SET cliente_pf_id = ?, organizacao_id = ?, contato_id = ?, valor_total = ?, status = ?, data_validade = ?, faturamento = ?, treinamento = ?, condicoes_pagamento = ?, prazo_entrega = ?, garantia_equipamentos = ?, garantia_acessorios = ?, instalacao = ?, assistencia_tecnica = ?, observacoes = ?, motivo_status = ?, frete_tipo = ?, frete_valor = ?, atualizado_por_id = ? WHERE id = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             $cliente_pf_id,
@@ -263,6 +275,8 @@ function handle_update_proposal($pdo, $data)
             $data['assistencia_tecnica'] ?? null,
             $data['observacoes'] ?? null,
             $data['motivo_status'] ?? null,
+            $data['frete_tipo'] ?? 'CIF',
+            $data['frete_valor'] ?? 0,
             $_SESSION['user_id'], // salva quem atualizou
             $proposalId
         ]);

@@ -13,7 +13,7 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     die('ID da proposta inválido ou não fornecido.');
 }
 
-$proposal_id = (int)$_GET['id'];
+$proposal_id = (int) $_GET['id'];
 $proposal = null;
 $company_info = [
     'name' => 'FR PRODUTOS MÉDICOS',
@@ -88,12 +88,16 @@ if (!$proposal) {
 
 $total_geral = 0;
 
-function format_currency($value) {
-    if (is_null($value) || !is_numeric($value)) return 'R$ 0,00';
+function format_currency($value)
+{
+    if (is_null($value) || !is_numeric($value))
+        return 'R$ 0,00';
     return 'R$ ' . number_format($value, 2, ',', '.');
 }
-function format_date($value, $format = 'd/m/Y') {
-    if (!$value || $value === '0000-00-00') return 'N/A';
+function format_date($value, $format = 'd/m/Y')
+{
+    if (!$value || $value === '0000-00-00')
+        return 'N/A';
     // --- CORREÇÃO: Define o fuso horário para evitar problemas ---
     try {
         $date = new DateTime($value, new DateTimeZone('America/Recife'));
@@ -105,6 +109,7 @@ function format_date($value, $format = 'd/m/Y') {
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -116,7 +121,7 @@ function format_date($value, $format = 'd/m/Y') {
             theme: {
                 extend: {
                     screens: {
-                        'print': {'raw': 'print'},
+                        'print': { 'raw': 'print' },
                     }
                 }
             }
@@ -130,7 +135,7 @@ function format_date($value, $format = 'd/m/Y') {
             auto: true,
             after: (flow) => {
                 console.log("Paged.js finish - Injecting Buttons safely");
-                
+
                 // Use setTimeout to ensure DOM is settled and override any Paged.js cleanup
                 setTimeout(() => {
                     // Remove existing check
@@ -138,14 +143,14 @@ function format_date($value, $format = 'd/m/Y') {
                     if (existing) existing.remove();
 
                     // Re-inject the floating action buttons
-                const printUi = document.createElement('div');
-                printUi.id = 'print-controls';
-                
-                // NO INLINE DISPLAY STYLE to allow CSS override. 
-                // We keep position and z-index here for safety, but display is handled by CSS.
-                printUi.style.cssText = "position: fixed; top: 20px; right: 20px; z-index: 2147483647; pointer-events: auto;";
-                
-                printUi.innerHTML = `
+                    const printUi = document.createElement('div');
+                    printUi.id = 'print-controls';
+
+                    // NO INLINE DISPLAY STYLE to allow CSS override. 
+                    // We keep position and z-index here for safety, but display is handled by CSS.
+                    printUi.style.cssText = "position: fixed; top: 20px; right: 20px; z-index: 2147483647; pointer-events: auto;";
+
+                    printUi.innerHTML = `
                     <!-- Print Button -->
                     <button onclick="window.print()" style="width: 56px; height: 56px; border-radius: 50%; background-color: #4f46e5; color: white; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="Imprimir">
                         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,51 +165,52 @@ function format_date($value, $format = 'd/m/Y') {
                         </svg>
                     </button>
                 `;
-                document.body.appendChild(printUi);
-                
-                // Add JS event listeners for printing as a failsafe
-                const handleBeforePrint = () => {
-                    const controls = document.getElementById('print-controls');
-                    if (controls) controls.style.display = 'none';
-                };
-                const handleAfterPrint = () => {
-                   const controls = document.getElementById('print-controls');
-                   if (controls) controls.style.display = 'flex'; // Restore logic
-                };
-                
-                window.addEventListener('beforeprint', handleBeforePrint);
-                window.addEventListener('afterprint', handleAfterPrint);
-            }, 500);
-        }
-    };
-</script>
+                    document.body.appendChild(printUi);
 
-<!-- Explicit Print Hiding for the Controls -->
-<style>
-    /* Screen styles: Visible */
-    #print-controls {
-        display: flex; /* Removed !important to allow JS override */
-        flex-direction: column; 
-        gap: 12px;
-    }
-    
-    /* Print styles: Hidden (backup) */
-    @media print {
+                    // Add JS event listeners for printing as a failsafe
+                    const handleBeforePrint = () => {
+                        const controls = document.getElementById('print-controls');
+                        if (controls) controls.style.display = 'none';
+                    };
+                    const handleAfterPrint = () => {
+                        const controls = document.getElementById('print-controls');
+                        if (controls) controls.style.display = 'flex'; // Restore logic
+                    };
+
+                    window.addEventListener('beforeprint', handleBeforePrint);
+                    window.addEventListener('afterprint', handleAfterPrint);
+                }, 500);
+            }
+        };
+    </script>
+
+    <!-- Explicit Print Hiding for the Controls -->
+    <style>
+        /* Screen styles: Visible */
         #print-controls {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
+            display: flex;
+            /* Removed !important to allow JS override */
+            flex-direction: column;
+            gap: 12px;
         }
-    }
-</style>
+
+        /* Print styles: Hidden (backup) */
+        @media print {
+            #print-controls {
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+            }
+        }
+    </style>
 
     <!-- Paged.js CDN -->
     <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
-    
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc; 
+            background-color: #f8fafc;
             color: #333;
         }
 
@@ -212,30 +218,32 @@ function format_date($value, $format = 'd/m/Y') {
         @page {
             size: A4;
             /* Increased top margin to 55mm to prevent clipping */
-            margin: 37mm 10mm 10mm 10mm; 
-            
+            margin: 37mm 10mm 10mm 10mm;
+
             /* Place the running header in the top-center margin box */
             @top-center {
                 content: element(headerInfo);
                 width: 100%;
-                vertical-align: bottom; /* Aligns content to the bottom of the margin header area */
+                vertical-align: bottom;
+                /* Aligns content to the bottom of the margin header area */
             }
-            
+
             /* Remove footer pagination as it moved to header */
             @bottom-right {
                 content: none;
             }
         }
-        
+
         /* Define the Header as a Running Element */
         .running-header {
             position: running(headerInfo);
-            width: 100%; 
+            width: 100%;
             /* Removed bottom margins to prevent pushing content up off the page */
-            margin-bottom: 0 !important; 
-            padding-bottom: 5px; /* Slight padding for the border */
+            margin-bottom: 0 !important;
+            padding-bottom: 5px;
+            /* Slight padding for the border */
         }
-        
+
         /* Render Page Counter inside the HTML element */
         .page-counter::after {
             content: "Página " counter(page) " de " counter(pages);
@@ -255,6 +263,7 @@ function format_date($value, $format = 'd/m/Y') {
             align-items: center;
             padding-top: 20px;
         }
+
         .pagedjs_page {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
@@ -262,26 +271,36 @@ function format_date($value, $format = 'd/m/Y') {
             /* Debugging margins */
             /* --pagedjs-margin-top: 55mm !important; */
         }
-        
+
         /* Table Styles */
-        .ref-table { 
-            width: 100%; 
-            border-collapse: separate; /* Changed from collapse to separate for rounded corners */
-            border-spacing: 0; 
-            margin-bottom: 20px; 
+        .ref-table {
+            width: 100%;
+            border-collapse: separate;
+            /* Changed from collapse to separate for rounded corners */
+            border-spacing: 0;
+            margin-bottom: 20px;
         }
+
         .ref-table th {
             background-color: #2e2a78;
             color: #ffffff;
             font-weight: 500;
-            text-transform: capitalize; 
+            text-transform: capitalize;
             font-size: 8pt;
             padding: 8px 10px;
             text-align: left;
         }
+
         /* First and Last TH rounding */
-        .ref-table th:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
-        .ref-table th:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+        .ref-table th:first-child {
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        .ref-table th:last-child {
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
 
         .ref-table td {
             padding: 10px;
@@ -298,21 +317,36 @@ function format_date($value, $format = 'd/m/Y') {
             border-radius: 8px;
             padding: 10px;
             margin-bottom: 10px;
-            font-size: 8pt; 
+            font-size: 8pt;
         }
 
         @media print {
-            .no-print { display: none !important; }
-            body { background: white; margin: 0; }
-            .pagedjs_pages { padding: 0; display: block; }
-            .pagedjs_page { box-shadow: none; margin: 0; }
-            
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                background: white;
+                margin: 0;
+            }
+
+            .pagedjs_pages {
+                padding: 0;
+                display: block;
+            }
+
+            .pagedjs_page {
+                box-shadow: none;
+                margin: 0;
+            }
+
             /* Force background colors */
             .ref-table th {
                 background-color: #2e2a78 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
+
             .client-box {
                 background-color: #f9fafb !important;
                 -webkit-print-color-adjust: exact;
@@ -321,36 +355,39 @@ function format_date($value, $format = 'd/m/Y') {
         }
     </style>
 </head>
+
 <body>
     <!-- Static Header removed - Injected via JS after Paged.js render -->
 
     <!-- Spacer for fixed top bar -->
     <div class="h-24 no-print print:hidden"></div>
 
-    <div id="content"> 
-        
+    <div id="content">
+
         <!-- Header - Moved to Running Element via CSS -->
         <header class="running-header border-b border-[#2e2a78] pb-4">
             <!-- Row 1: Title Only (Visual Alignment) -->
             <div class="text-right mb-2">
-                 <h1 class="text-[11pt] font-black text-[#2e2a78] uppercase leading-none tracking-tight">PROPOSTA COMERCIAL</h1>
+                <h1 class="text-[11pt] font-black text-[#2e2a78] uppercase leading-none tracking-tight">PROPOSTA
+                    COMERCIAL</h1>
             </div>
 
             <div class="flex justify-between items-start">
-                
+
                 <!-- Left Side: Logo | Divider | Company Info -->
-                <div class="flex items-start"> 
+                <div class="flex items-start">
                     <!-- Logo -->
                     <div class="flex-shrink-0 mr-4 self-center">
-                         <img src="imagens/LOGO-FR.webp" alt="Logo FR" class="h-12 w-auto object-contain">
+                        <img src="imagens/LOGO-FR.webp" alt="Logo FR" class="h-12 w-auto object-contain">
                     </div>
-                    
+
                     <!-- Vertical Divider -->
                     <div class="w-[0.5px] bg-[#2e2a78] self-stretch mr-4 opacity-100"></div>
 
                     <!-- Company Info -->
                     <div class="flex flex-col justify-center text-[6.5pt] text-slate-500 leading-snug text-left py-1">
-                        <p class="font-bold text-[#2e2a78] text-[8pt] uppercase tracking-tight mb-0.5"><?php echo htmlspecialchars($company_info['name']); ?></p>
+                        <p class="font-bold text-[#2e2a78] text-[8pt] uppercase tracking-tight mb-0.5">
+                            <?php echo htmlspecialchars($company_info['name']); ?></p>
                         <p class="mb-px">CNPJ: <?php echo htmlspecialchars($company_info['cnpj']); ?></p>
                         <p class="mb-px"><?php echo htmlspecialchars($company_info['address']); ?></p>
                         <div class="flex flex-wrap gap-1 mb-px">
@@ -365,14 +402,18 @@ function format_date($value, $format = 'd/m/Y') {
                 <!-- Right Side: Number | Dates | Page -->
                 <!-- Pt-0.5 ensures baseline alignment with Company Name if fonts match closely -->
                 <div class="text-right flex flex-col pt-0.5">
-                    
+
                     <!-- Number with precise color match and alignment to Company Name -->
-                    <p class="text-[8pt] font-bold text-[#94a3b8] mb-1 leading-none">Nº <?php echo htmlspecialchars($proposal['numero_proposta']); ?></p>
-                    
+                    <p class="text-[8pt] font-bold text-[#94a3b8] mb-1 leading-none">Nº
+                        <?php echo htmlspecialchars($proposal['numero_proposta']); ?></p>
+
                     <!-- Dates & Page -->
                     <div class="text-[7pt] text-slate-600 leading-tight mt-1">
-                        <p class="mb-0.5">Data de Emissão: <span class="font-bold text-[#2e2a78]"><?php echo format_date($proposal['data_criacao']); ?></span></p>
-                        <p class="mb-0.5 font-bold text-red-600">Validade: <?php echo format_date($proposal['data_validade']); ?></p>
+                        <p class="mb-0.5">Data de Emissão: <span
+                                class="font-bold text-[#2e2a78]"><?php echo format_date($proposal['data_criacao']); ?></span>
+                        </p>
+                        <p class="mb-0.5 font-bold text-red-600">Validade:
+                            <?php echo format_date($proposal['data_validade']); ?></p>
                         <p class="text-[#94a3b8] page-counter font-normal text-[7.5pt] mt-1"></p>
                     </div>
                 </div>
@@ -385,25 +426,42 @@ function format_date($value, $format = 'd/m/Y') {
         <!-- Client Info - Font reduced via .client-box CSS class -->
         <div class="client-box grid grid-cols-2 gap-8 break-inside-avoid shadow-sm">
             <div class="space-y-1.5">
-                <p><span class="font-bold text-slate-700">Cliente:</span> <span class="uppercase font-semibold text-slate-600"><?php echo htmlspecialchars($proposal['cnpj'] ?: $proposal['cpf']); ?> <?php echo htmlspecialchars($proposal['organizacao_nome'] ?: $proposal['cliente_pf_nome']); ?></span></p>
-                <p><span class="font-bold text-slate-700">CNPJ/CPF:</span> <span class="text-slate-600"><?php echo htmlspecialchars($proposal['cnpj'] ?: $proposal['cpf']); ?></span></p>
-                <p class="flex items-start gap-1">
-                    <span class="font-bold text-slate-700 whitespace-nowrap">Endereço:</span> 
-                    <span class="text-slate-600"><?php echo htmlspecialchars($proposal['logradouro'] . ', ' . $proposal['org_numero'] . ($proposal['org_complemento'] ? ' (' . $proposal['org_complemento'] . ')' : '')); ?> - <?php echo htmlspecialchars($proposal['org_bairro']); ?></span>
+                <p><span class="font-bold text-slate-700">Cliente:</span> <span
+                        class="uppercase font-semibold text-slate-600"><?php echo htmlspecialchars($proposal['cnpj'] ?: $proposal['cpf']); ?>
+                        <?php echo htmlspecialchars($proposal['organizacao_nome'] ?: $proposal['cliente_pf_nome']); ?></span>
                 </p>
-                <p><span class="font-bold text-slate-700">Cidade/UF:</span> <span class="uppercase text-slate-600"><?php echo htmlspecialchars($proposal['org_cidade'] . ' - ' . $proposal['org_estado']); ?> - CEP: <?php echo htmlspecialchars($proposal['org_cep']); ?></span></p>
+                <p><span class="font-bold text-slate-700">CNPJ/CPF:</span> <span
+                        class="text-slate-600"><?php echo htmlspecialchars($proposal['cnpj'] ?: $proposal['cpf']); ?></span>
+                </p>
+                <p class="flex items-start gap-1">
+                    <span class="font-bold text-slate-700 whitespace-nowrap">Endereço:</span>
+                    <span
+                        class="text-slate-600"><?php echo htmlspecialchars($proposal['logradouro'] . ', ' . $proposal['org_numero'] . ($proposal['org_complemento'] ? ' (' . $proposal['org_complemento'] . ')' : '')); ?>
+                        - <?php echo htmlspecialchars($proposal['org_bairro']); ?></span>
+                </p>
+                <p><span class="font-bold text-slate-700">Cidade/UF:</span> <span
+                        class="uppercase text-slate-600"><?php echo htmlspecialchars($proposal['org_cidade'] . ' - ' . $proposal['org_estado']); ?>
+                        - CEP: <?php echo htmlspecialchars($proposal['org_cep']); ?></span></p>
             </div>
             <div class="space-y-1.5">
-                <p><span class="font-bold text-slate-700">Contato:</span> <span class="text-slate-600"><?php echo htmlspecialchars($proposal['contato_nome'] ?: 'N/A'); ?></span></p>
-                <p><span class="font-bold text-slate-700">Telefone:</span> <span class="text-slate-600"><?php echo htmlspecialchars($proposal['contato_telefone'] ?: 'N/A'); ?></span></p>
-                <p><span class="font-bold text-slate-700">E-mail:</span> <span class="text-slate-600"><?php echo htmlspecialchars($proposal['contato_email'] ?: 'N/A'); ?></span></p>
+                <p><span class="font-bold text-slate-700">Contato:</span> <span
+                        class="text-slate-600"><?php echo htmlspecialchars($proposal['contato_nome'] ?: 'N/A'); ?></span>
+                </p>
+                <p><span class="font-bold text-slate-700">Telefone:</span> <span
+                        class="text-slate-600"><?php echo htmlspecialchars($proposal['contato_telefone'] ?: 'N/A'); ?></span>
+                </p>
+                <p><span class="font-bold text-slate-700">E-mail:</span> <span
+                        class="text-slate-600"><?php echo htmlspecialchars($proposal['contato_email'] ?: 'N/A'); ?></span>
+                </p>
             </div>
         </div>
 
         <!-- Intro -->
         <div class="mb-6 text-[8pt] text-slate-600 leading-relaxed text-justify break-inside-avoid">
             <p class="mb-2">Prezados (as),</p>
-            <p>A <strong>FR Produtos Médicos</strong> agradece seu interesse em nossos produtos e serviços. Sabemos da sua importância em sempre oferecer a mais alta tecnologia para a melhor e mais rápida recuperação do paciente e também em oferecer segurança aos profissionais da saúde.</p>
+            <p>A <strong>FR Produtos Médicos</strong> agradece seu interesse em nossos produtos e serviços. Sabemos da
+                sua importância em sempre oferecer a mais alta tecnologia para a melhor e mais rápida recuperação do
+                paciente e também em oferecer segurança aos profissionais da saúde.</p>
         </div>
 
         <!-- Table -->
@@ -420,141 +478,190 @@ function format_date($value, $format = 'd/m/Y') {
                 </tr>
             </thead>
             <tbody>
-                <?php foreach($proposal['items'] as $item): 
+                <?php foreach ($proposal['items'] as $item):
                     $valor_unitario_base = (float) ($item['valor_unitario'] ?? 0);
                     $valor_parametros = 0;
                     $visible_params = [];
                     $is_locacao = (strtoupper($item['status']) === 'LOCAÇÃO');
-                    $meses_locacao = 1; 
+                    $meses_locacao = 1;
 
                     if ($is_locacao && !empty($item['meses_locacao'])) {
                         $meses_locacao = (int) $item['meses_locacao'];
                     } elseif ($is_locacao && empty($meses_locacao)) {
-                        $meses_locacao = 1; 
+                        $meses_locacao = 1;
                     }
 
                     if (!empty($item['parametros']) && is_array($item['parametros'])) {
                         foreach ($item['parametros'] as $param) {
-                            if (($param['nome'] ?? '') === '__meses_locacao') continue; 
+                            if (($param['nome'] ?? '') === '__meses_locacao')
+                                continue;
                             $valor_limpo = str_replace(',', '.', preg_replace('/[^\d,]/', '', $param['valor'] ?? '0'));
                             $valor_parametros += (float) $valor_limpo;
                             $visible_params[] = $param;
                         }
                     }
-                    
+
                     $valor_unitario_total = $valor_unitario_base + $valor_parametros;
                     $quantidade = (int) ($item['quantidade'] ?? 1);
                     $multiplicador = $is_locacao ? $meses_locacao : 1;
                     $subtotal = $valor_unitario_total * $quantidade * $multiplicador;
                     $total_geral += $subtotal;
                     $unidade_medida = $is_locacao ? 'Mês' : ($item['unidade_medida'] ?: 'Unidade');
-                ?>
-                <tr class="break-inside-avoid">
-                    <td class="text-center align-middle">
-                        <img src="<?php echo htmlspecialchars($item['imagem_url'] ?: 'https://placehold.co/40x40/e2e8f0/64748b?text=IMG'); ?>" class="w-10 h-10 object-contain mx-auto" onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=IMG'">
-                    </td>
-                    <td>
-                        <div class="font-bold text-[#2e2a78] uppercase text-[8.5pt]"><?php echo htmlspecialchars($item['descricao']); ?></div>
-                        <div class="text-[7.5pt] uppercase text-slate-500 font-semibold"><?php echo htmlspecialchars($item['fabricante'] . ' - ' . $item['modelo']); ?></div>
-                        <div class="text-[7.5pt] text-slate-500 italic mt-1">
-                            <?php echo nl2br(htmlspecialchars($item['descricao_detalhada'])); ?>
-                        </div>
-                    </td>
-                    <td class="text-center">
-                        <div class="text-[7pt] font-semibold text-slate-600 uppercase"><?php echo $is_locacao ? 'LOCAÇÃO' : 'VENDA'; ?></div>
-                        <?php if ($is_locacao): ?>
-                            <div class="text-[7pt] text-slate-400"><?php echo $meses_locacao; ?> MESES</div>
-                        <?php endif; ?>
-                    </td>
-                    <td class="text-center"><?php echo htmlspecialchars($unidade_medida); ?></td>
-                    <td class="text-center font-bold text-slate-700"><?php echo htmlspecialchars($quantidade); ?></td>
-                    <!-- MAIN ROW: Base Price and Base Subtotal -->
-                    <td class="text-right whitespace-nowrap text-slate-600"><?php echo format_currency($valor_unitario_base); ?></td>
-                    <td class="text-right font-bold text-slate-600 whitespace-nowrap"><?php echo format_currency($valor_unitario_base * $quantidade * ($is_locacao ? $meses_locacao : 1)); ?></td>
-                </tr>
-                <?php if (!empty($visible_params)): ?>
-                    <!-- ROW: Params Header -->
-                    <tr class="bg-blue-50 print:bg-blue-50" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                        <td class="py-1"></td> <!-- Img col spacing -->
-                        <td colspan="4" class="py-1 pl-2 text-[8.5pt] font-bold text-gray-900 uppercase leading-none rounded-l-lg">
-                            PARAMETROS ADICIONAIS
-                        </td>
-                        <td class="py-1"></td> <!-- Price col -->
-                        <td class="rounded-r-lg"></td> <!-- Subtotal col -->
-                    </tr>
-                    <!-- ROWS: Params Items -->
-                    <?php 
-                    $total_params = count($visible_params);
-                    $counter = 0;
-                    foreach ($visible_params as $param): 
-                        $counter++;
-                        $val_str = $param['valor'] ?? '0';
-                        $val_clean = str_replace(',', '.', preg_replace('/[^\d,]/', '', $val_str));
-                        $val_float = (float) $val_clean;
-                        
-                        // Calculations
-                        $param_subtotal = $val_float * $quantidade * $multiplicador;
                     ?>
-                    <tr class="bg-white print:bg-white" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                        <td></td>
-                        <td colspan="4" class="pl-2 pr-2 text-[8pt] text-gray-800">
-                            <div class="flex items-end">
-                                <span class="uppercase font-semibold leading-tight pr-1 whitespace-nowrap"><?php echo htmlspecialchars($param['nome']); ?></span>
-                                <div class="flex-grow border-b-[1.5px] border-dotted border-gray-400 mb-[4px] opacity-70"></div>
+                    <tr class="break-inside-avoid">
+                        <td class="text-center align-middle">
+                            <img src="<?php echo htmlspecialchars($item['imagem_url'] ?: 'https://placehold.co/40x40/e2e8f0/64748b?text=IMG'); ?>"
+                                class="w-10 h-10 object-contain mx-auto"
+                                onerror="this.onerror=null;this.src='https://placehold.co/40x40/e2e8f0/64748b?text=IMG'">
+                        </td>
+                        <td>
+                            <div class="font-bold text-[#2e2a78] uppercase text-[8.5pt]">
+                                <?php echo htmlspecialchars($item['descricao']); ?></div>
+                            <div class="text-[7.5pt] uppercase text-slate-500 font-semibold">
+                                <?php echo htmlspecialchars($item['fabricante'] . ' - ' . $item['modelo']); ?></div>
+                            <div class="text-[7.5pt] text-slate-500 italic mt-1">
+                                <?php echo nl2br(htmlspecialchars($item['descricao_detalhada'])); ?>
                             </div>
                         </td>
-                        <!-- Unit Price -->
-                        <td class="text-right whitespace-nowrap text-[8pt] font-bold text-gray-800 align-bottom pb-1">
-                            <?php echo format_currency($val_float); ?>
+                        <td class="text-center">
+                            <div class="text-[7pt] font-semibold text-slate-600 uppercase">
+                                <?php echo $is_locacao ? 'LOCAÇÃO' : 'VENDA'; ?></div>
+                            <?php if ($is_locacao): ?>
+                                <div class="text-[7pt] text-slate-400"><?php echo $meses_locacao; ?> MESES</div>
+                            <?php endif; ?>
                         </td>
-                        <!-- Subtotal (Added) -->
-                        <td class="text-right whitespace-nowrap text-[8pt] font-bold text-red-600 align-bottom pb-1">
-                            <?php echo format_currency($param_subtotal); ?>
+                        <td class="text-center"><?php echo htmlspecialchars($unidade_medida); ?></td>
+                        <td class="text-center font-bold text-slate-700"><?php echo htmlspecialchars($quantidade); ?></td>
+                        <!-- MAIN ROW: Base Price and Base Subtotal -->
+                        <td class="text-right whitespace-nowrap text-slate-600">
+                            <?php echo format_currency($valor_unitario_base); ?></td>
+                        <td class="text-right font-bold text-slate-600 whitespace-nowrap">
+                            <?php echo format_currency($valor_unitario_base * $quantidade * ($is_locacao ? $meses_locacao : 1)); ?>
                         </td>
                     </tr>
-                    <?php endforeach; ?>
-                    
-                    <!-- ROW: Footer (Total Final) -->
-                    <tr class="bg-gray-100 print:bg-gray-100" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                         <td></td>
-                         <td colspan="4" class="py-1 pl-2 text-right rounded-l-lg">
-                             <span class="text-[8.5pt] font-black text-gray-900 uppercase">VALOR UNITÁRIO FINAL (Base + Adicionais):</span>
-                         </td>
-                         <td class="py-1 text-right whitespace-nowrap text-[9pt] font-black text-gray-900">
-                             <?php echo format_currency($valor_unitario_total); ?>
-                         </td>
-                         <td class="py-1 pr-2 text-right whitespace-nowrap text-[9pt] font-black text-red-600 rounded-r-lg">
-                             <?php  // Final Subtotal
-                                $final_subtotal = $valor_unitario_total * $quantidade * ($is_locacao ? $meses_locacao : 1);
-                                echo format_currency($final_subtotal); 
-                             ?>
-                         </td>
-                    </tr>
+                    <?php if (!empty($visible_params)): ?>
+                        <!-- ROW: Params Header -->
+                        <tr class="bg-blue-50 print:bg-blue-50"
+                            style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                            <td class="py-1"></td> <!-- Img col spacing -->
+                            <td colspan="4"
+                                class="py-1 pl-2 text-[8.5pt] font-bold text-gray-900 uppercase leading-none rounded-l-lg">
+                                PARAMETROS ADICIONAIS
+                            </td>
+                            <td class="py-1"></td> <!-- Price col -->
+                            <td class="rounded-r-lg"></td> <!-- Subtotal col -->
+                        </tr>
+                        <!-- ROWS: Params Items -->
+                        <?php
+                        $total_params = count($visible_params);
+                        $counter = 0;
+                        foreach ($visible_params as $param):
+                            $counter++;
+                            $val_str = $param['valor'] ?? '0';
+                            $val_clean = str_replace(',', '.', preg_replace('/[^\d,]/', '', $val_str));
+                            $val_float = (float) $val_clean;
 
-                    <!-- Spacer Row to separate from next item -->
-                    <tr><td colspan="7" class="h-2"></td></tr>
-                <?php endif; ?>
+                            // Calculations
+                            $param_subtotal = $val_float * $quantidade * $multiplicador;
+                            ?>
+                            <tr class="bg-white print:bg-white"
+                                style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                                <td></td>
+                                <td colspan="4" class="pl-2 pr-2 text-[8pt] text-gray-800">
+                                    <div class="flex items-end">
+                                        <span
+                                            class="uppercase font-semibold leading-tight pr-1 whitespace-nowrap"><?php echo htmlspecialchars($param['nome']); ?></span>
+                                        <div class="flex-grow border-b-[1.5px] border-dotted border-gray-400 mb-[4px] opacity-70">
+                                        </div>
+                                    </div>
+                                </td>
+                                <!-- Unit Price -->
+                                <td class="text-right whitespace-nowrap text-[8pt] font-bold text-gray-800 align-bottom pb-1">
+                                    <?php echo format_currency($val_float); ?>
+                                </td>
+                                <!-- Subtotal (Added) -->
+                                <td class="text-right whitespace-nowrap text-[8pt] font-bold text-red-600 align-bottom pb-1">
+                                    <?php echo format_currency($param_subtotal); ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+
+                        <!-- ROW: Footer (Total Final) -->
+                        <tr class="bg-gray-100 print:bg-gray-100"
+                            style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                            <td></td>
+                            <td colspan="4" class="py-1 pl-2 text-right rounded-l-lg">
+                                <span class="text-[8.5pt] font-black text-gray-900 uppercase">VALOR UNITÁRIO FINAL (Base +
+                                    Adicionais):</span>
+                            </td>
+                            <td class="py-1 text-right whitespace-nowrap text-[9pt] font-black text-gray-900">
+                                <?php echo format_currency($valor_unitario_total); ?>
+                            </td>
+                            <td class="py-1 pr-2 text-right whitespace-nowrap text-[9pt] font-black text-red-600 rounded-r-lg">
+                                <?php  // Final Subtotal
+                                        $final_subtotal = $valor_unitario_total * $quantidade * ($is_locacao ? $meses_locacao : 1);
+                                        echo format_currency($final_subtotal);
+                                        ?>
+                            </td>
+                        </tr>
+
+                        <!-- Spacer Row to separate from next item -->
+                        <tr>
+                            <td colspan="7" class="h-2"></td>
+                        </tr>
+                    <?php endif; ?>
                 <?php endforeach; ?>
+
+                <!-- FREIGHT ROW -->
+                <?php
+                $frete_tipo = $proposal['frete_tipo'] ?? 'CIF';
+                $frete_valor = (float) ($proposal['frete_valor'] ?? 0);
+                $total_geral += $frete_valor;
+                ?>
+                <tr class="bg-gray-50 break-inside-avoid print:bg-gray-50"
+                    style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                    <td colspan="6" class="text-right py-2 px-4 text-[8.5pt] uppercase font-bold text-slate-600">
+                        Frete (<?php echo htmlspecialchars($frete_tipo); ?>)
+                    </td>
+                    <td class="text-right py-2 px-4 text-[9pt] font-bold text-slate-700 whitespace-nowrap">
+                        <?php echo format_currency($frete_valor); ?>
+                    </td>
+                </tr>
+
                 <!-- Total -->
-                <tr class="bg-[#D1D5DB] break-inside-avoid print:bg-[#D1D5DB]" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                        <td colspan="6" class="text-right py-2 px-4 text-[8.5pt] uppercase font-bold text-slate-700 rounded-l-lg">Valor Total Geral</td>
-                        <td class="text-right py-2 px-4 text-[10pt] font-bold text-[#2e2a78] whitespace-nowrap rounded-r-lg"><?php echo format_currency($total_geral); ?></td>
+                <tr class="bg-[#D1D5DB] break-inside-avoid print:bg-[#D1D5DB]"
+                    style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                    <td colspan="6"
+                        class="text-right py-2 px-4 text-[8.5pt] uppercase font-bold text-slate-700 rounded-l-lg">Valor
+                        Total Geral</td>
+                    <td
+                        class="text-right py-2 px-4 text-[10pt] font-bold text-[#2e2a78] whitespace-nowrap rounded-r-lg">
+                        <?php echo format_currency($total_geral); ?></td>
                 </tr>
             </tbody>
         </table>
 
         <!-- Conditions -->
         <div class="mb-8 text-[7.5pt] text-slate-700 break-inside-avoid">
-            <h3 class="font-bold text-[#2e2a78] text-[9pt] mb-3 border-b border-gray-200 pb-1">Condições Gerais de Fornecimento</h3>
+            <h3 class="font-bold text-[#2e2a78] text-[9pt] mb-3 border-b border-gray-200 pb-1">Condições Gerais de
+                Fornecimento</h3>
             <ol class="list-decimal list-inside space-y-1 marker:text-slate-500">
-                <li><span class="font-semibold">Faturamento:</span> <?php echo htmlspecialchars($proposal['faturamento'] ?: '-'); ?></li>
-                <li><span class="font-semibold">Treinamento:</span> <?php echo htmlspecialchars($proposal['treinamento'] ?: '-'); ?></li>
-                <li><span class="font-semibold">Condições de Pagamento:</span> <?php echo htmlspecialchars($proposal['condicoes_pagamento'] ?: '-'); ?></li>
-                <li><span class="font-semibold">Prazo de Entrega:</span> <?php echo htmlspecialchars($proposal['prazo_entrega'] ?: '-'); ?></li>
-                <li><span class="font-semibold">Garantia dos Equipamentos:</span> <?php echo htmlspecialchars($proposal['garantia_equipamentos'] ?: '-'); ?></li>
-                <li><span class="font-semibold">Garantia dos Acessórios:</span> <?php echo htmlspecialchars($proposal['garantia_acessorios'] ?: '-'); ?></li>
-                <li><span class="font-semibold">Instalação:</span> <?php echo htmlspecialchars($proposal['instalacao'] ?: '-'); ?></li>
-                <li><span class="font-semibold">Assistência Técnica:</span> <?php echo htmlspecialchars($proposal['assistencia_tecnica'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Faturamento:</span>
+                    <?php echo htmlspecialchars($proposal['faturamento'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Treinamento:</span>
+                    <?php echo htmlspecialchars($proposal['treinamento'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Condições de Pagamento:</span>
+                    <?php echo htmlspecialchars($proposal['condicoes_pagamento'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Prazo de Entrega:</span>
+                    <?php echo htmlspecialchars($proposal['prazo_entrega'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Garantia dos Equipamentos:</span>
+                    <?php echo htmlspecialchars($proposal['garantia_equipamentos'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Garantia dos Acessórios:</span>
+                    <?php echo htmlspecialchars($proposal['garantia_acessorios'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Instalação:</span>
+                    <?php echo htmlspecialchars($proposal['instalacao'] ?: '-'); ?></li>
+                <li><span class="font-semibold">Assistência Técnica:</span>
+                    <?php echo htmlspecialchars($proposal['assistencia_tecnica'] ?: '-'); ?></li>
             </ol>
         </div>
 
@@ -569,12 +676,15 @@ function format_date($value, $format = 'd/m/Y') {
         <!-- Signatures (Grid can be tricky, using Flex instead for better safety if needed, but break-inside-avoid helps) -->
         <div class="break-inside-avoid mt-8 pt-4 border-t border-gray-200">
             <div class="grid grid-cols-2 gap-8 text-[8pt]">
-                
+
                 <div>
                     <p class="text-[7pt] text-slate-400 uppercase mb-1">Responsável Comercial</p>
-                    <p class="font-bold text-[#2e2a78] text-[9pt] mb-0.5"><?php echo htmlspecialchars($proposal['vendedor_nome']); ?></p>
-                    <p class="uppercase text-slate-500 text-[7pt] mb-1"><?php echo htmlspecialchars($proposal['vendedor_role']); ?></p>
-                    <p class="text-slate-600 mb-0.5">Fone: <?php echo htmlspecialchars($proposal['vendedor_telefone']); ?></p>
+                    <p class="font-bold text-[#2e2a78] text-[9pt] mb-0.5">
+                        <?php echo htmlspecialchars($proposal['vendedor_nome']); ?></p>
+                    <p class="uppercase text-slate-500 text-[7pt] mb-1">
+                        <?php echo htmlspecialchars($proposal['vendedor_role']); ?></p>
+                    <p class="text-slate-600 mb-0.5">Fone:
+                        <?php echo htmlspecialchars($proposal['vendedor_telefone']); ?></p>
                     <p class="text-slate-600">E-mail: <?php echo htmlspecialchars($proposal['vendedor_email']); ?></p>
                 </div>
 
@@ -591,11 +701,12 @@ function format_date($value, $format = 'd/m/Y') {
                     </div>
                 </div>
             </div>
-            
+
             <?php if ($current_user_name && $current_user_name !== $proposal['vendedor_nome']): ?>
                 <div class="mt-2 text-left">
                     <p class="text-[6pt] text-slate-300 italic">
-                        Impresso por <span class="font-medium"><?php echo htmlspecialchars($current_user_name); ?></span> em <?php echo date('d/m/Y \à\s H:i'); ?>
+                        Impresso por <span class="font-medium"><?php echo htmlspecialchars($current_user_name); ?></span> em
+                        <?php echo date('d/m/Y \à\s H:i'); ?>
                     </p>
                 </div>
             <?php endif; ?>
@@ -606,4 +717,5 @@ function format_date($value, $format = 'd/m/Y') {
     <!-- We removed specific JS for preview() because the Polyfill auto-runs on DOMContentLoaded if not configured otherwise -->
 
 </body>
+
 </html>
