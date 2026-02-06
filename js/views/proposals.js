@@ -636,7 +636,7 @@ function renderProposalItemsSection() {
                         <div><label class="form-label">Fabricante</label><input type="text" data-index="${index}" name="item_fabricante" class="form-input" value="${item.fabricante || ''}"></div>
                         <div><label class="form-label">Modelo</label><input type="text" data-index="${index}" name="item_modelo" class="form-input" value="${item.modelo || ''}"></div>
                         <div>
-                            <label class="form-label">Status</label>
+                            <label class="form-label">Tipo</label>
                             <select data-index="${index}" name="item_status" class="form-input">
                                 <option value="VENDA" ${item.status === 'VENDA' ? 'selected' : ''}>Venda</option>
                                 <option value="LOCAÇÃO" ${item.status === 'LOCAÇÃO' ? 'selected' : ''}>Locação</option>
