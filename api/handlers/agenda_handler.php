@@ -237,7 +237,8 @@ function handle_update_agendamento($pdo, $data)
     // ***** ALTERAÇÃO: Valida array de usuários *****
     $para_usuario_ids = $data['para_usuario_ids'] ?? [];
     $para_usuario_ids = array_filter($para_usuario_ids, function ($id) {
-        return is_numeric($id) && $id > 0; });
+        return is_numeric($id) && $id > 0;
+    });
     if (empty($para_usuario_ids)) {
         json_response(['success' => false, 'error' => "Selecione pelo menos um usuário válido para direcionar."], 400);
         return;
@@ -260,6 +261,26 @@ function handle_update_agendamento($pdo, $data)
 
     $agendamentoId = $data['id'];
     $success = false;
+
+    // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
+    $currentRole = $_SESSION['role'];
+    if (in_array($currentRole, ['Vendedor', 'Especialista'])) {
+        // Verifica se criou OU se está associado
+        $stmt_check = $pdo->prepare("
+            SELECT 1 
+            FROM agendamentos a
+            LEFT JOIN agendamento_usuarios au ON a.id = au.agendamento_id 
+            WHERE a.id = ? 
+            AND (a.criado_por_id = ? OR au.usuario_id = ?)
+            LIMIT 1
+        ");
+        $stmt_check->execute([$agendamentoId, $_SESSION['user_id'], $_SESSION['user_id']]);
+        if (!$stmt_check->fetchColumn()) {
+            json_response(['success' => false, 'error' => 'Acesso negado: Você só pode editar agendamentos que criou ou para os quais está agendado.'], 403);
+            return;
+        }
+    }
+    // ---------------------------------------
 
     // ***** ALTERAÇÃO: Atualiza no BD usando transação e tabela de ligação *****
     error_log("DEBUG: [Agenda Update] Tentando atualizar agendamento ID: " . $agendamentoId);
@@ -442,6 +463,26 @@ function handle_delete_agendamento($pdo, $data)
         error_log("ERRO DB: [Agenda Delete] Falha ao buscar detalhes antes de excluir ID " . $agendamentoId . ": " . $e->getMessage());
         // Continua para tentar excluir mesmo assim
     }
+
+    // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
+    $currentRole = $_SESSION['role'];
+    if (in_array($currentRole, ['Vendedor', 'Especialista'])) {
+        // Verifica se criou OU se está associado
+        $stmt_check = $pdo->prepare("
+            SELECT 1 
+            FROM agendamentos a
+            LEFT JOIN agendamento_usuarios au ON a.id = au.agendamento_id 
+            WHERE a.id = ? 
+            AND (a.criado_por_id = ? OR au.usuario_id = ?)
+            LIMIT 1
+        ");
+        $stmt_check->execute([$agendamentoId, $_SESSION['user_id'], $_SESSION['user_id']]);
+        if (!$stmt_check->fetchColumn()) {
+            json_response(['success' => false, 'error' => 'Acesso negado: Você só pode excluir agendamentos que criou ou para os quais está agendado.'], 403);
+            return;
+        }
+    }
+    // ---------------------------------------
 
 
     // 2. Procede com a exclusão (DELETE CASCADE deve remover da tabela agendamento_usuarios automaticamente)

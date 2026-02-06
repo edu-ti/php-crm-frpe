@@ -21,7 +21,7 @@ function handle_get_data($pdo)
     // --- LÓGICA DE PERMISSÕES ATUALIZADA ---
     $permissions = [
         'canSeeLeads' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Marketing', 'Vendedor', 'Especialista']),
-        'canSeeSettings' => in_array($current_user_role, ['Gestor', 'Analista']),
+        'canSeeSettings' => in_array($current_user_role, ['Gestor', 'Analista']), // Comercial removido
         'canSeeCatalog' => true,
         // canCreate genérico mantido para compatibilidade, mas recomenda-se usar específicos
         'canCreate' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
@@ -41,6 +41,19 @@ function handle_get_data($pdo)
     ];
     $currentUser['permissions'] = $permissions;
 
+    // --- FILTRAGEM BASEADA NO PERFIL ---
+    // Perfis restritos que só veem o que criaram
+    $is_restricted = in_array($current_user_role, ['Vendedor', 'Especialista']);
+
+    // Filtro para Oportunidades
+    $where_opp = "";
+    $params_opp = [];
+    if ($is_restricted) {
+        $where_opp = " WHERE (o.usuario_id = ? OR o.comercial_user_id = ?) ";
+        $params_opp[] = $current_user_id;
+        $params_opp[] = $current_user_id;
+    }
+
     $sql_opps = "SELECT o.*, 
                  org.nome_fantasia as organizacao_nome, 
                  cpf.nome as cliente_pf_nome, 
@@ -53,19 +66,36 @@ function handle_get_data($pdo)
                  LEFT JOIN organizacoes org ON o.organizacao_id = org.id 
                  LEFT JOIN clientes_pf cpf ON o.cliente_pf_id = cpf.id 
                  LEFT JOIN contatos c ON o.contato_id = c.id 
-                 LEFT JOIN usuarios u ON o.usuario_id = u.id";
-    $stmt_opps = $pdo->query($sql_opps);
+                 LEFT JOIN usuarios u ON o.usuario_id = u.id" . $where_opp;
 
-    $proposals_stmt = $pdo->query("
+    $opportunities = [];
+    try {
+        $stmt_opps = $pdo->prepare($sql_opps);
+        $stmt_opps->execute($params_opp);
+        $opportunities = $stmt_opps->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("ERRO DB (Oportunidades): " . $e->getMessage());
+        $opportunities = []; // Falha graciosa
+    }
+
+    // Filtro para Propostas
+    $where_prop = "";
+    $params_prop = [];
+    if ($is_restricted) {
+        $where_prop = " WHERE p.usuario_id = ? ";
+        $params_prop[] = $current_user_id;
+    }
+
+    $proposals_sql = "
          SELECT
              p.*,
              o.nome_fantasia as organizacao_nome,
              o.cnpj,
              c_pf.nome as cliente_pf_nome,
              c_pf.cpf,
-             cont.nome as contato_nome,      -- Nome do contato
-             cont.email as contato_email,    -- Email do contato
-             cont.telefone as contato_telefone, -- Telefone do contato
+             cont.nome as contato_nome,
+             cont.email as contato_email,
+             cont.telefone as contato_telefone,
              u.nome as vendedor_nome,
              ef.nome as etapa_funil_nome,
              (SELECT GROUP_CONCAT(DISTINCT descricao SEPARATOR ', ') FROM proposta_itens WHERE proposta_id = p.id) as itens_descricao,
@@ -73,34 +103,63 @@ function handle_get_data($pdo)
          FROM propostas p
          LEFT JOIN organizacoes o ON p.organizacao_id = o.id
          LEFT JOIN clientes_pf c_pf ON p.cliente_pf_id = c_pf.id
-         LEFT JOIN contatos cont ON p.contato_id = cont.id -- Junta com contatos para obter detalhes
+         LEFT JOIN contatos cont ON p.contato_id = cont.id 
          LEFT JOIN usuarios u ON p.usuario_id = u.id
          LEFT JOIN oportunidades opp ON p.oportunidade_id = opp.id
          LEFT JOIN etapas_funil ef ON opp.etapa_id = ef.id
+         " . $where_prop . "
          ORDER BY p.data_criacao DESC
-     ");
-    $proposals = $proposals_stmt->fetchAll(PDO::FETCH_ASSOC);
+     ";
+    $proposals = [];
+    try {
+        $proposals_stmt = $pdo->prepare($proposals_sql);
+        $proposals_stmt->execute($params_prop);
+        $proposals = $proposals_stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("ERRO DB (Propostas): " . $e->getMessage());
+    }
 
     $pre_proposals = [];
-    if ($permissions['canEdit']) { // Ou outra permissão relevante
+    if ($permissions['canEdit']) {
+        // Pré-propostas também precisam ser filtradas se for Vendedor/Especialista
+        $where_pre = " WHERE o.comercial_user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM propostas p WHERE p.oportunidade_id = o.id)";
+        $params_pre = [];
+
+        if ($is_restricted) {
+            $where_pre .= " AND (o.usuario_id = ? OR o.comercial_user_id = ?) "; // Pode ver se criou OU se foi atribuído como comercial
+            $params_pre[] = $current_user_id;
+            $params_pre[] = $current_user_id;
+        }
+
         $sql_pre = "
              SELECT o.*,
                     org.nome_fantasia as organizacao_nome,
                     c.nome as contato_nome,
-                    pf.nome as cliente_pf_nome, -- Adicionado nome do cliente PF
+                    pf.nome as cliente_pf_nome,
                     u.nome as vendedor_nome
              FROM oportunidades o
              LEFT JOIN organizacoes org ON o.organizacao_id = org.id
              LEFT JOIN contatos c ON o.contato_id = c.id
-             LEFT JOIN clientes_pf pf ON o.cliente_pf_id = pf.id -- Join com clientes_pf
+             LEFT JOIN clientes_pf pf ON o.cliente_pf_id = pf.id
              LEFT JOIN usuarios u ON o.usuario_id = u.id
-             WHERE o.comercial_user_id IS NOT NULL
-               AND NOT EXISTS (SELECT 1 FROM propostas p WHERE p.oportunidade_id = o.id)
+             " . $where_pre . "
              ORDER BY o.data_criacao DESC
          ";
-        $stmt_pre = $pdo->prepare($sql_pre);
-        $stmt_pre->execute();
-        $pre_proposals = $stmt_pre->fetchAll(PDO::FETCH_ASSOC);
+        try {
+            $stmt_pre = $pdo->prepare($sql_pre);
+            $stmt_pre->execute($params_pre);
+            $pre_proposals = $stmt_pre->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("ERRO DB (Pré-propostas): " . $e->getMessage());
+        }
+    }
+
+    // Filtro para Vendas Fornecedores
+    $where_vendas = "";
+    $params_vendas = [];
+    if ($is_restricted) {
+        $where_vendas = " WHERE vf.usuario_id = ? ";
+        $params_vendas[] = $current_user_id;
     }
 
     // ***** ALTERAÇÃO: Adicionado LEFT JOIN com clientes_pf *****
@@ -109,41 +168,63 @@ function handle_get_data($pdo)
              vf.*,
              f.nome as fornecedor_nome,
              o.nome_fantasia as organizacao_nome,
-             pf.nome as cliente_pf_nome, -- Adicionado nome do cliente PF
+             pf.nome as cliente_pf_nome,
              u.nome as usuario_nome
          FROM vendas_fornecedores vf
          JOIN fornecedores f ON vf.fornecedor_id = f.id
          LEFT JOIN organizacoes o ON vf.organizacao_id = o.id
-         LEFT JOIN clientes_pf pf ON vf.cliente_pf_id = pf.id -- Join com clientes_pf
+         LEFT JOIN clientes_pf pf ON vf.cliente_pf_id = pf.id
          JOIN usuarios u ON vf.usuario_id = u.id
+         " . $where_vendas . "
          ORDER BY vf.data_venda DESC
      ";
-    $vendas_fornecedores_stmt = $pdo->query($vendas_fornecedores_sql);
-    $vendas_fornecedores = $vendas_fornecedores_stmt->fetchAll(PDO::FETCH_ASSOC);
+    $vendas_fornecedores = [];
+    try {
+        $vendas_fornecedores_stmt = $pdo->prepare($vendas_fornecedores_sql);
+        $vendas_fornecedores_stmt->execute($params_vendas);
+        $vendas_fornecedores = $vendas_fornecedores_stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("ERRO DB (Vendas Fornecedores): " . $e->getMessage());
+    }
     // ***** FIM DA ALTERAÇÃO *****
 
 
     $fornecedores = $pdo->query("SELECT * FROM fornecedores ORDER BY nome ASC")->fetchAll(PDO::FETCH_ASSOC);
 
-    // --- CORREÇÃO: Consulta Agendamentos ---
-    // Busca agendamentos e agrupa os nomes e IDs dos usuários associados
+    // --- CORREÇÃO: Consulta Agendamentos com FILTRO ---
+    $where_agenda = "";
+    $params_agenda = [];
+
+    if ($is_restricted) {
+        // Vê se criou OU se é um dos usuários associados
+        // Subquery para verificar associação
+        $where_agenda = " WHERE a.criado_por_id = ? OR EXISTS (SELECT 1 FROM agendamento_usuarios au_check WHERE au_check.agendamento_id = a.id AND au_check.usuario_id = ?) ";
+        $params_agenda[] = $current_user_id;
+        $params_agenda[] = $current_user_id;
+    }
+
     $agendamentos_sql = "
           SELECT
               a.*,
               u_criador.nome as criado_por_nome,
-              GROUP_CONCAT(DISTINCT u_para.nome SEPARATOR ', ') as para_usuario_nomes, -- Agrupa nomes
-              GROUP_CONCAT(DISTINCT u_para.id SEPARATOR ',') as usuarios_associados_ids -- Agrupa IDs
-              -- Adiciona aqui joins para buscar nome da oportunidade, se necessário
+              GROUP_CONCAT(DISTINCT u_para.nome SEPARATOR ', ') as para_usuario_nomes,
+              GROUP_CONCAT(DISTINCT u_para.id SEPARATOR ',') as usuarios_associados_ids
           FROM agendamentos a
           LEFT JOIN usuarios u_criador ON a.criado_por_id = u_criador.id
-          LEFT JOIN agendamento_usuarios au ON a.id = au.agendamento_id -- Junta com a tabela de associação
-          LEFT JOIN usuarios u_para ON au.usuario_id = u_para.id -- Junta para obter nome do usuário associado
-          GROUP BY a.id -- Agrupa por agendamento para usar GROUP_CONCAT
+          LEFT JOIN agendamento_usuarios au ON a.id = au.agendamento_id
+          LEFT JOIN usuarios u_para ON au.usuario_id = u_para.id
+          " . $where_agenda . "
+          GROUP BY a.id
           ORDER BY a.data_inicio DESC
       ";
-    $stmt_agendamentos = $pdo->prepare($agendamentos_sql);
-    $stmt_agendamentos->execute();
-    $agendamentos = $stmt_agendamentos->fetchAll(PDO::FETCH_ASSOC);
+    $agendamentos = [];
+    try {
+        $stmt_agendamentos = $pdo->prepare($agendamentos_sql);
+        $stmt_agendamentos->execute($params_agenda);
+        $agendamentos = $stmt_agendamentos->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("ERRO DB (Agendamentos): " . $e->getMessage());
+    }
 
     // Adiciona formatação de data/hora que era feita no PHP antigo, se necessário no JS
     foreach ($agendamentos as &$ag) {
@@ -180,7 +261,7 @@ function handle_get_data($pdo)
     $response_data = [
         'currentUser' => $currentUser,
         'users' => $pdo->query("SELECT id, nome, role, email, telefone, status FROM usuarios")->fetchAll(PDO::FETCH_ASSOC),
-        'opportunities' => $stmt_opps->fetchAll(PDO::FETCH_ASSOC),
+        'opportunities' => $opportunities,
         'organizations' => $pdo->query("SELECT * FROM organizacoes ORDER BY nome_fantasia ASC")->fetchAll(PDO::FETCH_ASSOC),
         'contacts' => $pdo->query("SELECT c.*, o.nome_fantasia as organizacao_nome FROM contatos c JOIN organizacoes o ON c.organizacao_id = o.id ORDER BY c.nome ASC")->fetchAll(PDO::FETCH_ASSOC),
         'clients_pf' => $pdo->query("SELECT * FROM clientes_pf ORDER BY nome ASC")->fetchAll(PDO::FETCH_ASSOC),

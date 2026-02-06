@@ -176,6 +176,21 @@ function handle_update_opportunity($pdo, $data)
         json_response(['success' => false, 'error' => 'É necessário pelo menos um item na oportunidade.'], 400);
     }
 
+    // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
+    // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
+    $currentRole = $_SESSION['role'];
+    if (in_array($currentRole, ['Vendedor', 'Especialista'])) {
+        $stmt_check = $pdo->prepare("SELECT usuario_id, comercial_user_id FROM oportunidades WHERE id = ?");
+        $stmt_check->execute([$data['id']]);
+        $oppData = $stmt_check->fetch(PDO::FETCH_ASSOC);
+
+        if ($oppData['usuario_id'] != $_SESSION['user_id'] && $oppData['comercial_user_id'] != $_SESSION['user_id']) {
+            json_response(['success' => false, 'error' => 'Acesso negado: Você só pode editar oportunidades que criou ou que estão atribuídas a você.'], 403);
+            return;
+        }
+    }
+    // ---------------------------------------
+
     // --- CORREÇÃO: Calcula o valor total a partir de TODOS os itens ---
     $valor_total = 0;
     foreach ($data['items'] as $item) {
@@ -308,13 +323,32 @@ function handle_update_opportunity($pdo, $data)
 
 function handle_delete_opportunity($pdo, $data)
 {
-    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista'])) {
+    $opportunityId = $data['id'] ?? null;
+    if (empty($opportunityId)) {
+        json_response(['success' => false, 'error' => 'ID da oportunidade é obrigatório.'], 400);
+        return;
+    }
+
+    // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
+    $currentRole = $_SESSION['role'];
+    $allowedGlobal = ['Gestor', 'Analista', 'Comercial'];
+
+    if (in_array($currentRole, $allowedGlobal)) {
+        // Permite excluir
+    } elseif (in_array($currentRole, ['Vendedor', 'Especialista'])) {
+        $stmt_check = $pdo->prepare("SELECT usuario_id, comercial_user_id FROM oportunidades WHERE id = ?");
+        $stmt_check->execute([$opportunityId]);
+        $oppData = $stmt_check->fetch(PDO::FETCH_ASSOC);
+
+        if ($oppData['usuario_id'] != $_SESSION['user_id'] && $oppData['comercial_user_id'] != $_SESSION['user_id']) {
+            json_response(['success' => false, 'error' => 'Acesso negado: Você só pode excluir oportunidades que criou ou que estão atribuídas a você.'], 403);
+            return;
+        }
+    } else {
         json_response(['success' => false, 'error' => 'Acesso negado para exclusão.'], 403);
         return;
     }
-    if (empty($data['id'])) {
-        json_response(['success' => false, 'error' => 'ID da oportunidade não fornecido.'], 400);
-    }
+    // ---------------------------------------
 
     $pdo->beginTransaction();
     try {
@@ -352,10 +386,20 @@ function handle_move_opportunity($pdo, $data)
     if (empty($data['opportunityId']) || empty($data['newStageId'])) {
         json_response(['success' => false, 'error' => 'Dados insuficientes para mover oportunidade.'], 400);
     }
-    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista'])) {
-        json_response(['success' => false, 'error' => 'Acesso negado para mover oportunidades.'], 403);
-        return;
+
+    // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
+    $currentRole = $_SESSION['role'];
+    if (in_array($currentRole, ['Vendedor', 'Especialista'])) {
+        $stmt_check = $pdo->prepare("SELECT usuario_id, comercial_user_id FROM oportunidades WHERE id = ?");
+        $stmt_check->execute([$data['opportunityId']]);
+        $oppData = $stmt_check->fetch(PDO::FETCH_ASSOC);
+
+        if ($oppData['usuario_id'] != $_SESSION['user_id'] && $oppData['comercial_user_id'] != $_SESSION['user_id']) {
+            json_response(['success' => false, 'error' => 'Acesso negado: Você só pode mover oportunidades que criou ou que estão atribuídas a você.'], 403);
+            return;
+        }
     }
+    // ---------------------------------------
 
     $stmt = $pdo->prepare("UPDATE oportunidades SET etapa_id = ?, data_ultima_movimentacao = NOW() WHERE id = ?");
     $success = $stmt->execute([$data['newStageId'], $data['opportunityId']]);

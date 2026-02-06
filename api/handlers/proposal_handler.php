@@ -209,6 +209,20 @@ function handle_update_proposal($pdo, $data)
         json_response(['success' => false, 'error' => 'Dados insuficientes para atualizar a proposta.'], 400);
     }
 
+    // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
+    $currentRole = $_SESSION['role'];
+    if (in_array($currentRole, ['Vendedor', 'Especialista'])) {
+        $stmt_check = $pdo->prepare("SELECT usuario_id FROM propostas WHERE id = ?");
+        $stmt_check->execute([$proposalId]);
+        $ownerId = $stmt_check->fetchColumn();
+
+        if ($ownerId != $_SESSION['user_id']) {
+            json_response(['success' => false, 'error' => 'Acesso negado: Você só pode editar propostas que criou.'], 403);
+            return;
+        }
+    }
+    // ---------------------------------------
+
     $pdo->beginTransaction();
     try {
         // Busca o status atual ANTES de atualizar
@@ -718,7 +732,24 @@ function handle_delete_proposal($pdo, $data)
 
     // 2. Verificação de Permissão de Segurança (Backend)
     // Apenas Gestor, Analista e Comercial podem excluir
-    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial'])) {
+    // Vendedor e Especialista podem excluir APENAS SE FOREM DONOS
+    $currentRole = $_SESSION['role'];
+    $allowedGlobal = ['Gestor', 'Analista', 'Comercial'];
+
+    if (in_array($currentRole, $allowedGlobal)) {
+        // Permite excluir qualquer proposta
+    } elseif (in_array($currentRole, ['Vendedor', 'Especialista'])) {
+        // Verifica se é dono
+        $stmt_check = $pdo->prepare("SELECT usuario_id FROM propostas WHERE id = ?");
+        $stmt_check->execute([$proposalId]);
+        $ownerId = $stmt_check->fetchColumn();
+
+        if ($ownerId != $_SESSION['user_id']) {
+            json_response(['success' => false, 'error' => 'Acesso negado: Você só pode excluir propostas que criou.'], 403);
+            return;
+        }
+    } else {
+        // Outros perfis (se houver) bloqueados
         json_response(['success' => false, 'error' => 'Acesso negado: Você não tem permissão para excluir propostas.'], 403);
         return;
     }
