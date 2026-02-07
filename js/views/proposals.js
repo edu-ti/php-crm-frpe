@@ -155,6 +155,13 @@ export function renderProposalsView() {
     }
 }
 
+function scrollToProposalForm() {
+    const formContainer = document.getElementById('proposal-form-container');
+    if (formContainer && !formContainer.classList.contains('hidden')) {
+        formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
 function renderProposalsList() {
     const container = document.getElementById('proposals-list-container');
     const { proposals, contacts } = appState;
@@ -343,6 +350,7 @@ function addProposalCardEventListeners() {
                     appState.proposal.currentClient = appState.clients_pf.find(c => c.id == proposal.cliente_pf_id);
                 }
                 renderProposalsView();
+                scrollToProposalForm();
             } catch (error) { }
         });
     });
@@ -997,6 +1005,7 @@ function addProposalEventListeners() {
             parametros: []
         });
         renderProposalsView();
+        scrollToProposalForm();
     });
     document.getElementById('proposal-search')?.addEventListener('input', () => {
         appState.proposalsView.currentPage = 1;
@@ -1115,7 +1124,10 @@ async function handleCreateProposalFromOpp(e) {
     }
     // --- FIM DA ALTERAÇÃO ---
 
+    // --- FIM DA ALTERAÇÃO ---
+
     renderProposalsView();
+    scrollToProposalForm();
 }
 
 async function handleProposalFormSubmit(e) {
