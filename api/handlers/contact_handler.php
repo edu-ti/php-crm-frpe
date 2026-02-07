@@ -1,7 +1,8 @@
 <?php
 // api/handlers/contact_handler.php
 
-function handle_create_contact($pdo, $data) {
+function handle_create_contact($pdo, $data)
+{
     if (empty($data['nome']) || empty($data['organizacao_id'])) {
         json_response(['success' => false, 'error' => 'Nome e Organização são obrigatórios.'], 400);
         return;
@@ -20,7 +21,7 @@ function handle_create_contact($pdo, $data) {
 
     $sql = "INSERT INTO contatos (nome, organizacao_id, cargo, setor, email, telefone) VALUES (?, ?, ?, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
-    
+
     try {
         $success = $stmt->execute([
             $data['nome'],
@@ -48,7 +49,8 @@ function handle_create_contact($pdo, $data) {
     }
 }
 
-function handle_update_contact($pdo, $data) {
+function handle_update_contact($pdo, $data)
+{
     global $log_file;
 
     if (empty($data['id'])) {
@@ -62,7 +64,7 @@ function handle_update_contact($pdo, $data) {
 
     $sql = "UPDATE contatos SET nome = ?, organizacao_id = ?, cargo = ?, setor = ?, email = ?, telefone = ? WHERE id = ?";
     $stmt = $pdo->prepare($sql);
-    
+
     try {
         $success = $stmt->execute([
             $data['nome'],
@@ -71,7 +73,7 @@ function handle_update_contact($pdo, $data) {
             empty($data['setor']) ? null : $data['setor'],
             empty($data['email']) ? null : $data['email'],
             empty($data['telefone']) ? null : $data['telefone'],
-            (int)$data['id'] 
+            (int) $data['id']
         ]);
 
         if ($success) {
@@ -79,7 +81,7 @@ function handle_update_contact($pdo, $data) {
                 file_put_contents($log_file, "UPDATE CONTACT - Nenhuma linha afetada para o ID: " . $data['id'] . ". Os dados eram iguais ou o ID não foi encontrado.\n", FILE_APPEND);
             }
             $stmt_updated = $pdo->prepare("SELECT c.*, o.nome_fantasia as organizacao_nome FROM contatos c JOIN organizacoes o ON c.organizacao_id = o.id WHERE c.id = ?");
-            $stmt_updated->execute([(int)$data['id']]);
+            $stmt_updated->execute([(int) $data['id']]);
             json_response(['success' => true, 'contact' => $stmt_updated->fetch(PDO::FETCH_ASSOC)]);
         } else {
             json_response(['success' => false, 'error' => 'Erro ao atualizar contato.'], 500);
@@ -89,9 +91,17 @@ function handle_update_contact($pdo, $data) {
     }
 }
 
-function handle_delete_contact($pdo, $id) {
+function handle_delete_contact($pdo, $data)
+{
+    $id = $data['id'] ?? null;
+
+    if (empty($id)) {
+        json_response(['success' => false, 'error' => 'ID do contato é obrigatório.'], 400);
+        return;
+    }
+
     $stmt = $pdo->prepare("DELETE FROM contatos WHERE id = ?");
-    if ($stmt->execute([(int)$id])) {
+    if ($stmt->execute([(int) $id])) {
         json_response(['success' => true, 'message' => 'Contato excluído com sucesso.']);
     } else {
         json_response(['success' => false, 'error' => 'Erro ao excluir contato.'], 500);

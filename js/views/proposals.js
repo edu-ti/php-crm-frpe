@@ -2,7 +2,7 @@
 
 import { appState } from '../script.js';
 import { apiCall } from '../api.js';
-import { showToast, formatDate, formatCurrency, formatCurrencyForInput, parseCurrency, setupApiFetch } from '../utils.js';
+import { showToast, formatDate, formatCurrency, formatCurrencyForInput, parseCurrency, setupApiFetch, showLoading } from '../utils.js';
 import { renderModal, closeModal } from '../ui.js';
 
 export function resetProposalState() {

@@ -1,7 +1,8 @@
 <?php
 // api/handlers/client_pf_handler.php
 
-function handle_create_cliente_pf($pdo, $data) {
+function handle_create_cliente_pf($pdo, $data)
+{
     // Validação básica de campos obrigatórios
     if (empty($data['nome'])) {
         json_response(['success' => false, 'error' => 'Nome é obrigatório.'], 400);
@@ -38,9 +39,9 @@ function handle_create_cliente_pf($pdo, $data) {
                 nome, cpf, email, telefone, 
                 cep, logradouro, numero, complemento, bairro, cidade, estado
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    
+
     $stmt = $pdo->prepare($sql);
-    
+
     try {
         $success = $stmt->execute([
             $data['nome'],
@@ -75,7 +76,8 @@ function handle_create_cliente_pf($pdo, $data) {
     }
 }
 
-function handle_update_cliente_pf($pdo, $data) {
+function handle_update_cliente_pf($pdo, $data)
+{
     if (empty($data['id'])) {
         json_response(['success' => false, 'error' => 'ID é obrigatório.'], 400);
         return;
@@ -93,9 +95,9 @@ function handle_update_cliente_pf($pdo, $data) {
             SET nome = ?, cpf = ?, email = ?, telefone = ?, 
                 cep = ?, logradouro = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, estado = ? 
             WHERE id = ?";
-    
+
     $stmt = $pdo->prepare($sql);
-    
+
     try {
         $success = $stmt->execute([
             $data['nome'],
@@ -109,12 +111,12 @@ function handle_update_cliente_pf($pdo, $data) {
             empty($data['bairro']) ? null : $data['bairro'],
             empty($data['cidade']) ? null : $data['cidade'],
             empty($data['estado']) ? null : $data['estado'],
-            (int)$data['id']
+            (int) $data['id']
         ]);
 
         if ($success) {
             $stmt_updated = $pdo->prepare("SELECT * FROM clientes_pf WHERE id = ?");
-            $stmt_updated->execute([(int)$data['id']]);
+            $stmt_updated->execute([(int) $data['id']]);
             json_response(['success' => true, 'client' => $stmt_updated->fetch(PDO::FETCH_ASSOC)]);
         } else {
             json_response(['success' => false, 'error' => 'Erro ao atualizar cliente PF.'], 500);
@@ -128,10 +130,18 @@ function handle_update_cliente_pf($pdo, $data) {
     }
 }
 
-function handle_delete_cliente_pf($pdo, $id) {
+function handle_delete_cliente_pf($pdo, $data)
+{
+    $id = $data['id'] ?? null;
+
+    if (empty($id)) {
+        json_response(['success' => false, 'error' => 'ID do cliente é obrigatório.'], 400);
+        return;
+    }
+
     try {
         $stmt = $pdo->prepare("DELETE FROM clientes_pf WHERE id = ?");
-        if ($stmt->execute([(int)$id])) {
+        if ($stmt->execute([(int) $id])) {
             json_response(['success' => true, 'message' => 'Cliente PF excluído com sucesso.']);
         } else {
             json_response(['success' => false, 'error' => 'Erro ao excluir cliente PF.'], 500);
@@ -141,7 +151,8 @@ function handle_delete_cliente_pf($pdo, $id) {
     }
 }
 
-function handle_import_clients($pdo, $data) {
+function handle_import_clients($pdo, $data)
+{
     if (empty($data['clients']) || !is_array($data['clients'])) {
         json_response(['success' => false, 'error' => 'Nenhum dado de cliente fornecido.'], 400);
         return;
@@ -162,7 +173,7 @@ function handle_import_clients($pdo, $data) {
             $cnpj = isset($client['cnpj']) ? preg_replace('/[^0-9]/', '', $client['cnpj']) : null;
             $cpf = isset($client['cpf']) ? preg_replace('/[^0-9]/', '', $client['cpf']) : null;
             $email = isset($client['email']) ? trim($client['email']) : null;
-            
+
             // Tratamento genérico de campos
             $telefone = isset($client['telefone']) ? preg_replace('/[^\d+]/', '', $client['telefone']) : null;
             $cep = isset($client['cep']) ? preg_replace('/[^0-9]/', '', $client['cep']) : null;
@@ -187,7 +198,7 @@ function handle_import_clients($pdo, $data) {
                         $error_count++;
                     }
                 }
-            } 
+            }
             // Lógica de Importação PF
             elseif ($cpf && strlen($cpf) === 11 && !empty($nome_pf)) {
                 $stmt = $pdo->prepare("SELECT id FROM clientes_pf WHERE cpf = ?");
@@ -209,7 +220,7 @@ function handle_import_clients($pdo, $data) {
         }
 
         $pdo->commit();
-        
+
         json_response([
             'success' => true,
             'importedPj' => $imported_pj_count,

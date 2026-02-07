@@ -1,7 +1,8 @@
 <?php
 // api/handlers/organization_handler.php
 
-function handle_create_organization($pdo, $data) {
+function handle_create_organization($pdo, $data)
+{
     if (empty($data['nome_fantasia'])) {
         json_response(['success' => false, 'error' => 'Nome Fantasia é obrigatório.'], 400);
         return;
@@ -20,7 +21,7 @@ function handle_create_organization($pdo, $data) {
 
     $sql = "INSERT INTO organizacoes (nome_fantasia, razao_social, cnpj, cep, logradouro, numero, complemento, bairro, cidade, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
-    
+
     try {
         $success = $stmt->execute([
             $data['nome_fantasia'],
@@ -53,8 +54,9 @@ function handle_create_organization($pdo, $data) {
     }
 }
 
-function handle_update_organization($pdo, $data) {
-    global $log_file; 
+function handle_update_organization($pdo, $data)
+{
+    global $log_file;
 
     if (empty($data['id'])) {
         json_response(['success' => false, 'error' => 'ID da organização é obrigatório.'], 400);
@@ -70,9 +72,9 @@ function handle_update_organization($pdo, $data) {
                 logradouro = ?, numero = ?, complemento = ?, bairro = ?, 
                 cidade = ?, estado = ? 
             WHERE id = ?";
-    
+
     $stmt = $pdo->prepare($sql);
-    
+
     try {
         $success = $stmt->execute([
             $data['nome_fantasia'],
@@ -85,15 +87,15 @@ function handle_update_organization($pdo, $data) {
             empty($data['bairro']) ? null : $data['bairro'],
             empty($data['cidade']) ? null : $data['cidade'],
             empty($data['estado']) ? null : $data['estado'],
-            (int)$data['id'] 
+            (int) $data['id']
         ]);
 
         if ($success) {
             if ($stmt->rowCount() === 0) {
-                 file_put_contents($log_file, "UPDATE ORG - Nenhuma linha afetada para o ID: " . $data['id'] . ". Os dados eram iguais ou o ID não foi encontrado.\n", FILE_APPEND);
+                file_put_contents($log_file, "UPDATE ORG - Nenhuma linha afetada para o ID: " . $data['id'] . ". Os dados eram iguais ou o ID não foi encontrado.\n", FILE_APPEND);
             }
             $stmt_updated = $pdo->prepare("SELECT * FROM organizacoes WHERE id = ?");
-            $stmt_updated->execute([(int)$data['id']]);
+            $stmt_updated->execute([(int) $data['id']]);
             json_response(['success' => true, 'organization' => $stmt_updated->fetch(PDO::FETCH_ASSOC)]);
         } else {
             json_response(['success' => false, 'error' => 'Erro ao atualizar organização.'], 500);
@@ -103,9 +105,17 @@ function handle_update_organization($pdo, $data) {
     }
 }
 
-function handle_delete_organization($pdo, $id) {
+function handle_delete_organization($pdo, $data)
+{
+    $id = $data['id'] ?? null;
+
+    if (empty($id)) {
+        json_response(['success' => false, 'error' => 'ID da organização é obrigatório.'], 400);
+        return;
+    }
+
     $stmt = $pdo->prepare("DELETE FROM organizacoes WHERE id = ?");
-    if ($stmt->execute([(int)$id])) {
+    if ($stmt->execute([(int) $id])) {
         json_response(['success' => true, 'message' => 'Organização excluída com sucesso.']);
     } else {
         json_response(['success' => false, 'error' => 'Erro ao excluir organização.'], 500);
