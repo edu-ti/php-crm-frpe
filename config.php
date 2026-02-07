@@ -56,9 +56,24 @@ function loadEnv($path)
 // Carrega o arquivo .env da raiz
 loadEnv(__DIR__ . '/.env');
 
-define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
-define('DB_NAME', getenv('DB_NAME') ?: 'u540193243_crmfr_db');
-define('DB_USER', getenv('DB_USER') ?: 'u540193243_crmFR');
+define('DB_HOST', getenv('DB_HOST'));
+define('DB_NAME', getenv('DB_NAME'));
+define('DB_USER', getenv('DB_USER'));
 define('DB_PASS', getenv('DB_PASS'));
-define('DB_CHARSET', 'utf8');
+define('DB_CHARSET', 'utf8mb4');
 define('DB_COLLATE', '');
+
+try {
+    $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+    $options = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ];
+    $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+} catch (PDOException $e) {
+    // Em produção, não mostre o erro detalhado ao usuário
+    error_log('Database Connection Error: ' . $e->getMessage());
+    die('Erro de conexão com o banco de dados.');
+}
+

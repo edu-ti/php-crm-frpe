@@ -13,7 +13,9 @@ ini_set('log_errors', 1);
 session_start();
 
 // --- INCLUSÃO DE ARQUIVOS ESSENCIAIS ---
+require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/config.php';
+
 require_once __DIR__ . '/api/core/helpers.php';
 require_once __DIR__ . '/api/core/Database.php';
 
@@ -51,8 +53,13 @@ if ($method === 'POST' || $method === 'PUT' || $method === 'DELETE') {
 }
 
 try {
-    $database = new Database();
-    $pdo = $database->getConnection();
+    // $pdo já foi inicializado em config.php
+    if (!isset($pdo)) {
+        throw new Exception("Erro: Conexão com o banco de dados não estabelecida.");
+    }
+
+    // $database = new Database();
+    // $pdo = $database->getConnection();
 
     // Definição das Rotas
     // Estrutura: 'action' => ['method' => 'GET/POST', 'file' => 'path/to/file.php', 'function' => 'function_name']
