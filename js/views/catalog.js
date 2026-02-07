@@ -311,3 +311,42 @@ async function saveProduct(form) {
         // Erro já tratado no apiCall
     }
 }
+
+function openDeleteProductModal(productId) {
+    const product = appState.products.find(p => p.id == productId);
+    if (!product) return;
+
+    Swal.fire({
+        title: 'Tem certeza?',
+        text: `Você tem certeza que deseja excluir o produto "${product.nome_produto}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Apagar',
+        cancelButtonText: 'Cancelar',
+        backdrop: `rgba(0,0,0,0.8)`
+    }).then((result) => {
+        if (result.isConfirmed) {
+            deleteProduct(productId);
+        }
+    });
+}
+
+async function deleteProduct(productId) {
+    showToast('Excluindo produto...', 'info');
+    try {
+        await apiCall('delete_product', {
+            method: 'POST',
+            body: JSON.stringify({ id: productId })
+        });
+
+        // Atualiza estado local
+        appState.products = appState.products.filter(p => p.id != productId);
+        renderProductList(); // Re-renderiza a lista
+        showToast('Produto excluído com sucesso!');
+        closeModal();
+    } catch (error) {
+        console.error(error);
+    }
+}

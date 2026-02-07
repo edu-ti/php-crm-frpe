@@ -91,7 +91,6 @@ function handle_create_proposal($pdo, $data)
             $data['instalacao'] ?? null,
             $data['assistencia_tecnica'] ?? null,
             $data['observacoes'] ?? null,
-            $data['observacoes'] ?? null,
             $data['motivo_status'] ?? null,
             $data['frete_tipo'] ?? 'CIF',
             $data['frete_valor'] ?? 0
