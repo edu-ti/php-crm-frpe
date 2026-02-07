@@ -1,0 +1,19 @@
+Testing ReportHandler with Simulated GET parameters...
+DEBUG DB CONNECT: HOST=127.0.0.1 USER=u540193243_crmFR PASS_LEN=11
+PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1045] Access denied for user 'u540193243_crmFR'@'localhost' (using password: YES) in D:\SISTEMAS\php-crm-frpe\api\core\Database.php:36
+
+Fatal error: Uncaught PDOException: SQLSTATE[HY000] [1045] Access denied for user 'u540193243_crmFR'@'localhost' (using password: YES) in D:\SISTEMAS\php-crm-frpe\api\core\Database.php:36
+Stack trace:
+#0 D:\SISTEMAS\php-crm-frpe\api\core\Database.php(36): PDO->__construct('mysql:host=127....', 'u540193243_crmF...', Object(SensitiveParameterValue), Array)
+#1 D:\SISTEMAS\php-crm-frpe\api\core\Database.php(17): Database->connect()
+#2 D:\SISTEMAS\php-crm-frpe\api\handlers\report_handler.php(12): Database->__construct()
+#3 D:\SISTEMAS\php-crm-frpe\debug_report_handler.php(12): ReportHandler->__construct()
+#4 {main}
+  thrown in D:\SISTEMAS\php-crm-frpe\api\core\Database.php on line 36
+Stack trace:
+#0 D:\SISTEMAS\php-crm-frpe\api\core\Database.php(36): PDO->__construct('mysql:host=127....', 'u540193243_crmF...', Object(SensitiveParameterValue), Array)
+#1 D:\SISTEMAS\php-crm-frpe\api\core\Database.php(17): Database->connect()
+#2 D:\SISTEMAS\php-crm-frpe\api\handlers\report_handler.php(12): Database->__construct()
+#3 D:\SISTEMAS\php-crm-frpe\debug_report_handler.php(12): ReportHandler->__construct()
+#4 {main}
+  thrown in D:\SISTEMAS\php-crm-frpe\api\core\Database.php on line 36
