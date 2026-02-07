@@ -9,22 +9,28 @@ ini_set('error_log', 'google_webhook_errors.log'); // Erros de PHP serão salvos
 // ===================================================================
 // ARQUIVO DE CONFIGURAÇÃO
 // ===================================================================
-// --- DADOS DO GOOGLE ADS ---
-// COLE AQUI A CHAVE SECRETA FORNECIDA PELO GOOGLE ADS NA CONFIGURAÇÃO DO WEBHOOK
-$google_webhook_secret = 'g3st@03Du4rd0';
 
-// --- DADOS DO BANCO DE DADOS (JÁ PREENCHIDOS) ---
-$db_host    = '127.0.0.1';
-$db_user    = 'u540193243_crmFR';
-$db_pass    = 'g3st@0crmFR';
-$db_name    = 'uu540193243_crmfr_db';
-$db_table   = 'leads';
+// Inclui config.php para carregar .env e constantes de DB
+require_once __DIR__ . '/config.php';
+
+// --- DADOS DO GOOGLE ADS ---
+$google_webhook_secret = getenv('GOOGLE_WEBHOOK_SECRET');
+
+// --- DADOS DO BANCO DE DADOS (USANDO CONSTANTES DO CONFIG.PHP) ---
+// As variáveis abaixo são mantidas para compatibilidade com o resto do script,
+// mas populadas a partir das constantes definidas via .env
+$db_host = DB_HOST;
+$db_user = DB_USER;
+$db_pass = DB_PASS;
+$db_name = DB_NAME;
+$db_table = 'leads';
 
 // --- ARQUIVO DE LOG PERSONALIZADO ---
 $log_file = 'google_webhook_log.txt';
 
 // Função para registrar mensagens no log
-function log_message($message) {
+function log_message($message)
+{
     global $log_file;
     file_put_contents($log_file, date("Y-m-d H:i:s") . " - " . $message . "\n", FILE_APPEND);
 }
@@ -117,7 +123,11 @@ try {
 
     // Executa a query com os parâmetros
     $stmt->execute([
-        $nome, $email, $telefone, $origem, $raw_post_data,
+        $nome,
+        $email,
+        $telefone,
+        $origem,
+        $raw_post_data,
         $email, // para a verificação do WHERE NOT EXISTS
         $telefone // para a verificação do WHERE NOT EXISTS
     ]);

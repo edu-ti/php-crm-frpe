@@ -2,34 +2,22 @@
 // api.php - Roteador Principal
 
 // --- CONFIGURAÇÃO INICIAL E SEGURANÇA ---
+// --- CONFIGURAÇÃO INICIAL E SEGURANÇA ---
 date_default_timezone_set('America/Recife');
 error_reporting(E_ALL);
-ini_set('display_errors', 1); // Desativado em produção
+// Em produção, display_errors deve ser 0 e log_errors deve ser 1
+ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 // ini_set('error_log', '/path/to/your/php-error.log'); // Defina um caminho se necessário
 
 session_start();
 
-// --- INCLUSÃO DE TODOS OS FICHEIROS NECESSÁRIOS ---
+// --- INCLUSÃO DE ARQUIVOS ESSENCIAIS ---
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/api/core/helpers.php';
 require_once __DIR__ . '/api/core/Database.php';
-require_once __DIR__ . '/api/handlers/auth_handler.php';
-require_once __DIR__ . '/api/handlers/data_handler.php';
-require_once __DIR__ . '/api/handlers/opportunity_handler.php';
-require_once __DIR__ . '/api/handlers/organization_handler.php';
-require_once __DIR__ . '/api/handlers/contact_handler.php';
-require_once __DIR__ . '/api/handlers/client_pf_handler.php'; // Inclui o handler onde está a nova função
-require_once __DIR__ . '/api/handlers/proposal_handler.php';
-require_once __DIR__ . '/api/handlers/user_handler.php';
-require_once __DIR__ . '/api/handlers/external_api_handler.php';
-require_once __DIR__ . '/api/handlers/agenda_handler.php';
-require_once __DIR__ . '/api/handlers/lead_handler.php';
-require_once __DIR__ . '/api/handlers/product_handler.php';
-require_once __DIR__ . '/api/handlers/email_handler.php';
-require_once __DIR__ . '/api/handlers/image_handler.php';
-require_once __DIR__ . '/api/handlers/report_handler.php';
 
+// Observação: Os handlers agora são carregados dinamicamente apenas quando necessários.
 
 // --- MANIPULADORES DE ERRO GLOBAIS ---
 set_error_handler('handle_php_error');
@@ -56,146 +44,182 @@ if ($method === 'POST' || $method === 'PUT' || $method === 'DELETE') {
         $decoded_data = json_decode($input, true);
         if (json_last_error() === JSON_ERROR_NONE) {
             $data = $decoded_data;
-        } else {
-            // Se não for JSON, pode ser FormData (para uploads)
-            // Neste caso, os handlers específicos acessarão $_POST e $_FILES
-            // Não é necessário preencher $data aqui para FormData
         }
     }
 } elseif ($method === 'GET') {
-    $data = $_GET; // Usa os parâmetros GET como dados para handlers GET
+    $data = $_GET;
 }
-
 
 try {
     $database = new Database();
     $pdo = $database->getConnection();
 
-    // --- Rotas Públicas ---
-    if ($action === 'login' && $method === 'POST') {
-        handle_login($pdo, $data);
-        exit;
+    // Definição das Rotas
+    // Estrutura: 'action' => ['method' => 'GET/POST', 'file' => 'path/to/file.php', 'function' => 'function_name']
+
+    // Rotas Públicas
+    $public_routes = [
+        'login' => ['method' => 'POST', 'file' => '/api/handlers/auth_handler.php', 'function' => 'handle_login'],
+        'fetch_cnpj' => ['method' => 'GET', 'file' => '/api/handlers/external_api_handler.php', 'function' => 'handle_fetch_cnpj'],
+        'fetch_cep' => ['method' => 'GET', 'file' => '/api/handlers/external_api_handler.php', 'function' => 'handle_fetch_cep'],
+    ];
+
+    // Verifica rotas públicas
+    if (isset($public_routes[$action])) {
+        $route = $public_routes[$action];
+        if ($method === $route['method']) {
+            require_once __DIR__ . $route['file'];
+            if ($action === 'fetch_cnpj') {
+                $route['function']($data['cnpj'] ?? '');
+            } elseif ($action === 'fetch_cep') {
+                $route['function']($data['cep'] ?? '');
+            } else {
+                $route['function']($pdo, $data);
+            }
+            exit;
+        }
     }
-    if ($action === 'fetch_cnpj' && $method === 'GET') {
-        handle_fetch_cnpj($data['cnpj'] ?? '');
-        exit;
-    }
-    if ($action === 'fetch_cep' && $method === 'GET') {
-        handle_fetch_cep($data['cep'] ?? '');
-        exit;
-    }
-    // Rota de upload de imagem para o editor (POST)
+
+    // Rota Especial de Upload (Verificação Personalizada)
     if ($action === 'upload_email_image' && $method === 'POST') {
-        // Verifica autenticação ANTES de processar o upload
         if (!isset($_SESSION['user_id'])) {
             json_response(['error' => 'Acesso não autorizado para upload.'], 401);
         }
-        handle_upload_email_image(); // Não precisa passar $pdo ou $data, pois usa $_FILES
+        require_once __DIR__ . '/api/handlers/email_handler.php';
+        handle_upload_email_image();
         exit;
     }
-
 
     // --- Rotas Protegidas (Requerem Login) ---
     if (!isset($_SESSION['user_id'])) {
         json_response(['error' => 'Acesso não autorizado.'], 401);
     }
 
-    // Mapeamento de Rotas [action][method] => handler
-    $routes = [
-        'logout' => ['POST' => 'handle_logout'],
-        'get_data' => ['GET' => 'handle_get_data'],
-        'get_stats' => ['GET' => 'handle_get_stats'],
+    // Mapeamento de Rotas Protegidas
+    $protected_routes = [
+        // Auth
+        'logout' => ['method' => 'POST', 'file' => '/api/handlers/auth_handler.php', 'function' => 'handle_logout'],
+
+        // Data
+        'get_data' => ['method' => 'GET', 'file' => '/api/handlers/data_handler.php', 'function' => 'handle_get_data'],
+        'get_stats' => ['method' => 'GET', 'file' => '/api/handlers/data_handler.php', 'function' => 'handle_get_stats'],
 
         // Vendas Fornecedores
-        'create_venda_fornecedor' => ['POST' => 'handle_create_venda_fornecedor'],
-        'update_venda_fornecedor' => ['POST' => 'handle_update_venda_fornecedor'], // Poderia ser PUT
-        'delete_venda_fornecedor' => ['POST' => 'handle_delete_venda_fornecedor'], // Poderia ser DELETE
+        'create_venda_fornecedor' => ['method' => 'POST', 'file' => '/api/handlers/data_handler.php', 'function' => 'handle_create_venda_fornecedor'],
+        'update_venda_fornecedor' => ['method' => 'POST', 'file' => '/api/handlers/data_handler.php', 'function' => 'handle_update_venda_fornecedor'],
+        'delete_venda_fornecedor' => ['method' => 'POST', 'file' => '/api/handlers/data_handler.php', 'function' => 'handle_delete_venda_fornecedor'],
 
         // Oportunidades
-        'create_opportunity' => ['POST' => 'handle_create_opportunity'],
-        'update_opportunity' => ['POST' => 'handle_update_opportunity'], // Poderia ser PUT
-        'delete_opportunity' => ['POST' => 'handle_delete_opportunity'], // Poderia ser DELETE
-        'move_opportunity' => ['POST' => 'handle_move_opportunity'],
-        'get_opportunity_details' => ['GET' => 'handle_get_opportunity_details'],
-        'transfer_opportunity' => ['POST' => 'handle_transfer_opportunity'],
+        'create_opportunity' => ['method' => 'POST', 'file' => '/api/handlers/opportunity_handler.php', 'function' => 'handle_create_opportunity'],
+        'update_opportunity' => ['method' => 'POST', 'file' => '/api/handlers/opportunity_handler.php', 'function' => 'handle_update_opportunity'],
+        'delete_opportunity' => ['method' => 'POST', 'file' => '/api/handlers/opportunity_handler.php', 'function' => 'handle_delete_opportunity'],
+        'move_opportunity' => ['method' => 'POST', 'file' => '/api/handlers/opportunity_handler.php', 'function' => 'handle_move_opportunity'],
+        'get_opportunity_details' => ['method' => 'GET', 'file' => '/api/handlers/opportunity_handler.php', 'function' => 'handle_get_opportunity_details'],
+        'transfer_opportunity' => ['method' => 'POST', 'file' => '/api/handlers/opportunity_handler.php', 'function' => 'handle_transfer_opportunity'],
 
         // Organizações
-        'create_organization' => ['POST' => 'handle_create_organization'],
-        'update_organization' => ['POST' => 'handle_update_organization'], // Poderia ser PUT
-        'delete_organization' => ['POST' => 'handle_delete_organization'], // Adicionado DELETE
-        'get_organization_details' => ['GET' => 'handle_get_organization_details'],
+        'create_organization' => ['method' => 'POST', 'file' => '/api/handlers/organization_handler.php', 'function' => 'handle_create_organization'],
+        'update_organization' => ['method' => 'POST', 'file' => '/api/handlers/organization_handler.php', 'function' => 'handle_update_organization'],
+        'delete_organization' => ['method' => 'POST', 'file' => '/api/handlers/organization_handler.php', 'function' => 'handle_delete_organization'],
+        'get_organization_details' => ['method' => 'GET', 'file' => '/api/handlers/organization_handler.php', 'function' => 'handle_get_organization_details'],
 
         // Contatos
-        'create_contact' => ['POST' => 'handle_create_contact'],
-        'update_contact' => ['POST' => 'handle_update_contact'], // Poderia ser PUT
-        'get_contact_details' => ['GET' => 'handle_get_contact_details'],
+        'create_contact' => ['method' => 'POST', 'file' => '/api/handlers/contact_handler.php', 'function' => 'handle_create_contact'],
+        'update_contact' => ['method' => 'POST', 'file' => '/api/handlers/contact_handler.php', 'function' => 'handle_update_contact'],
+        'get_contact_details' => ['method' => 'GET', 'file' => '/api/handlers/contact_handler.php', 'function' => 'handle_get_contact_details'],
 
         // Clientes PF
-        'create_cliente_pf' => ['POST' => 'handle_create_cliente_pf'],
-        'update_cliente_pf' => ['POST' => 'handle_update_cliente_pf'], // Poderia ser PUT
-        'delete_cliente_pf' => ['POST' => 'handle_delete_cliente_pf'], // Adicionado DELETE
-        'get_cliente_pf_details' => ['GET' => 'handle_get_cliente_pf_details'],
-        'import_clients' => ['POST' => 'handle_import_clients'], // <-- NOVA ROTA DE IMPORTAÇÃO
+        'create_cliente_pf' => ['method' => 'POST', 'file' => '/api/handlers/client_pf_handler.php', 'function' => 'handle_create_cliente_pf'],
+        'update_cliente_pf' => ['method' => 'POST', 'file' => '/api/handlers/client_pf_handler.php', 'function' => 'handle_update_cliente_pf'],
+        'delete_cliente_pf' => ['method' => 'POST', 'file' => '/api/handlers/client_pf_handler.php', 'function' => 'handle_delete_cliente_pf'],
+        'get_cliente_pf_details' => ['method' => 'GET', 'file' => '/api/handlers/client_pf_handler.php', 'function' => 'handle_get_cliente_pf_details'],
+        'import_clients' => ['method' => 'POST', 'file' => '/api/handlers/client_pf_handler.php', 'function' => 'handle_import_clients'],
 
         // Propostas
-        'create_proposal' => ['POST' => 'handle_create_proposal'],
-        'update_proposal' => ['POST' => 'handle_update_proposal'], // Poderia ser PUT
-        'delete_proposal' => ['POST' => 'handle_delete_proposal'], // Adicionado DELETE
-        'update_proposal_status' => ['POST' => 'handle_update_proposal_status'], // Poderia ser PUT ou PATCH
-        'get_proposal_details' => ['GET' => 'handle_get_proposal_details'],
-        'upload_image' => ['POST' => 'handle_upload_image'], // Upload para itens da proposta
+        'create_proposal' => ['method' => 'POST', 'file' => '/api/handlers/proposal_handler.php', 'function' => 'handle_create_proposal'],
+        'update_proposal' => ['method' => 'POST', 'file' => '/api/handlers/proposal_handler.php', 'function' => 'handle_update_proposal'],
+        'delete_proposal' => ['method' => 'POST', 'file' => '/api/handlers/proposal_handler.php', 'function' => 'handle_delete_proposal'],
+        'update_proposal_status' => ['method' => 'POST', 'file' => '/api/handlers/proposal_handler.php', 'function' => 'handle_update_proposal_status'],
+        'get_proposal_details' => ['method' => 'GET', 'file' => '/api/handlers/proposal_handler.php', 'function' => 'handle_get_proposal_details'],
+        'upload_image' => ['method' => 'POST', 'file' => '/api/handlers/proposal_handler.php', 'function' => 'handle_upload_image'],
 
         // Catálogo de Produtos
-        'upload_product_image' => ['POST' => 'handle_upload_product_image'],
-        'create_product' => ['POST' => 'handle_create_product'],
-        'update_product' => ['POST' => 'handle_update_product'], // Poderia ser PUT
-        'delete_product' => ['POST' => 'handle_delete_product'], // Poderia ser DELETE
+        'upload_product_image' => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_upload_product_image'],
+        'create_product' => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_create_product'],
+        'update_product' => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_update_product'],
+        'delete_product' => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_delete_product'],
 
         // Usuários
-        'create_user' => ['POST' => 'handle_create_user'],
-        'update_user' => ['POST' => 'handle_update_user'], // Poderia ser PUT
-        'delete_user' => ['POST' => 'handle_delete_user'], // Poderia ser DELETE
+        'create_user' => ['method' => 'POST', 'file' => '/api/handlers/user_handler.php', 'function' => 'handle_create_user'],
+        'update_user' => ['method' => 'POST', 'file' => '/api/handlers/user_handler.php', 'function' => 'handle_update_user'],
+        'delete_user' => ['method' => 'POST', 'file' => '/api/handlers/user_handler.php', 'function' => 'handle_delete_user'],
 
         // Agenda
-        'get_agendamentos' => ['GET' => 'handle_get_agendamentos'],
-        'create_agendamento' => ['POST' => 'handle_create_agendamento'],
-        'update_agendamento' => ['POST' => 'handle_update_agendamento'], // Poderia ser PUT
-        'delete_agendamento' => ['POST' => 'handle_delete_agendamento'], // Adicionado DELETE
+        'get_agendamentos' => ['method' => 'GET', 'file' => '/api/handlers/agenda_handler.php', 'function' => 'handle_get_agendamentos'],
+        'create_agendamento' => ['method' => 'POST', 'file' => '/api/handlers/agenda_handler.php', 'function' => 'handle_create_agendamento'],
+        'update_agendamento' => ['method' => 'POST', 'file' => '/api/handlers/agenda_handler.php', 'function' => 'handle_update_agendamento'],
+        'delete_agendamento' => ['method' => 'POST', 'file' => '/api/handlers/agenda_handler.php', 'function' => 'handle_delete_agendamento'],
 
         // Leads
-        'update_lead_status' => ['POST' => 'handle_update_lead_status'], // Poderia ser PUT ou PATCH
-        'update_lead_field' => ['POST' => 'handle_update_lead_field'], // Poderia ser PUT ou PATCH
-        'update_lead_fields' => ['POST' => 'handle_update_lead_fields'], // Poderia ser PUT ou PATCH
-        'import_leads' => ['POST' => 'handle_import_leads'],
+        'update_lead_status' => ['method' => 'POST', 'file' => '/api/handlers/lead_handler.php', 'function' => 'handle_update_lead_status'],
+        'update_lead_field' => ['method' => 'POST', 'file' => '/api/handlers/lead_handler.php', 'function' => 'handle_update_lead_field'],
+        'update_lead_fields' => ['method' => 'POST', 'file' => '/api/handlers/lead_handler.php', 'function' => 'handle_update_lead_fields'],
+        'import_leads' => ['method' => 'POST', 'file' => '/api/handlers/lead_handler.php', 'function' => 'handle_import_leads'],
 
         // Email Marketing
-        'send_bulk_email_leads' => ['POST' => 'handle_send_bulk_email_leads'],
+        'send_bulk_email_leads' => ['method' => 'POST', 'file' => '/api/handlers/email_handler.php', 'function' => 'handle_send_bulk_email_leads'],
 
         // Relatórios
-        'get_report_data' => ['GET' => 'handle_get_report_data'],
-        'get_supplier_targets' => ['GET' => 'handle_get_supplier_targets'],
-        'save_targets' => ['POST' => 'handle_save_targets'],
-        'get_report_kpis' => ['GET' => 'handle_get_report_kpis'],
+        'get_report_data' => ['method' => 'GET', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_report_data'],
+        'get_supplier_targets' => ['method' => 'GET', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_supplier_targets'],
+        'save_targets' => ['method' => 'POST', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_save_targets'],
+        'get_report_kpis' => ['method' => 'GET', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_report_kpis'],
     ];
 
-    // Executa o handler correspondente à ação e ao método
-    if (isset($routes[$action]) && isset($routes[$action][$method])) {
-        $handler_function = $routes[$action][$method];
-        if (function_exists($handler_function)) {
-            // Passa $pdo e $data para a maioria dos handlers
-            // Ajusta if/else se algum handler tiver assinatura diferente
-            if (in_array($handler_function, ['handle_logout'])) {
-                $handler_function();
-            } elseif (in_array($handler_function, ['handle_get_data', 'handle_get_stats', 'handle_get_agendamentos', 'handle_get_report_kpis'])) {
-                $handler_function($pdo);
+    if (isset($protected_routes[$action])) {
+        $route = $protected_routes[$action];
+
+        // Verifica método
+        if ($method !== $route['method']) {
+            // Aceita updates com POST mesmo se marcado como PUT/PATCH por simplicidade se necessário,
+            // mas aqui seremos estritos ou permitiremos flexibilidade se o código legado depender disso.
+            // O código original usava mostly POST p/ updates.
+            // Mantendo checagem estrita baseada na definição acima:
+            // Se o frontend envia POST para tudo, o array de rotas reflete isso.
+        }
+
+        if ($method === $route['method'] || ($route['method'] === 'POST' && ($method === 'PUT' || $method === 'DELETE'))) {
+            // Flexibilização simples caso frontend use métodos RESTful mas backend espere POST
+            // (Ou vice versa, ajustado conforme a definição no array)
+            // Neste caso, se a definição diz POST, esperamos POST.
+            if ($method !== $route['method']) {
+                json_response(['error' => "Método incorreto. Esperado: {$route['method']}, Recebido: {$method}"], 405);
+            }
+
+            // Carrega o arquivo dinamicamente
+            require_once __DIR__ . $route['file'];
+
+            $handler_function = $route['function'];
+            if (function_exists($handler_function)) {
+                // Chama a função com os argumentos corretos
+                if ($action === 'logout') {
+                    $handler_function();
+                } elseif (in_array($action, ['get_data', 'get_stats', 'get_agendamentos', 'get_report_kpis'])) {
+                    // Alguns handlers GET antigos só recebem $pdo
+                    $handler_function($pdo);
+                } else {
+                    // Padrão: $pdo e $data
+                    $handler_function($pdo, $data);
+                }
             } else {
-                $handler_function($pdo, $data);
+                json_response(['error' => "Handler não encontrado: {$handler_function}"], 500);
             }
         } else {
-            json_response(['error' => "Handler não implementado: {$handler_function}"], 501);
+            json_response(['error' => "Método não permitido."], 405);
         }
+
     } else {
-        json_response(['error' => "Ação inválida ({$action}) ou método não permitido ({$method})."], 400);
+        json_response(['error' => "Ação não encontrada: {$action}"], 404);
     }
 
 

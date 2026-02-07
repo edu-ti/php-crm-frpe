@@ -13,16 +13,8 @@ function handle_create_proposal($pdo, $data)
 
     $pdo->beginTransaction();
     try {
-        $valor_total = 0;
-        foreach ($items as $item) {
-            $meses = (int) ($item['meses_locacao'] ?? 12);
-            $multiplicador = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') ? $meses : 1;
-            $valor_total += (($item['quantidade'] ?? 1) * ($item['valor_unitario'] ?? 0) * $multiplicador);
-        }
-
-        // Adiciona o valor do frete ao total
-        $frete_valor = (float) ($data['frete_valor'] ?? 0);
-        $valor_total += $frete_valor;
+        // Calcula valor total usando helper
+        $valor_total = calculate_proposal_total($items, $data['frete_valor'] ?? 0);
 
         $cliente_pf_id = ($clientType === 'pf') ? $client['id'] : null;
         $organizacao_id = ($clientType === 'pj') ? $client['id'] : null;
@@ -117,52 +109,15 @@ function handle_create_proposal($pdo, $data)
         $update_numero_stmt = $pdo->prepare("UPDATE propostas SET numero_proposta = ? WHERE id = ?");
         $update_numero_stmt->execute([$numero_proposta, $proposta_id]);
 
-        // Insere os itens da proposta
-        $item_sql = "INSERT INTO proposta_itens (proposta_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros, meses_locacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $item_stmt = $pdo->prepare($item_sql);
-
-        foreach ($items as $item) {
-            $meses_val = 1;
-            if (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') {
-                $meses_val = (int) ($item['meses_locacao'] ?? 12); // Default to 12 to match frontend
-            } else {
-                $meses_val = null; // Send null for VENDA if allowed, or 1. DB allow null? 
-                // Dump says "meses_locacao int(11) DEFAULT 1". It doesn't say NOT NULL. 
-                // INSERTs in dump use NULL for VENDA. So I will use NULL.
-                $meses_val = null;
-            }
-
-            // Parametros handling: Clean up existing hack if present in input
-            $parametros = $item['parametros'] ?? [];
-            if (is_array($parametros)) {
-                $parametros = array_values(array_filter($parametros, function ($p) {
-                    return isset($p['nome']) && $p['nome'] !== '__meses_locacao';
-                }));
-            }
-            $item_parametros_json = !empty($parametros) ? json_encode($parametros) : null;
-
-            $item_stmt->execute([
-                $proposta_id,
-                $item['produto_id'] ?? null,
-                $item['descricao'],
-                $item['descricao_detalhada'] ?? null,
-                $item['fabricante'] ?? null,
-                $item['modelo'] ?? null,
-                $item['imagem_url'] ?? null,
-                $item['quantidade'] ?? 1,
-                $item['valor_unitario'] ?? 0,
-                $item['status'] ?? 'VENDA',
-                $item['unidade_medida'] ?? null,
-                $item_parametros_json,
-                $meses_val
-            ]);
-        }
+        // Insere os itens da proposta usando helper
+        insert_proposal_items($pdo, $proposta_id, $items);
 
         // Sincroniza o status da oportunidade
         sync_opportunity_stage($pdo, $oportunidade_id, $data['status'] ?? 'Rascunho');
 
         // ***** INÍCIO: Lógica para criar venda fornecedor se status for "Aprovada" *****
-        if (($data['status'] ?? 'Rascunho') === 'Aprovada') {
+// ***** INÍCIO: Lógica para criar venda fornecedor se status for "Aprovada" *****
+        if (strcasecmp($data['status'] ?? 'Rascunho', 'Aprovada') === 0) {
             create_vendas_fornecedores_from_proposal($pdo, $proposta_id, $organizacao_id, $cliente_pf_id);
         }
         // ***** FIM: Lógica *****
@@ -238,17 +193,8 @@ function handle_update_proposal($pdo, $data)
         $stmt_current_status->execute([$proposalId]);
         $current_status = $stmt_current_status->fetchColumn();
 
-        // Calcula valor total
-        $valor_total = 0;
-        foreach ($items as $item) {
-            $meses = (int) ($item['meses_locacao'] ?? 12);
-            $multiplicador = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') ? $meses : 1;
-            $valor_total += (($item['quantidade'] ?? 1) * ($item['valor_unitario'] ?? 0) * $multiplicador);
-        }
-
-        // Adiciona o valor do frete ao total
-        $frete_valor = (float) ($data['frete_valor'] ?? 0);
-        $valor_total += $frete_valor;
+        // Calcula valor total usando helper
+        $valor_total = calculate_proposal_total($items, $data['frete_valor'] ?? 0);
 
         // Determina IDs de cliente
         $cliente_pf_id = ($clientType === 'pf') ? $client['id'] : null;
@@ -286,42 +232,9 @@ function handle_update_proposal($pdo, $data)
         $delete_stmt->execute([$proposalId]);
 
         // --- ALTERAÇÃO: Adiciona coluna 'parametros' ---
-        $item_sql = "INSERT INTO proposta_itens (proposta_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros, meses_locacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $item_stmt = $pdo->prepare($item_sql);
-
-        foreach ($items as $item) {
-            $meses_val = 1;
-            if (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') {
-                $meses_val = (int) ($item['meses_locacao'] ?? 12);
-            } else {
-                $meses_val = null;
-            }
-
-            // Parametros handling
-            $parametros = $item['parametros'] ?? [];
-            if (is_array($parametros)) {
-                $parametros = array_values(array_filter($parametros, function ($p) {
-                    return isset($p['nome']) && $p['nome'] !== '__meses_locacao';
-                }));
-            }
-            $item_parametros_json = !empty($parametros) ? json_encode($parametros) : null;
-
-            $item_stmt->execute([
-                $proposalId,
-                $item['produto_id'] ?? null,
-                $item['descricao'],
-                $item['descricao_detalhada'] ?? null,
-                $item['fabricante'] ?? null,
-                $item['modelo'] ?? null,
-                $item['imagem_url'] ?? null,
-                $item['quantidade'] ?? 1,
-                $item['valor_unitario'] ?? 0,
-                $item['status'] ?? 'VENDA',
-                $item['unidade_medida'] ?? null,
-                $item_parametros_json,
-                $meses_val
-            ]);
-        }
+// --- ALTERAÇÃO: Adiciona coluna 'parametros' ---
+        // Re-insere os itens usando helper
+        insert_proposal_items($pdo, $proposalId, $items);
 
         // Sincroniza o status da oportunidade
         // Precisamos buscar o oportunidade_id da proposta se não tivermos
@@ -334,7 +247,8 @@ function handle_update_proposal($pdo, $data)
         }
 
         // ***** INÍCIO: Lógica para criar venda fornecedor se status mudou para "Aprovada" *****
-        if ($new_status === 'Aprovada' && $current_status !== 'Aprovada') {
+// ***** INÍCIO: Lógica para criar venda fornecedor se status mudou para "Aprovada" *****
+        if (strcasecmp($new_status, 'Aprovada') === 0 && strcasecmp($current_status, 'Aprovada') !== 0) {
             // Chama a função auxiliar para criar as vendas
             create_vendas_fornecedores_from_proposal($pdo, $proposalId, $organizacao_id, $cliente_pf_id);
         }
@@ -367,6 +281,65 @@ function handle_update_proposal($pdo, $data)
         $pdo->rollBack();
         error_log("[Update Proposal Error] Exception: " . $e->getMessage() . "\nTrace: " . $e->getTraceAsString()); // Log detalhado
         json_response(['success' => false, 'error' => 'Erro na transação ao atualizar proposta: ' . $e->getMessage()], 500);
+    }
+}
+
+// --- HELPER FUNCTIONS ---
+
+/**
+ * Calcula o valor total da proposta baseado nos itens e frete.
+ */
+function calculate_proposal_total($items, $frete_valor)
+{
+    $valor_total = 0;
+    foreach ($items as $item) {
+        $meses = (int) ($item['meses_locacao'] ?? 12);
+        $multiplicador = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') ? $meses : 1;
+        $valor_total += (($item['quantidade'] ?? 1) * ($item['valor_unitario'] ?? 0) * $multiplicador);
+    }
+    return $valor_total + (float) $frete_valor;
+}
+
+/**
+ * Insere os itens da proposta no banco de dados.
+ */
+function insert_proposal_items($pdo, $proposal_id, $items)
+{
+    $item_sql = "INSERT INTO proposta_itens (proposta_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros, meses_locacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $item_stmt = $pdo->prepare($item_sql);
+
+    foreach ($items as $item) {
+        $meses_val = 1;
+        if (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') {
+            $meses_val = (int) ($item['meses_locacao'] ?? 12);
+        } else {
+            $meses_val = null;
+        }
+
+        // Parametros handling
+        $parametros = $item['parametros'] ?? [];
+        if (is_array($parametros)) {
+            $parametros = array_values(array_filter($parametros, function ($p) {
+                return isset($p['nome']) && $p['nome'] !== '__meses_locacao';
+            }));
+        }
+        $item_parametros_json = !empty($parametros) ? json_encode($parametros) : null;
+
+        $item_stmt->execute([
+            $proposal_id,
+            $item['produto_id'] ?? null,
+            $item['descricao'],
+            $item['descricao_detalhada'] ?? null,
+            $item['fabricante'] ?? null,
+            $item['modelo'] ?? null,
+            $item['imagem_url'] ?? null,
+            $item['quantidade'] ?? 1,
+            $item['valor_unitario'] ?? 0,
+            $item['status'] ?? 'VENDA',
+            $item['unidade_medida'] ?? null,
+            $item_parametros_json,
+            $meses_val
+        ]);
     }
 }
 
@@ -722,7 +695,7 @@ function handle_update_proposal_status($pdo, $data)
         }
 
         // Lógica para criar venda fornecedor se status mudou para "Aprovada"
-        if ($new_status === 'Aprovada' && $current_status !== 'Aprovada') {
+        if (strcasecmp($new_status, 'Aprovada') === 0 && strcasecmp($current_status, 'Aprovada') !== 0) {
             create_vendas_fornecedores_from_proposal($pdo, $proposalId, $current_data['organizacao_id'], $current_data['cliente_pf_id']);
         }
 
