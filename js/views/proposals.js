@@ -33,6 +33,51 @@ export function resetProposalState() {
     // Mantemos a paginação e a ordenação atuais
 }
 
+let proposalsInterval = null;
+
+export async function initProposalsView() {
+    renderProposalsView(); // Renderiza a estrutura básica
+
+    // Limpa intervalo anterior se existir
+    if (proposalsInterval) clearInterval(proposalsInterval);
+
+    // Carregamento inicial (com spinner)
+    await loadProposals(false);
+
+    // Configura o polling (silencioso)
+    proposalsInterval = setInterval(() => {
+        const view = document.getElementById('proposals-view');
+        // Se a view não existir ou estiver oculta, não faz o request
+        if (!view || view.classList.contains('hidden') || view.style.display === 'none') {
+            return;
+        }
+        loadProposals(true);
+    }, 1000); // 1 segundos
+}
+
+export async function loadProposals(isSilent = false) {
+    if (!isSilent) showLoading(true);
+    try {
+        // Usa get_data para garantir consistência
+        const data = await apiCall('get_data');
+
+        // Atualiza apenas as partes relevantes do estado
+        appState.proposals = data.proposals || [];
+        appState.pre_proposals = data.pre_proposals || [];
+        appState.opportunities = data.opportunities || [];
+
+        // Re-renderiza as listas
+        renderProposalsList();
+        renderPreProposalsSection();
+
+    } catch (error) {
+        console.error("Erro ao carregar propostas:", error);
+        if (!isSilent) showToast("Erro ao atualizar lista de propostas.", "error");
+    } finally {
+        if (!isSilent) showLoading(false);
+    }
+}
+
 export function renderProposalsView() {
     const container = document.getElementById('proposals-view');
 
@@ -43,42 +88,11 @@ export function renderProposalsView() {
     const p = appState.proposal;
     const { permissions } = appState.currentUser;
 
-    let preProposalsSection = '';
-    if (appState.pre_proposals && appState.pre_proposals.length > 0) {
-        const preProposalItems = appState.pre_proposals.map(op => `
-            <div class="p-2 mb-1 border rounded-md bg-yellow-50 border-yellow-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div>
-                    <p class="font-semibold text-yellow-800">${op.titulo} (${op.organizacao_nome || op.cliente_pf_nome || 'N/A'})</p>
-                    <p class="text-xs text-yellow-700">Solicitado por: ${op.vendedor_nome} | Nº Pré-proposta: ${op.pre_proposal_number}</p>
-                </div>
-                <div class="flex items-center space-x-2">
-                    ${permissions.canDelete ? `
-                    <button class="btn bg-red-500 hover:bg-red-600 text-white text-xs delete-pre-proposal-btn" data-opportunity-id="${op.id}">
-                        Excluir
-                    </button>
-                    ` : ''}
-                    ${permissions.canCreate ? `
-                    <button class="btn bg-green-500 hover:bg-green-600 text-white text-xs create-proposal-from-opp-btn" data-opportunity-id="${op.id}">
-                        Criar Proposta
-                    </button>
-                    ` : ''}
-                </div>
-            </div>
-        `).join('');
-
-        preProposalsSection = `
-            <div class="mb-8 p-4 bg-white rounded-lg shadow-sm border">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">Solicitações de Pré-Proposta</h2>
-                ${preProposalItems}
-            </div>
-        `;
-    }
-
     const statusOptions = ['Rascunho', 'Enviada', 'Aprovada', 'Recusada', 'Negociando']
         .map(s => `<option value="${s}" ${p.status === s ? 'selected' : ''}>${s}</option>`).join('');
 
     container.innerHTML = `
-        ${preProposalsSection}
+        <div id="pre-proposals-container"></div>
         <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
             <h1 class="text-2xl font-bold text-gray-800 self-start sm:self-center">Propostas</h1>
             <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
@@ -91,7 +105,6 @@ export function renderProposalsView() {
                 ` : ''}
             </div>
         </div>
-        <!-- Adicionado min-h para garantir visibilidade da tabela mesmo sem flex-grow funcionando corretamente -->
         <div id="proposals-list-container" class="bg-white rounded-lg shadow-sm border responsive-table-container min-h-[500px]"></div>
         
         <div id="proposal-form-container" class="mt-6 ${p.isEditing || p.oportunidade_id ? '' : 'hidden'}">
@@ -149,9 +162,59 @@ export function renderProposalsView() {
 
     addProposalEventListeners();
     renderProposalsList();
+    renderPreProposalsSection();
+
     if (p.isEditing || p.oportunidade_id) {
         renderProposalClientSelection();
         renderProposalItemsSection();
+    }
+}
+
+function renderPreProposalsSection() {
+    const container = document.getElementById('pre-proposals-container');
+    if (!container) return;
+
+    const { permissions } = appState.currentUser;
+
+    if (appState.pre_proposals && appState.pre_proposals.length > 0) {
+        const preProposalItems = appState.pre_proposals.map(op => `
+            <div class="p-2 mb-1 border rounded-md bg-yellow-50 border-yellow-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                    <p class="font-semibold text-yellow-800">${op.titulo} (${op.organizacao_nome || op.cliente_pf_nome || 'N/A'})</p>
+                    <p class="text-xs text-yellow-700">Solicitado por: ${op.vendedor_nome} | Nº Pré-proposta: ${op.pre_proposal_number}</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    ${permissions.canDelete ? `
+                    <button class="btn bg-red-500 hover:bg-red-600 text-white text-xs delete-pre-proposal-btn" data-opportunity-id="${op.id}">
+                        Excluir
+                    </button>
+                    ` : ''}
+                    ${permissions.canCreate ? `
+                    <button class="btn bg-green-500 hover:bg-green-600 text-white text-xs create-proposal-from-opp-btn" data-opportunity-id="${op.id}">
+                        Criar Proposta
+                    </button>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = `
+            <div class="mb-8 p-4 bg-white rounded-lg shadow-sm border">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Solicitações de Pré-Proposta</h2>
+                ${preProposalItems}
+            </div>
+        `;
+
+        container.querySelectorAll('.create-proposal-from-opp-btn').forEach(btn => {
+            btn.addEventListener('click', handleCreateProposalFromOpp);
+        });
+
+        container.querySelectorAll('.delete-pre-proposal-btn').forEach(btn => {
+            btn.addEventListener('click', handleDeletePreProposal);
+        });
+
+    } else {
+        container.innerHTML = '';
     }
 }
 

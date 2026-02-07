@@ -5,7 +5,7 @@ import { showToast, showLoading } from './utils.js';
 import { renderDashboardView } from './views/dashboard.js';
 import { renderFunilView } from './views/kanban.js';
 import { renderClientsView } from './views/clients.js';
-import { renderProposalsView, resetProposalState } from './views/proposals.js';
+import { initProposalsView, resetProposalState } from './views/proposals.js';
 import { renderSettingsView } from './views/settings.js';
 import { renderAgendaView } from './views/agenda.js';
 import { renderLeadsView } from './views/leads.js';
@@ -120,7 +120,7 @@ async function switchView(viewName) {
         'funil': renderFunilView,
         'agenda': renderAgendaView,
         'clients': renderClientsView,
-        'proposals': renderProposalsView,
+        'proposals': initProposalsView,
         'leads': renderLeadsView,
         'settings': renderSettingsView,
         'catalog': renderCatalogView,
@@ -360,6 +360,12 @@ function addGlobalEventListeners() {
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
+
+            // Garante recarregamento ao clicar em Propostas
+            if (link.dataset.view === 'proposals' && appState.activeView === 'proposals') {
+                initProposalsView();
+            }
+
             switchView(link.dataset.view);
             // Em mobile, esconde o menu após clicar
             if (window.innerWidth < 768) {
