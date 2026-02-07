@@ -78,6 +78,19 @@ export async function loadProposals(isSilent = false) {
     }
 }
 
+// Helper para buscar dados atualizados de clientes (Organizations, PF e Contatos)
+async function refreshClientData() {
+    try {
+        const data = await apiCall('get_data');
+        // Atualiza listas de clientes e contatos
+        if (data.organizations) appState.organizations = data.organizations;
+        if (data.clients_pf) appState.clients_pf = data.clients_pf;
+        if (data.contacts) appState.contacts = data.contacts;
+    } catch (error) {
+        console.error("Erro ao atualizar dados de clientes:", error);
+    }
+}
+
 export function renderProposalsView() {
     const container = document.getElementById('proposals-view');
 
@@ -379,8 +392,14 @@ function addProposalCardEventListeners() {
         btn.addEventListener('click', async e => {
             const id = e.currentTarget.dataset.id;
             try {
-                const result = await apiCall('get_proposal_details', { params: { id } });
+                showLoading(true);
+                // Carrega dados de clientes E detalhes da proposta em paralelo
+                const [_, result] = await Promise.all([
+                    refreshClientData(),
+                    apiCall('get_proposal_details', { params: { id } })
+                ]);
                 const { proposal } = result;
+                showLoading(false);
 
                 resetProposalState();
                 appState.proposal.isEditing = true;
@@ -414,7 +433,10 @@ function addProposalCardEventListeners() {
                 }
                 renderProposalsView();
                 scrollToProposalForm();
-            } catch (error) { }
+            } catch (error) {
+                showLoading(false);
+                console.error(error);
+            }
         });
     });
 
@@ -1057,7 +1079,10 @@ function addProposalEventListeners() {
         resetProposalState();
         renderProposalsView();
     });
-    document.getElementById('add-proposal-btn')?.addEventListener('click', () => {
+    document.getElementById('add-proposal-btn')?.addEventListener('click', async () => {
+        showLoading(true);
+        await refreshClientData();
+        showLoading(false);
         resetProposalState();
         appState.proposal.isEditing = true;
         // Adiciona um item inicial padrão
@@ -1133,9 +1158,15 @@ async function handleCreateProposalFromOpp(e) {
     // --- ALTERAÇÃO: Busca detalhes completos da API ---
     let opp;
     try {
-        const result = await apiCall('get_opportunity_details', { params: { id: oppId } });
+        showLoading(true);
+        const [_, result] = await Promise.all([
+            refreshClientData(),
+            apiCall('get_opportunity_details', { params: { id: oppId } })
+        ]);
         opp = result.opportunity;
+        showLoading(false);
     } catch (error) {
+        showLoading(false);
         showToast('Erro ao carregar detalhes da pré-proposta.', 'error');
         return;
     }
