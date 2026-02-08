@@ -102,24 +102,9 @@ function send_email_internal($to, $subject, $body)
 function send_via_smtp($to, $subject, $body, $fromEmail, $fromName)
 {
     $mail = new PHPMailer(true);
-    $debugLog = dirname(__DIR__, 2) . '/debug_smtp.txt';
 
     try {
-        // Log Configuration (Redacting password)
-        $logData = "--- New SMTP Attempt ---\n";
-        $logData .= "To: $to\n";
-        $logData .= "Host: " . (defined('SMTP_HOST') ? SMTP_HOST : 'NOT DEFINED') . "\n";
-        $logData .= "Port: " . (defined('SMTP_PORT') ? SMTP_PORT : 'NOT DEFINED') . "\n";
-        $logData .= "User: " . (defined('SMTP_USER') ? SMTP_USER : 'NOT DEFINED') . "\n";
-        $logData .= "Secure: " . (defined('SMTP_SECURE') ? SMTP_SECURE : 'NOT DEFINED') . "\n";
-        file_put_contents($debugLog, $logData, FILE_APPEND);
-
         // Server settings
-        $mail->SMTPDebug = 2; // Enable verbose debug output
-        $mail->Debugoutput = function ($str, $level) use ($debugLog) {
-            file_put_contents($debugLog, "SMTP Debug: $str\n", FILE_APPEND);
-        };
-
         $mail->isSMTP();
         $mail->Host = defined('SMTP_HOST') ? SMTP_HOST : '';
         $mail->SMTPAuth = true;
@@ -140,16 +125,11 @@ function send_via_smtp($to, $subject, $body, $fromEmail, $fromName)
         $mail->AltBody = strip_tags($body);
 
         $mail->send();
-        file_put_contents($debugLog, "SMTP Success!\n", FILE_APPEND);
         return ['success' => true];
     } catch (PHPMailerException $e) {
-        $errorMsg = "Mailer Error: {$mail->ErrorInfo}";
-        file_put_contents($debugLog, "SMTP Failure: $errorMsg\n", FILE_APPEND);
-        return ['success' => false, 'error' => $errorMsg];
+        return ['success' => false, 'error' => "Mailer Error: {$mail->ErrorInfo}"];
     } catch (Exception $e) {
-        $errorMsg = "General Error: {$e->getMessage()}";
-        file_put_contents($debugLog, "General Failure: $errorMsg\n", FILE_APPEND);
-        return ['success' => false, 'error' => $errorMsg];
+        return ['success' => false, 'error' => "General Error: {$e->getMessage()}"];
     }
 }
 
@@ -254,10 +234,6 @@ function handle_upload_email_image()
         } else {
             $publicUrl = "$protocol://$host$basePath/public/uploads/emails/$filename";
         }
-
-        // Debug Image URL
-        $debugLog = dirname(__DIR__, 2) . '/debug_smtp.txt';
-        file_put_contents($debugLog, "Image Uploaded: $publicUrl\n", FILE_APPEND);
 
         // Retorna JSON esperado pelo TinyMCE
         echo json_encode(['location' => $publicUrl]);
