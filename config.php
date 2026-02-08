@@ -43,7 +43,7 @@ function loadEnv($path)
 
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
-        $value = trim($value);
+        $value = trim($value, " \t\n\r\0\x0B\"'");
 
         if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
             putenv(sprintf('%s=%s', $name, $value));
@@ -62,6 +62,17 @@ define('DB_USER', getenv('DB_USER'));
 define('DB_PASS', getenv('DB_PASS'));
 define('DB_CHARSET', 'utf8mb4');
 define('DB_COLLATE', '');
+
+// --- Email Configuration ---
+define('MAIL_DRIVER', getenv('MAIL_DRIVER') ?: 'sendgrid'); // 'smtp' or 'sendgrid'
+define('SMTP_HOST', getenv('SMTP_HOST'));
+define('SMTP_PORT', getenv('SMTP_PORT'));
+define('SMTP_USER', getenv('SMTP_USER'));
+define('SMTP_PASS', getenv('SMTP_PASS'));
+define('SMTP_SECURE', getenv('SMTP_SECURE')); // 'tls' or 'ssl'
+define('MAIL_FROM_ADDRESS', getenv('MAIL_FROM_ADDRESS'));
+define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME'));
+define('SENDGRID_API_KEY', getenv('SENDGRID_API_KEY'));
 
 try {
     $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;

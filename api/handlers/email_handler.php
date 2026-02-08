@@ -1,40 +1,14 @@
 <?php
 // api/handlers/email_handler.php
 require_once dirname(__DIR__) . '/core/helpers.php';
-// --- Carregamento da Biblioteca SendGrid ---
 
-// Opção 1: Se instalou via Composer (recomendado)
-// O autoload já é carregado no api.php, mas verificamos por segurança se o script for chamado diretamente (o que não deve acontecer)
-if (file_exists(dirname(__DIR__, 2) . '/vendor/autoload.php') && !class_exists('\SendGrid')) {
-    require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
-}
-
-// Opção 2: Desativada em favor do Composer
-// require_once dirname(__DIR__, 2) . '/lib/sendgrid-php/sendgrid-php.php';
-
-// Debugging Autoload Path Issue
-$debugLogFile = dirname(__DIR__, 2) . '/debug_sendgrid.txt';
-$logData = "--- New Request ---\n";
-$logData .= "Current Dir: " . __DIR__ . "\n";
-$logData .= "Root Dir (via dirname 2): " . dirname(__DIR__, 2) . "\n";
-$autoloadPath = dirname(__DIR__, 2) . '/vendor/autoload.php';
-$logData .= "Autoload Path: " . $autoloadPath . "\n";
-$logData .= "Autoload Exists: " . (file_exists($autoloadPath) ? 'YES' : 'NO') . "\n";
-$logData .= "Class \SendGrid Exists BEFORE: " . (class_exists('\SendGrid') ? 'YES' : 'NO') . "\n";
-
-if (file_exists($autoloadPath)) {
-    // Tenta incluir novamente só para garantir
-    require_once $autoloadPath;
-}
-
-$logData .= "Class \SendGrid Exists AFTER: " . (class_exists('\SendGrid') ? 'YES' : 'NO') . "\n";
-file_put_contents($debugLogFile, $logData, FILE_APPEND);
-
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception as PHPMailerException;
+use SendGrid\Mail\Mail;
 
 /**
  * Lida com o envio de e-mails em massa para leads selecionados.
- * Recebe uma lista de e-mails, assunto e corpo (HTML).
- * Usa a API do SendGrid para o envio.
+ * Suporta SendGrid e SMTP via PHPMailer, configurável via .env
  */
 function handle_send_bulk_email_leads($pdo, $data)
 {
@@ -52,69 +26,243 @@ function handle_send_bulk_email_leads($pdo, $data)
         return;
     }
 
-    // --- Configuração do SendGrid ---
-    // API Key obtida do guia SendGrid
-    $sendgrid_api_key = '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'; // <<< API KEY DO SEU PDF
+    // --- Tratamento de Imagens (URLs Relativas -> Absolutas) ---
+    // O TinyMCE muitas vezes salva caminhos relativos (ex: src="public/uploads...").
+    // Emails precisam de URLs absolutas.
 
-    // Insira o seu e-mail remetente VERIFICADO no SendGrid
-    $from_email = 'marketing@frpe.app.br'; // <<< SEU EMAIL VERIFICADO
-    $from_name = 'FR Produtos Médicos CRM'; // Nome que aparecerá como remetente
+    $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
+    $host = $_SERVER['HTTP_HOST'];
 
-    // --- Preparação do Envio ---
-    // Verifica se as classes SendGrid existem antes de as usar
-    if (!class_exists('\SendGrid\Mail\Mail') || !class_exists('\SendGrid')) {
-        error_log("Erro Crítico: As classes SendGrid não foram encontradas. Verifique o require_once no topo do email_handler.php.");
-        json_response(['success' => false, 'error' => 'Erro interno do servidor ao carregar a biblioteca de envio. Contacte o administrador.'], 500);
-        return; // Interrompe a execução
-    }
+    // Tenta descobrir a base URL do CRM.
+    // Se acessado via /crm/api.php, dirname será /crm
+    $scriptDir = dirname($_SERVER['SCRIPT_NAME']);
+    // Remove '/api' caso o script esteja rodando de dentro de /api (não é o caso do router, mas por segurança)
+    // O router geralmente está na raiz ou pasta do projeto.
+    $baseUrlPath = str_replace(['/api', '\\'], ['', '/'], $scriptDir);
+    $baseUrlPath = rtrim($baseUrlPath, '/'); // Remove barra final
 
+    $baseUrl = "$protocol://$host$baseUrlPath";
 
-    $email = new \SendGrid\Mail\Mail();
-    $email->setFrom($from_email, $from_name);
-    $email->setSubject($subject);
-    // Adiciona o conteúdo HTML (vindo do TinyMCE)
-    $email->addContent("text/html", $body);
-    // Adiciona uma versão em texto simples (opcional, mas bom para compatibilidade)
-    $email->addContent("text/plain", strip_tags($body)); // Remove tags HTML para texto simples
+    // Substitui src="public/..." por src="https://dominio.com/crm/public/..."
+    // Cobre variações com e sem barra inicial
+    $body = str_replace('src="public/', 'src="' . $baseUrl . '/public/', $body);
+    $body = str_replace('src="/public/', 'src="' . $baseUrl . '/public/', $body);
+    $body = str_replace('src="../public/', 'src="' . $baseUrl . '/public/', $body);
 
-    // Adiciona destinatários individualmente para melhor tracking
     $validRecipientCount = 0;
+    $errors = [];
+
+    // Itera sobre os destinatários e envia um por um (para melhor controle e personalização futura)
     foreach ($recipientEmails as $recipient) {
         if (filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
-            // Adiciona cada e-mail válido como um destinatário "To" separado.
-            // O SendGrid trata isso como envios individuais na prática.
-            $email->addTo($recipient);
-            $validRecipientCount++;
+            $result = send_email_internal($recipient, $subject, $body);
+            if ($result['success']) {
+                $validRecipientCount++;
+            } else {
+                $errors[] = "Falha para $recipient: " . $result['error'];
+                error_log("Erro de envio para $recipient: " . $result['error']);
+            }
         } else {
-            error_log("Email inválido ignorado no envio em massa: " . $recipient);
+            error_log("Email inválido ignorado: " . $recipient);
         }
     }
 
-    if ($validRecipientCount === 0) {
-        json_response(['success' => false, 'error' => 'Nenhum endereço de e-mail válido encontrado para envio.'], 400);
+    if ($validRecipientCount > 0) {
+        json_response([
+            'success' => true,
+            'sentCount' => $validRecipientCount,
+            'message' => "Enviados: $validRecipientCount. " . (count($errors) > 0 ? "Falhas: " . count($errors) : "")
+        ]);
+    } else {
+        json_response([
+            'success' => false,
+            'error' => 'Falha no envio. Verifique logs.',
+            'details' => $errors
+        ], 500);
+    }
+}
+
+/**
+ * Função interna para despachar o envio baseado no driver configurado (SMTP ou SendGrid)
+ */
+function send_email_internal($to, $subject, $body)
+{
+    $driver = defined('MAIL_DRIVER') ? MAIL_DRIVER : 'sendgrid';
+    $fromEmail = defined('MAIL_FROM_ADDRESS') && MAIL_FROM_ADDRESS ? MAIL_FROM_ADDRESS : 'marketing@frpe.app.br';
+    $fromName = defined('MAIL_FROM_NAME') && MAIL_FROM_NAME ? MAIL_FROM_NAME : 'FR Produtos Médicos CRM';
+
+    if ($driver === 'smtp') {
+        return send_via_smtp($to, $subject, $body, $fromEmail, $fromName);
+    } else {
+        // Fallback or explicit SendGrid
+        return send_via_sendgrid($to, $subject, $body, $fromEmail, $fromName);
+    }
+}
+
+function send_via_smtp($to, $subject, $body, $fromEmail, $fromName)
+{
+    $mail = new PHPMailer(true);
+    $debugLog = dirname(__DIR__, 2) . '/debug_smtp.txt';
+
+    try {
+        // Log Configuration (Redacting password)
+        $logData = "--- New SMTP Attempt ---\n";
+        $logData .= "To: $to\n";
+        $logData .= "Host: " . (defined('SMTP_HOST') ? SMTP_HOST : 'NOT DEFINED') . "\n";
+        $logData .= "Port: " . (defined('SMTP_PORT') ? SMTP_PORT : 'NOT DEFINED') . "\n";
+        $logData .= "User: " . (defined('SMTP_USER') ? SMTP_USER : 'NOT DEFINED') . "\n";
+        $logData .= "Secure: " . (defined('SMTP_SECURE') ? SMTP_SECURE : 'NOT DEFINED') . "\n";
+        file_put_contents($debugLog, $logData, FILE_APPEND);
+
+        // Server settings
+        $mail->SMTPDebug = 2; // Enable verbose debug output
+        $mail->Debugoutput = function ($str, $level) use ($debugLog) {
+            file_put_contents($debugLog, "SMTP Debug: $str\n", FILE_APPEND);
+        };
+
+        $mail->isSMTP();
+        $mail->Host = defined('SMTP_HOST') ? SMTP_HOST : '';
+        $mail->SMTPAuth = true;
+        $mail->Username = defined('SMTP_USER') ? SMTP_USER : '';
+        $mail->Password = defined('SMTP_PASS') ? SMTP_PASS : '';
+        $mail->SMTPSecure = defined('SMTP_SECURE') ? SMTP_SECURE : PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port = defined('SMTP_PORT') ? SMTP_PORT : 465;
+        $mail->CharSet = 'UTF-8';
+
+        // Recipients
+        $mail->setFrom($fromEmail, $fromName);
+        $mail->addAddress($to);
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body = $body;
+        $mail->AltBody = strip_tags($body);
+
+        $mail->send();
+        file_put_contents($debugLog, "SMTP Success!\n", FILE_APPEND);
+        return ['success' => true];
+    } catch (PHPMailerException $e) {
+        $errorMsg = "Mailer Error: {$mail->ErrorInfo}";
+        file_put_contents($debugLog, "SMTP Failure: $errorMsg\n", FILE_APPEND);
+        return ['success' => false, 'error' => $errorMsg];
+    } catch (Exception $e) {
+        $errorMsg = "General Error: {$e->getMessage()}";
+        file_put_contents($debugLog, "General Failure: $errorMsg\n", FILE_APPEND);
+        return ['success' => false, 'error' => $errorMsg];
+    }
+}
+
+function send_via_sendgrid($to, $subject, $body, $fromEmail, $fromName)
+{
+    // Carregamento manual de fallback se necessário (manteve-se a lógica de segurança anterior)
+    if (!class_exists('\SendGrid')) {
+        $fallbackPath = dirname(__DIR__, 2) . '/vendor/sendgrid/sendgrid/sendgrid-php.php';
+        if (file_exists($fallbackPath)) {
+            require_once $fallbackPath;
+        }
+    }
+
+    if (!class_exists('\SendGrid\Mail\Mail')) {
+        return ['success' => false, 'error' => 'Biblioteca SendGrid não encontrada.'];
+    }
+
+    $apiKey = defined('SENDGRID_API_KEY') ? SENDGRID_API_KEY : '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'; // Fallback hardcoded (não recomendado)
+
+    $email = new \SendGrid\Mail\Mail();
+    $email->setFrom($fromEmail, $fromName);
+    $email->setSubject($subject);
+    $email->addTo($to);
+    $email->addContent("text/plain", strip_tags($body));
+    $email->addContent("text/html", $body);
+
+    $sendgrid = new \SendGrid($apiKey);
+    try {
+        $response = $sendgrid->send($email);
+        if ($response->statusCode() >= 200 && $response->statusCode() < 300) {
+            return ['success' => true];
+        } else {
+            return ['success' => false, 'error' => "SendGrid API Error: " . $response->statusCode() . " - " . $response->body()];
+        }
+    } catch (Exception $e) {
+        return ['success' => false, 'error' => "SendGrid Exception: " . $e->getMessage()];
+    }
+}
+
+/**
+ * Lida com o upload de imagens do editor TinyMCE
+ */
+function handle_upload_email_image()
+{
+    // Verifica se há arquivo
+    if (!isset($_FILES['file']) && !isset($_FILES['blobid0'])) {
+        // Tenta pegar o primeiro arquivo enviado
+        if (!empty($_FILES)) {
+            $key = array_key_first($_FILES);
+            $file = $_FILES[$key];
+        } else {
+            json_response(['error' => 'Nenhum arquivo enviado.'], 400);
+            return;
+        }
+    } else {
+        $file = $_FILES['file'] ?? $_FILES['blobid0'];
+    }
+
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        json_response(['error' => 'Erro no upload: ' . $file['error']], 500);
         return;
     }
 
-    // --- Envio via SendGrid ---
-    $sendgrid = new \SendGrid($sendgrid_api_key);
-    try {
-        $response = $sendgrid->send($email);
+    // Validação de tipo
+    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!in_array($file['type'], $allowedTypes)) {
+        json_response(['error' => 'Tipo de arquivo inválido. Apenas JPG, PNG, GIF e WebP.'], 400);
+        return;
+    }
 
-        // Verifica a resposta do SendGrid (Status 2xx indica sucesso na aceitação)
-        if ($response->statusCode() >= 200 && $response->statusCode() < 300) {
-            json_response([
-                'success' => true,
-                'sentCount' => $validRecipientCount, // Número de emails válidos enviados para a API
-                'message' => 'Campanha enviada para processamento pela SendGrid. Status: ' . $response->statusCode()
-            ]);
+    // Diretório de destino
+    $uploadDir = dirname(__DIR__, 2) . '/public/uploads/emails/';
+    if (!file_exists($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    // Gera nome único
+    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $filename = uniqid('img_') . '.' . $extension;
+    $targetPath = $uploadDir . $filename;
+
+    // Move o arquivo
+    if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+        // URL pública para acesso (ajuste conforme a estrutura do servidor)
+        // Assumindo que o CRM roda na raiz ou subpasta configurável
+        // O frontend espera { location: 'url' }
+        $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
+        $host = $_SERVER['HTTP_HOST'];
+
+        // Pega o caminho relativo da pasta public
+        // Correção de path: se api.php está em /crm/api.php, então a imagem deve ser /crm/public/uploads/emails/
+        // O ideal é descobrir a base URL.
+
+        // Tenta inferir o base path a partir do script name
+        $scriptDir = dirname($_SERVER['SCRIPT_NAME']); // ex: /crm
+        // scriptDir pode ser /crm ou / (se raiz)
+        $basePath = str_replace('/api', '', $scriptDir); // remove /api de /crm/api ou /api
+
+        // Se o base path ficou vazio e não é raiz, ajusta
+        if ($basePath === '' || $basePath === '/') {
+            $publicUrl = "$protocol://$host/public/uploads/emails/$filename";
         } else {
-            // Loga o erro detalhado no servidor
-            error_log("Erro SendGrid: Status " . $response->statusCode() . " Corpo: " . $response->body());
-            // Retorna um erro genérico para o cliente
-            json_response(['success' => false, 'error' => 'Falha ao enviar e-mails pela SendGrid (Código: ' . $response->statusCode() . '). Verifique os logs do servidor.', 'details' => json_decode($response->body())], 500); // Tenta descodificar o corpo
+            $publicUrl = "$protocol://$host$basePath/public/uploads/emails/$filename";
         }
-    } catch (Exception $e) {
-        error_log("Exceção SendGrid: " . $e->getMessage());
-        json_response(['success' => false, 'error' => 'Ocorreu um erro ao comunicar com a SendGrid.', 'details' => $e->getMessage()], 500);
+
+        // Debug Image URL
+        $debugLog = dirname(__DIR__, 2) . '/debug_smtp.txt';
+        file_put_contents($debugLog, "Image Uploaded: $publicUrl\n", FILE_APPEND);
+
+        // Retorna JSON esperado pelo TinyMCE
+        echo json_encode(['location' => $publicUrl]);
+    } else {
+        json_response(['error' => 'Falha ao mover arquivo salvo.'], 500);
     }
 }
+
