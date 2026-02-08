@@ -40,12 +40,15 @@ export function renderEmailMarketingView() {
     appState.emailMarketingView = localState; // Atualiza estado global
 
     container.innerHTML = `
-        <h1 class="text-2xl font-bold text-gray-800 mb-6">Campanha de E-mail Marketing</h1>
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">Campanha de Marketing</h1>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Coluna de Seleção de Destinatários --!>
             <div class="md:col-span-1 bg-white p-6 rounded-lg shadow-sm border space-y-4 flex flex-col">
-                <h2 class="text-lg font-semibold text-gray-700 border-b pb-2">1. Selecione os Destinatários</h2>
+                <div class="flex justify-between items-center border-b pb-2">
+                    <h2 class="text-lg font-semibold text-gray-700">1. Selecione os Destinatários</h2>
+                     <button id="import-contacts-btn" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium"><i class="fas fa-file-import mr-1"></i> Importar Lista</button>
+                </div>
                 <div>
                     <label for="lead-search-input" class="form-label">Pesquisar Leads (Nome, E-mail, Interesse):</label>
                     <div class="relative">
@@ -128,32 +131,32 @@ function initializeTinyMCE() {
             fetch('api.php?action=upload_email_image', {
                 method: 'POST',
                 body: formData
-             })
-            .then(response => {
-                if (!response.ok) {
-                    // Tenta ler a mensagem de erro do JSON, senão usa o status text
-                     return response.json().then(err => { throw new Error(err.error || response.statusText); });
-                }
-                return response.json();
             })
-            .then(result => {
-                if (result && result.location) {
-                    resolve(result.location); // Retorna a URL da imagem salva
-                    showToast('Imagem carregada com sucesso!');
-                } else {
-                     reject('Erro no upload: ' + (result.error || 'Resposta inválida do servidor.'));
-                }
-            })
-            .catch(error => {
-                 console.error("Erro no upload da imagem:", error);
-                 // Se o erro for do tipo Error, pega a message, senão mostra o objeto erro
-                 const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
-                 reject('Falha no upload da imagem: ' + errorMessage);
-                 showToast('Falha no upload da imagem: ' + errorMessage, 'error');
-            })
-            .finally(() => {
-                showLoading(false); // Esconde o spinner
-            });
+                .then(response => {
+                    if (!response.ok) {
+                        // Tenta ler a mensagem de erro do JSON, senão usa o status text
+                        return response.json().then(err => { throw new Error(err.error || response.statusText); });
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    if (result && result.location) {
+                        resolve(result.location); // Retorna a URL da imagem salva
+                        showToast('Imagem carregada com sucesso!');
+                    } else {
+                        reject('Erro no upload: ' + (result.error || 'Resposta inválida do servidor.'));
+                    }
+                })
+                .catch(error => {
+                    console.error("Erro no upload da imagem:", error);
+                    // Se o erro for do tipo Error, pega a message, senão mostra o objeto erro
+                    const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+                    reject('Falha no upload da imagem: ' + errorMessage);
+                    showToast('Falha no upload da imagem: ' + errorMessage, 'error');
+                })
+                .finally(() => {
+                    showLoading(false); // Esconde o spinner
+                });
         }),
 
         setup: (editor) => {
@@ -172,11 +175,11 @@ function initializeTinyMCE() {
             });
             // Tratamento especial para desfazer/refazer
             editor.on('Undo Redo', () => {
-                 if (localState.isEditorInitialized) {
-                     const newContent = editor.getContent();
-                     localState.body = newContent;
-                     appState.emailMarketingView.body = newContent;
-                 }
+                if (localState.isEditorInitialized) {
+                    const newContent = editor.getContent();
+                    localState.body = newContent;
+                    appState.emailMarketingView.body = newContent;
+                }
             });
         },
         // Remove branding/watermark
@@ -196,19 +199,19 @@ function addEmailMarketingEventListeners() {
     if (searchInput) {
         searchInput.addEventListener('input', handleSearchInput);
         searchInput.addEventListener('focus', () => {
-            if(searchInteractionArea) searchInteractionArea.classList.remove('hidden');
+            if (searchInteractionArea) searchInteractionArea.classList.remove('hidden');
             handleSearchInput({ target: searchInput });
         });
     }
 
-     document.addEventListener('click', (e) => {
+    document.addEventListener('click', (e) => {
         const searchArea = document.querySelector('.md\\:col-span-1');
         if (searchInteractionArea && searchArea && !searchArea.contains(e.target)) {
             // Verifica se o clique foi fora do editor TinyMCE também
             const editorContainer = document.querySelector('.tox.tox-tinymce');
-             if (!editorContainer || !editorContainer.contains(e.target)) {
-                 searchInteractionArea.classList.add('hidden');
-             }
+            if (!editorContainer || !editorContainer.contains(e.target)) {
+                searchInteractionArea.classList.add('hidden');
+            }
         }
     }, true); // Usa captura para pegar o clique antes
 
@@ -219,11 +222,11 @@ function addEmailMarketingEventListeners() {
             appState.emailMarketingView.selectedLeads = [];
             renderSelectedLeadsList();
             updateSendButtonState();
-             document.querySelectorAll('#search-results-container .select-lead-checkbox').forEach(cb => cb.checked = false);
+            document.querySelectorAll('#search-results-container .select-lead-checkbox').forEach(cb => cb.checked = false);
         });
     }
 
-     if (subjectInput) {
+    if (subjectInput) {
         subjectInput.addEventListener('input', (e) => {
             localState.subject = e.target.value;
             appState.emailMarketingView.subject = e.target.value;
@@ -233,6 +236,153 @@ function addEmailMarketingEventListeners() {
     if (sendBtn) {
         sendBtn.addEventListener('click', handleSendEmailCampaign);
     }
+
+    const importBtn = document.getElementById('import-contacts-btn');
+    if (importBtn) {
+        importBtn.addEventListener('click', openImportModal);
+    }
+}
+
+// Abre o modal de importação
+function openImportModal() {
+    const modalContent = `
+        <div>
+            <div class="mb-4 p-3 bg-indigo-50 rounded border border-indigo-100">
+                <label class="block text-sm font-semibold text-indigo-700 mb-1"><i class="fas fa-file-upload mr-1"></i> Importar Arquivo (Excel/CSV)</label>
+                <input type="file" id="import-file-input" accept=".csv, .xlsx, .xls" class="block w-full text-sm text-gray-500
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-full file:border-0
+                  file:text-xs file:font-semibold
+                  file:bg-indigo-100 file:text-indigo-700
+                  hover:file:bg-indigo-200
+                  cursor-pointer
+                "/>
+                <p class="text-xs text-indigo-600 mt-1">Selecione um arquivo para extrair automaticamente os e-mails.</p>
+            </div>
+
+            <p class="text-sm text-gray-600 mb-2 font-medium">Ou cole a lista de e-mails abaixo:</p>
+            <textarea id="import-emails-textarea" class="form-input w-full h-40 font-mono text-sm" placeholder="exemplo1@email.com, exemplo2@email.com
+nome@empresa.com.br"></textarea>
+            <div id="import-feedback" class="mt-2 text-xs text-gray-500"></div>
+        </div>
+    `;
+
+    renderModal('Importar Contatos', modalContent, () => {
+        const textarea = document.getElementById('import-emails-textarea');
+        const rawText = textarea.value;
+        const count = processImportedEmails(rawText);
+
+        if (count > 0) {
+            closeModal();
+            showToast(`${count} contato(s) importado(s) com sucesso.`, 'success');
+        } else {
+            const feedback = document.getElementById('import-feedback');
+            feedback.textContent = 'Nenhum e-mail válido encontrado ou todos já foram adicionados.';
+            feedback.classList.remove('text-green-600');
+            feedback.classList.add('text-red-500');
+        }
+    }, 'Importar Adicionar', 'btn-primary');
+
+    // Listener para o input de arquivo
+    const fileInput = document.getElementById('import-file-input');
+    if (fileInput) {
+        fileInput.addEventListener('change', handleFileUpload);
+    }
+}
+
+// Lida com o upload e leitura do arquivo (CSV/Excel)
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        const data = new Uint8Array(e.target.result);
+        try {
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+
+            // Converte a planilha para JSON (matriz de arrays)
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+            let extractedEmails = [];
+
+            // Percorre todas as células procurando por e-mail
+            const emailRegex = /[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}/g;
+
+            jsonData.forEach(row => {
+                row.forEach(cell => {
+                    if (typeof cell === 'string') {
+                        const matches = cell.match(emailRegex);
+                        if (matches) {
+                            extractedEmails.push(...matches);
+                        }
+                    }
+                });
+            });
+
+            if (extractedEmails.length > 0) {
+                const textarea = document.getElementById('import-emails-textarea');
+                const uniqueEmails = [...new Set(extractedEmails)]; // Remove duplicatas do arquivo
+
+                const currentText = textarea.value.trim();
+                textarea.value = (currentText ? currentText + '\n' : '') + uniqueEmails.join('\n');
+
+                const feedback = document.getElementById('import-feedback');
+                feedback.textContent = `${uniqueEmails.length} e-mail(s) extraído(s) do arquivo e adicionado(s) à lista.`;
+                feedback.classList.remove('text-red-500');
+                feedback.classList.add('text-green-600');
+                showToast(`${uniqueEmails.length} e-mails encontrados!`, 'success');
+            } else {
+                showToast('Nenhum e-mail encontrado no arquivo.', 'warning');
+            }
+
+        } catch (error) {
+            console.error("Erro ao ler arquivo:", error);
+            showToast('Erro ao processar o arquivo. Verifique o formato.', 'error');
+        }
+    };
+
+    reader.readAsArrayBuffer(file);
+}
+
+// Processa o texto colado e adiciona aos selecionados
+function processImportedEmails(text) {
+    if (!text) return 0;
+
+    // Normaliza separadores para vírgula
+    const normalized = text.replace(/[\n\r;]/g, ',');
+    const parts = normalized.split(',');
+
+    let addedCount = 0;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    parts.forEach(part => {
+        const email = part.trim();
+        if (email && emailRegex.test(email)) {
+            // Verifica duplicatas na lista de selecionados
+            const exists = localState.selectedLeads.some(l => l.email.toLowerCase() === email.toLowerCase());
+            if (!exists) {
+                localState.selectedLeads.push({
+                    id: 'ext_' + Date.now() + Math.random().toString(36).substr(2, 9), // ID temporário único
+                    nome: 'Importado',
+                    email: email,
+                    produto_interesse: 'Externo'
+                });
+                addedCount++;
+            }
+        }
+    });
+
+    if (addedCount > 0) {
+        appState.emailMarketingView.selectedLeads = localState.selectedLeads;
+        renderSelectedLeadsList();
+        updateSendButtonState();
+    }
+
+    return addedCount;
 }
 
 // Lida com a digitação na barra de pesquisa
@@ -300,10 +450,10 @@ function renderSearchResults() {
 
         resultsContainer.querySelectorAll('.search-result-item').forEach(item => {
             item.addEventListener('click', (e) => {
-                 e.stopPropagation();
-                 const leadId = e.currentTarget.dataset.leadId;
-                 const checkbox = e.currentTarget.querySelector('.select-lead-checkbox');
-                 toggleLeadSelection(leadId, !checkbox.checked);
+                e.stopPropagation();
+                const leadId = e.currentTarget.dataset.leadId;
+                const checkbox = e.currentTarget.querySelector('.select-lead-checkbox');
+                toggleLeadSelection(leadId, !checkbox.checked);
             });
         });
 
@@ -313,13 +463,13 @@ function renderSearchResults() {
         const newBtn = oldBtn.cloneNode(true);
         oldBtn.parentNode.replaceChild(newBtn, oldBtn);
         newBtn.addEventListener('click', (e) => {
-             e.stopPropagation();
-             localState.searchResults.forEach(lead => {
+            e.stopPropagation();
+            localState.searchResults.forEach(lead => {
                 if (!localState.selectedLeads.some(sel => sel.id === lead.id)) {
                     toggleLeadSelection(lead.id, true);
                 }
             });
-             document.querySelectorAll('#search-results-container .select-lead-checkbox').forEach(cb => cb.checked = true);
+            document.querySelectorAll('#search-results-container .select-lead-checkbox').forEach(cb => cb.checked = true);
         });
 
     }
@@ -334,16 +484,16 @@ function toggleLeadSelection(leadId, shouldBeSelected) {
     const index = localState.selectedLeads.findIndex(l => l.id == leadId);
 
     if (shouldBeSelected && index === -1) {
-         localState.selectedLeads.push({...leadToAddOrRemove});
+        localState.selectedLeads.push({ ...leadToAddOrRemove });
     } else if (!shouldBeSelected && index !== -1) {
-         localState.selectedLeads.splice(index, 1);
+        localState.selectedLeads.splice(index, 1);
     }
 
     appState.emailMarketingView.selectedLeads = localState.selectedLeads;
     renderSelectedLeadsList();
     updateSendButtonState();
     const checkboxInResults = document.querySelector(`#search-results-container .select-lead-checkbox[data-lead-id="${leadId}"]`);
-    if(checkboxInResults) checkboxInResults.checked = shouldBeSelected;
+    if (checkboxInResults) checkboxInResults.checked = shouldBeSelected;
 }
 
 
@@ -351,7 +501,7 @@ function toggleLeadSelection(leadId, shouldBeSelected) {
 function renderSelectedLeadsList() {
     const listContainer = document.getElementById('selected-leads-list');
     const countElement = document.getElementById('selected-count');
-     const clearBtn = document.getElementById('clear-selection-btn');
+    const clearBtn = document.getElementById('clear-selection-btn');
 
     if (!listContainer || !countElement) return;
 
@@ -367,7 +517,7 @@ function renderSelectedLeadsList() {
                 <button class="remove-selected-lead text-red-500 hover:text-red-700 text-xs ml-2" data-lead-id="${lead.id}" title="Remover">&times;</button>
             </div>
         `).join('');
-         if (clearBtn) clearBtn.classList.remove('hidden');
+        if (clearBtn) clearBtn.classList.remove('hidden');
 
         listContainer.querySelectorAll('.remove-selected-lead').forEach(button => {
             button.addEventListener('click', (e) => {
@@ -399,8 +549,8 @@ async function handleSendEmailCampaign() {
     if (localState.isEditorInitialized && editorInstance) {
         body = editorInstance.getContent(); // Pega o conteúdo atualizado
     } else {
-         // Fallback se o editor não estiver pronto (improvável, mas seguro)
-         body = appState.emailMarketingView?.body || '';
+        // Fallback se o editor não estiver pronto (improvável, mas seguro)
+        body = appState.emailMarketingView?.body || '';
     }
 
     const recipientEmails = selectedLeads.map(lead => lead.email);
@@ -410,7 +560,7 @@ async function handleSendEmailCampaign() {
         return;
     }
     if (!subject.trim() || !body.trim()) {
-         showToast("Assunto e Corpo do e-mail são obrigatórios.", 'error');
+        showToast("Assunto e Corpo do e-mail são obrigatórios.", 'error');
         return;
     }
 
@@ -420,7 +570,7 @@ async function handleSendEmailCampaign() {
         closeModal();
         showLoading(true);
         const sendBtn = document.getElementById('send-email-btn');
-        if(sendBtn) sendBtn.disabled = true;
+        if (sendBtn) sendBtn.disabled = true;
 
         try {
             const result = await apiCall('send_bulk_email_leads', {
@@ -434,18 +584,18 @@ async function handleSendEmailCampaign() {
 
             if (result.success) {
                 showToast(`Campanha enviada (ou simulada) para ${result.sentCount || 0} destinatário(s).`, 'success');
-                 // Limpar estado local e global
-                 localState = {
+                // Limpar estado local e global
+                localState = {
                     searchTerm: '', searchResults: [], selectedLeads: [], subject: '', body: '', isEditorInitialized: true // Mantém editor inicializado
-                 };
-                 appState.emailMarketingView = {...localState}; // Atualiza estado global
-                 // Limpa campos na UI e re-renderiza parcialmente
-                 if (tinymce.get('email-body-editor')) {
+                };
+                appState.emailMarketingView = { ...localState }; // Atualiza estado global
+                // Limpa campos na UI e re-renderiza parcialmente
+                if (tinymce.get('email-body-editor')) {
                     tinymce.get('email-body-editor').setContent('');
-                 }
-                 document.getElementById('email-subject').value = '';
-                 renderSelectedLeadsList(); // Limpa lista de selecionados
-                 updateSendButtonState(); // Desabilita botão
+                }
+                document.getElementById('email-subject').value = '';
+                renderSelectedLeadsList(); // Limpa lista de selecionados
+                updateSendButtonState(); // Desabilita botão
             }
             // Erro já tratado pelo apiCall
 
@@ -454,7 +604,7 @@ async function handleSendEmailCampaign() {
         } finally {
             showLoading(false);
             // Reabilita o botão se ainda houver selecionados (improvável após limpar)
-            if(sendBtn) sendBtn.disabled = localState.selectedLeads.length === 0;
+            if (sendBtn) sendBtn.disabled = localState.selectedLeads.length === 0;
         }
     }, 'Enviar', 'btn-primary');
 }

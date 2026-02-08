@@ -10,7 +10,7 @@ import { renderSettingsView } from './views/settings.js';
 import { renderAgendaView } from './views/agenda.js';
 import { renderLeadsView } from './views/leads.js';
 import { renderCatalogView } from './views/catalog.js';
-import { renderEmailMarketingView } from './views/email_marketing.js';
+import { renderEmailMarketingView } from './views/email_marketing.js?v=3';
 
 
 // O estado da aplicação
@@ -304,7 +304,7 @@ function renderUI() {
         { id: 'clients', icon: 'fa-users', text: 'Clientes', permission: true },
         { id: 'proposals', icon: 'fa-file-invoice-dollar', text: 'Propostas', permission: true },
         { id: 'catalog', icon: 'fa-book-open', text: 'Catálogo', permission: permissions.canSeeCatalog }, // Usar permissão
-        { id: 'email-marketing', icon: 'fa-envelope-open-text', text: 'E-mail Marketing', permission: permissions.canManageLeads && !['Vendedor', 'Especialista'].includes(currentUser.role) }, // Nova aba e permissão
+        { id: 'email-marketing', icon: 'fa-bullhorn', text: 'Marketing', permission: permissions.canManageLeads && !['Vendedor', 'Especialista'].includes(currentUser.role) }, // Nova aba e permissão
         { id: 'reports', icon: 'fa-chart-line', text: 'Relatórios', permission: permissions.canSeeReports }, // Nova aba Relatórios
         { id: 'settings', icon: 'fa-cog', text: 'Configurações', permission: permissions.canSeeSettings }
     ];

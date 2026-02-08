@@ -12,6 +12,24 @@ if (file_exists(dirname(__DIR__, 2) . '/vendor/autoload.php') && !class_exists('
 // Opção 2: Desativada em favor do Composer
 // require_once dirname(__DIR__, 2) . '/lib/sendgrid-php/sendgrid-php.php';
 
+// Debugging Autoload Path Issue
+$debugLogFile = dirname(__DIR__, 2) . '/debug_sendgrid.txt';
+$logData = "--- New Request ---\n";
+$logData .= "Current Dir: " . __DIR__ . "\n";
+$logData .= "Root Dir (via dirname 2): " . dirname(__DIR__, 2) . "\n";
+$autoloadPath = dirname(__DIR__, 2) . '/vendor/autoload.php';
+$logData .= "Autoload Path: " . $autoloadPath . "\n";
+$logData .= "Autoload Exists: " . (file_exists($autoloadPath) ? 'YES' : 'NO') . "\n";
+$logData .= "Class \SendGrid Exists BEFORE: " . (class_exists('\SendGrid') ? 'YES' : 'NO') . "\n";
+
+if (file_exists($autoloadPath)) {
+    // Tenta incluir novamente só para garantir
+    require_once $autoloadPath;
+}
+
+$logData .= "Class \SendGrid Exists AFTER: " . (class_exists('\SendGrid') ? 'YES' : 'NO') . "\n";
+file_put_contents($debugLogFile, $logData, FILE_APPEND);
+
 
 /**
  * Lida com o envio de e-mails em massa para leads selecionados.

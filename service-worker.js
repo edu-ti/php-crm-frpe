@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fr-crm-v1';
+const CACHE_NAME = 'fr-crm-v3';
 const urlsToCache = [
   './',
   './index.php',
