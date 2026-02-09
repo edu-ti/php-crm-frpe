@@ -24,8 +24,8 @@ class ReportHandler
         $startDate = $_GET['start_date'] ?? date('Y-m-01');
         $endDate = $_GET['end_date'] ?? date('Y-m-t');
 
-        // DEBUG: Log received parameters
-        file_put_contents(__DIR__ . '/../../api_debug_log.txt', date('[Y-m-d H:i:s] ') . "Action: $action, GET: " . json_encode($_GET) . ", Start: $startDate, End: $endDate" . PHP_EOL, FILE_APPEND);
+
+        // DEBUG: Logging Removed
 
         switch ($action) {
             case 'dashboard_summary':
@@ -208,8 +208,7 @@ function handle_get_report_data($pdo)
     // BRIDGE to New Class if action matches new logic keys
     $type = $_GET['report_type'] ?? ($_GET['type'] ?? '');
 
-    // DEBUG: Log all report requests
-    file_put_contents(__DIR__ . '/../../api_debug_log.txt', date('[Y-m-d H:i:s] ') . "handle_get_report_data: Type=$type, GET=" . json_encode($_GET) . PHP_EOL, FILE_APPEND);
+    // DEBUG: Logging Removed
 
     $newActions = ['dashboard_summary', 'by_vendor', 'by_supplier', 'by_item', 'by_proposal_status', 'by_bidding_funnel'];
 
@@ -264,6 +263,8 @@ function handle_get_report_data($pdo)
     }
 
     try {
+        $data = [];
+
         if ($type === 'products') {
             $data = get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
         } elseif ($type === 'forecast') {
@@ -281,8 +282,7 @@ function handle_get_report_data($pdo)
             $sql .= " GROUP BY mes ORDER BY mes ASC";
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode(['success' => true, 'data' => $rows, 'type' => 'forecast']);
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         } elseif ($type === 'lost_reasons') {
             $sql = "
@@ -300,8 +300,7 @@ function handle_get_report_data($pdo)
             $sql .= " GROUP BY motivo ORDER BY qtd DESC";
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode(['success' => true, 'data' => $rows, 'type' => 'lost_reasons']);
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         } elseif ($type === 'funnel') {
             $sql = "
@@ -317,8 +316,7 @@ function handle_get_report_data($pdo)
             $sql .= " GROUP BY ef.id, ef.nome, ef.ordem ORDER BY ef.ordem ASC";
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode(['success' => true, 'data' => $rows, 'type' => 'funnel']);
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         } elseif ($type === 'licitacoes') {
             $data = get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
@@ -326,9 +324,8 @@ function handle_get_report_data($pdo)
             $data = get_sales_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
         }
 
-        if (!isset($rows)) { // If not handled by early return modes above
-            echo json_encode(['success' => true, 'report_data' => $data]);
-        }
+        echo json_encode(['success' => true, 'report_data' => $data, 'type' => $type]);
+
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
@@ -361,7 +358,7 @@ function handle_get_report_kpis($pdo)
             ]
         ]);
     } catch (Exception $e) {
-        file_put_contents(__DIR__ . '/../../api_debug_log.txt', date('[Y-m-d H:i:s] ') . "Error fetching KPIs: " . $e->getMessage() . PHP_EOL, FILE_APPEND);
+        // file_put_contents(__DIR__ . '/../../api_debug_log.txt', date('[Y-m-d H:i:s] ') . "Error fetching KPIs: " . $e->getMessage() . PHP_EOL, FILE_APPEND);
         json_response(['success' => false, 'error' => $e->getMessage()], 500);
     }
 }

@@ -259,12 +259,10 @@ export async function renderReportsView(state) {
     document.getElementById('filter-end-date').value = `${currentYear}-12`;
 
     // Event Listeners
-    document.getElementById('report-type').addEventListener('change', loadReportData);
+    // document.getElementById('report-type').addEventListener('change', loadReportData); // Removido para evitar múltiplas chamadas
     document.getElementById('refresh-report-btn').addEventListener('click', loadReportData);
-    document.getElementById('filter-start-date').addEventListener('change', loadReportData);
-    document.getElementById('filter-end-date').addEventListener('change', loadReportData);
-    // document.getElementById('filter-supplier').addEventListener('change', loadReportData); // Removed standard select
-    // document.getElementById('filter-user').addEventListener('change', loadReportData); // Removed standard select
+    // document.getElementById('filter-start-date').addEventListener('change', loadReportData); // Removido
+    // document.getElementById('filter-end-date').addEventListener('change', loadReportData); // Removido
     document.getElementById('print-report-btn').addEventListener('click', () => window.print());
     document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
 
@@ -290,9 +288,45 @@ export async function renderReportsView(state) {
     // Modal
     setupModalLinks();
 
+    // Restaura Filtros Salvos (se houver)
+    restoreFilters();
+
     // Carrega Inicial
     loadReportData();
     loadKPIData();
+}
+
+function restoreFilters() {
+    try {
+        const saved = localStorage.getItem('reports_filters');
+        if (!saved) return;
+        const f = JSON.parse(saved);
+
+        if (f.type) document.getElementById('report-type').value = f.type;
+        if (f.start) document.getElementById('filter-start-date').value = f.start;
+        if (f.end) document.getElementById('filter-end-date').value = f.end;
+
+        // Restore MultiSelects
+        const restoreMulti = (id, values) => {
+            if (!values || !Array.isArray(values)) return;
+            const checks = document.querySelectorAll(`.${id}-checkbox`);
+            checks.forEach(chk => {
+                chk.checked = values.includes(chk.value);
+            });
+            const defaultText = document.getElementById(`${id}-btn`).getAttribute('data-default-text') || 'Selecionar';
+            updateMultiSelectText(id, defaultText);
+        };
+
+        if (f.suppliers) restoreMulti('supplier-select', f.suppliers);
+        if (f.users) restoreMulti('user-select', f.users);
+        if (f.etapas) restoreMulti('etapa-select', f.etapas);
+        if (f.origens) restoreMulti('origem-select', f.origens);
+        if (f.ufs) restoreMulti('uf-select', f.ufs);
+        if (f.statuses) restoreMulti('status-select', f.statuses);
+
+    } catch (e) {
+        console.error("Erro ao restaurar filtros:", e);
+    }
 }
 
 async function loadKPIData() {
@@ -360,7 +394,7 @@ function renderMultiSelect(containerId, selectId, options, defaultText) {
 
     let html = `
         <div class="multiselect-dropdown relative" id="${selectId}-wrapper">
-            <button type="button" class="multiselect-button" onclick="toggleMultiSelect('${selectId}')" id="${selectId}-btn">
+            <button type="button" class="multiselect-button" onclick="toggleMultiSelect('${selectId}')" id="${selectId}-btn" data-default-text="${defaultText}">
                 <span class="truncate block" id="${selectId}-text">${defaultText}</span>
                 <i class="fas fa-chevron-down text-gray-400 text-xs ml-2"></i>
             </button>
@@ -395,7 +429,8 @@ window.toggleMultiSelect = function (id) {
 window.toggleAllMultiSelect = function (id, selectAll) {
     const checkboxes = document.querySelectorAll(`.${id}-checkbox`);
     checkboxes.forEach(cb => cb.checked = selectAll);
-    const defaultText = id.includes('supplier') ? 'Todos os Fornecedores' : 'Todos os Vendedores';
+    const btn = document.getElementById(`${id}-btn`);
+    const defaultText = btn ? btn.getAttribute('data-default-text') : 'Selecionar';
     updateMultiSelectText(id, defaultText);
 };
 
@@ -507,7 +542,8 @@ async function loadReportData() {
 
         if (!response.success) throw new Error(response.error);
 
-        currentReportData = response.report_data;
+        // Standardized report_data
+        currentReportData = response.report_data || []; // Fallback empty array
         renderReports(currentReportData, container, type, start, end);
 
     } catch (error) {
@@ -545,7 +581,7 @@ function renderReports(data, container, type, startStr, endStr) {
     }
 
     if (type === 'forecast') {
-        renderSalesChart(data); // Using the main chart area, no separate table for now or maybe a simple summary
+        renderSalesChart(data, monthsRange, 'forecast'); 
         // For forecast, we might want a simple summary table below too.
         const html = renderForecastTable(data);
         container.innerHTML = html;
