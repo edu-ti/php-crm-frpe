@@ -267,6 +267,8 @@ function handle_get_report_data($pdo)
 
         if ($type === 'products') {
             $data = get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+        } elseif ($type === 'clients') {
+            $data = get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
         } elseif ($type === 'forecast') {
             $sql = "
             SELECT 
@@ -693,4 +695,97 @@ function apply_report_filters_helper(&$sql, &$params, $table_alias, $supplier_id
         foreach ($uf_ids as $id)
             $params[] = $id;
     }
+}
+
+function get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids)
+{
+    // Source A: Propostas Aprovadas
+    $sql_prop = "SELECT 
+                    p.organizacao_id, 
+                    p.cliente_pf_id, 
+                    COALESCE(org.nome_fantasia, pf.nome, 'Cliente Desconhecido') as cliente_nome,
+                    COUNT(p.id) as qtd, 
+                    SUM(p.valor_total) as total
+                 FROM propostas p
+                 LEFT JOIN organizacoes org ON p.organizacao_id = org.id
+                 LEFT JOIN clientes_pf pf ON p.cliente_pf_id = pf.id
+                 LEFT JOIN oportunidades o ON p.oportunidade_id = o.id
+                 WHERE p.data_criacao BETWEEN ? AND ? 
+                 AND p.status = 'Aprovada'";
+
+    $params_prop = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+
+    // Apply filters to Propostas
+    apply_report_filters_helper($sql_prop, $params_prop, 'p', [], $user_ids, [], $origem_ids, $uf_ids, []);
+
+    $sql_prop .= " GROUP BY p.organizacao_id, p.cliente_pf_id, cliente_nome";
+
+    $stmt_prop = $pdo->prepare($sql_prop);
+    $stmt_prop->execute($params_prop);
+    $results_prop = $stmt_prop->fetchAll(PDO::FETCH_ASSOC);
+
+    // Source B: Vendas Fornecedores
+    $sql_vendas = "SELECT 
+                    vf.organizacao_id, 
+                    vf.cliente_pf_id, 
+                    COALESCE(org.nome_fantasia, pf.nome, 'Cliente Desconhecido') as cliente_nome,
+                    COUNT(vf.id) as qtd, 
+                    SUM(vf.valor_total) as total
+                   FROM vendas_fornecedores vf
+                   LEFT JOIN organizacoes org ON vf.organizacao_id = org.id
+                   LEFT JOIN clientes_pf pf ON vf.cliente_pf_id = pf.id
+                   WHERE vf.data_venda BETWEEN ? AND ?";
+
+    $params_vendas = [$start_date, $end_date];
+
+    apply_report_filters_helper($sql_vendas, $params_vendas, 'vf', $supplier_ids, $user_ids, [], $origem_ids, [], []);
+
+    $sql_vendas .= " GROUP BY vf.organizacao_id, vf.cliente_pf_id, cliente_nome";
+
+    $stmt_vendas = $pdo->prepare($sql_vendas);
+    $stmt_vendas->execute($params_vendas);
+    $results_vendas = $stmt_vendas->fetchAll(PDO::FETCH_ASSOC);
+
+    // Merge Logic
+    $clients = [];
+
+    $process_row = function ($row) use (&$clients) {
+        // Create a unique key. Prefer OrgID/PfID. If both null, assume generic name or skip.
+        if (!empty($row['organizacao_id'])) {
+            $key = 'pj_' . $row['organizacao_id'];
+        } elseif (!empty($row['cliente_pf_id'])) {
+            $key = 'pf_' . $row['cliente_pf_id'];
+        } else {
+            // Fallback: Normalize name
+            $name = trim($row['cliente_nome']);
+            if (empty($name) || $name === 'Cliente Desconhecido')
+                return; // Skip invalid
+            $key = 'name_' . md5(strtoupper($name));
+        }
+
+        if (!isset($clients[$key])) {
+            $clients[$key] = [
+                'cliente_nome' => $row['cliente_nome'],
+                'qtd_vendas' => 0,
+                'valor_total' => 0.0
+            ];
+        }
+
+        $clients[$key]['qtd_vendas'] += (int) $row['qtd'];
+        $clients[$key]['valor_total'] += (float) $row['total'];
+    };
+
+    foreach ($results_prop as $row)
+        $process_row($row);
+    foreach ($results_vendas as $row)
+        $process_row($row);
+
+    // Convert to array and sort
+    $final_data = array_values($clients);
+
+    usort($final_data, function ($a, $b) {
+        return $b['valor_total'] <=> $a['valor_total'];
+    });
+
+    return $final_data;
 }

@@ -581,7 +581,8 @@ function renderReports(data, container, type, startStr, endStr) {
     }
 
     if (type === 'forecast') {
-        renderSalesChart(data, monthsRange, 'forecast'); 
+        // Chart is already rendered via generic call at top if data exists
+        // renderSalesChart(data, monthsRange, 'forecast'); 
         // For forecast, we might want a simple summary table below too.
         const html = renderForecastTable(data);
         container.innerHTML = html;
