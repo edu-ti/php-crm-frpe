@@ -161,7 +161,15 @@ function handle_create_agendamento($pdo, $data)
                 $stmt_users = $pdo->prepare($sql_users);
                 $stmt_users->execute($recipientIds);
                 $recipientEmails = $stmt_users->fetchAll(PDO::FETCH_COLUMN);
-                error_log("DEBUG: [Agenda Create] Emails encontrados para notificação: " . count($recipientEmails));
+
+                // ***** ALTERAÇÃO: Incluir o criador na notificação *****
+                if (!empty($agendamento['criado_por_email'])) {
+                    $recipientEmails[] = $agendamento['criado_por_email'];
+                }
+                $recipientEmails = array_unique($recipientEmails); // Garante que não há duplicatas
+                // ***** FIM DA ALTERAÇÃO *****
+
+                error_log("DEBUG: [Agenda Create] Emails encontrados para notificação (incluindo criador): " . count($recipientEmails));
 
                 // Prepara e envia o email se houver destinatários
                 if (!empty($recipientEmails)) {
@@ -340,7 +348,7 @@ function handle_update_agendamento($pdo, $data)
         try {
             // Consulta SQL idêntica à do create para buscar $agendamento com GROUP_CONCAT
             $stmt_updated = $pdo->prepare("
-                 SELECT a.*, u_criador.nome as criado_por_nome, o.titulo as oportunidade_titulo,
+                 SELECT a.*, u_criador.nome as criado_por_nome, u_criador.email as criado_por_email, o.titulo as oportunidade_titulo,
                         GROUP_CONCAT(DISTINCT u_para.nome SEPARATOR ', ') as para_usuario_nomes,
                         GROUP_CONCAT(DISTINCT u_para.id SEPARATOR ',') as usuarios_associados_ids
                  FROM agendamentos a
@@ -378,6 +386,13 @@ function handle_update_agendamento($pdo, $data)
                 $stmt_users = $pdo->prepare($sql_users);
                 $stmt_users->execute($recipientIds);
                 $recipientEmails = $stmt_users->fetchAll(PDO::FETCH_COLUMN);
+
+                // ***** ALTERAÇÃO: Incluir o criador na notificação *****
+                if (!empty($agendamento['criado_por_email'])) {
+                    $recipientEmails[] = $agendamento['criado_por_email'];
+                }
+                $recipientEmails = array_unique($recipientEmails);
+                // ***** FIM DA ALTERAÇÃO *****
 
                 if (!empty($recipientEmails)) {
                     $dataHoraFormatada = '';
@@ -448,7 +463,8 @@ function handle_delete_agendamento($pdo, $data)
     try {
         // ***** ALTERAÇÃO: Consulta atualizada para buscar nomes concatenados *****
         $stmt_find = $pdo->prepare("
-             SELECT a.*, u_criador.nome as criado_por_nome,
+             SELECT a.*, u_criador.nome as criado_por_nome, u_criador.email as criado_por_email,
+                    GROUP_CONCAT(DISTINCT u_para.email SEPARATOR ',') as para_usuario_emails,
                     GROUP_CONCAT(DISTINCT u_para.nome SEPARATOR ', ') as para_usuario_nomes -- Usa DISTINCT
              FROM agendamentos a
              LEFT JOIN usuarios u_criador ON a.criado_por_id = u_criador.id
@@ -500,60 +516,58 @@ function handle_delete_agendamento($pdo, $data)
     // 3. Envia notificação SE a exclusão foi bem-sucedida E temos os dados
     if ($success && $agendamento_deleted) {
         error_log("DEBUG: [Agenda Delete] Exclusão bem-sucedida. Enviando notificação...");
-        // (Lógica idêntica a 'create'/'update' para determinar $targetRoles e buscar $recipientEmails)
-        $tipoAgendamento = $agendamento_deleted['tipo'];
-        $targetRoles = [];
-        if (strtolower($tipoAgendamento) === 'treinamento') {
-            $targetRoles = ['Analista', 'Gestor', 'Comercial', 'Especialista'];
-        } else {
-            $allRolesStmt = $pdo->query("SELECT DISTINCT role FROM usuarios WHERE status = 'Ativo' AND role != 'Marketing'");
-            $targetRoles = $allRolesStmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        // Coleta emails dos envolvidos (Criador + Associados)
+        $recipientEmails = [];
+
+        // 1. Adiciona emails dos usuários associados (se houver)
+        if (!empty($agendamento_deleted['para_usuario_emails'])) {
+            $associatedEmails = explode(',', $agendamento_deleted['para_usuario_emails']);
+            $recipientEmails = array_merge($recipientEmails, $associatedEmails);
         }
 
-        if (!empty($targetRoles)) {
-            $placeholders = implode(',', array_fill(0, count($targetRoles), '?'));
-            $sql_users = "SELECT email FROM usuarios WHERE status = 'Ativo' AND role IN ($placeholders)";
-            $stmt_users = $pdo->prepare($sql_users);
-            $stmt_users->execute($targetRoles);
-            $recipientEmails = $stmt_users->fetchAll(PDO::FETCH_COLUMN);
+        // 2. Adiciona email do criador (se houver)
+        if (!empty($agendamento_deleted['criado_por_email'])) {
+            $recipientEmails[] = $agendamento_deleted['criado_por_email'];
+        }
 
-            if (!empty($recipientEmails)) {
-                $dataHoraFormatada = '';
-                try {
-                    $dt = new DateTime($agendamento_deleted['data_inicio']);
-                    $dataHoraFormatada = $dt->format('d/m/Y \à\s H:i');
-                } catch (Exception $e) {
-                    $dataHoraFormatada = 'Data/Hora Inválida';
-                }
+        // Remove duplicatas e limpa
+        $recipientEmails = array_unique(array_filter($recipientEmails));
 
-                $subject = "[CRM FR] Agendamento Cancelado: " . $agendamento_deleted['titulo'];
-                $htmlBody = "<h2>Agendamento Cancelado no CRM</h2>" .
-                    "<p>O seguinte agendamento foi cancelado/excluído por " . htmlspecialchars($_SESSION['nome']) . ":</p>" .
-                    "<ul>" .
-                    "<li><strong>Título:</strong> " . htmlspecialchars($agendamento_deleted['titulo']) . "</li>" .
-                    "<li><strong>Tipo:</strong> " . htmlspecialchars($agendamento_deleted['tipo']) . "</li>" .
-                    "<li><strong>Data e Hora que estava agendado:</strong> " . $dataHoraFormatada . "</li>" .
-                    "<li><strong>Era direcionado para:</strong> " . htmlspecialchars($agendamento_deleted['para_usuario_nomes'] ?: 'N/A') . "</li>" . // Usa nomes concatenados
-                    "<li><strong>Tinha sido criado por:</strong> " . htmlspecialchars($agendamento_deleted['criado_por_nome'] ?: 'N/A') . "</li>" .
-                    "</ul>" .
-                    "<p>Este agendamento foi removido da Agenda do CRM.</p>";
-
-                // Tenta usar a função global send_email_notification
-                if (function_exists('send_email_notification')) {
-                    if (!send_email_notification($recipientEmails, $subject, $htmlBody)) {
-                        error_log("AVISO: [Agenda Delete] Falha ao enviar notificação via send_email_notification para ID: " . $agendamentoId);
-                    } else {
-                        error_log("DEBUG: [Agenda Delete] Notificação enviada via send_email_notification para ID: " . $agendamentoId);
-                    }
-                } else {
-                    error_log("ERRO: [Agenda Delete] Função send_email_notification não encontrada.");
-                }
-
-            } else {
-                error_log("AVISO: [Agenda Delete] Nenhum email encontrado para roles alvo. Notificação não enviada. ID: " . $agendamentoId);
+        if (!empty($recipientEmails)) {
+            $dataHoraFormatada = '';
+            try {
+                $dt = new DateTime($agendamento_deleted['data_inicio']);
+                $dataHoraFormatada = $dt->format('d/m/Y \à\s H:i');
+            } catch (Exception $e) {
+                $dataHoraFormatada = 'Data/Hora Inválida';
             }
+
+            $subject = "[CRM FR] Agendamento Cancelado: " . $agendamento_deleted['titulo'];
+            $htmlBody = "<h2>Agendamento Cancelado no CRM</h2>" .
+                "<p>O seguinte agendamento foi cancelado/excluído por " . htmlspecialchars($_SESSION['nome']) . ":</p>" .
+                "<ul>" .
+                "<li><strong>Título:</strong> " . htmlspecialchars($agendamento_deleted['titulo']) . "</li>" .
+                "<li><strong>Tipo:</strong> " . htmlspecialchars($agendamento_deleted['tipo']) . "</li>" .
+                "<li><strong>Data e Hora que estava agendado:</strong> " . $dataHoraFormatada . "</li>" .
+                "<li><strong>Era direcionado para:</strong> " . htmlspecialchars($agendamento_deleted['para_usuario_nomes'] ?: 'N/A') . "</li>" .
+                "<li><strong>Tinha sido criado por:</strong> " . htmlspecialchars($agendamento_deleted['criado_por_nome'] ?: 'N/A') . "</li>" .
+                "</ul>" .
+                "<p>Este agendamento foi removido da Agenda do CRM.</p>";
+
+            // Tenta usar a função global send_email_notification
+            if (function_exists('send_email_notification')) {
+                if (!send_email_notification($recipientEmails, $subject, $htmlBody)) {
+                    error_log("AVISO: [Agenda Delete] Falha ao enviar notificação via send_email_notification para ID: " . $agendamentoId);
+                } else {
+                    error_log("DEBUG: [Agenda Delete] Notificação enviada via send_email_notification para ID: " . $agendamentoId . " - Destinatários: " . implode(', ', $recipientEmails));
+                }
+            } else {
+                error_log("ERRO: [Agenda Delete] Função send_email_notification não encontrada.");
+            }
+
         } else {
-            error_log("AVISO: [Agenda Delete] Nenhum role alvo definido para notificação. ID: " . $agendamentoId);
+            error_log("AVISO: [Agenda Delete] Nenhum email encontrado para notificar sobre a exclusão. ID: " . $agendamentoId);
         }
     } elseif ($success && !$agendamento_deleted) {
         error_log("AVISO: [Agenda Delete] Agendamento ID: " . $agendamentoId . " excluído, mas não foi possível buscar detalhes para notificação.");
