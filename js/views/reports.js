@@ -953,7 +953,338 @@ function renderSalesChart(data, monthsRange, type) {
     });
 }
 
+function renderSalesTable(group, monthsRange) {
+    const rows = group.rows;
+    const userTargetsEnabled = group.user_targets_enabled !== 0; // Default true if missing
+    const supplierMetaMensal = parseFloat(group.meta_mensal) || 0;
+
+    // We'll calculate the periodic goal for the Total row based on selected months
+    // Ideally this comes from backend, but here we can approximate: meta_mensal * num_months
+    const numMonths = monthsRange.length;
+
+    const monthKeys = monthsRange.map(m => m.key);
+
+    // Helper format
+    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+    // Calculate Totals per Month (Sum of Users)
+    const totals = monthKeys.reduce((acc, monthKey) => {
+        acc[monthKey] = { venda: 0, meta: 0, saldo: 0 };
+        rows.forEach(row => {
+            const cellData = row.dados_mes[monthKey] || { venda: 0, meta: 0 };
+            const venda = parseFloat(cellData.venda) || 0;
+            const meta = parseFloat(cellData.meta) || 0;
+            acc[monthKey].venda += venda;
+            // If user targets enabled, sum them up. Else we'll handle meta differently in display (use global)
+            acc[monthKey].meta += meta;
+            acc[monthKey].saldo += (venda - meta);
+        });
+        return acc;
+    }, {});
+
+    // Headers
+    const monthHeaders = monthsRange.map(m =>
+        `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">${m.label}</th>`
+    ).join('');
+
+    // Body
+    const tableBody = rows.map(row => {
+        let rowVenda = 0, rowMeta = 0;
+
+        const cells = monthKeys.map(key => {
+            const d = row.dados_mes[key] || { venda: 0, meta: 0 };
+            const v = parseFloat(d.venda) || 0;
+            const m = parseFloat(d.meta) || 0;
+            const s = v - m;
+            rowVenda += v; rowMeta += m;
+
+            const saldoClass = s >= 0 ? 'text-green-600' : 'text-red-600';
+            const bgClass = (userTargetsEnabled && m > 0) ? (v >= m ? 'bg-green-50' : 'bg-red-50') : '';
+
+            return `
+                <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500 border-r border-gray-200 text-right ${bgClass}">
+                    <div class="font-medium text-gray-900">${v > 0 ? format(v) : '-'}</div>
+                    ${(userTargetsEnabled && m > 0) ? `<div class="text-gray-400 text-[10px]">M: ${format(m)}</div>` : ''}
+                    ${(userTargetsEnabled && m > 0) ? `<div class="${saldoClass} font-bold border-t border-gray-100 mt-1 pt-1 text-[10px]">S: ${format(s)}</div>` : ''}
+                </td>
+            `;
+        }).join('');
+
+        const rowSaldo = rowVenda - rowMeta;
+        const rowSaldoClass = rowSaldo >= 0 ? 'text-green-600' : 'text-red-600';
+
+        return `
+            <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200">
+                    ${row.vendedor_nome}
+                </td>
+                ${cells}
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-right bg-gray-50 font-bold border-l border-gray-200">
+                    <div>${format(rowVenda)}</div>
+                    ${userTargetsEnabled ? `<div class="text-[10px] text-gray-500">M: ${format(rowMeta)}</div>` : ''}
+                    ${userTargetsEnabled ? `<div class="${rowSaldoClass} text-[10px] border-t border-gray-200 pt-1">S: ${format(rowSaldo)}</div>` : ''}
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Totals Row Construction
+    const totalsCells = monthKeys.map(key => {
+        const t = totals[key];
+        // If targets disabled, use supplier global meta monthly divided or just flat?
+        // Usually global meta is monthly.
+        const metaVal = userTargetsEnabled ? t.meta : supplierMetaMensal;
+        const saldoVal = t.venda - metaVal;
+
+        const sClass = saldoVal >= 0 ? 'text-green-600' : 'text-red-600';
+        return `
+            <td class="px-2 py-3 whitespace-nowrap text-xs text-right font-bold bg-gray-100 border-r border-gray-200">
+                <div>${format(t.venda)}</div>
+                <div class="text-gray-500 text-[10px]">${format(metaVal)}</div>
+                <div class="${sClass} text-[10px]">${format(saldoVal)}</div>
+            </td>
+        `;
+    }).join('');
+
+    const grandVenda = Object.values(totals).reduce((a, b) => a + b.venda, 0);
+    // Grand Meta: If user targets enabled, sum of user metas. If disabled, Sum of Monthly Global Metas for the period.
+    const grandMeta = userTargetsEnabled
+        ? Object.values(totals).reduce((a, b) => a + b.meta, 0)
+        : (supplierMetaMensal * numMonths);
+
+    const grandSaldo = grandVenda - grandMeta;
+    const grandSaldoClass = grandSaldo >= 0 ? 'text-green-600' : 'text-red-600';
+
+    return `
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 border border-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48 sticky left-0 bg-gray-50 z-10">Vendedor</th>
+                        ${monthHeaders}
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    ${tableBody}
+                    <tr class="bg-gray-100 border-t-2 border-gray-300">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 border-r border-gray-200 sticky left-0 bg-gray-100 z-10">TOTAIS</td>
+                        ${totalsCells}
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold bg-gray-200 border-l border-gray-200">
+                            <div>${format(grandVenda)}</div>
+                            <div class="text-gray-500 text-[10px]">${format(grandMeta)}</div>
+                            <div class="${grandSaldoClass} text-[10px]">${format(grandSaldo)}</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function renderStateReport(group) {
+    const stateSales = group.state_sales || {};
+    const stateGoals = group.state_goals || {};
+
+    // Get unique states from both sales and goals
+    const states = [...new Set([...Object.keys(stateSales), ...Object.keys(stateGoals)])].sort();
+
+    if (states.length === 0) return ''; // No state data
+
+    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+    let rowsHtml = '';
+    let totalSales = 0;
+    let totalGoal = 0;
+
+    states.forEach(uf => {
+        const sales = parseFloat(stateSales[uf]) || 0;
+        const goal = parseFloat(stateGoals[uf]) || 0; // This is meta_anual usually
+        const balance = sales - goal;
+
+        totalSales += sales;
+        totalGoal += goal;
+
+        const balClass = balance >= 0 ? 'text-green-600' : 'text-red-500';
+
+        rowsHtml += `
+            <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${uf}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700">${format(sales)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${format(goal)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold ${balClass}">${format(balance)}</td>
+            </tr>
+        `;
+    });
+
+    const totalBal = totalSales - totalGoal;
+    const totalBalClass = totalBal >= 0 ? 'text-green-600' : 'text-red-500';
+
+    return `
+        <div class="mt-8">
+            <h4 class="text-md font-bold text-gray-700 mb-3 px-1 border-l-4 border-blue-500 pl-2">Performance por Estado</h4>
+            <div class="overflow-x-auto rounded-lg shadow border border-gray-200">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Vendas (Período)</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Meta Anual</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${rowsHtml}
+                        <tr class="bg-gray-100 font-bold border-t-2 border-gray-300">
+                            <td class="px-6 py-4 text-sm text-gray-900">TOTAIS</td>
+                            <td class="px-6 py-4 text-sm text-right text-gray-900">${format(totalSales)}</td>
+                            <td class="px-6 py-4 text-sm text-right text-gray-700">${format(totalGoal)}</td>
+                            <td class="px-6 py-4 text-sm text-right ${totalBalClass}">${format(totalBal)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    `;
+}
+
+function renderClientsTable(data) {
+    const container = document.getElementById('report-results'); // Main container, actually in renderReports we use 'tableContainer' inside wrapper. 
+    // But data for clients comes as a flat array in 'data', unlike sales which is grouped?
+    // Wait, backend returns 'data' as array of rows. 
+    // update renderReports to handle this structure difference.
+
+    // For clients report, 'data' is the array of clients.
+    // We shouldn't be using the 'group' loop if type is clients because it's not grouped by supplier in the same way?
+    // Actually the backend code for 'clients' returns `['data' => $rows, 'type' => 'clients']`.
+    // And `loadReportData` calls `renderReports(currentReportData, ...)`.
+    // If 'clients', `currentReportData` is the array of rows.
+
+    // In renderReports (line 482): `data.forEach(group => { ... })`
+    // This expects grouping.
+    // My backend implementation for 'clients' returned flat rows. 
+    // So `renderReports` will break iterate over rows thinking they are groups?
+    // I need to intercept inside renderReports BEFORE the forEach loop.
+
+    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+    const totalRevenue = data.reduce((acc, row) => acc + (parseFloat(row.valor_total) || 0), 0);
+
+    return `
+        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
+            <div class="px-6 py-4 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
+                <h3 class="font-bold text-indigo-700">Ranking de Clientes (Curva ABC)</h3>
+                <span class="text-xs bg-indigo-200 text-indigo-800 px-2 py-1 rounded-full">Top ${data.length}</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">#</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd Vendas</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Total</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">% Part.</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${data.map((row, index) => {
+        const val = parseFloat(row.valor_total) || 0;
+        const percent = totalRevenue > 0 ? (val / totalRevenue) * 100 : 0;
+        return `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-3 text-center font-bold text-gray-500 border-r border-gray-100">${index + 1}</td>
+                                    <td class="px-6 py-3 text-left font-medium text-gray-700">
+                                        ${row.cliente_nome}
+                                        ${index < 3 ? '<i class="fas fa-trophy text-yellow-500 ml-2"></i>' : ''}
+                                    </td>
+                                    <td class="px-6 py-3 text-center text-gray-600">${row.qtd_vendas}</td>
+                                    <td class="px-6 py-3 text-right font-bold text-gray-800">${format(val)}</td>
+                                    <td class="px-6 py-3 text-right text-gray-500">${percent.toFixed(1)}%</td>
+                                </tr>
+                            `;
+    }).join('')}
+                        <tr class="bg-gray-100 font-bold border-t-2 border-gray-200">
+                            <td colspan="2" class="px-6 py-3 text-right text-gray-900">TOTAL</td>
+                            <td class="px-6 py-3 text-center text-gray-900">${data.reduce((acc, r) => acc + parseInt(r.qtd_vendas), 0)}</td>
+                            <td class="px-6 py-3 text-right text-gray-900">${format(totalRevenue)}</td>
+                            <td class="px-6 py-3 text-right text-gray-900">100.0%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+function renderFunnelTable(data) {
+    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    const totalRevenue = data.reduce((acc, row) => acc + (parseFloat(row.valor_total) || 0), 0);
+    const totalCount = data.reduce((acc, row) => acc + parseInt(row.qtd_oportunidades), 0);
+
+    return `
+        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
+            <div class="px-6 py-4 bg-teal-50 border-b border-teal-100 flex justify-between items-center">
+                <h3 class="font-bold text-teal-700">Funil de Vendas (Conversão)</h3>
+                <span class="text-xs bg-teal-200 text-teal-800 px-2 py-1 rounded-full">${totalCount} Oportunidades</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Etapa</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor em Pipeline</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">% (Volume)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${data.map((row, index) => {
+        const val = parseFloat(row.valor_total) || 0;
+        const count = parseInt(row.qtd_oportunidades) || 0;
+        const percent = totalCount > 0 ? (count / totalCount) * 100 : 0;
+
+        // Color Logic for Funnel visualization (Optional, creates a gradient effect)
+        // const opacity = 1 - (index * 0.1); 
+        // style="background-color: rgba(20, 184, 166, ${Math.max(0.1, opacity)})"
+
+        return `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 text-left font-medium text-gray-700">
+                                        <div class="flex items-center">
+                                            <span class="w-6 h-6 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-xs mr-3 font-bold">${index + 1}</span>
+                                            ${row.etapa_nome}
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center text-gray-600 font-bold">${count}</td>
+                                    <td class="px-6 py-4 text-right text-gray-800">${format(val)}</td>
+                                    <td class="px-6 py-4 text-right text-gray-500">
+                                        <div class="flex items-center justify-end">
+                                            <span class="mr-2">${percent.toFixed(1)}%</span>
+                                            <div class="w-16 bg-gray-200 rounded-full h-1.5">
+                                                <div class="bg-teal-500 h-1.5 rounded-full" style="width: ${percent}%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+    }).join('')}
+                        <tr class="bg-gray-100 font-bold border-t-2 border-gray-200">
+                            <td class="px-6 py-4 text-right text-gray-900">TOTAL</td>
+                            <td class="px-6 py-4 text-center text-gray-900">${totalCount}</td>
+                            <td class="px-6 py-4 text-right text-gray-900">${format(totalRevenue)}</td>
+                            <td class="px-6 py-4 text-right text-gray-900">100%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
 function renderLostReasonsTable(data) {
+    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
     const totalCount = data.reduce((acc, row) => acc + parseInt(row.qtd), 0);
 
     return `
@@ -1000,4 +1331,620 @@ function renderLostReasonsTable(data) {
     `;
 }
 
-// ... (rest of file unchanged)
+// Fallback logic to prevent "is not defined" errors during cache updates
+window.renderForecastChart = function (data) {
+    if (typeof renderSalesChart === 'function') {
+        renderSalesChart(data, [], 'forecast');
+    }
+}
+
+function renderForecastTable(data) {
+    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    const totalForecast = data.reduce((acc, row) => acc + (parseFloat(row.forecast_ponderado) || 0), 0);
+    const totalPipeline = data.reduce((acc, row) => acc + (parseFloat(row.pipeline_total) || 0), 0);
+
+    return `
+        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
+            <div class="px-6 py-4 bg-purple-50 border-b border-purple-100 flex justify-between items-center">
+                <h3 class="font-bold text-purple-700">Forecast (Previsão de Fechamento)</h3>
+                <span class="text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full">Total Ponderado: ${format(totalForecast)}</span>
+            </div>
+            <div class="p-6">
+                <!-- Forecast Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                        <span class="block text-xs font-semibold text-gray-400 uppercase">Pipeline Total</span>
+                        <span class="block text-xl font-bold text-gray-800">${format(totalPipeline)}</span>
+                    </div>
+                    <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200 text-center">
+                        <span class="block text-xs font-semibold text-indigo-400 uppercase">Forecast Ponderado</span>
+                        <span class="block text-xl font-bold text-indigo-700">${format(totalForecast)}</span>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-200 text-center">
+                        <span class="block text-xs font-semibold text-green-400 uppercase">Confiança Geral</span>
+                        <span class="block text-xl font-bold text-green-700">${totalPipeline > 0 ? ((totalForecast / totalPipeline) * 100).toFixed(1) + '%' : '0%'}</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-center text-gray-400 text-sm italic">
+                    (Visualize a evolução temporal no gráfico acima)
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderProductsTable(rows) {
+    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+    return `
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produto</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Unit. (Médio/Max)</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Total</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    ${rows.map(row => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 text-sm text-gray-900">${row.produto_nome || '-'}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500 text-center">${row.quantidade}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500 text-right">${format(row.valor_unitario)}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900 font-medium text-right">${format(row.valor_total)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function renderLicitationsTable(rows) {
+    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+    return `
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edital</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">UASG</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Objeto</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                     ${rows.map(row => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">${row.numero_edital || '-'}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">${row.uasg || '-'}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500 truncate max-w-xs" title="${row.objeto || ''}">${row.objeto || '-'}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900 text-right">${format(row.valor_total)}</td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    ${row.fase_id || 'Ativo'}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function getMonthsBetween(start, end) {
+    const s = new Date(start + '-01T00:00:00');
+    const e = new Date(end + '-01T00:00:00');
+    s.setMinutes(s.getMinutes() + s.getTimezoneOffset());
+    e.setMinutes(e.getMinutes() + e.getTimezoneOffset());
+
+    const result = [];
+    let curr = new Date(s);
+
+    while (curr <= e) {
+        const y = curr.getFullYear();
+        const m = curr.getMonth() + 1;
+        const key = `${y}-${m}`;
+        const label = curr.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).toUpperCase().replace('.', '');
+        result.push({ key, label });
+        curr.setMonth(curr.getMonth() + 1);
+    }
+    return result;
+}
+
+function exportToExcel() {
+    const content = document.getElementById('reports-output-area').cloneNode(true);
+    // Remove loading
+    const loading = content.querySelector('#report-loading');
+    if (loading) loading.remove();
+
+    const html = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                table { border-collapse: collapse; width: 100%; }
+                th, td { border: 1px solid #000; padding: 5px; }
+                h3 { font-size: 14px; font-weight: bold; background-color: #eee; }
+            </style>
+        </head>
+        <body>
+            ${content.innerHTML}
+        </body>
+        </html>
+    `;
+
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Relatorio_${new Date().toISOString().slice(0, 10)}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function setupModalLinks() {
+    const modal = document.getElementById('targets-modal');
+    if (!modal) return;
+    const close = modal.querySelector('.close-modal');
+    const closeBtn = modal.querySelector('.close-modal.btn'); // Cancel button
+
+    const setTargetsBtn = document.getElementById('set-targets-btn');
+    if (setTargetsBtn) {
+        setTargetsBtn.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            const supSelect = document.getElementById('target-supplier-select');
+            const suppliers = appState.fornecedores || [];
+            supSelect.innerHTML = '<option value="">Selecione...</option>' +
+                suppliers.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
+
+            document.getElementById('targets-grid-container').innerHTML = '<p class="text-gray-500 italic p-4">Selecione um fornecedor para editar (Necessário selecionar Data Inicial).</p>';
+            supSelect.onchange = (e) => loadTargetsEditor(e.target.value);
+        });
+    }
+
+    const hide = () => modal.classList.add('hidden');
+    if (close) close.addEventListener('click', hide);
+    if (closeBtn) closeBtn.addEventListener('click', hide);
+
+    document.getElementById('save-targets-btn').addEventListener('click', saveTargets);
+}
+
+function loadTargetsEditor(supplierId, year = null) {
+    if (!supplierId) return;
+    const container = document.getElementById('targets-grid-container');
+    const allUsers = appState.users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista'].includes(u.role));
+
+    // Determine year: passed arg > current real year > fallback
+    if (!year) {
+        year = new Date().getFullYear();
+        // const startVal = document.getElementById('filter-start-date').value;
+        // year = startVal ? startVal.split('-')[0] : new Date().getFullYear();
+    }
+
+    // Show loading skeleton or similar? For now just keep old until fetch done.
+
+    // Fetch Data from Backend
+    apiCall('get_supplier_targets', { params: { supplier_id: supplierId, year: year } })
+        .then(response => {
+            if (!response.success) {
+                container.innerHTML = `<p class="text-red-500">Erro ao carregar metas: ${response.error}</p>`;
+                return;
+            }
+
+            const data = response.data;
+            const metaAnualTotal = data.meta_anual || 0;
+            const stateTargets = data.state_targets || {};
+            const targets = data.targets || {};
+            const userTargetsEnabled = data.user_targets_enabled !== 0; // Default true
+
+            // Initialize states from DB or default
+            let states = Object.keys(stateTargets);
+            if (states.length === 0) states = ['PE', 'PB', 'RN'];
+
+            // Helper to format/parse (relying on global helpers added below)
+            const fmt = (v) => formatCurrency(v);
+
+            // Styles
+            // Styles
+            const inputClass = "form-input text-right text-xs border-gray-300 rounded w-full focus:ring-indigo-500 focus:border-indigo-500 font-mono p-1 h-8";
+            const headerClass = "border bg-gray-100 text-center w-24 px-1 text-[10px] font-bold uppercase";
+
+            // --- HEADER ---
+            let html = `
+                <div class="mb-6">
+                    <div class="p-5 bg-white rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                        <div class="flex flex-wrap gap-6 items-center" id="header-state-inputs">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">Ano Base</label>
+                                <input type="number" id="target-year-input" class="form-input font-bold text-gray-900 w-24 text-center border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500" value="${year}">
+                            </div>
+                             
+                            <div class="pl-6 border-l border-gray-200">
+                                 <label class="block text-xs font-bold text-gray-700 mb-1 text-indigo-900 uppercase tracking-wider">Meta Global (R$)</label>
+                                 <input type="text" id="sup-meta-annual-display" class="form-input text-right font-bold text-sm text-gray-900 w-48 bg-gray-50 border-gray-200" value="${fmt(metaAnualTotal)}" readonly>
+                                 <input type="hidden" id="sup-meta-annual" value="${metaAnualTotal}">
+                                 <p class="text-[10px] text-gray-400 mt-1 flex items-center"><i class="fas fa-calculator mr-1"></i> Soma automática</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                            <div id="add-state-container" class="flex items-center gap-2">
+                                <button id="btn-show-add-state" class="bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 text-xs px-4 py-2 rounded-md flex items-center transition-colors shadow-sm font-medium">
+                                    <i class="fas fa-plus-circle mr-2"></i> Adicionar Estado
+                                </button>
+                                
+                                <div id="add-state-form" class="hidden flex items-center gap-2 animate-fade-in">
+                                     <input type="text" id="new-state-input" class="form-input text-sm border-gray-300 rounded w-20 uppercase font-bold text-center" placeholder="UF" maxlength="2">
+                                     <button id="btn-confirm-add-state" class="bg-green-600 hover:bg-green-700 text-white p-2 rounded shadow-sm hover:scale-105 transition-transform" title="Confirmar">
+                                        <i class="fas fa-check"></i>
+                                     </button>
+                                     <button id="btn-cancel-add-state" class="bg-gray-200 hover:bg-gray-300 text-gray-600 p-2 rounded shadow-sm hover:scale-105 transition-transform" title="Cancelar">
+                                        <i class="fas fa-times"></i>
+                                     </button>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                <span>Os valores são formatados automaticamente como moeda.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // --- STATE GRID ---
+            html += `<div class="mb-6 border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white">
+                <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 font-bold text-sm flex justify-between items-center text-gray-700">
+                    <div class="flex items-center">
+                        <i class="fas fa-map-marked-alt mr-2 text-indigo-500"></i>
+                        <span>Metas por Estado (Mensal)</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm bg-white" id="state-grid-table">
+                        <thead class="bg-gray-50 text-gray-600">
+                            <tr>
+                                <th class="p-3 text-left border-b w-32 font-bold text-xs uppercase tracking-wider">Estado</th>`;
+            for (let i = 1; i <= 12; i++) html += `<th class="${headerClass}">${i}</th>`;
+            html += `</tr></thead><tbody></tbody></table></div></div>`;
+
+            // --- USER GRID ---
+            html += `<div class="mb-4 border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white">
+                <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 font-bold text-sm flex justify-between items-center text-gray-700">
+                    <div class="flex items-center">
+                        <i class="fas fa-users mr-2 text-indigo-500"></i>
+                        <span>Metas por Vendedor</span>
+                    </div>
+                    <div class="flex items-center">
+                        <label class="inline-flex items-center cursor-pointer group">
+                            <input type="checkbox" id="toggle-user-targets" class="form-checkbox h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" ${userTargetsEnabled ? 'checked' : ''}>
+                            <span class="ml-2 text-xs font-medium text-gray-600 group-hover:text-indigo-600 transition-colors">Habilitar metas por vendedor</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="overflow-x-auto transition-opacity duration-300 ${userTargetsEnabled ? '' : 'opacity-50 pointer-events-none'}" id="user-grid-wrapper">
+                    <table class="w-full text-sm bg-white relative">
+                        <thead class="sticky top-0 z-10 bg-gray-50 text-gray-600">
+                            <tr>
+                                <th class="p-3 text-left border-b min-w-[200px] font-bold text-xs uppercase tracking-wider">
+                                    Vendedor
+                                    <span class="text-[10px] font-normal text-gray-400 ml-1 block normal-case">(Marque para ativar)</span>
+                                </th>`;
+            for (let i = 1; i <= 12; i++) html += `<th class="${headerClass}">${i}</th>`;
+            html += `</tr></thead><tbody>`;
+
+            allUsers.forEach(u => {
+                let userTargets = targets[u.id] || {};
+                let hasTarget = Object.values(userTargets).some(v => v > 0);
+
+                let cells = '';
+                for (let i = 1; i <= 12; i++) {
+                    let val = userTargets[i] || 0;
+                    cells += `<td class="border p-1"><input type="text" class="${inputClass} user-month-input currency-input" data-user="${u.id}" data-month="${i}" value="${val > 0 ? fmt(val) : ''}" ${hasTarget ? '' : 'disabled'}></td>`;
+                }
+
+                html += `<tr class="hover:bg-indigo-50 transition-colors group">
+                    <td class="p-2 border text-gray-700 flex items-center bg-white sticky left-0 z-10 group-hover:bg-indigo-50 transition-colors">
+                        <input type="checkbox" class="form-checkbox h-4 w-4 text-indigo-600 rounded border-gray-300 mr-2 user-active-check focus:ring-indigo-500" data-user="${u.id}" ${hasTarget ? 'checked' : ''}>
+                        <span class="${hasTarget ? 'font-bold text-gray-900' : ''}">${u.nome}</span>
+                    </td>
+                    ${cells}
+                </tr>`;
+            });
+            html += `</tbody></table></div></div>`;
+
+            container.innerHTML = html;
+
+            // --- CURRENCY BEHAVIOR ---
+            const attachCurrencyEvents = (input) => {
+                input.addEventListener('focus', function () {
+                    this.select();
+                });
+
+                input.addEventListener('blur', function () {
+                    const val = parseCurrency(this.value);
+                    if (val > 0) this.value = formatCurrency(val);
+                    else this.value = '';
+                });
+
+                // Simple restriction (optional)
+                input.addEventListener('keypress', function (e) {
+                    if (!/[\d,.]/.test(e.key) && e.key.length === 1 && e.key !== 'Enter') e.preventDefault();
+                });
+            };
+
+            // --- DYNAMIC STATE FUNCTIONS ---
+            const stateHeaderContainer = document.getElementById('header-state-inputs');
+            const stateGridBody = document.querySelector('#state-grid-table tbody');
+
+            const addStateToUI = (uf, annualVal = 0, monthlyData = {}) => {
+                // Check duplicate
+                if (container.querySelector(`.state-annual-input[data-state="${uf}"]`)) {
+                    showToast(`Estado ${uf} já adicionado.`, 'warning');
+                    return;
+                }
+
+                // 1. Add Header Input
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Meta Anual ${uf} (R$)</label>
+                    <input type="text" class="form-input text-right text-gray-900 font-bold text-sm w-40 border-gray-300 rounded state-annual-input currency-input focus:ring-indigo-500 focus:border-indigo-500" data-state="${uf}" value="${annualVal > 0 ? fmt(annualVal) : ''}" placeholder="R$ 0,00">
+                `;
+                stateHeaderContainer.appendChild(div);
+
+                // 2. Add Grid Row
+                const tr = document.createElement('tr');
+                let cells = '';
+                for (let i = 1; i <= 12; i++) {
+                    let val = monthlyData[i] || 0;
+                    cells += `<td class="border p-1"><input type="text" class="${inputClass} state-month-input currency-input" data-state="${uf}" data-month="${i}" value="${val > 0 ? fmt(val) : ''}"></td>`;
+                }
+                tr.innerHTML = `
+                    <td class="p-2 border font-bold text-gray-700 bg-gray-50 flex justify-between items-center group">
+                        <span class="w-8 text-center bg-white border rounded px-1 text-xs shadow-sm">${uf}</span>
+                        <button class="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity btn-remove-state p-1 rounded hover:bg-red-50" data-state="${uf}" title="Remover Estado">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                    ${cells}
+                `;
+                stateGridBody.appendChild(tr);
+
+                // 3. Attach Events
+                const annInput = div.querySelector('input');
+                attachCurrencyEvents(annInput);
+                annInput.addEventListener('blur', () => updateGrandTotal(container));
+
+                tr.querySelectorAll('.state-month-input').forEach(inp => {
+                    attachCurrencyEvents(inp);
+                    inp.addEventListener('blur', () => {
+                        let sum = 0;
+                        container.querySelectorAll(`.state-month-input[data-state="${uf}"]`).forEach(mInp => {
+                            sum += parseCurrency(mInp.value);
+                        });
+                        // Update Annual with formatted sum
+                        annInput.value = sum > 0 ? formatCurrency(sum) : '';
+                        updateGrandTotal(container);
+                    });
+                });
+
+                tr.querySelector('.btn-remove-state').addEventListener('click', () => {
+                    if (confirm(`Remover estado ${uf}?`)) {
+                        div.remove();
+                        tr.remove();
+                        updateGrandTotal(container);
+                    }
+                });
+            };
+
+            // Initial Render of States
+            states.forEach(uf => {
+                const sData = stateTargets[uf] || {};
+                addStateToUI(uf, sData.meta_anual || 0, sData.meta_mensal || {});
+            });
+
+            // Attach to existing user inputs
+            container.querySelectorAll('.currency-input').forEach(inp => attachCurrencyEvents(inp));
+
+            // Add State Logic (Custom UI)
+            const btnShow = document.getElementById('btn-show-add-state');
+            const formAdd = document.getElementById('add-state-form');
+            const inputAdd = document.getElementById('new-state-input');
+            const btnConfirm = document.getElementById('btn-confirm-add-state');
+            const btnCancel = document.getElementById('btn-cancel-add-state');
+
+            if (btnShow && formAdd) {
+                btnShow.addEventListener('click', () => {
+                    btnShow.classList.add('hidden');
+                    formAdd.classList.remove('hidden');
+                    inputAdd.value = '';
+                    inputAdd.focus();
+                });
+
+                const hideAddForm = () => {
+                    formAdd.classList.add('hidden');
+                    btnShow.classList.remove('hidden');
+                };
+
+                btnCancel.addEventListener('click', hideAddForm);
+
+                const performAdd = () => {
+                    const uf = inputAdd.value.trim().toUpperCase();
+                    if (uf && uf.length === 2) {
+                        addStateToUI(uf);
+                        updateGrandTotal(container);
+                        hideAddForm();
+                    } else {
+                        showToast("Sigla inválida (Use 2 letras, ex: SP)", "error");
+                        inputAdd.focus();
+                    }
+                };
+
+                btnConfirm.addEventListener('click', performAdd);
+
+                inputAdd.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') performAdd();
+                });
+
+                inputAdd.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') hideAddForm();
+                });
+            }
+
+            // --- EVENT LISTENERS (Standard) ---
+
+            // Year Change
+            const yearInput = document.getElementById('target-year-input');
+            if (yearInput) {
+                yearInput.addEventListener('change', (e) => loadTargetsEditor(supplierId, e.target.value));
+            }
+
+            // User Targets Toggle
+            const toggleUsers = document.getElementById('toggle-user-targets');
+            const userWrapper = document.getElementById('user-grid-wrapper');
+            if (toggleUsers) {
+                toggleUsers.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        userWrapper.classList.remove('opacity-50', 'pointer-events-none');
+                    } else {
+                        userWrapper.classList.add('opacity-50', 'pointer-events-none');
+                    }
+                });
+            }
+
+            // User Rows Checkbox
+            container.querySelectorAll('.user-active-check').forEach(chk => {
+                chk.addEventListener('change', (e) => {
+                    const uid = e.target.dataset.user;
+                    const inputs = container.querySelectorAll(`.user-month-input[data-user="${uid}"]`);
+                    inputs.forEach(inp => {
+                        inp.disabled = !e.target.checked;
+                        if (!e.target.checked) inp.value = '';
+                    });
+                    e.target.nextElementSibling.classList.toggle('font-bold', e.target.checked);
+                    e.target.nextElementSibling.classList.toggle('text-gray-900', e.target.checked);
+                });
+            });
+
+        })
+        .catch(err => {
+            console.error(err);
+            container.innerHTML = `<p class="text-red-500">Erro de conexão ao buscar metas.</p>`;
+        });
+}
+
+// --- CURRENCY HELPERS ---
+function parseCurrency(str) {
+    if (!str || str === '') return 0;
+    if (typeof str === 'number') return str;
+    // Remove "R$", trim, remove "." thousands sep, replace "," with "."
+    let s = str.toString().replace(/[^\d,-]/g, '').replace(/\./g, '').replace(',', '.');
+    return parseFloat(s) || 0;
+}
+
+function formatCurrency(val) {
+    if (val === undefined || val === null || val === '') return '';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+}
+
+function updateGrandTotal(container) {
+    let grand = 0;
+    container.querySelectorAll('.state-annual-input').forEach(inp => {
+        grand += parseCurrency(inp.value);
+    });
+    const disp = document.getElementById('sup-meta-annual-display');
+    const val = document.getElementById('sup-meta-annual');
+    if (val) val.value = grand;
+    if (disp) disp.value = formatCurrency(grand);
+}
+
+async function saveTargets() {
+    const inputs = document.querySelectorAll('.target-edit-input');
+    // Re-query inputs? No, we use specific collectors below.
+
+    const supplierId = document.getElementById('target-supplier-select').value;
+
+    // year
+    const yearInput = document.getElementById('target-year-input');
+    const year = yearInput ? yearInput.value : new Date().getFullYear();
+
+    // Supplier Goals
+    const supAnnualInput = document.getElementById('sup-meta-annual');
+    const supAnnual = parseFloat(supAnnualInput ? supAnnualInput.value : 0) || 0;
+
+    // User Enabled
+    const userTargetsToggle = document.getElementById('toggle-user-targets');
+    const userTargetsEnabled = userTargetsToggle ? userTargetsToggle.checked : false;
+
+    // State Targets
+    const stateTargets = {};
+    const stateInputs = document.querySelectorAll('.state-annual-input');
+    stateInputs.forEach(input => {
+        const uf = input.dataset.state;
+        const ann = parseCurrency(input.value);
+        const monthly = {};
+        document.querySelectorAll(`.state-month-input[data-state="${uf}"]`).forEach(inp => {
+            const m = inp.dataset.month;
+            const val = parseCurrency(inp.value);
+            monthly[m] = val;
+        });
+        stateTargets[uf] = {
+            annual: ann,
+            monthly: monthly
+        };
+    });
+
+    // User Targets
+    const targets = [];
+    if (userTargetsEnabled) {
+        const inputs = document.querySelectorAll('.user-month-input');
+        inputs.forEach(inp => {
+            if (!inp.disabled) {
+                const val = parseCurrency(inp.value);
+                if (val > 0) {
+                    targets.push({
+                        usuario_id: inp.dataset.user,
+                        fornecedor_id: supplierId,
+                        mes: inp.dataset.month,
+                        valor: val
+                    });
+                }
+            }
+        });
+    }
+
+    showLoading(true);
+    try {
+        const payload = {
+            year,
+            supplier_id: supplierId,
+            supplier_goals: { annual: supAnnual, monthly: 0 },
+            state_targets: stateTargets,
+            targets,
+            user_targets_enabled: userTargetsEnabled
+        };
+        const res = await apiCall('save_targets', { method: 'POST', body: JSON.stringify(payload) });
+        if (res.success) {
+            showToast('Metas salvas com sucesso!', 'success');
+            document.getElementById('targets-modal').classList.add('hidden');
+            loadReportData();
+        } else {
+            showToast(res.error || 'Erro ao salvar', 'error');
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('Erro de conexão', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
