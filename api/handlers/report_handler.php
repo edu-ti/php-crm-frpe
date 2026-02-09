@@ -287,18 +287,37 @@ function handle_get_report_data($pdo)
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         } elseif ($type === 'lost_reasons') {
+        } elseif ($type === 'lost_reasons') {
             $sql = "
             SELECT 
-                COALESCE(ef.nome, 'Não Informado') as motivo,
-                COUNT(o.id) as qtd,
-                SUM(o.valor) as valor_total
-            FROM oportunidades o
-            LEFT JOIN etapas_funil ef ON o.etapa_id = ef.id
-            WHERE o.data_criacao BETWEEN ? AND ?
-              AND (ef.nome LIKE '%Perdida%' OR ef.nome LIKE '%Recusada%' OR ef.nome LIKE '%Lost%' OR ef.nome LIKE '%Cancelada%' OR ef.nome LIKE '%Descartada%')
+                COALESCE(NULLIF(TRIM(p.motivo_status), ''), 'Não Informado') as motivo,
+                COUNT(p.id) as qtd,
+                COALESCE(SUM(p.valor_total), 0) as valor_total
+            FROM propostas p
+            LEFT JOIN oportunidades o ON p.oportunidade_id = o.id
+            WHERE p.data_criacao BETWEEN ? AND ?
+              AND (
+                  p.status LIKE 'Recusad%' OR 
+                  p.status LIKE 'Reprovad%' OR 
+                  p.status LIKE 'Cancelad%' OR 
+                  p.status LIKE 'Perdid%' OR 
+                  p.status LIKE 'Sem Interesse%'
+              )
         ";
-            $params = [$start_date, $end_date];
-            apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+            $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+
+            // Apply filters to Opportunity (o)
+            apply_report_filters_helper($sql, $params, 'o', $supplier_ids, [], $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+
+            // Apply User Filter to Proposal (p) manually if needed
+            if (!empty($user_ids)) {
+                $in_params = trim(str_repeat('?,', count($user_ids)), ',');
+                $sql .= " AND p.usuario_id IN ($in_params)";
+                foreach ($user_ids as $uid) {
+                    $params[] = $uid;
+                }
+            }
+
             $sql .= " GROUP BY motivo ORDER BY qtd DESC";
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
