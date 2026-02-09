@@ -295,7 +295,7 @@ function handle_get_report_data($pdo)
             FROM oportunidades o
             LEFT JOIN etapas_funil ef ON o.etapa_id = ef.id
             WHERE o.data_criacao BETWEEN ? AND ?
-              AND (ef.nome LIKE '%Perdida%' OR ef.nome LIKE '%Recusada%' OR ef.nome LIKE '%Lost%')
+              AND (ef.nome LIKE '%Perdida%' OR ef.nome LIKE '%Recusada%' OR ef.nome LIKE '%Lost%' OR ef.nome LIKE '%Cancelada%' OR ef.nome LIKE '%Descartada%')
         ";
             $params = [$start_date, $end_date];
             apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
@@ -530,6 +530,35 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
             $supplier['rows'] = array_values($supplier['rows_map']);
             unset($supplier['rows_map']);
         }
+
+        // Restore State Report Data
+        $fid = $supplier['fornecedor_id'];
+
+        // 1. State Sales (aggregated for this supplier in the period)
+        $sql_state_sales = "
+            SELECT o.estado, SUM(vf.valor_total) as total 
+            FROM vendas_fornecedores vf
+            LEFT JOIN organizacoes o ON vf.organizacao_id = o.id
+            WHERE vf.fornecedor_id = ? 
+            AND vf.data_venda BETWEEN ? AND ?
+            AND o.estado IS NOT NULL
+            GROUP BY o.estado
+        ";
+        $stmt_ss = $pdo->prepare($sql_state_sales);
+        $stmt_ss->execute([$fid, $start_date, $end_date]);
+        $supplier['state_sales'] = $stmt_ss->fetchAll(PDO::FETCH_KEY_PAIR); // [PE => 1000, PB => 500]
+
+        // 2. State Goals (Annual/Monthly for the year of start_date)
+        // Assuming we want the Annual Goal for the state for the year of the start_date
+        $year = date('Y', strtotime($start_date));
+        $sql_state_goals = "
+            SELECT estado, meta_anual 
+            FROM fornecedor_metas_estados
+            WHERE fornecedor_id = ? AND ano = ?
+        ";
+        $stmt_sg = $pdo->prepare($sql_state_goals);
+        $stmt_sg->execute([$fid, $year]);
+        $supplier['state_goals'] = $stmt_sg->fetchAll(PDO::FETCH_KEY_PAIR); // [PE => 5000, PB => 2000]
     }
 
     // Simplification: Skipping state sales/goals detailed fetch to keep file size manageable if not strictly requested by user issue (501 error).
@@ -609,7 +638,7 @@ function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $use
     // let's Assume we should check Proposals linked to this opportunity.
 
     $sql = "SELECT o.id, o.fornecedor_id, f.nome as fornecedor_nome, o.numero_edital, o.uasg, o.objeto, 
-            COALESCE(SUM(pi.quantidade * pi.valor_unitario), 0) as valor_total, 
+            COALESCE(SUM(pi.quantidade * pi.valor_unitario), o.valor, 0) as valor_total, 
             o.data_criacao as created_at, o.etapa_id, ef.nome as fase_nome 
             FROM oportunidades o 
             LEFT JOIN propostas p ON o.id = p.oportunidade_id AND p.status = 'Aprovada'

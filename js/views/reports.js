@@ -1524,10 +1524,11 @@ function loadTargetsEditor(supplierId, year = null) {
     const container = document.getElementById('targets-grid-container');
     const allUsers = appState.users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista'].includes(u.role));
 
-    // Determine year: passed arg > current filter > current real year
+    // Determine year: passed arg > current real year > fallback
     if (!year) {
-        const startVal = document.getElementById('filter-start-date').value;
-        year = startVal ? startVal.split('-')[0] : new Date().getFullYear();
+        year = new Date().getFullYear();
+        // const startVal = document.getElementById('filter-start-date').value;
+        // year = startVal ? startVal.split('-')[0] : new Date().getFullYear();
     }
 
     // Show loading skeleton or similar? For now just keep old until fetch done.
