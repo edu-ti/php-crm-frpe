@@ -297,11 +297,7 @@ function handle_get_report_data($pdo)
             LEFT JOIN oportunidades o ON p.oportunidade_id = o.id
             WHERE p.data_criacao BETWEEN ? AND ?
               AND (
-                  p.status LIKE 'Recusad%' OR 
-                  p.status LIKE 'Reprovad%' OR 
-                  p.status LIKE 'Cancelad%' OR 
-                  p.status LIKE 'Perdid%' OR 
-                  p.status LIKE 'Sem Interesse%'
+                  p.status LIKE 'Recusad%'
               )
         ";
             $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
