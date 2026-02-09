@@ -320,6 +320,8 @@ function handle_get_report_data($pdo)
             $stmt->execute($params);
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        } elseif ($type === 'licitacoes_funnel') {
+            $data = get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
         } elseif ($type === 'licitacoes') {
             $data = get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
         } else {
@@ -817,4 +819,41 @@ function get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_i
     });
 
     return $final_data;
+}
+
+function get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids)
+{
+    // Funnel ID 2 = Licitações
+    $sql = "
+        SELECT 
+            ef.nome as etapa_nome, 
+            ef.ordem as etapa_ordem,
+            COUNT(DISTINCT o.id) as qtd_oportunidades,
+            SUM(
+                COALESCE(
+                    (SELECT SUM(pi.quantidade * pi.valor_unitario) 
+                     FROM propostas p 
+                     JOIN proposta_itens pi ON p.id = pi.proposta_id 
+                     WHERE p.oportunidade_id = o.id AND p.status = 'Aprovada'), 
+                    o.valor, 
+                    0
+                )
+            ) as valor_total
+        FROM oportunidades o
+        JOIN etapas_funil ef ON o.etapa_id = ef.id
+        WHERE o.data_criacao BETWEEN ? AND ?
+          AND (o.numero_edital IS NOT NULL AND o.numero_edital != '')
+          AND ef.funil_id = 2
+    ";
+
+    $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+
+    // Apply filters (using standardized helper, aliased to 'o')
+    apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+
+    $sql .= " GROUP BY ef.id, ef.nome, ef.ordem ORDER BY ef.ordem ASC";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }

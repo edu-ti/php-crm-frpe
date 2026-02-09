@@ -95,7 +95,7 @@ export async function renderReportsView(state) {
                             <option value="lost_reasons">Motivos de Perda</option>
                             <option value="clients">Ranking de Clientes (Curva ABC)</option>
                             <option value="products">Vendas por Produto</option>
-                            <option value="licitacoes">Licitações</option>
+                            <option value="licitacoes_funnel">Licitações (Funil)</option>
                         </select>
                     </div>
 
@@ -589,7 +589,7 @@ function renderReports(data, container, type, startStr, endStr) {
         return;
     }
 
-    if (type === 'funnel') {
+    if (type === 'funnel' || type === 'licitacoes_funnel') {
         const html = renderFunnelTable(data);
         container.innerHTML = html;
         return;
@@ -620,8 +620,6 @@ function renderReports(data, container, type, startStr, endStr) {
             }
         } else if (type === 'products') {
             tableHtml = renderProductsTable(group.rows);
-        } else if (type === 'licitacoes') {
-            tableHtml = renderLicitationsTable(group.rows);
         }
 
         const tableContainer = document.createElement('div');
@@ -638,8 +636,8 @@ function renderSalesChart(data, monthsRange, type) {
 
     if (!ctx || !container) return;
 
-    // Show chart for Sales, Clients, Funnel, Lost Reasons, Forecast
-    if (!['sales', 'clients', 'funnel', 'lost_reasons', 'forecast'].includes(type) || !data || data.length === 0) {
+    // Show chart for Sales, Clients, Funnel, Lost Reasons, Forecast, Licitacoes Funnel
+    if (!['sales', 'clients', 'funnel', 'lost_reasons', 'forecast', 'licitacoes_funnel'].includes(type) || !data || data.length === 0) {
         container.classList.add('hidden');
         return;
     }
@@ -752,7 +750,7 @@ function renderSalesChart(data, monthsRange, type) {
     }
 
     // --- FUNNEL CHART ---
-    if (type === 'funnel') {
+    if (type === 'funnel' || type === 'licitacoes_funnel') {
         const labels = data.map(r => r.etapa_nome);
         const values = data.map(r => parseInt(r.qtd_oportunidades));
         // const valuesVal = data.map(r => parseFloat(r.valor_total)); // Maybe toggle between count/value?
