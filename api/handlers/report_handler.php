@@ -287,7 +287,9 @@ function handle_get_report_data($pdo)
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         } elseif ($type === 'lost_reasons') {
-            $sql = "
+        } elseif ($type === 'lost_reasons') {
+            // --- QUERY A: SUMMARY ---
+            $sqlSummary = "
             SELECT 
                 COALESCE(NULLIF(TRIM(p.motivo_status), ''), 'Não Informado') as motivo,
                 COUNT(p.id) as qtd,
@@ -299,24 +301,64 @@ function handle_get_report_data($pdo)
                   p.status LIKE 'Recusad%'
               )
         ";
-            $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+            $paramsSummary = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
 
-            // Apply filters to Opportunity (o)
-            apply_report_filters_helper($sql, $params, 'o', $supplier_ids, [], $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+            // Apply filters to Opportunity (o) for Summary
+            apply_report_filters_helper($sqlSummary, $paramsSummary, 'o', $supplier_ids, [], $etapa_ids, $origem_ids, $uf_ids, $status_ids);
 
-            // Apply User Filter to Proposal (p) manually if needed
+            // Apply User Filter to Proposal (p) manually for Summary
             if (!empty($user_ids)) {
                 $in_params = trim(str_repeat('?,', count($user_ids)), ',');
-                $sql .= " AND p.usuario_id IN ($in_params)";
+                $sqlSummary .= " AND p.usuario_id IN ($in_params)";
                 foreach ($user_ids as $uid) {
-                    $params[] = $uid;
+                    $paramsSummary[] = $uid;
                 }
             }
 
-            $sql .= " GROUP BY motivo ORDER BY qtd DESC";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
-            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $sqlSummary .= " GROUP BY motivo ORDER BY qtd DESC";
+            $stmtSummary = $pdo->prepare($sqlSummary);
+            $stmtSummary->execute($paramsSummary);
+            $summaryData = $stmtSummary->fetchAll(PDO::FETCH_ASSOC);
+
+            // --- QUERY B: DETAILS ---
+            $sqlDetails = "
+            SELECT 
+                p.id as proposta_id,
+                p.numero_proposta,
+                p.valor_total,
+                p.data_criacao,
+                COALESCE(NULLIF(TRIM(p.motivo_status), ''), 'Não Informado') as motivo
+            FROM propostas p
+            LEFT JOIN oportunidades o ON p.oportunidade_id = o.id
+            WHERE p.data_criacao BETWEEN ? AND ?
+              AND (
+                  p.status LIKE 'Recusad%'
+              )
+        ";
+            // Re-use same base params
+            $paramsDetails = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+
+            // Apply filters to Opportunity (o) for Details
+            apply_report_filters_helper($sqlDetails, $paramsDetails, 'o', $supplier_ids, [], $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+
+            // Apply User Filter to Proposal (p) manually for Details
+            if (!empty($user_ids)) {
+                $in_params = trim(str_repeat('?,', count($user_ids)), ',');
+                $sqlDetails .= " AND p.usuario_id IN ($in_params)";
+                foreach ($user_ids as $uid) {
+                    $paramsDetails[] = $uid;
+                }
+            }
+
+            $sqlDetails .= " ORDER BY p.data_criacao DESC";
+            $stmtDetails = $pdo->prepare($sqlDetails);
+            $stmtDetails->execute($paramsDetails);
+            $detailsData = $stmtDetails->fetchAll(PDO::FETCH_ASSOC);
+
+            $data = [
+                'summary' => $summaryData,
+                'details' => $detailsData
+            ];
 
         } elseif ($type === 'funnel') {
             $sql = "
