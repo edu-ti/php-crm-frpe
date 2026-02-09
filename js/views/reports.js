@@ -556,20 +556,34 @@ async function loadReportData() {
 
 function renderReports(data, container, type, startStr, endStr) {
     if (!data) data = [];
-    if (!Array.isArray(data)) {
-        console.warn('Data is not an array, converting from object:', data);
-        data = Object.values(data);
-    }
 
-    if (data.length === 0) {
-        container.innerHTML = `<div class="bg-blue-50 p-8 border border-blue-200 text-blue-700 rounded text-center">Nenhum dado encontrado para o período.</div>`;
-        return;
+    // Special handling for lost_reasons which returns an object { summary: [], details: [] }
+    if (type === 'lost_reasons') {
+        // Validation for lost_reasons object
+        if (data.summary && Array.isArray(data.summary) && data.summary.length === 0 &&
+            data.details && Array.isArray(data.details) && data.details.length === 0) {
+            container.innerHTML = `<div class="bg-blue-50 p-8 border border-blue-200 text-blue-700 rounded text-center">Nenhum dado encontrado para o período.</div>`;
+            return;
+        }
+    } else {
+        // Logic for other reports which are arrays
+        if (!Array.isArray(data)) {
+            console.warn('Data is not an array, converting from object:', data);
+            data = Object.values(data);
+        }
+
+        if (data.length === 0) {
+            container.innerHTML = `<div class="bg-blue-50 p-8 border border-blue-200 text-blue-700 rounded text-center">Nenhum dado encontrado para o período.</div>`;
+            return;
+        }
     }
 
     const monthsRange = getMonthsBetween(startStr, endStr);
 
     // Render Chart
-    if (typeof renderSalesChart === 'function') {
+    // lost_reasons is an object {summary, details}, so we handle its chart inside its specific block or pass summary here.
+    // However, since we handle it specifically below, we skip it here to avoid passing the object.
+    if (typeof renderSalesChart === 'function' && type !== 'lost_reasons') {
         renderSalesChart(data, monthsRange, type);
     }
 

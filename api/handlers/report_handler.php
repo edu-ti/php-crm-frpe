@@ -287,7 +287,6 @@ function handle_get_report_data($pdo)
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         } elseif ($type === 'lost_reasons') {
-        } elseif ($type === 'lost_reasons') {
             // --- QUERY A: SUMMARY ---
             $sqlSummary = "
             SELECT 
