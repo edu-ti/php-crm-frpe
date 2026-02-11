@@ -1,12 +1,12 @@
 // js/views/settings.js
-import { appState } from '../script.js';
 import { apiCall } from '../api.js';
 import { showToast } from '../utils.js';
 import { renderModal, closeModal } from '../ui.js';
 
-export function renderSettingsView() {
+export function renderSettingsView(appState) {
     const { permissions } = appState.currentUser;
     const container = document.getElementById('settings-view');
+    // ... rest of the function remains valid as it uses appState from argument
     container.innerHTML = `
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Gerenciamento de Usuários</h1>
@@ -17,13 +17,13 @@ export function renderSettingsView() {
             ` : ''}
         </div>
         <div id="users-list-container" class="bg-white rounded-lg shadow-sm border overflow-auto">
-            ${renderUsersList()}
+            ${renderUsersList(appState)}
         </div>
     `;
-    addSettingsEventListeners();
+    addSettingsEventListeners(appState);
 }
 
-function renderUsersList() {
+function renderUsersList(appState) {
     const users = appState.users;
     const { permissions } = appState.currentUser;
 
@@ -70,28 +70,28 @@ function renderUsersList() {
     return `<table class="w-full responsive-table">${tableHeader}<tbody>${tableBody}</tbody></table>`;
 }
 
-function addSettingsEventListeners() {
+function addSettingsEventListeners(appState) {
     document.getElementById('add-user-btn')?.addEventListener('click', () => {
-        openUserModal(null);
+        openUserModal(null, appState);
     });
 
     document.querySelectorAll('.edit-user-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const userId = e.currentTarget.dataset.id;
             const user = appState.users.find(u => u.id == userId);
-            openUserModal(user);
+            openUserModal(user, appState);
         });
     });
 
     document.querySelectorAll('.delete-user-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const userId = e.currentTarget.dataset.id;
-            openDeleteUserConfirmModal(userId);
+            openDeleteUserConfirmModal(userId, appState);
         });
     });
 }
 
-function openUserModal(user) {
+function openUserModal(user, appState) {
     const isEditing = user !== null;
     const title = isEditing ? 'Editar Usuário' : 'Adicionar Novo Usuário';
     const roles = ['Especialista', 'Comercial', 'Vendedor', 'Gestor', 'Analista', 'Representante', 'Marketing', 'CEO', 'Executivo de Vendas', 'Gestor Comercial', 'Comercial/Vendas'];
@@ -153,13 +153,13 @@ function openUserModal(user) {
                 appState.users.push(result.user);
                 showToast('Usuário criado com sucesso!');
             }
-            renderSettingsView();
+            renderSettingsView(appState);
             closeModal();
         } catch (error) { }
     });
 }
 
-function openDeleteUserConfirmModal(userId) {
+function openDeleteUserConfirmModal(userId, appState) {
     const user = appState.users.find(u => u.id == userId);
     if (!user) return;
 
@@ -184,7 +184,7 @@ function openDeleteUserConfirmModal(userId) {
                 });
                 await apiCall('delete_user', { method: 'POST', body: JSON.stringify({ id: userId }) });
                 appState.users = appState.users.filter(u => u.id != userId);
-                renderSettingsView();
+                renderSettingsView(appState);
                 Swal.fire(
                     'Excluído!',
                     'Usuário excluído com sucesso.',

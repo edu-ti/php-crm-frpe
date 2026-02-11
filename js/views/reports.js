@@ -356,7 +356,7 @@ function populateFilters() {
     renderMultiSelect('filter-supplier-container', 'supplier-select', suppliers.map(s => ({ value: s.id, label: s.nome })), 'Todos os Fornecedores');
 
     const users = appState.users || [];
-    const sellers = users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista'].includes(u.role));
+    const sellers = users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista', 'CEO', 'Executivo de Vendas', 'Gestor Comercial', 'Comercial/Vendas'].includes(u.role));
     renderMultiSelect('filter-user-container', 'user-select', sellers.map(u => ({ value: u.id, label: u.nome })), 'Todos os Vendedores');
 
     // --- Novos Filtros ---

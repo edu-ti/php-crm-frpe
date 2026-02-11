@@ -121,7 +121,7 @@ async function switchView(viewName) {
         'agenda': renderAgendaView,
         'clients': renderClientsView,
         'proposals': initProposalsView,
-        'leads': renderLeadsView,
+        // 'leads': renderLeadsView,
         'settings': renderSettingsView,
         'catalog': renderCatalogView,
         'email-marketing': renderEmailMarketingView
@@ -129,7 +129,7 @@ async function switchView(viewName) {
 
     if (renderFunction) {
         try {
-            renderFunction();
+            renderFunction(appState);
         } catch (error) {
             console.error(`Erro ao renderizar a view "${viewName}":`, error);
             // Opcional: Mostrar uma mensagem de erro na UI
@@ -299,7 +299,7 @@ function renderUI() {
     const navLinks = [
         { id: 'dashboard', icon: 'fa-chart-pie', text: 'Dashboard', permission: true },
         { id: 'funil', icon: 'fa-columns', text: 'Funil Vendas', permission: true },
-        { id: 'leads', icon: 'fa-filter', text: 'Funil Leads Online', permission: permissions.canSeeLeads && !['Vendedor', 'Especialista'].includes(currentUser.role) },
+        // { id: 'leads', icon: 'fa-filter', text: 'Funil Leads Online', permission: permissions.canSeeLeads },
         { id: 'agenda', icon: 'fa-calendar-alt', text: 'Agenda', permission: true },
         { id: 'clients', icon: 'fa-users', text: 'Clientes', permission: true },
         { id: 'proposals', icon: 'fa-file-invoice-dollar', text: 'Propostas', permission: true },

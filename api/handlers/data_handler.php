@@ -20,13 +20,13 @@ function handle_get_data($pdo)
 
     // --- LÓGICA DE PERMISSÕES ATUALIZADA ---
     $permissions = [
-        'canSeeLeads' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Marketing', 'Vendedor', 'Especialista']),
-        'canSeeSettings' => in_array($current_user_role, ['Gestor', 'Analista']), // Comercial removido
+        'canSeeLeads' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Marketing', 'Vendedor', 'Especialista', 'CEO', 'Executivo de Vendas', 'Gestor Comercial', 'Comercial/Vendas']),
+        'canSeeSettings' => in_array($current_user_role, ['Gestor', 'Analista', 'CEO', 'Gestor Comercial']), // Comercial removido
         'canSeeCatalog' => true,
         // canCreate genérico mantido para compatibilidade, mas recomenda-se usar específicos
-        'canCreate' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
-        'canEdit' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
-        'canDelete' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
+        'canCreate' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista', 'CEO', 'Executivo de Vendas', 'Gestor Comercial', 'Comercial/Vendas']),
+        'canEdit' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista', 'CEO', 'Executivo de Vendas', 'Gestor Comercial', 'Comercial/Vendas']),
+        'canDelete' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista', 'CEO', 'Executivo de Vendas', 'Gestor Comercial', 'Comercial/Vendas']),
         'canPrint' => true,
         // Permissões Específicas
         'canCreateOpportunity' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista', 'CEO', 'Executivo de Vendas', 'Gestor Comercial', 'Comercial/Vendas']),
