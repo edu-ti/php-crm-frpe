@@ -173,7 +173,7 @@ function handle_update_proposal($pdo, $data)
 
     // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
     $currentRole = $_SESSION['role'];
-    if (in_array($currentRole, ['Vendedor', 'Especialista'])) {
+    if (in_array($currentRole, ['Vendedor', 'Especialista', 'Executivo de Vendas'])) {
         $stmt_check = $pdo->prepare("SELECT usuario_id FROM propostas WHERE id = ?");
         $stmt_check->execute([$proposalId]);
         $ownerId = $stmt_check->fetchColumn();
@@ -720,11 +720,11 @@ function handle_delete_proposal($pdo, $data)
     // Apenas Gestor, Analista e Comercial podem excluir
     // Vendedor e Especialista podem excluir APENAS SE FOREM DONOS
     $currentRole = $_SESSION['role'];
-    $allowedGlobal = ['Gestor', 'Analista', 'Comercial'];
+    $allowedGlobal = ['Gestor', 'Analista', 'Comercial', 'CEO', 'Gestor Comercial', 'Comercial/Vendas'];
 
     if (in_array($currentRole, $allowedGlobal)) {
         // Permite excluir qualquer proposta
-    } elseif (in_array($currentRole, ['Vendedor', 'Especialista'])) {
+    } elseif (in_array($currentRole, ['Vendedor', 'Especialista', 'Executivo de Vendas'])) {
         // Verifica se é dono
         $stmt_check = $pdo->prepare("SELECT usuario_id FROM propostas WHERE id = ?");
         $stmt_check->execute([$proposalId]);

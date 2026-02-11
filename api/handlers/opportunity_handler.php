@@ -179,7 +179,7 @@ function handle_update_opportunity($pdo, $data)
     // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
     // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
     $currentRole = $_SESSION['role'];
-    if (in_array($currentRole, ['Vendedor', 'Especialista'])) {
+    if (in_array($currentRole, ['Vendedor', 'Especialista', 'Executivo de Vendas'])) {
         $stmt_check = $pdo->prepare("SELECT usuario_id, comercial_user_id FROM oportunidades WHERE id = ?");
         $stmt_check->execute([$data['id']]);
         $oppData = $stmt_check->fetch(PDO::FETCH_ASSOC);
@@ -331,11 +331,11 @@ function handle_delete_opportunity($pdo, $data)
 
     // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
     $currentRole = $_SESSION['role'];
-    $allowedGlobal = ['Gestor', 'Analista', 'Comercial'];
+    $allowedGlobal = ['Gestor', 'Analista', 'Comercial', 'CEO', 'Gestor Comercial', 'Comercial/Vendas'];
 
     if (in_array($currentRole, $allowedGlobal)) {
         // Permite excluir
-    } elseif (in_array($currentRole, ['Vendedor', 'Especialista'])) {
+    } elseif (in_array($currentRole, ['Vendedor', 'Especialista', 'Executivo de Vendas'])) {
         $stmt_check = $pdo->prepare("SELECT usuario_id, comercial_user_id FROM oportunidades WHERE id = ?");
         $stmt_check->execute([$opportunityId]);
         $oppData = $stmt_check->fetch(PDO::FETCH_ASSOC);
@@ -389,7 +389,7 @@ function handle_move_opportunity($pdo, $data)
 
     // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
     $currentRole = $_SESSION['role'];
-    if (in_array($currentRole, ['Vendedor', 'Especialista'])) {
+    if (in_array($currentRole, ['Vendedor', 'Especialista', 'Executivo de Vendas'])) {
         $stmt_check = $pdo->prepare("SELECT usuario_id, comercial_user_id FROM oportunidades WHERE id = ?");
         $stmt_check->execute([$data['opportunityId']]);
         $oppData = $stmt_check->fetch(PDO::FETCH_ASSOC);
@@ -487,7 +487,7 @@ function handle_get_opportunity_details($pdo, $get_data)
 
 function handle_transfer_opportunity($pdo, $data)
 {
-    if (!in_array($_SESSION['role'], ['Gestor', 'Analista'])) {
+    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'CEO', 'Gestor Comercial'])) {
         json_response(['success' => false, 'error' => 'Acesso negado para transferir oportunidades.'], 403);
         return;
     }

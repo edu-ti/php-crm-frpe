@@ -94,7 +94,7 @@ function addSettingsEventListeners() {
 function openUserModal(user) {
     const isEditing = user !== null;
     const title = isEditing ? 'Editar Usuário' : 'Adicionar Novo Usuário';
-    const roles = ['Especialista', 'Comercial', 'Vendedor', 'Gestor', 'Analista', 'Representante', 'Marketing'];
+    const roles = ['Especialista', 'Comercial', 'Vendedor', 'Gestor', 'Analista', 'Representante', 'Marketing', 'CEO', 'Executivo de Vendas', 'Gestor Comercial', 'Comercial/Vendas'];
 
     const roleOptions = roles.map(role =>
         `<option value="${role}" ${isEditing && user.role === role ? 'selected' : ''}>${role}</option>`

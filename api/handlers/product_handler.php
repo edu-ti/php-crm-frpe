@@ -52,7 +52,7 @@ function handle_upload_product_image()
 function handle_create_product($pdo, $data)
 {
     $required = ['nome_produto'];
-    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Especialista'])) {
+    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Especialista', 'CEO', 'Gestor Comercial', 'Comercial/Vendas'])) {
         json_response(['success' => false, 'error' => 'Acesso negado: Perfil não autorizado a criar produtos.'], 403);
         return;
     }
@@ -107,7 +107,7 @@ function handle_update_product($pdo, $data)
         return;
     }
 
-    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Especialista'])) {
+    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'Especialista', 'CEO', 'Gestor Comercial', 'Comercial/Vendas'])) {
         json_response(['success' => false, 'error' => 'Acesso negado: Perfil não autorizado a editar produtos.'], 403);
         return;
     }
@@ -162,7 +162,7 @@ function handle_delete_product($pdo, $data)
         return;
     }
 
-    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial'])) {
+    if (!in_array($_SESSION['role'], ['Gestor', 'Analista', 'Comercial', 'CEO', 'Gestor Comercial', 'Comercial/Vendas'])) {
         json_response(['success' => false, 'error' => 'Acesso negado: Perfil não autorizado a excluir produtos.'], 403);
         return;
     }

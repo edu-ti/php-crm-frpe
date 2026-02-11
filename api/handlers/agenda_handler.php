@@ -272,7 +272,7 @@ function handle_update_agendamento($pdo, $data)
 
     // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
     $currentRole = $_SESSION['role'];
-    if (in_array($currentRole, ['Vendedor', 'Especialista'])) {
+    if (in_array($currentRole, ['Vendedor', 'Especialista', 'Executivo de Vendas'])) {
         // Verifica se criou OU se está associado
         $stmt_check = $pdo->prepare("
             SELECT 1 
@@ -482,7 +482,7 @@ function handle_delete_agendamento($pdo, $data)
 
     // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
     $currentRole = $_SESSION['role'];
-    if (in_array($currentRole, ['Vendedor', 'Especialista'])) {
+    if (in_array($currentRole, ['Vendedor', 'Especialista', 'Executivo de Vendas'])) {
         // Verifica se criou OU se está associado
         $stmt_check = $pdo->prepare("
             SELECT 1 
@@ -516,7 +516,7 @@ function handle_delete_agendamento($pdo, $data)
     // 3. Envia notificação SE a exclusão foi bem-sucedida E temos os dados
     if ($success && $agendamento_deleted) {
         error_log("DEBUG: [Agenda Delete] Exclusão bem-sucedida. Enviando notificação...");
-        
+
         // Coleta emails dos envolvidos (Criador + Associados)
         $recipientEmails = [];
 

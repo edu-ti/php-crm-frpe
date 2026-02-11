@@ -29,21 +29,21 @@ function handle_get_data($pdo)
         'canDelete' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
         'canPrint' => true,
         // Permissões Específicas
-        'canCreateOpportunity' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
-        'canCreateClient' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
-        'canCreateProduct' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Especialista']), // Vendedor removido
-        'canDeleteProduct' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Especialista']), // Nova permissão específica
-        'canEditOwnedItems' => in_array($current_user_role, ['Vendedor', 'Especialista', 'Representante']),
-        'canManageLeads' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Marketing', 'Vendedor', 'Especialista']), // Permissão para gerir leads
+        'canCreateOpportunity' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista', 'CEO', 'Executivo de Vendas', 'Gestor Comercial', 'Comercial/Vendas']),
+        'canCreateClient' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista', 'CEO', 'Executivo de Vendas', 'Gestor Comercial', 'Comercial/Vendas']),
+        'canCreateProduct' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Especialista', 'CEO', 'Gestor Comercial', 'Comercial/Vendas']), // Vendedor e Executivo removidos
+        'canDeleteProduct' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Especialista', 'CEO', 'Gestor Comercial', 'Comercial/Vendas']), // Nova permissão específica
+        'canEditOwnedItems' => in_array($current_user_role, ['Vendedor', 'Especialista', 'Representante', 'Executivo de Vendas']),
+        'canManageLeads' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Marketing', 'Vendedor', 'Especialista', 'CEO', 'Executivo de Vendas', 'Gestor Comercial', 'Comercial/Vendas']), // Permissão para gerir leads
         'canCreateSchedule' => true,
-        'canEditSchedule' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista', 'Representante']),
-        'canSeeReports' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial']), // Adicionado Comercial
+        'canEditSchedule' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista', 'Representante', 'CEO', 'Executivo de Vendas', 'Gestor Comercial', 'Comercial/Vendas']),
+        'canSeeReports' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'CEO', 'Gestor Comercial', 'Comercial/Vendas']), // Adicionado Comercial
     ];
     $currentUser['permissions'] = $permissions;
 
     // --- FILTRAGEM BASEADA NO PERFIL ---
     // Perfis restritos que só veem o que criaram
-    $is_restricted = in_array($current_user_role, ['Vendedor', 'Especialista']);
+    $is_restricted = in_array($current_user_role, ['Vendedor', 'Especialista', 'Executivo de Vendas']);
 
     // Filtro para Oportunidades
     $where_opp = "";
