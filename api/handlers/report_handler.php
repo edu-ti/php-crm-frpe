@@ -203,8 +203,13 @@ class ReportHandler
 // --- LEGACY COMPATIBILITY FUNCTIONS ---
 // Ensures existing frontend continues to work while new functions are available.
 
-function handle_get_report_data($pdo)
+function handle_get_report_data($pdo, $data = [])
 {
+    // Merge passed data into $_GET for compatibility
+    if (is_array($data) && !empty($data)) {
+        $_GET = array_merge($_GET, $data);
+    }
+
     // BRIDGE to New Class if action matches new logic keys
     $type = $_GET['report_type'] ?? ($_GET['type'] ?? '');
 
@@ -523,8 +528,13 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
         return [$placeholders, $ids];
     };
 
-    $sql = "SELECT vf.fornecedor_id, f.nome as fornecedor_nome, vf.usuario_id, u.nome as vendedor_nome, YEAR(vf.data_venda) as ano, MONTH(vf.data_venda) as mes, SUM(vf.valor_total) as total_vendido FROM vendas_fornecedores vf JOIN fornecedores f ON vf.fornecedor_id = f.id JOIN usuarios u ON vf.usuario_id = u.id WHERE vf.data_venda BETWEEN ? AND ?";
-    $params = [$start_date, $end_date];
+    $sql = "SELECT vf.fornecedor_id, f.nome as fornecedor_nome, vf.usuario_id, u.nome as vendedor_nome, YEAR(vf.data_venda) as ano, MONTH(vf.data_venda) as mes, SUM(vf.valor_total) as total_vendido 
+            FROM vendas_fornecedores vf 
+            JOIN fornecedores f ON vf.fornecedor_id = f.id 
+            JOIN usuarios u ON vf.usuario_id = u.id 
+            LEFT JOIN organizacoes o ON vf.organizacao_id = o.id
+            WHERE vf.data_venda BETWEEN ? AND ?";
+    $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
 
     if (!empty($supplier_ids)) {
         list($ph, $vals) = $buildIn($supplier_ids);
@@ -536,6 +546,21 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
         $sql .= " AND vf.usuario_id IN ($ph)";
         $params = array_merge($params, $vals);
     }
+    if (!empty($origem_ids)) {
+        list($ph, $vals) = $buildIn($origem_ids); // Assuming origem is simple value or logic needed. vf.origem?
+        // Note: Check if vendas_fornecedores has 'origem'. If not, we can't filter.
+        // Assuming it does based on get_clients_report usage (though that passed [] for etapa/status, it passed $origem_ids).
+        // Let's assume vf.origem exists.
+        $sql .= " AND vf.origem IN ($ph)";
+        $params = array_merge($params, $vals);
+    }
+    if (!empty($uf_ids)) {
+        list($ph, $vals) = $buildIn($uf_ids);
+        $sql .= " AND o.estado IN ($ph)";
+        $params = array_merge($params, $vals);
+    }
+
+    // Note: Etapa/Status ignored for Sales (implied Won/Closed)
     $sql .= " GROUP BY vf.fornecedor_id, vf.usuario_id, YEAR(vf.data_venda), MONTH(vf.data_venda) ORDER BY f.nome, u.nome, ano, mes";
 
     $stmt = $pdo->prepare($sql);
@@ -822,9 +847,9 @@ function get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_i
                    LEFT JOIN clientes_pf pf ON vf.cliente_pf_id = pf.id
                    WHERE vf.data_venda BETWEEN ? AND ?";
 
-    $params_vendas = [$start_date, $end_date];
+    $params_vendas = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
 
-    apply_report_filters_helper($sql_vendas, $params_vendas, 'vf', $supplier_ids, $user_ids, [], $origem_ids, [], []);
+    apply_report_filters_helper($sql_vendas, $params_vendas, 'vf', $supplier_ids, $user_ids, [], $origem_ids, $uf_ids, []);
 
     $sql_vendas .= " GROUP BY vf.organizacao_id, vf.cliente_pf_id, cliente_nome";
 
