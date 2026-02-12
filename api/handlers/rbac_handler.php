@@ -195,13 +195,8 @@ function handle_save_role_permissions($pdo, $data)
                 }
             }
 
-            // REGRA: MARKETING restrições hardcoded (backup de segurança)
-            if ($role_name === ROLE_MARKETING) {
-                if (in_array($res, ['clients', 'catalog', 'settings', 'users', 'reports'])) {
-                    $item['allowed'] = false; // Modifica o item que será salvo
-                    $allowed = false;
-                }
-            }
+            // Hardcoded restriction REMOVED. Database is source of truth.
+            // if ($role_name === ROLE_MARKETING) { ... }
 
             // Atualiza valor final no item (garantia)
             $item['allowed'] = $allowed;

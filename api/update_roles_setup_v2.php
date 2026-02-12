@@ -1,5 +1,10 @@
 <?php
 // api/update_roles_setup_v2.php
+// Reconfiguração Estrutural do RBAC - Solicitada em 12/02/2025
+// Objetivo: Definir permissões granulares no banco para eliminar travas manuais no código.
+
+header('Content-Type: text/plain'); // Facilita visualização no browser
+
 require_once __DIR__ . '/core/Database.php';
 
 try {
@@ -9,42 +14,24 @@ try {
     die("Erro de conexão: " . $e->getMessage());
 }
 
-$roles = [
-    'ANALISTA',
-    'DIRETOR',
-    'GESTOR',
-    'SUPER_ADMIN', // Full Access
-    'COMERCIAL',
-    'FINANCEIRO',
-    'VENDEDOR',
-    'TECNICO',
-    'MARKETING',
-    'ESPECIALISTA' // Treating same as Vendedor
-];
+echo "Iniciando reconfiguração do RBAC...\n\n";
 
-// Ensure Roles Exist
-foreach ($roles as $roleName) {
-    $stmt = $pdo->prepare("SELECT id FROM roles WHERE name = ?");
-    $stmt->execute([$roleName]);
-    if (!$stmt->fetch()) {
-        $pdo->prepare("INSERT INTO roles (name) VALUES (?)")->execute([$roleName]);
-        echo "Role criada: $roleName\n";
-    }
-}
-
-// Define Permissions
-$permissions = [
+// 1. Definição das Permissões (Catálogo)
+// Garante que todas essas permissões existam na tabela 'permissions'
+$catalog = [
     // Dashboard
     ['resource' => 'dashboard', 'action' => 'view', 'label' => 'Ver Dashboard'],
 
-    // Leads / Funil
-    ['resource' => 'leads', 'action' => 'view', 'label' => 'Ver Funil de Vendas'],
+    // Leads / Funil (Vendas, Fornecedores, Licitações)
+    ['resource' => 'leads', 'action' => 'view', 'label' => 'Ver Funil'],
     ['resource' => 'leads', 'action' => 'create', 'label' => 'Criar Oportunidade'],
-    ['resource' => 'leads', 'action' => 'edit', 'label' => 'Editar/Mover Oportunidade'],
+    ['resource' => 'leads', 'action' => 'edit', 'label' => 'Editar Oportunidade'],
+    ['resource' => 'leads', 'action' => 'move', 'label' => 'Mover Card (Kanban)'],
     ['resource' => 'leads', 'action' => 'delete', 'label' => 'Excluir Oportunidade'],
 
     // Leads Online
     ['resource' => 'leads_online', 'action' => 'view', 'label' => 'Ver Leads Online'],
+    ['resource' => 'leads_online', 'action' => 'manage', 'label' => 'Gerenciar Leads Online'], // Create/Edit is manage here
 
     // Agenda
     ['resource' => 'agenda', 'action' => 'view', 'label' => 'Ver Agenda'],
@@ -65,151 +52,182 @@ $permissions = [
     ['resource' => 'proposals', 'action' => 'delete', 'label' => 'Excluir Proposta'],
     ['resource' => 'proposals', 'action' => 'print', 'label' => 'Imprimir Proposta'],
 
-    // Catalogo
+    // Catálogo / Produtos
     ['resource' => 'products', 'action' => 'view', 'label' => 'Ver Catálogo'],
     ['resource' => 'products', 'action' => 'create', 'label' => 'Criar Produto'],
     ['resource' => 'products', 'action' => 'edit', 'label' => 'Editar Produto'],
     ['resource' => 'products', 'action' => 'delete', 'label' => 'Excluir Produto'],
 
-    // Marketing
+    // Marketing (Módulo)
     ['resource' => 'marketing_module', 'action' => 'view', 'label' => 'Ver Marketing'],
     ['resource' => 'marketing_module', 'action' => 'manage', 'label' => 'Gerenciar Marketing'],
 
-    // Relatorios
+    // Relatórios
     ['resource' => 'reports', 'action' => 'view', 'label' => 'Ver Relatórios'],
+    ['resource' => 'reports', 'action' => 'create', 'label' => 'Criar Relatório'], // Se houver
+    ['resource' => 'reports', 'action' => 'export', 'label' => 'Exportar Relatório'],
+    ['resource' => 'reports', 'action' => 'print', 'label' => 'Imprimir Relatório'],
 
-    // Configurações
+    // Configurações (Geralmente restrito)
     ['resource' => 'settings', 'action' => 'view', 'label' => 'Ver Configurações'],
     ['resource' => 'settings', 'action' => 'edit', 'label' => 'Editar Configurações'],
 ];
 
-// Insert Permissions
-foreach ($permissions as $perm) {
+// Inserir Permissões no Banco (Seed)
+foreach ($catalog as $p) {
     try {
         $stmt = $pdo->prepare("INSERT INTO permissions (resource, action, label) VALUES (?, ?, ?)");
-        $stmt->execute([$perm['resource'], $perm['action'], $perm['label']]);
+        $stmt->execute([$p['resource'], $p['action'], $p['label']]);
     } catch (PDOException $e) {
-        // Ignore duplicate entry errors
+        // Ignora duplicidade
     }
 }
 
-// Function to Assign Permissions
-function assignPermission($pdo, $roleName, $resource, $action, $allowed = true)
+echo "Permissões básicas garantidas na tabela 'permissions'.\n";
+
+
+// 2. Definição de Perfis e Regras
+// Estrutura: 'Role' => [ 'resource' => 'access_level' ]
+// access_level: 'full', 'view_only', 'none', custom array
+
+function get_permissions_for_role($role_type)
 {
-    // Get Role ID
+    $perms = [];
+
+    // Default: Deny All
+
+    if (in_array($role_type, ['ANALISTA', 'DIRETOR', 'GESTOR', 'SUPER_ADMIN'])) {
+        // FULL ACCESS EVERYTHING
+        return 'ALL';
+    }
+
+    // Configuração Específica por Perfil
+    switch ($role_type) {
+        case 'COMERCIAL':
+            return [
+                'dashboard' => ['view'],
+                'leads' => ['view', 'create', 'edit', 'move', 'delete'], // Access Total
+                'leads_online' => ['view', 'manage'], // Total
+                'agenda' => ['view', 'create', 'edit', 'delete'], // Total
+                'clients' => ['view', 'create', 'edit', 'delete'], // Total
+                'proposals' => ['view', 'create', 'edit', 'delete', 'print'], // Total
+                'products' => ['view', 'create', 'edit', 'delete'], // Total
+                'marketing_module' => ['view', 'manage'], // Total
+                'reports' => ['view', 'create', 'export', 'print'], // Total
+                'settings' => [], // Não mencionado, assume false
+            ];
+
+        case 'FINANCEIRO':
+            return [
+                'dashboard' => ['view'],
+                'leads' => ['view'], // Só Visualiza
+                'leads_online' => [], // Não tem acesso
+                'agenda' => ['view', 'create', 'edit', 'delete'], // Total
+                'clients' => ['view', 'create', 'edit', 'delete'], // Total
+                'proposals' => ['view'], // Só Visualiza
+                'products' => ['view'], // Só Visualiza (Catálogo)
+                'marketing_module' => [],
+                'reports' => ['view', 'create', 'export', 'print'], // Total
+                'settings' => [],
+            ];
+
+        case 'VENDEDOR':
+        case 'TECNICO':
+        case 'ESPECIALISTA':
+            return [
+                'dashboard' => ['view'],
+                'leads' => ['view', 'create', 'edit', 'move', 'delete'], // Total (Delete incluído no Access Total do pedido, mas geralmente Vendedor não deleta. O pedido diz "Acesso Total". Vou manter Create/Edit/Move. Delete vou por true se "Acesso Total" for literal, mas no item Propostas ele especificou "Manter delete false". Para Leads ele disse "Acesso Total". Vou dar delete true se ele pediu Total, mas cuidado... vou pôr true para cumprir "Acesso Total" literal.)
+                // Pedido VENDEDOR: *FUNIL DE VENDAS (Acesso Total). Então Delete = True.
+                'leads_online' => [],
+                'agenda' => ['view', 'create', 'edit', 'delete'], // Total
+                'clients' => ['view', 'create', 'edit', 'delete'], // Total
+                'proposals' => ['view', 'create', 'edit', 'print'], // Delete FALSE explícito
+                'products' => ['view'], // Só visualiza
+                'marketing_module' => [],
+                'reports' => [],
+                'settings' => [],
+            ];
+
+        case 'MARKETING':
+            return [
+                'dashboard' => ['view'],
+                'leads' => ['view'], // Só Visualiza
+                'leads_online' => ['view', 'manage'], // Acesso Total
+                'agenda' => ['view', 'create', 'edit', 'delete'], // Total
+                'clients' => ['view'], // Só Visualiza
+                'proposals' => ['view'], // Só Visualiza
+                'products' => ['view'], // Só Visualiza
+                'marketing_module' => ['view', 'manage'], // Total
+                'reports' => [], // Não mencionado
+                'settings' => [],
+            ];
+    }
+    return [];
+}
+
+
+// 3. Aplicação das Regras
+$all_roles_to_update = [
+    'ANALISTA',
+    'DIRETOR',
+    'GESTOR',
+    'SUPER_ADMIN',
+    'COMERCIAL',
+    'FINANCEIRO',
+    'VENDEDOR',
+    'TECNICO',
+    'MARKETING',
+    'ESPECIALISTA'
+];
+
+foreach ($all_roles_to_update as $roleName) {
+    echo "Processando role: $roleName... ";
+
+    // 1. Get Role ID
     $stmt = $pdo->prepare("SELECT id FROM roles WHERE name = ?");
     $stmt->execute([$roleName]);
     $roleId = $stmt->fetchColumn();
-    if (!$roleId)
-        return;
 
-    // Get Permission ID
+    if (!$roleId) {
+        // Cria se não existe
+        $pdo->prepare("INSERT INTO roles (name) VALUES (?)")->execute([$roleName]);
+        $roleId = $pdo->lastInsertId();
+        echo "(Criada) ";
+    }
+
+    // 2. Limpar Permissões Antigas (Reset Granular)
+    $pdo->prepare("DELETE FROM role_permissions WHERE role_id = ?")->execute([$roleId]);
+
+    // 3. Definir Novas Permissões
+    $rules = get_permissions_for_role($roleName);
+
+    if ($rules === 'ALL') {
+        // Dá permissão para TUDO que existe no catálogo
+        foreach ($catalog as $p) {
+            assign_permission($pdo, $roleId, $p['resource'], $p['action']);
+        }
+    } else {
+        // Regras específicas
+        foreach ($rules as $resource => $actions) {
+            foreach ($actions as $action) {
+                assign_permission($pdo, $roleId, $resource, $action);
+            }
+        }
+    }
+    echo "OK\n";
+}
+
+function assign_permission($pdo, $roleId, $resource, $action)
+{
+    // Busca ID da permissão
     $stmt = $pdo->prepare("SELECT id FROM permissions WHERE resource = ? AND action = ?");
     $stmt->execute([$resource, $action]);
     $permId = $stmt->fetchColumn();
-    if (!$permId)
-        return;
 
-    // Insert or Update
-    $stmt = $pdo->prepare("INSERT INTO role_permissions (role_id, permission_id, allowed) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE allowed = ?");
-    $stmt->execute([$roleId, $permId, $allowed ? 1 : 0, $allowed ? 1 : 0]);
-}
-
-// Full Access Roles
-$fullRoles = ['ANALISTA', 'DIRETOR', 'GESTOR', 'SUPER_ADMIN'];
-foreach ($fullRoles as $role) {
-    foreach ($permissions as $perm) {
-        assignPermission($pdo, $role, $perm['resource'], $perm['action'], true);
+    if ($permId) {
+        $stmt = $pdo->prepare("INSERT INTO role_permissions (role_id, permission_id, allowed) VALUES (?, ?, 1)");
+        $stmt->execute([$roleId, $permId]);
     }
 }
 
-// COMERCIAL
-// Everything Total except Settings (maybe? User didn't specify Settings but usually restricted)
-// User: "Acesso Total" to Lists.
-// Implicitly: Settings not mentioned -> False? 
-// Default auth.php had 'canSeeSettings' => false for Comercial. I will stick to False for Settings unless told otherwise.
-$comercialPermissions = $permissions;
-foreach ($comercialPermissions as $perm) {
-    $allowed = true;
-    if ($perm['resource'] === 'settings')
-        $allowed = false; // Restriction based on common sense/previous config
-    assignPermission($pdo, 'COMERCIAL', $perm['resource'], $perm['action'], $allowed);
-}
-
-// FINANCEIRO
-// Dashboard (Total), Funil (View), Agenda (Total), Clientes (Total), Propostas (View), Catalogo (View), Relatorios (Total)
-$financeiroRules = [
-    'dashboard' => ['view' => true],
-    'leads' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
-    'leads_online' => ['view' => false], // Not mentioned
-    'agenda' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
-    'clients' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
-    'proposals' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false, 'print' => false],
-    'products' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
-    'reports' => ['view' => true],
-    'marketing_module' => ['view' => false, 'manage' => false],
-    'settings' => ['view' => false, 'edit' => false],
-];
-
-foreach ($permissions as $perm) {
-    $res = $perm['resource'];
-    $act = $perm['action'];
-    $allowed = $financeiroRules[$res][$act] ?? false;
-    assignPermission($pdo, 'FINANCEIRO', $res, $act, $allowed);
-}
-
-// VENDEDOR & TECNICO
-// Dashboard (Total), Funil (Total), Agenda (Total), Clientes (Total), 
-// Propostas (Cria, Edita, Visualiza, Imprime) -> DELETE FALSE? User didn't say Delete. I will assume Delete False.
-// Catalogo (View)
-$vendedorRules = [
-    'dashboard' => ['view' => true],
-    'leads' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false], // Usually cannot delete opps
-    'leads_online' => ['view' => false],
-    'agenda' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
-    'clients' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false], // Usually cannot delete clients
-    'proposals' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => false, 'print' => true],
-    'products' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
-    'reports' => ['view' => false], // Checked previous auth.php, false
-    'marketing_module' => ['view' => false, 'manage' => false],
-    'settings' => ['view' => false, 'edit' => false],
-];
-
-foreach (['VENDEDOR', 'TECNICO', 'ESPECIALISTA'] as $role) {
-    foreach ($permissions as $perm) {
-        $res = $perm['resource'];
-        $act = $perm['action'];
-        $allowed = $vendedorRules[$res][$act] ?? false;
-        assignPermission($pdo, $role, $res, $act, $allowed);
-    }
-}
-
-// MARKETING
-// Dashboard (Total), Funil (View), Funil Leads Online (Total), Agenda (Total), Clientes (View), Propostas (View), Catalogo (View), Marketing (Total)
-$marketingRules = [
-    'dashboard' => ['view' => true],
-    'leads' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
-    'leads_online' => ['view' => true], // Total? Assuming just view for now, or if "Total" implies manage
-    'agenda' => ['view' => true, 'create' => true, 'edit' => true, 'delete' => true],
-    'clients' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
-    'proposals' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false, 'print' => false],
-    'products' => ['view' => true, 'create' => false, 'edit' => false, 'delete' => false],
-    'reports' => ['view' => false], // User didn't say Relatorios Total for Marketing? Check request.
-    // Request: "MARKETING (Acesso Total)"... wait.
-    // User list: *MARKETING (Acesso Total) -> Refers to the module "Marketing".
-    // *RELATORIOS (Acesso Total) -> Wait, looking at request text for Marketing...
-    // Request: "o perfil MARKETING tem acesso a: ..., *MARKETING (Acesso Total)". It does NOT list *RELATORIOS.
-    // So Reports = false.
-    'marketing_module' => ['view' => true, 'manage' => true],
-    'settings' => ['view' => false, 'edit' => false],
-];
-
-foreach ($permissions as $perm) {
-    $res = $perm['resource'];
-    $act = $perm['action'];
-    $allowed = $marketingRules[$res][$act] ?? false;
-    assignPermission($pdo, 'MARKETING', $res, $act, $allowed);
-}
-
-
-echo "Permissões atualizadas com sucesso.\n";
+echo "\nReconfiguração concluída com sucesso!";
