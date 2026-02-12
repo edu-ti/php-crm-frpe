@@ -286,7 +286,7 @@ function handle_update_proposal($pdo, $data)
 // --- HELPER FUNCTIONS ---
 
 /**
- * Calcula o valor total da proposta baseado nos itens e frete.
+ * Calcula o valor total da proposta baseado nos itens e frete e desconto.
  */
 function calculate_proposal_total($items, $frete_valor)
 {
@@ -294,7 +294,13 @@ function calculate_proposal_total($items, $frete_valor)
     foreach ($items as $item) {
         $meses = (int) ($item['meses_locacao'] ?? 12);
         $multiplicador = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') ? $meses : 1;
-        $valor_total += (($item['quantidade'] ?? 1) * ($item['valor_unitario'] ?? 0) * $multiplicador);
+
+        $baseItemVal = (($item['quantidade'] ?? 1) * ($item['valor_unitario'] ?? 0) * $multiplicador);
+
+        $descPercent = (float) ($item['desconto_percent'] ?? 0);
+        $discountAmount = $baseItemVal * ($descPercent / 100);
+
+        $valor_total += ($baseItemVal - $discountAmount);
     }
     return $valor_total + (float) $frete_valor;
 }
@@ -304,7 +310,7 @@ function calculate_proposal_total($items, $frete_valor)
  */
 function insert_proposal_items($pdo, $proposal_id, $items)
 {
-    $item_sql = "INSERT INTO proposta_itens (proposta_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros, meses_locacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $item_sql = "INSERT INTO proposta_itens (proposta_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros, meses_locacao, desconto_percent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $item_stmt = $pdo->prepare($item_sql);
 
     foreach ($items as $item) {
@@ -314,6 +320,12 @@ function insert_proposal_items($pdo, $proposal_id, $items)
         } else {
             $meses_val = null;
         }
+
+        $desconto_percent = (float) ($item['desconto_percent'] ?? 0);
+        if ($desconto_percent < 0)
+            $desconto_percent = 0;
+        if ($desconto_percent > 10)
+            $desconto_percent = 10;
 
         // Parametros handling
         $parametros = $item['parametros'] ?? [];
@@ -337,7 +349,8 @@ function insert_proposal_items($pdo, $proposal_id, $items)
             $item['status'] ?? 'VENDA',
             $item['unidade_medida'] ?? null,
             $item_parametros_json,
-            $meses_val
+            $meses_val,
+            $desconto_percent
         ]);
     }
 }

@@ -672,7 +672,12 @@ function renderProposalItemsSection() {
     if (!container) return;
 
     const { items } = appState.proposal;
+    const { currentUser } = appState;
     let totalProposta = 0;
+
+    // Define roles allowed to edit unit price
+    const allowedRoles = ['ANALISTA', 'COMERCIAL', 'DIRETOR', 'GESTOR', 'SUPER_ADMIN'];
+    const canEditPrice = allowedRoles.includes(currentUser.role) || currentUser.role === 'SUPER_ADMIN'; // SUPER_ADMIN check redundant but safe
 
     const itemsHtml = (items || []).map((item, index) => {
         // --- INÍCIO: Lógica de Cálculo de Valor ---
@@ -691,9 +696,15 @@ function renderProposalItemsSection() {
         const isLocacaoStatus = (item.status || '').toUpperCase() === 'LOCAÇÃO';
         const meses = (isLocacaoStatus && item.meses_locacao) ? parseInt(item.meses_locacao) : 1;
 
+        // Discount Calculation
+        const descontoPercent = parseFloat(item.desconto_percent || 0);
+
         // Se for locação, o total é Qtd * Valor * Meses. Se for venda, é Qtd * Valor.
-        // O multiplicador "24" antigo foi removido em favor da entrada manual.
-        const itemTotal = (item.quantidade || 0) * valor_unitario_total * meses;
+        let itemTotalBase = (item.quantidade || 0) * valor_unitario_total * meses;
+
+        // Apply discount
+        const valorDesconto = itemTotalBase * (descontoPercent / 100);
+        const itemTotal = itemTotalBase - valorDesconto;
 
         totalProposta += itemTotal;
         const imageUrl = item.imagem_url || 'https://placehold.co/100x100/e2e8f0/64748b?text=Imagem';
@@ -763,9 +774,25 @@ function renderProposalItemsSection() {
                  </div>
                  <!-- --- Fim: Seção de Parâmetros --- -->
 
-                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4 pt-4 border-t">
+                 <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mt-4 pt-4 border-t">
                     <div><label class="form-label">Quantidade*</label><input type="number" data-index="${index}" name="item_quantidade" required class="form-input" value="${item.quantidade || 1}" min="1"></div>
-                    <div><label class="form-label">Valor Unitário*</label><input type="text" inputmode="decimal" data-index="${index}" name="item_valor_unitario" required class="form-input" value="${formatCurrencyForInput(item.valor_unitario)}" placeholder="0,00"></div>
+                    
+                    <div>
+                        <label class="form-label">Valor Unitário*</label>
+                        <input type="text" inputmode="decimal" data-index="${index}" name="item_valor_unitario" required 
+                               class="form-input ${!canEditPrice ? 'bg-gray-100 cursor-not-allowed' : ''}" 
+                               value="${formatCurrencyForInput(item.valor_unitario)}" 
+                               placeholder="0,00"
+                               ${!canEditPrice ? 'readonly' : ''}>
+                    </div>
+
+                    <div>
+                        <label class="form-label">Desconto (%)</label>
+                        <input type="number" data-index="${index}" name="item_desconto_percent" 
+                               class="form-input" 
+                               value="${item.desconto_percent || 0}" 
+                               min="0" max="10" step="0.01" placeholder="0%">
+                    </div>
                     
                     <!-- CAMPO MESES LOCAÇÃO: Condicional -->
                     <div class="${isLocacao ? '' : 'hidden'}">
@@ -830,7 +857,7 @@ function renderProposalItemsSection() {
             id: `temp_${Date.now()}`,
             descricao: '', fabricante: '', modelo: '', quantidade: 1, valor_unitario: 0,
             status: 'VENDA', imagem_url: '', unidade_medida: 'Unidade', descricao_detalhada: '',
-            parametros: []
+            parametros: [], desconto_percent: 0
         });
         renderProposalItemsSection();
     });
@@ -1036,6 +1063,20 @@ function handleValueBlur(e) {
     else if (e.target.id.startsWith('proposal-param-valor-')) {
         const valorNumerico = parseCurrency(e.target.value);
         e.target.value = formatCurrencyForInput(valorNumerico); // Apenas formata o input
+    }
+    // Handle Discount Change
+    else if (e.target.name === 'item_desconto_percent') {
+        let value = parseFloat(e.target.value) || 0;
+        if (value < 0) value = 0;
+        if (value > 10) value = 10;
+
+        // Update state
+        appState.proposal.items[index].desconto_percent = value;
+        // Update input to reflect capped value
+        e.target.value = value;
+
+        // Re-render to update subtotal and total
+        renderProposalItemsSection();
     }
 
 
