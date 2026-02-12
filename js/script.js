@@ -299,13 +299,13 @@ function renderUI() {
     const navLinks = [
         { id: 'dashboard', icon: 'fa-chart-pie', text: 'Dashboard', permission: true },
         { id: 'funil', icon: 'fa-columns', text: 'Funil Vendas', permission: true },
-        // { id: 'leads', icon: 'fa-filter', text: 'Funil Leads Online', permission: permissions.canSeeLeads },
+        { id: 'leads', icon: 'fa-filter', text: 'Funil Leads Online', permission: permissions.canViewLeadsOnline },
         { id: 'agenda', icon: 'fa-calendar-alt', text: 'Agenda', permission: permissions.canSeeSchedule },
         { id: 'clients', icon: 'fa-users', text: 'Clientes', permission: true },
-        { id: 'proposals', icon: 'fa-file-invoice-dollar', text: 'Propostas', permission: true },
-        { id: 'catalog', icon: 'fa-book-open', text: 'Catálogo', permission: permissions.canSeeCatalog }, // Usar permissão
-        { id: 'email-marketing', icon: 'fa-bullhorn', text: 'Marketing', permission: permissions.canManageLeads && !['Vendedor', 'Especialista'].includes(currentUser.role) }, // Nova aba e permissão
-        { id: 'reports', icon: 'fa-chart-line', text: 'Relatórios', permission: permissions.canSeeReports }, // Nova aba Relatórios
+        { id: 'proposals', icon: 'fa-file-invoice-dollar', text: 'Propostas', permission: permissions.canViewProposals !== false }, // Only hide if explicitly restricted
+        { id: 'catalog', icon: 'fa-book-open', text: 'Catálogo', permission: permissions.canSeeCatalog },
+        { id: 'email-marketing', icon: 'fa-bullhorn', text: 'Marketing', permission: permissions.canSeeMarketing },
+        { id: 'reports', icon: 'fa-chart-line', text: 'Relatórios', permission: permissions.canSeeReports },
         { id: 'settings', icon: 'fa-cog', text: 'Configurações', permission: permissions.canSeeSettings }
     ];
 

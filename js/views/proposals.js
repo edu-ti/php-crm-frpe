@@ -101,6 +101,17 @@ export function renderProposalsView() {
     const p = appState.proposal;
     const { permissions } = appState.currentUser;
 
+    // Check specific permissions (with fallbacks if migration not run yet, though map handles it)
+    const canCreate = permissions.canCreateProposal !== undefined ? permissions.canCreateProposal : permissions.canCreate;
+    const canEdit = permissions.canEditProposal !== undefined ? permissions.canEditProposal : permissions.canEdit;
+    // const canDelete = permissions.canDeleteProposal !== undefined ? permissions.canDeleteProposal : permissions.canDelete; 
+
+    // Access Control
+    if (permissions.canViewProposals === false) { // Strict check for explicit false
+        container.innerHTML = `<div class="p-8 text-center text-red-500">Você não tem permissão para visualizar propostas.</div>`;
+        return;
+    }
+
     const statusOptions = ['Rascunho', 'Enviada', 'Aprovada', 'Recusada', 'Negociando']
         .map(s => `<option value="${s}" ${p.status === s ? 'selected' : ''}>${s}</option>`).join('');
 
@@ -113,7 +124,7 @@ export function renderProposalsView() {
                     <input type="text" id="proposal-search" placeholder="Pesquisar..." class="form-input w-full">
                     <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 </div>
-                ${permissions.canCreate ? `
+                ${canCreate ? `
                 <button id="add-proposal-btn" class="btn btn-primary btn-sm w-full sm:w-auto text-center justify-center"><i class="fas fa-plus mr-2"></i>Criar Nova</button>
                 ` : ''}
             </div>
@@ -126,9 +137,10 @@ export function renderProposalsView() {
                 <div class="flex justify-end space-x-4 mb-4">
                     <button type="button" id="close-proposal-top-btn" class="btn btn-outline-secondary">Fechar</button>
                     <button type="button" id="cancel-proposal-top-btn" class="btn btn-secondary">Cancelar</button>
-                    <button type="button" id="save-proposal-top-btn" class="btn btn-primary">${p.id ? 'Salvar Alterações' : 'Criar Proposta'}</button>
+                    ${canEdit || (!p.id && canCreate) ? `<button type="button" id="save-proposal-top-btn" class="btn btn-primary">${p.id ? 'Salvar Alterações' : 'Criar Proposta'}</button>` : ''}
                 </div>
                 <form id="proposal-form" class="space-y-6">
+                     <fieldset ${!canEdit && p.id ? 'disabled' : ''}>
                      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 border-b pb-4">
                         <div>
                             <label class="form-label">Data de Criação</label>
@@ -163,10 +175,11 @@ export function renderProposalsView() {
                             <div class="md:col-span-2"><label class="form-label">Observações</label><textarea name="observacoes" rows="3" class="form-input">${p.observacoes}</textarea></div>
                          </div>
                     </div>
+                    </fieldset>
                      <div class="flex justify-end space-x-4 pt-4 border-t">
                         <button type="button" id="close-proposal-bottom-btn" class="btn btn-outline-secondary">Fechar</button>
                         <button type="button" id="cancel-proposal-edit-btn" class="btn btn-secondary">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">${p.id ? 'Salvar Alterações' : 'Criar Proposta'}</button>
+                        ${canEdit || (!p.id && canCreate) ? `<button type="submit" class="btn btn-primary">${p.id ? 'Salvar Alterações' : 'Criar Proposta'}</button>` : ''}
                     </div>
                 </form>
             </div>

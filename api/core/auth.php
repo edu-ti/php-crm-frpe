@@ -255,16 +255,34 @@ function get_user_permissions($role, $pdo = null)
         'canExportReport' => ['reports', 'export'],
         'canPrintReport' => ['reports', 'print'],
 
-        'canCreateOpportunity' => ['opportunities', 'create'],
+        'canCreateOpportunity' => ['leads', 'create'], // leads.create map to old key too
+        'canEditOpportunity' => ['leads', 'edit'],     // New key for granular edit
+        'canDeleteOpportunity' => ['leads', 'delete'], // New key
+
         'canCreateClient' => ['clients', 'create'],
+        'canEditClient' => ['clients', 'edit'],       // New
+        'canDeleteClient' => ['clients', 'delete'],   // New
+
         'canCreateProduct' => ['products', 'create'],
+        'canEditProduct' => ['products', 'edit'],     // New
         'canDeleteProduct' => ['products', 'delete'],
+
         'canSeeMarketing' => ['marketing_module', 'view'],
+        'canManageMarketing' => ['marketing_module', 'manage'],
+        'canViewLeadsOnline' => ['leads_online', 'view'],
+
+        // Proposals (Granular)
+        'canViewProposals' => ['proposals', 'view'],
+        'canCreateProposal' => ['proposals', 'create'],
+        'canEditProposal' => ['proposals', 'edit'],
+        'canDeleteProposal' => ['proposals', 'delete'],
+        'canPrintProposal' => ['proposals', 'print'],
 
         // Agenda
         'canSeeSchedule' => ['agenda', 'view'],
         'canCreateSchedule' => ['agenda', 'create'],
-        'canEditSchedule' => ['agenda', 'edit'], // Agora mapeado corretamente
+        'canEditSchedule' => ['agenda', 'edit'],
+        'canDeleteSchedule' => ['agenda', 'delete'],
 
         // Globais genéricas (mapeadas para recursos core ou mantidas false se indefinido)
         'canCreate' => ['global', 'create'],

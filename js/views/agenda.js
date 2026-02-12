@@ -259,7 +259,7 @@ export function openAgendamentoModal(agendamento) {
 
             <div><label class="form-label">Observações</label><textarea name="observacoes" rows="3" class="form-input" ${isDisabled}>${data.descricao || ''}</textarea></div>
         </form>
-        ${isEditing && canCurrentUserEdit ? `
+        ${isEditing && permissions.canDeleteSchedule ? `
         <div class="mt-4 pt-4 border-t">
              <button type="button" id="delete-agendamento-btn" class="btn btn-danger">Excluir Agendamento</button>
         </div>` : ''}

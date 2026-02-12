@@ -349,8 +349,10 @@ function addKanbanEventListeners() {
     const cards = document.querySelectorAll('#funil-inner-container .opportunity-card');
     const trainingCards = document.querySelectorAll('#funil-inner-container .training-card');
 
+    const canEditOpp = permissions.canEditOpportunity !== undefined ? permissions.canEditOpportunity : permissions.canEdit;
+
     cards.forEach(card => {
-        if (permissions.canEdit) {
+        if (canEditOpp) {
             card.draggable = true;
             card.addEventListener('dragstart', handleDragStart);
         } else {
@@ -368,7 +370,7 @@ function addKanbanEventListeners() {
     });
 
 
-    if (permissions.canEdit) {
+    if (canEditOpp) {
         const columns = document.querySelectorAll('#funil-inner-container .kanban-column');
         columns.forEach(column => {
             column.removeEventListener('dragover', handleDragOver); // Remove antes de adicionar
@@ -768,10 +770,12 @@ function renderOpportunityModal(opportunity = null) {
     const isEditing = !!opportunity;
     const data = opportunity || {}; // Usa dados da oportunidade se existirem
 
-    const { permissions } = appState.currentUser;
+    // Check specific permissions
+    const canEditOpp = permissions.canEditOpportunity !== undefined ? permissions.canEditOpportunity : permissions.canEdit;
+
     // Verifica se PODE editar: (É nova OU (é existente E tem permissão de edição))
     // E (não está associada a uma proposta, pois não deve ser editada por aqui)
-    const canEdit = (!isEditing || permissions.canEdit) && !data.proposta_id;
+    const canEdit = (!isEditing || canEditOpp) && !data.proposta_id;
 
     const isDisabled = !canEdit ? 'disabled' : '';
     let title = isEditing ? 'Editar Oportunidade' : 'Criar Oportunidade';

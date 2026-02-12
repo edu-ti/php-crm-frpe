@@ -156,7 +156,7 @@ function renderClientList() {
                         <p class="text-xs text-gray-500">${detail}</p>
                     </div>
                     <!-- --- CORREÇÃO: Mostra botão editar para Contatos também --- --!>
-                    ${permissions.canEdit ? `<button class="action-btn edit-client-btn" data-id="${item.id}" title="Editar"><i class="fas fa-pencil-alt"></i></button>` : ''}
+                    ${permissions.canEditClient ? `<button class="action-btn edit-client-btn" data-id="${item.id}" title="Editar"><i class="fas fa-pencil-alt"></i></button>` : ''}
                 </div>`;
     }).join('');
 
@@ -233,7 +233,7 @@ function renderClientForm() {
                 ${formFields}
                 <div class="flex justify-end pt-4 border-t mt-6 space-x-2">
                      <!-- Botão Excluir (Apenas edição e se tiver permissão) -->
-                    ${editingId && appState.currentUser.permissions.canDelete ? `
+                    ${editingId && appState.currentUser.permissions.canDeleteClient ? `
                     <button type="button" id="delete-client-btn" class="btn btn-error mr-auto" style="background-color: #ef4444; color: white; margin-right: auto;">
                         <i class="fas fa-trash-alt mr-2"></i>Excluir
                     </button>` : ''}
