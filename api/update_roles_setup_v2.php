@@ -120,10 +120,10 @@ function get_permissions_for_role($role_type)
         case 'FINANCEIRO':
             return [
                 'dashboard' => ['view'],
-                'leads' => ['view'], // Só Visualiza
+                'leads' => ['view'], // Só Visualiza (Funil)
                 'leads_online' => [], // Não tem acesso
                 'agenda' => ['view', 'create', 'edit', 'delete'], // Total
-                'clients' => ['view', 'create', 'edit', 'delete'], // Total
+                'clients' => ['view'], // Só Visualiza (Alterado)
                 'proposals' => ['view'], // Só Visualiza
                 'products' => ['view'], // Só Visualiza (Catálogo)
                 'marketing_module' => [],

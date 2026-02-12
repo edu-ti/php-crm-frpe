@@ -164,8 +164,8 @@ $roles_permissions = [
  */
 function hasPermission2($role, $resource, $action, $pdo = null)
 {
-    // 1. Bypass SUPER_ADMIN
-    if ($role === ROLE_SUPER_ADMIN) {
+    // 1. Bypass SUPER_ADMIN e Perfis Administrativos
+    if (in_array($role, [ROLE_SUPER_ADMIN, ROLE_DIRETOR, ROLE_GESTOR, ROLE_ANALISTA])) {
         return true;
     }
 
