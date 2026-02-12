@@ -300,7 +300,7 @@ function renderUI() {
         { id: 'dashboard', icon: 'fa-chart-pie', text: 'Dashboard', permission: true },
         { id: 'funil', icon: 'fa-columns', text: 'Funil Vendas', permission: true },
         // { id: 'leads', icon: 'fa-filter', text: 'Funil Leads Online', permission: permissions.canSeeLeads },
-        { id: 'agenda', icon: 'fa-calendar-alt', text: 'Agenda', permission: true },
+        { id: 'agenda', icon: 'fa-calendar-alt', text: 'Agenda', permission: permissions.canSeeSchedule },
         { id: 'clients', icon: 'fa-users', text: 'Clientes', permission: true },
         { id: 'proposals', icon: 'fa-file-invoice-dollar', text: 'Propostas', permission: true },
         { id: 'catalog', icon: 'fa-book-open', text: 'Catálogo', permission: permissions.canSeeCatalog }, // Usar permissão

@@ -11,6 +11,7 @@ define('ROLE_MARKETING', 'MARKETING');
 define('ROLE_ANALISTA', 'ANALISTA');
 define('ROLE_FINANCEIRO', 'FINANCEIRO');
 define('ROLE_TECNICO', 'TECNICO');
+define('ROLE_ESPECIALISTA', 'Especialista');
 
 // Mapa de Permissões por Role
 // Estrutura: 'Role' => ['permissao' => bool]
@@ -152,78 +153,147 @@ $roles_permissions = [
 
 
 /**
- * Verifica se um usuário tem permissão para realizar uma ação.
+ * Verifica se um usuário tem permissão para realizar uma ação (MÉTODO NOVO - DB).
+ * Consulta a tabela role_permissions.
  *
- * @param array|string $user Pode ser o array do usuário (com 'role') ou a string da role diretamente.
- * @param string $permissionKey A chave da permissão (ex: 'canEdit', 'canSeeLeads').
+ * @param string $role
+ * @param string $resource
+ * @param string $action
+ * @param PDO $pdo
  * @return bool
  */
-function hasPermission($user, $permissionKey)
+function hasPermission2($role, $resource, $action, $pdo = null)
 {
-    global $roles_permissions;
-
-    $role = is_array($user) ? ($user['role'] ?? '') : $user;
-
     // 1. Bypass SUPER_ADMIN
     if ($role === ROLE_SUPER_ADMIN) {
         return true;
     }
 
-    // Normaliza role (caso venha do banco com casing diferente, embora tenha definido constant)
-    // O ideal é que no banco esteja salvo exatamente como a string da constante.
-    // Vamos assumir case-insensitive check por segurança.
-    $roleUpper = strtoupper($role);
-
-    // Mapeia roles legados se necessário (ex: 'Gestor Comercial' -> ROLE_GESTOR)
-    // Para simplificar, vamos assumir que o banco já usa os valores corretos ou faremos um map simples
-    // Ajuste conforme seu banco de dados real.
-
-    // Matriz de permissões da role
-    $permissions = $roles_permissions[$roleUpper] ?? [];
-
-    // 2. Verifica existência da permissão base
-    $allowed = $permissions[$permissionKey] ?? false;
-
-    // 3. Regra Obrigatória: MOVER depende de EDITAR
-    // Se a permissão solicitada for 'canMoveLeads' (ou similar de mover), verifica se tem 'canEdit' (ou equivalente)
-    if ($permissionKey === 'canMoveLeads') {
-        $canEdit = $permissions['canManageLeads'] ?? ($permissions['canEdit'] ?? false);
-        if (!$canEdit) {
-            return false; // Desabilita MOVER se não puder EDITAR
-        }
+    // 2. Fallback para hardcoded se não tiver PDO (segurança)
+    if (!$pdo) {
+        return false;
     }
 
-    return $allowed;
+    try {
+        // Cache simples em memória para evitar queries repetidas na mesma requisição
+        static $cache_permissions = [];
+        $cache_key = "{$role}|{$resource}|{$action}";
+
+        if (isAuthenticatedCache($cache_permissions, $cache_key)) {
+            return $cache_permissions[$cache_key];
+        }
+
+        // Busca ID da role
+        // Otimização: Poderia buscar todas as permissões da role de uma vez e cachear tudo
+        // Vamos fazer isso: Carregar TUDO da role na primeira chamada.
+        if (!isset($cache_permissions["loaded_{$role}"])) {
+            $stmt = $pdo->prepare("
+                SELECT p.resource, p.action, rp.allowed
+                FROM role_permissions rp
+                JOIN permissions p ON rp.permission_id = p.id
+                JOIN roles r ON rp.role_id = r.id
+                WHERE r.name = ?
+            ");
+            $stmt->execute([$role]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($rows as $row) {
+                $k = "{$role}|{$row['resource']}|{$row['action']}";
+                $cache_permissions[$k] = (bool) $row['allowed'];
+            }
+            $cache_permissions["loaded_{$role}"] = true;
+        }
+
+        return $cache_permissions[$cache_key] ?? false;
+
+    } catch (Exception $e) {
+        error_log("Erro hasPermission2: " . $e->getMessage());
+        return false;
+    }
+}
+
+function isAuthenticatedCache($cache, $key)
+{
+    return isset($cache[$key]);
 }
 
 /**
- * Retorna todas as permissões calculadas para uma role, útil para enviar ao frontend.
+ * Retorna todas as permissões calculadas para uma role, mapeando RBAC detalhado para flags legadas.
  *
  * @param string $role
+ * @param PDO $pdo
  * @return array
  */
-function get_user_permissions($role)
+function get_user_permissions($role, $pdo = null)
 {
-    global $roles_permissions;
-
-    $roleUpper = strtoupper($role);
-
-    // Lista de todas as chaves de permissão possíveis para garantir retorno consistente
-    // Coleta todas as chaves usadas em todas as roles
-    $allKeys = [];
-    foreach ($roles_permissions as $p) {
-        $allKeys = array_merge($allKeys, array_keys($p));
+    // Se não tiver PDO, tenta usar a lógica antiga (fallback)
+    if (!$pdo) {
+        global $roles_permissions; // Fallack para array hardcoded existente neste arquivo
+        // ... repete lógica antiga ou retorna vazio ...
+        // Para simplificar, assumimos que sempre passaremos PDO agora.
+        // Se falhar, retorna array vazio (seguro).
+        return [];
     }
-    $allKeys = array_unique($allKeys);
 
     $finalPermissions = [];
 
-    foreach ($allKeys as $key) {
-        $finalPermissions[$key] = hasPermission($roleUpper, $key);
+    // Definição do Mapa: Legacy Flag => [Resource, Action]
+    $map = [
+        'canSeeLeads' => ['leads', 'view'],
+        'canManageLeads' => ['leads', 'create'], // Simplificação: se cria, gerencia
+        'canMoveLeads' => ['leads', 'move'],
+        'canSeeSettings' => ['settings', 'view'],
+        'canSeeCatalog' => ['products', 'view'],
+        'canSeeClients' => ['clients', 'view'],
+
+        // Reports
+        'canSeeReports' => ['reports', 'view'],
+        'canCreateReport' => ['reports', 'create'],
+        'canEditReport' => ['reports', 'edit'],
+        'canDeleteReport' => ['reports', 'delete'],
+        'canImportReport' => ['reports', 'import'],
+        'canExportReport' => ['reports', 'export'],
+        'canPrintReport' => ['reports', 'print'],
+
+        'canCreateOpportunity' => ['opportunities', 'create'],
+        'canCreateClient' => ['clients', 'create'],
+        'canCreateProduct' => ['products', 'create'],
+        'canDeleteProduct' => ['products', 'delete'],
+        'canSeeMarketing' => ['marketing_module', 'view'],
+
+        // Agenda
+        'canSeeSchedule' => ['agenda', 'view'],
+        'canCreateSchedule' => ['agenda', 'create'],
+        'canEditSchedule' => ['agenda', 'edit'], // Agora mapeado corretamente
+
+        // Globais genéricas (mapeadas para recursos core ou mantidas false se indefinido)
+        'canCreate' => ['global', 'create'],
+        'canEdit' => ['global', 'edit'],
+        'canDelete' => ['global', 'delete'],
+        'canPrint' => ['global', 'print'],
+    ];
+
+    foreach ($map as $flag => $rule) {
+        $finalPermissions[$flag] = hasPermission2($role, $rule[0], $rule[1], $pdo);
     }
 
-    // Permissões implícitas/Legacy que o frontend pode esperar
-    // O frontend antigo esperava chaves específicas, garantimos que elas existam
+    // Regras Compostas / Exceptions de Compatibilidade
+
+    // canManageLeads geralmente implica ver e editar. 
+    // Se tiver 'leads.edit', seta canManageLeads = true
+    if (hasPermission2($role, 'leads', 'edit', $pdo)) {
+        $finalPermissions['canManageLeads'] = true;
+    }
+
+    // canEditOwnedItems (Vendedor) - Regra de negócio específica, talvez não mapeada 1:1 no DB ainda
+    // Mantemos hardcoded para roles de venda por enquanto ou criamos resource 'owned_items'
+    if (in_array($role, [ROLE_VENDEDOR, ROLE_ESPECIALISTA, 'Executivo de Vendas'])) {
+        $finalPermissions['canEditOwnedItems'] = true;
+    } else {
+        $finalPermissions['canEditOwnedItems'] = false;
+    }
+
+    // Garante chaves legadas que o frontend espera, mesmo que false
     $legacyKeys = [
         'canSeeLeads',
         'canSeeSettings',
@@ -246,7 +316,7 @@ function get_user_permissions($role)
 
     foreach ($legacyKeys as $key) {
         if (!isset($finalPermissions[$key])) {
-            $finalPermissions[$key] = hasPermission($roleUpper, $key);
+            $finalPermissions[$key] = false;
         }
     }
 

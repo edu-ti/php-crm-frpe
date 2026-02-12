@@ -15,6 +15,19 @@ class ReportHandler
 
     public function handleRequest($method, $action)
     {
+        if (!isset($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized']);
+            return;
+        }
+
+        $role = $_SESSION['role'] ?? 'Vendedor';
+        if (!hasPermission2($role, 'reports', 'view', $this->db)) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden']);
+            return;
+        }
+
         if ($method !== 'GET') {
             http_response_code(405);
             echo json_encode(['error' => 'Method not allowed']);
@@ -23,9 +36,6 @@ class ReportHandler
 
         $startDate = $_GET['start_date'] ?? date('Y-m-01');
         $endDate = $_GET['end_date'] ?? date('Y-m-t');
-
-
-        // DEBUG: Logging Removed
 
         switch ($action) {
             case 'dashboard_summary':
@@ -55,27 +65,23 @@ class ReportHandler
     private function getDashboardSummary($start, $end)
     {
         try {
-            // Total Sales: Sum of 'valor_total' from 'propostas' with status 'Aprovada'
             $sqlSales = "SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
                          WHERE data_criacao BETWEEN :start AND :end AND status = 'Aprovada'";
             $stmtSales = $this->db->prepare($sqlSales);
             $stmtSales->execute([':start' => $start . ' 00:00:00', ':end' => $end . ' 23:59:59']);
             $totalSales = $stmtSales->fetch(PDO::FETCH_ASSOC)['total'];
 
-            // Open Opportunities: Count of 'oportunidades' created in period
             $sqlOpps = "SELECT COUNT(*) as total FROM oportunidades WHERE data_criacao BETWEEN :start AND :end";
             $stmtOpps = $this->db->prepare($sqlOpps);
             $stmtOpps->execute([':start' => $start . ' 00:00:00', ':end' => $end . ' 23:59:59']);
             $openOpps = $stmtOpps->fetch(PDO::FETCH_ASSOC)['total'];
 
-            // Active Proposals: Count of 'propostas' with status 'Enviada'
             $sqlProps = "SELECT COUNT(*) as total FROM propostas 
                          WHERE data_criacao BETWEEN :start AND :end AND status = 'Enviada'";
             $stmtProps = $this->db->prepare($sqlProps);
             $stmtProps->execute([':start' => $start . ' 00:00:00', ':end' => $end . ' 23:59:59']);
             $activeProps = $stmtProps->fetch(PDO::FETCH_ASSOC)['total'];
 
-            // Conversion Rate: (Aprovada / (Aprovada + Recusada)) * 100
             $sqlConv = "SELECT 
                             SUM(CASE WHEN status = 'Aprovada' THEN 1 ELSE 0 END) as won,
                             SUM(CASE WHEN status IN ('Aprovada', 'Recusada') THEN 1 ELSE 0 END) as total_closed
@@ -102,7 +108,6 @@ class ReportHandler
     private function getSalesByVendor($start, $end)
     {
         try {
-            // Using 'propostas' LEFT JOIN 'usuarios'
             $sql = "SELECT u.nome as label, COUNT(p.id) as count, COALESCE(SUM(p.valor_total), 0) as value
                     FROM propostas p 
                     LEFT JOIN usuarios u ON p.usuario_id = u.id
@@ -119,7 +124,6 @@ class ReportHandler
     private function getPurchasesBySupplier($start, $end)
     {
         try {
-            // Using 'propostas' -> 'oportunidades' -> 'fornecedores'
             $sql = "SELECT f.nome as label, COUNT(p.id) as count, COALESCE(SUM(p.valor_total), 0) as value
                     FROM propostas p 
                     JOIN oportunidades o ON p.oportunidade_id = o.id 
@@ -139,7 +143,6 @@ class ReportHandler
     private function getItemsSold($start, $end)
     {
         try {
-            // Using 'proposta_itens' -> 'propostas' -> 'produtos'
             $sql = "SELECT pr.nome_produto as label, SUM(pi.quantidade) as count, COALESCE(SUM(pi.quantidade * pi.valor_unitario), 0) as value
                     FROM proposta_itens pi 
                     JOIN propostas p ON pi.proposta_id = p.id 
@@ -171,7 +174,6 @@ class ReportHandler
     private function getBiddingFunnel($start, $end)
     {
         try {
-            // Funnel usage for Licitacoes (ID 2 in 'funis' table)
             $sql = "SELECT ef.nome as label, COUNT(o.id) as count, COALESCE(SUM(p.valor_total), 0) as value
                     FROM oportunidades o
                     JOIN etapas_funil ef ON o.etapa_id = ef.id
@@ -208,6 +210,13 @@ function handle_get_report_data($pdo, $data = [])
     // Merge passed data into $_GET for compatibility
     if (is_array($data) && !empty($data)) {
         $_GET = array_merge($_GET, $data);
+    }
+
+    // Security Check for Legacy Handler
+    $role = $_SESSION['role'] ?? 'Vendedor';
+    if (!hasPermission2($role, 'reports', 'view', $pdo)) {
+        json_response(['success' => false, 'error' => 'Sem permissão para visualizar relatórios'], 403);
+        return;
     }
 
     // BRIDGE to New Class if action matches new logic keys

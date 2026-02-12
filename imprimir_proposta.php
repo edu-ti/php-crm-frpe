@@ -44,7 +44,7 @@ try {
                o.nome_fantasia as organizacao_nome, o.razao_social, o.cnpj, o.logradouro, o.numero as org_numero, o.complemento as org_complemento, o.bairro as org_bairro, o.cidade as org_cidade, o.estado as org_estado, o.cep as org_cep,
                pf.nome as cliente_pf_nome, pf.cpf, 
                ct.nome as contato_nome, ct.email as contato_email, ct.telefone as contato_telefone,
-               u.nome as vendedor_nome, u.role as vendedor_role, u.email as vendedor_email, u.telefone as vendedor_telefone
+               u.nome as vendedor_nome, u.role as vendedor_role, u.cargo as vendedor_cargo, u.email as vendedor_email, u.telefone as vendedor_telefone
         FROM propostas p 
         LEFT JOIN organizacoes o ON p.organizacao_id = o.id 
         LEFT JOIN clientes_pf pf ON p.cliente_pf_id = pf.id 
@@ -686,12 +686,12 @@ function format_date($value, $format = 'd/m/Y')
             <div class="grid grid-cols-2 gap-8 text-[8pt]">
 
                 <div>
-                    <p class="text-[7pt] text-slate-400 uppercase mb-1">Responsável Comercial</p>
+                    <!-- <p class="text-[7pt] text-slate-400 uppercase mb-1">Responsável Comercial</p> -->
                     <p class="font-bold text-[#2e2a78] text-[9pt] mb-0.5">
                         <?php echo htmlspecialchars($proposal['vendedor_nome']); ?>
                     </p>
                     <p class="uppercase text-slate-500 text-[7pt] mb-1">
-                        <?php echo htmlspecialchars($proposal['vendedor_role']); ?>
+                        <?php echo htmlspecialchars(!empty($proposal['vendedor_cargo']) ? $proposal['vendedor_cargo'] : $proposal['vendedor_role']); ?>
                     </p>
                     <p class="text-slate-600 mb-0.5">Fone:
                         <?php echo htmlspecialchars($proposal['vendedor_telefone']); ?>

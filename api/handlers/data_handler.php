@@ -7,7 +7,7 @@ function handle_get_data($pdo)
 {
     $current_user_id = $_SESSION['user_id'];
 
-    $stmt_user = $pdo->prepare("SELECT id, nome, role, email, telefone FROM usuarios WHERE id = ?");
+    $stmt_user = $pdo->prepare("SELECT id, nome, role, email, telefone, cargo FROM usuarios WHERE id = ?");
     $stmt_user->execute([$current_user_id]);
     $currentUser = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
@@ -22,8 +22,8 @@ function handle_get_data($pdo)
 
     // --- LÓGICA DE PERMISSÕES ATUALIZADA ---
     // --- LÓGICA DE PERMISSÕES ATUALIZADA (Centralizada) ---
-    // require_once movido para o topo do arquivo
-    $permissions = get_user_permissions($current_user_role);
+    require_once __DIR__ . '/../core/auth.php'; // Garante include no escopo local também se necessário ou redundante, mas OK
+    $permissions = get_user_permissions($current_user_role, $pdo);
     $currentUser['permissions'] = $permissions;
 
     // --- FILTRAGEM BASEADA NO PERFIL ---
@@ -256,7 +256,7 @@ function handle_get_data($pdo)
 
     $response_data = [
         'currentUser' => $currentUser,
-        'users' => $pdo->query("SELECT id, nome, role, email, telefone, status FROM usuarios")->fetchAll(PDO::FETCH_ASSOC),
+        'users' => $pdo->query("SELECT id, nome, role, email, telefone, status, cargo FROM usuarios")->fetchAll(PDO::FETCH_ASSOC),
         'opportunities' => $opportunities,
         'organizations' => $pdo->query("SELECT * FROM organizacoes ORDER BY nome_fantasia ASC")->fetchAll(PDO::FETCH_ASSOC),
         'contacts' => $pdo->query("SELECT c.*, o.nome_fantasia as organizacao_nome FROM contatos c JOIN organizacoes o ON c.organizacao_id = o.id ORDER BY c.nome ASC")->fetchAll(PDO::FETCH_ASSOC),

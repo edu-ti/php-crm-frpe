@@ -181,6 +181,12 @@ try {
         'get_supplier_targets' => ['method' => 'GET', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_supplier_targets'],
         'save_targets' => ['method' => 'POST', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_save_targets'],
         'get_report_kpis' => ['method' => 'GET', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_report_kpis'],
+
+        // RBAC (Gestão de Permissões)
+        'get_roles' => ['method' => 'GET', 'file' => '/api/handlers/rbac_handler.php', 'function' => 'handle_get_roles'],
+        'get_permissions_catalog' => ['method' => 'GET', 'file' => '/api/handlers/rbac_handler.php', 'function' => 'handle_get_permissions_catalog'],
+        'get_role_permissions' => ['method' => 'GET', 'file' => '/api/handlers/rbac_handler.php', 'function' => 'handle_get_role_permissions'],
+        'save_role_permissions' => ['method' => 'POST', 'file' => '/api/handlers/rbac_handler.php', 'function' => 'handle_save_role_permissions'],
     ];
 
     if (isset($protected_routes[$action])) {
