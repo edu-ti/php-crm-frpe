@@ -1,6 +1,6 @@
 // js/views/proposals.js
 
-import { appState } from '../script.js';
+import { appState } from '../state.js';
 import { apiCall } from '../api.js';
 import { showToast, formatDate, formatCurrency, formatCurrencyForInput, parseCurrency, setupApiFetch, showLoading } from '../utils.js';
 import { renderModal, closeModal } from '../ui.js';

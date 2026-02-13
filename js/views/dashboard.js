@@ -1,6 +1,6 @@
 // js/views/dashboard.js
 
-import { appState } from '../script.js';
+import { appState } from '../state.js';
 import { apiCall } from '../api.js';
 import { showLoading, formatCurrency } from '../utils.js';
 

@@ -1,6 +1,7 @@
 // js/views/kanban.js
 
-import { appState, initializeApp } from '../script.js'; // Importa initializeApp
+import { appState } from '../state.js';
+import { initializeApp } from '../script.js'; // Importa initializeApp
 import { formatCurrency, calculateTimeInStage, formatCurrencyForInput, parseCurrency, showToast, formatDate } from '../utils.js';
 import { apiCall } from '../api.js';
 import { renderModal, closeModal } from '../ui.js';

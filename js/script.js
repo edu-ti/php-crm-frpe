@@ -15,37 +15,11 @@ import { renderEmailMarketingView } from './views/email_marketing.js?v=3';
 
 // O estado da aplicação
 // Cache bust: 2026-01-26-2
-export let appState = {
-    currentUser: null,
-    users: [],
-    opportunities: [],
-    organizations: [],
-    contacts: [],
-    clients_pf: [],
-    proposals: [],
-    pre_proposals: [],
-    stages: [],
-    fornecedores: [],
-    vendasFornecedores: [],
-    agendamentos: [],
-    leads: [],
-    products: [],
-    charts: {},
-    proposal: null,
-    clientsView: { activeTab: 'organizations', searchTerm: '', isFormVisible: false, editingId: null },
-    proposalsView: { currentPage: 1 },
-    proposalSort: { column: 'data_criacao', direction: 'desc' },
-    funilView: { activeTab: 'vendas', year: new Date().getFullYear(), selectedFornecedorId: null },
-    activeView: 'dashboard',
-    // Estado para a nova view de Email Marketing
-    emailMarketingView: {
-        selectedInterests: [],
-        subject: '',
-        body: '',
-        recipientCount: 0,
-        recipientEmails: []
-    }
-};
+import { appState } from './state.js';
+
+// O estado da aplicação
+// Cache bust: 2026-01-26-2
+// appState is now imported from state.js
 
 document.addEventListener('DOMContentLoaded', initializeApp);
 

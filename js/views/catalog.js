@@ -1,6 +1,6 @@
 // js/views/catalog.js
 
-import { appState } from '../script.js';
+import { appState } from '../state.js';
 import { apiCall } from '../api.js';
 import { showToast, formatCurrency, parseCurrency, formatCurrencyForInput } from '../utils.js';
 import { renderModal, closeModal } from '../ui.js';

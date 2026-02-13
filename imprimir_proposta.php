@@ -44,7 +44,7 @@ try {
                o.nome_fantasia as organizacao_nome, o.razao_social, o.cnpj, o.logradouro, o.numero as org_numero, o.complemento as org_complemento, o.bairro as org_bairro, o.cidade as org_cidade, o.estado as org_estado, o.cep as org_cep,
                pf.nome as cliente_pf_nome, pf.cpf, 
                ct.nome as contato_nome, ct.email as contato_email, ct.telefone as contato_telefone,
-               u.nome as vendedor_nome, u.role as vendedor_role, u.email as vendedor_email, u.telefone as vendedor_telefone
+               u.nome as vendedor_nome, u.role as vendedor_role, u.cargo as vendedor_cargo, u.email as vendedor_email, u.telefone as vendedor_telefone
         FROM propostas p 
         LEFT JOIN organizacoes o ON p.organizacao_id = o.id 
         LEFT JOIN clientes_pf pf ON p.cliente_pf_id = pf.id 
@@ -387,7 +387,8 @@ function format_date($value, $format = 'd/m/Y')
                     <!-- Company Info -->
                     <div class="flex flex-col justify-center text-[6.5pt] text-slate-500 leading-snug text-left py-1">
                         <p class="font-bold text-[#2e2a78] text-[8pt] uppercase tracking-tight mb-0.5">
-                            <?php echo htmlspecialchars($company_info['name']); ?></p>
+                            <?php echo htmlspecialchars($company_info['name']); ?>
+                        </p>
                         <p class="mb-px">CNPJ: <?php echo htmlspecialchars($company_info['cnpj']); ?></p>
                         <p class="mb-px"><?php echo htmlspecialchars($company_info['address']); ?></p>
                         <div class="flex flex-wrap gap-1 mb-px">
@@ -405,7 +406,8 @@ function format_date($value, $format = 'd/m/Y')
 
                     <!-- Number with precise color match and alignment to Company Name -->
                     <p class="text-[8pt] font-bold text-[#94a3b8] mb-1 leading-none">Nº
-                        <?php echo htmlspecialchars($proposal['numero_proposta']); ?></p>
+                        <?php echo htmlspecialchars($proposal['numero_proposta']); ?>
+                    </p>
 
                     <!-- Dates & Page -->
                     <div class="text-[7pt] text-slate-600 leading-tight mt-1">
@@ -413,7 +415,8 @@ function format_date($value, $format = 'd/m/Y')
                                 class="font-bold text-[#2e2a78]"><?php echo format_date($proposal['data_criacao']); ?></span>
                         </p>
                         <p class="mb-0.5 font-bold text-red-600">Validade:
-                            <?php echo format_date($proposal['data_validade']); ?></p>
+                            <?php echo format_date($proposal['data_validade']); ?>
+                        </p>
                         <p class="text-[#94a3b8] page-counter font-normal text-[7.5pt] mt-1"></p>
                     </div>
                 </div>
@@ -516,16 +519,19 @@ function format_date($value, $format = 'd/m/Y')
                         </td>
                         <td>
                             <div class="font-bold text-[#2e2a78] uppercase text-[8.5pt]">
-                                <?php echo htmlspecialchars($item['descricao']); ?></div>
+                                <?php echo htmlspecialchars($item['descricao']); ?>
+                            </div>
                             <div class="text-[7.5pt] uppercase text-slate-500 font-semibold">
-                                <?php echo htmlspecialchars($item['fabricante'] . ' - ' . $item['modelo']); ?></div>
+                                <?php echo htmlspecialchars($item['fabricante'] . ' - ' . $item['modelo']); ?>
+                            </div>
                             <div class="text-[7.5pt] text-slate-500 italic mt-1">
                                 <?php echo nl2br(htmlspecialchars($item['descricao_detalhada'])); ?>
                             </div>
                         </td>
                         <td class="text-center">
                             <div class="text-[7pt] font-semibold text-slate-600 uppercase">
-                                <?php echo $is_locacao ? 'LOCAÇÃO' : 'VENDA'; ?></div>
+                                <?php echo $is_locacao ? 'LOCAÇÃO' : 'VENDA'; ?>
+                            </div>
                             <?php if ($is_locacao): ?>
                                 <div class="text-[7pt] text-slate-400"><?php echo $meses_locacao; ?> MESES</div>
                             <?php endif; ?>
@@ -534,7 +540,8 @@ function format_date($value, $format = 'd/m/Y')
                         <td class="text-center font-bold text-slate-700"><?php echo htmlspecialchars($quantidade); ?></td>
                         <!-- MAIN ROW: Base Price and Base Subtotal -->
                         <td class="text-right whitespace-nowrap text-slate-600">
-                            <?php echo format_currency($valor_unitario_base); ?></td>
+                            <?php echo format_currency($valor_unitario_base); ?>
+                        </td>
                         <td class="text-right font-bold text-slate-600 whitespace-nowrap">
                             <?php echo format_currency($valor_unitario_base * $quantidade * ($is_locacao ? $meses_locacao : 1)); ?>
                         </td>
@@ -636,7 +643,8 @@ function format_date($value, $format = 'd/m/Y')
                         Total Geral</td>
                     <td
                         class="text-right py-2 px-4 text-[10pt] font-bold text-[#2e2a78] whitespace-nowrap rounded-r-lg">
-                        <?php echo format_currency($total_geral); ?></td>
+                        <?php echo format_currency($total_geral); ?>
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -680,11 +688,14 @@ function format_date($value, $format = 'd/m/Y')
                 <div>
                     <p class="text-[7pt] text-slate-400 uppercase mb-1">Responsável Comercial</p>
                     <p class="font-bold text-[#2e2a78] text-[9pt] mb-0.5">
-                        <?php echo htmlspecialchars($proposal['vendedor_nome']); ?></p>
+                        <?php echo htmlspecialchars($proposal['vendedor_nome']); ?>
+                    </p>
                     <p class="uppercase text-slate-500 text-[7pt] mb-1">
-                        <?php echo htmlspecialchars($proposal['vendedor_role']); ?></p>
+                        <?php echo htmlspecialchars($proposal['vendedor_cargo'] ?: $proposal['vendedor_role']); ?>
+                    </p>
                     <p class="text-slate-600 mb-0.5">Fone:
-                        <?php echo htmlspecialchars($proposal['vendedor_telefone']); ?></p>
+                        <?php echo htmlspecialchars($proposal['vendedor_telefone']); ?>
+                    </p>
                     <p class="text-slate-600">E-mail: <?php echo htmlspecialchars($proposal['vendedor_email']); ?></p>
                 </div>
 

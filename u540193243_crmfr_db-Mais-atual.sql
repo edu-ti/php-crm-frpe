@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Tempo de geração: 13/02/2026 às 11:24
+-- Tempo de geração: 13/02/2026 às 16:59
 -- Versão do servidor: 11.8.3-MariaDB-log
 -- Versão do PHP: 7.2.34
 
@@ -39,13 +39,6 @@ CREATE TABLE `agendamentos` (
   `data_criacao` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Despejando dados para a tabela `agendamentos`
---
-
-INSERT INTO `agendamentos` (`id`, `titulo`, `descricao`, `data_inicio`, `data_fim`, `tipo`, `criado_por_id`, `oportunidade_id`, `data_criacao`) VALUES
-(23, 'teste de agendamento', '', '2026-02-12 10:00:00', NULL, 'Reunião', 1, NULL, '2026-02-11 12:38:44');
-
 -- --------------------------------------------------------
 
 --
@@ -56,13 +49,6 @@ CREATE TABLE `agendamento_usuarios` (
   `agendamento_id` int(11) NOT NULL,
   `usuario_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Despejando dados para a tabela `agendamento_usuarios`
---
-
-INSERT INTO `agendamento_usuarios` (`agendamento_id`, `usuario_id`) VALUES
-(23, 1);
 
 -- --------------------------------------------------------
 
@@ -392,7 +378,8 @@ INSERT INTO `contatos` (`id`, `organizacao_id`, `nome`, `cargo`, `setor`, `email
 (24, 941, ' Dr Márcio Rossani - (83) 99372-4419', 'Diretor médico', 'Diretoria', 'CONTABILIDADE@UNIMED.CAMPINAGRANDE.BR', '(83) 2101-6579/ (83) 2101-657', '2026-02-02 17:55:50'),
 (25, 942, 'Thatianne Lima', 'Assistente de compras', 'COMPRAS', 'compras.hec@fmsa.org.br', ' (81) 99438-2875 (Ligação e Whatsapp)', '2026-02-02 20:09:50'),
 (26, 249, 'Nathália Giovanna ', 'Coordenadora de Tecnologia Médica', 'Engenharia Clínica', 'unimedmaternoinfantl@tecsaude.com.br', '(81)97331 5382', '2026-02-10 17:35:09'),
-(27, 438, 'Arlindo Matias ', 'Superintendente de Compras', 'Compras', 'arlindo.filho@unimed.campinagrande.br', '(83)993066485', '2026-02-10 18:06:41');
+(27, 438, 'Arlindo Matias ', 'Superintendente de Compras', 'Compras', 'arlindo.filho@unimed.campinagrande.br', '(83)993066485', '2026-02-10 18:06:41'),
+(28, 317, 'Dra Thaíza Nobre ', 'Pesquisadora', 'Fisioterapia', NULL, '(84)99625 0778', '2026-02-13 14:44:26');
 
 -- --------------------------------------------------------
 
@@ -483,7 +470,7 @@ CREATE TABLE `fornecedor_metas` (
 INSERT INTO `fornecedor_metas` (`id`, `fornecedor_id`, `ano`, `meta_anual`, `meta_mensal`, `user_targets_enabled`, `meta_mensal_json`) VALUES
 (13, 6, 2026, 0.00, 0.00, 1, NULL),
 (14, 1, 2025, 0.00, 0.00, 1, NULL),
-(15, 1, 2026, 3000000.00, 0.00, 0, NULL),
+(15, 1, 2026, 2797953.59, 0.00, 0, NULL),
 (19, 2, 2026, 2962754.25, 0.00, 1, NULL);
 
 -- --------------------------------------------------------
@@ -513,13 +500,13 @@ INSERT INTO `fornecedor_metas_estados` (`id`, `fornecedor_id`, `ano`, `estado`, 
 (25, 1, 2025, 'PE', 0.00, '{\"1\":0,\"2\":0,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
 (26, 1, 2025, 'PB', 0.00, '{\"1\":0,\"2\":0,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
 (27, 1, 2025, 'RN', 0.00, '{\"1\":0,\"2\":0,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
-(28, 1, 2026, 'PE', 2000000.00, '{\"1\":174228.58,\"2\":164006.24,\"3\":159006.24,\"4\":193099.12,\"5\":324055.68,\"6\":275924.81,\"7\":234228.54,\"8\":299228.54,\"9\":219793.95,\"10\":275924.81,\"11\":244228.54,\"12\":234228.54}'),
-(29, 1, 2026, 'PB', 500000.00, '{\"1\":0,\"2\":0,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
+(28, 1, 2026, 'PE', 2797953.59, '{\"1\":174228.58,\"2\":164006.24,\"3\":159006.24,\"4\":193099.12,\"5\":324055.68,\"6\":275924.81,\"7\":234228.54,\"8\":299228.54,\"9\":219793.95,\"10\":275924.81,\"11\":244228.54,\"12\":234228.54}'),
+(29, 1, 2026, 'PB', 0.00, '{\"1\":0,\"2\":0,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
 (30, 1, 2026, 'RN', 0.00, '{\"1\":0,\"2\":0,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
 (38, 2, 2026, 'PE', 500500.00, '{\"1\":250000,\"2\":250500,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
 (39, 2, 2026, 'PB', 385750.00, '{\"1\":185250,\"2\":200500,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
 (40, 2, 2026, 'RN', 2076504.25, '{\"1\":185654.25,\"2\":1890850,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}'),
-(43, 1, 2026, 'AL', 500000.00, '{\"1\":0,\"2\":0,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}');
+(43, 1, 2026, 'AL', 0.00, '{\"1\":0,\"2\":0,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0}');
 
 -- --------------------------------------------------------
 
@@ -946,18 +933,19 @@ INSERT INTO `oportunidades` (`id`, `titulo`, `numero_edital`, `numero_processo`,
 (178, 'Oportunidade p/ Proposta: MAIS VIDA', NULL, NULL, 336, NULL, NULL, NULL, 658420.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-05 13:57:34', '2026-02-06 13:23:20', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (179, 'Oportunidade p/ Proposta: UNIMED CAMPINA GRANDE', NULL, NULL, 438, NULL, NULL, NULL, 61943.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-06 16:23:08', '2026-02-07 20:46:01', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (183, 'Oportunidade p/ Proposta: HOSPITAL AGAMENON MAGALHAES', NULL, NULL, 246, NULL, NULL, NULL, 15800.00, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-07 22:15:30', '2026-02-07 22:15:30', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(186, 'Oportunidade p/ Proposta: HOSPITAL ERMIRIO COUTINHO', NULL, NULL, 942, NULL, NULL, NULL, 89000.00, 8, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-09 13:22:46', '2026-02-11 12:04:46', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(186, 'Oportunidade p/ Proposta: HOSPITAL ERMIRIO COUTINHO', NULL, NULL, 942, NULL, NULL, NULL, 89000.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-09 13:22:46', '2026-02-09 13:22:46', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (188, 'teste', '234234', '4343434', 761, NULL, NULL, NULL, 92328.00, 14, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-09 17:13:30', '2026-02-09 17:13:30', 'teste', NULL, '2026-02-11', NULL, 'Pregão Eletrônico', 'erserserserserserser', NULL),
 (189, 'Oportunidade p/ Proposta: EBEM - EMPRESA BRASILEIRA DE ENGENHARIA MEDICA', NULL, NULL, 945, NULL, NULL, NULL, 6074.40, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-09 17:47:57', '2026-02-09 17:47:57', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (190, 'Oportunidade p/ Proposta: HOSPITAL UNIMED RECIFE', NULL, NULL, 946, NULL, NULL, NULL, 23732.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-10 16:31:00', '2026-02-10 16:55:51', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (191, 'Oportunidade p/ Proposta: HGMI - HOSPITAL GERAL MATERNO INFANTIL', NULL, NULL, 249, NULL, NULL, NULL, 23732.00, 4, 4, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-10 17:28:34', '2026-02-10 17:45:55', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (192, 'LÍDICO FR ', NULL, NULL, 438, NULL, 27, NULL, 17000.00, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-10 18:11:04', '2026-02-10 18:11:04', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(194, 'teste', NULL, NULL, 221, NULL, NULL, NULL, 23082.00, 1, 12, 1, '0003/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-11 12:54:24', '2026-02-11 12:54:28', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(195, 'Teste ', NULL, NULL, 362, NULL, NULL, NULL, 23083.00, 1, 2, 2, '0004/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-11 14:49:25', '2026-02-11 14:49:25', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(194, 'Oportunidade p/ Proposta: CONDOMINIO RESIDENCIAL QUINTAS DA PRAIA', NULL, NULL, 947, NULL, NULL, NULL, 9500.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-13 14:35:09', '2026-02-13 14:35:09', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (196, 'Ventilador de Transporte ', NULL, NULL, 438, NULL, 27, NULL, 84000.00, 1, 4, 2, '0005/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-11 19:00:39', '2026-02-11 19:00:39', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (197, 'Oportunidade p/ Proposta: 31 BATALHAO DE INFANTARIA MOTORIZADO', NULL, NULL, 763, NULL, NULL, NULL, 15010.00, 4, 12, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-12 14:41:57', '2026-02-12 14:41:57', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (198, 'Oportunidade p/ Proposta: MAIS VIDA', NULL, NULL, 336, NULL, NULL, NULL, 1000.00, 5, 7, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-12 17:23:30', '2026-02-12 17:23:30', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(199, 'Oportunidade p/ Proposta: AUDES DIOGENES DE MAGALHÃES FEITOSA ', NULL, NULL, NULL, NULL, NULL, 283, 10837.40, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-12 20:54:35', '2026-02-12 20:54:35', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+(199, 'Oportunidade p/ Proposta: AUDES DIOGENES DE MAGALHÃES FEITOSA ', NULL, NULL, NULL, NULL, NULL, 283, 10837.40, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-12 20:54:35', '2026-02-12 20:54:35', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(200, 'Oportunidade p/ Proposta: 13.618.705 ELLYZANDRA KAROLLINE CALAZANS', NULL, NULL, 221, NULL, NULL, NULL, 23082.00, 4, 1, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-13 14:55:52', '2026-02-13 14:55:52', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(201, 'US Kosmos FUNPEC', NULL, NULL, 317, NULL, 28, NULL, 79000.00, 4, 4, 2, '0006/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-02-13 15:09:20', '2026-02-13 15:11:29', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1025,7 +1013,8 @@ INSERT INTO `oportunidade_itens` (`id`, `oportunidade_id`, `produto_id`, `descri
 (110, 194, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, 1),
 (111, 195, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"Marcapasso \",\"valor\":1}]', 1),
 (112, 196, NULL, 'Ventilador de Transporte Shangrilá', '', 'Instramed', 'Shangrilá', '', 1, 0.00, 'VENDA', 'Unidade', NULL, 1),
-(113, 196, 39, 'VENTILADOR DE TRANSPORTE', 'Ventilador de Transporte de Emergência Multifuncional, Tela LCD 5\", Atende à norma EN1789, Nível IPX4 à prova d\'água, Alarmes sonoros e visuais.\nNÃO ACOMPANHA CILINDRO DE GÁS.', 'AEONMED', 'SHANGRILAR 510s', 'uploads/products/prod_69823148160d9.png', 3, 28000.00, 'VENDA', 'Unidade', NULL, 1);
+(113, 196, 39, 'VENTILADOR DE TRANSPORTE', 'Ventilador de Transporte de Emergência Multifuncional, Tela LCD 5\", Atende à norma EN1789, Nível IPX4 à prova d\'água, Alarmes sonoros e visuais.\nNÃO ACOMPANHA CILINDRO DE GÁS.', 'AEONMED', 'SHANGRILAR 510s', 'uploads/products/prod_69823148160d9.png', 3, 28000.00, 'VENDA', 'Unidade', NULL, 1),
+(114, 201, NULL, 'US Kosmos', 'Sonda Lexsa + Bridge ', 'Brasil Médica', 'Lexsa + Bridge', 'uploads/proposal_items/item_698f3e38cdc94.jpeg', 1, 79000.00, 'VENDA', 'Unidade', NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -1955,51 +1944,9 @@ INSERT INTO `organizacoes` (`id`, `nome_fantasia`, `razao_social`, `cnpj`, `cep`
 (941, 'UNIMED C. GRANDE', 'UNIMED C. GRANDE COOPERATIVA DE TRABALHO MEDICO LTDA', ' 08.707.473/0005-69', '58.410-743', 'Rua Denise Alves de Medeiros', '410', NULL, 'Sandra Cavalcante', 'Campina Grande', 'PB', '2026-02-02 17:53:59'),
 (942, 'HOSPITAL ERMIRIO COUTINHO', 'FUNDACAO MANOEL DA SILVA ALMEIDA', '09.767.633/0003-66', '55800000', 'TV BANCARIO LEOPOLDINO VIEIRA DE MELO', 'SN', NULL, 'CENTRO', 'Nazaré da Mata', 'PE', '2026-02-02 20:06:45'),
 (945, 'EBEM - EMPRESA BRASILEIRA DE ENGENHARIA MEDICA', 'F A G DE OLIVEIRA LTDA', '06.907.719/0001-97', '54400260', 'RUA DONA MARIA DE SOUZA', '681', NULL, 'PIEDADE', 'JABOATAO DOS GUARARAPES', 'PE', '2026-02-09 17:45:52'),
-(946, 'HOSPITAL UNIMED RECIFE', 'UNIMED RECIFE COOPERATIVA DE TRABALHO MEDICO', '11.214.624/0004-70', '50070235', 'AVENIDA LINS PETIT', '35', NULL, 'BOA VISTA', 'RECIFE', 'PE', '2026-02-10 16:14:33');
-
--- --------------------------------------------------------
-
---
--- Estrutura para tabela `permissions`
---
-
-CREATE TABLE `permissions` (
-  `id` int(11) NOT NULL,
-  `resource` varchar(50) NOT NULL,
-  `action` varchar(20) NOT NULL,
-  `label` varchar(100) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
---
--- Despejando dados para a tabela `permissions`
---
-
-INSERT INTO `permissions` (`id`, `resource`, `action`, `label`, `created_at`) VALUES
-(1, 'dashboard', 'view', 'Visualizar Dashboard', '2026-02-13 10:57:02'),
-(2, 'leads', 'view', 'Visualizar Funil de Vendas', '2026-02-13 10:57:02'),
-(3, 'leads', 'create', 'Criar Oportunidade', '2026-02-13 10:57:02'),
-(4, 'leads', 'edit', 'Editar Oportunidade', '2026-02-13 10:57:02'),
-(5, 'leads', 'move', 'Mover Cards no Funil', '2026-02-13 10:57:02'),
-(6, 'leads', 'delete', 'Excluir Oportunidade', '2026-02-13 10:57:02'),
-(7, 'leads_online', 'view', 'Visualizar Leads Online', '2026-02-13 10:57:02'),
-(8, 'leads_online', 'manage', 'Gerenciar Leads Online', '2026-02-13 10:57:02'),
-(9, 'agenda', 'view', 'Visualizar Agenda', '2026-02-13 10:57:02'),
-(10, 'agenda', 'manage', 'Gerenciar Agenda (Criar/Edit/Del)', '2026-02-13 10:57:02'),
-(11, 'clients', 'view', 'Visualizar Clientes', '2026-02-13 10:57:02'),
-(12, 'clients', 'manage', 'Gerenciar Clientes (Criar/Edit/Del)', '2026-02-13 10:57:02'),
-(13, 'proposals', 'view', 'Visualizar Propostas', '2026-02-13 10:57:02'),
-(14, 'proposals', 'create', 'Criar Proposta', '2026-02-13 10:57:02'),
-(15, 'proposals', 'edit', 'Editar Proposta', '2026-02-13 10:57:02'),
-(16, 'proposals', 'print', 'Imprimir Proposta', '2026-02-13 10:57:02'),
-(17, 'proposals', 'delete', 'Excluir Proposta', '2026-02-13 10:57:02'),
-(18, 'catalog', 'view', 'Visualizar Catálogo', '2026-02-13 10:57:02'),
-(19, 'catalog', 'manage', 'Gerenciar Catálogo', '2026-02-13 10:57:02'),
-(20, 'marketing', 'view', 'Visualizar Marketing', '2026-02-13 10:57:02'),
-(21, 'marketing', 'manage', 'Gerenciar Campanhas', '2026-02-13 10:57:02'),
-(22, 'reports', 'view', 'Visualizar Relatórios', '2026-02-13 10:57:02'),
-(23, 'settings', 'view', 'Acessar Configurações', '2026-02-13 10:57:02'),
-(24, 'settings', 'edit', 'Editar Configurações', '2026-02-13 10:57:02');
+(946, 'HOSPITAL UNIMED RECIFE', 'UNIMED RECIFE COOPERATIVA DE TRABALHO MEDICO', '11.214.624/0004-70', '50070235', 'AVENIDA LINS PETIT', '35', NULL, 'BOA VISTA', 'RECIFE', 'PE', '2026-02-10 16:14:33'),
+(947, 'CONDOMINIO RESIDENCIAL QUINTAS DA PRAIA', 'CONDOMINIO RESIDENCIAL QUINTAS DA PRAIA', '52.329.127/0001-52', '54522005', 'AV A', 'S/N', NULL, 'PAIVA', 'CABO DE SANTO AGOSTINHO', 'PE', '2026-02-13 14:29:58'),
+(948, 'FUNPEC', 'FUNPEC-Fundação Norte Rio Grandense de Pesquisa e Cultura ', '08.469.280/0001-93', '59078-900', 'Avenida Senador Salgado Filho', '3000', NULL, 'Capim Macio', 'Natal', 'RN', '2026-02-13 14:39:44');
 
 -- --------------------------------------------------------
 
@@ -2150,13 +2097,15 @@ INSERT INTO `propostas` (`id`, `numero_proposta`, `oportunidade_id`, `cliente_pf
 (142, '022/2026', 177, NULL, 941, NULL, 8, 84000.00, 'Enviada', 'CIF', 0.00, '', '2026-02-16', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Frete FOB', NULL, '2026-02-03 17:42:49', 2),
 (143, '023/2026', 178, NULL, 336, NULL, 2, 627060.00, 'Enviada', 'CIF', 0.00, '', '2026-03-05', 'Realizado diretamente pela Instramed.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Frete FOB R$ 13.744,74', NULL, '2026-02-05 13:57:34', 2),
 (144, '024/2026', 179, NULL, 438, NULL, 2, 185700.00, 'Enviada', 'CIF', 0.00, '', '2026-02-16', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia..', 'Frete FOB', NULL, '2026-02-06 16:23:08', 1),
-(150, '025/2026', 186, NULL, 942, NULL, 2, 89000.00, 'Recusada', 'CIF', 0.00, '', '2026-02-19', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Equipamento seminovo. ', NULL, '2026-02-09 13:22:46', 2),
+(150, '025/2026', 186, NULL, 942, NULL, 2, 89000.00, 'Enviada', 'CIF', 0.00, '', '2026-02-19', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Equipamento seminovo. ', NULL, '2026-02-09 13:22:46', NULL),
 (151, '026/2026', 189, NULL, 945, NULL, 2, 6074.40, 'Enviada', 'FOB', 50.00, '', '2026-02-19', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-02-09 17:47:57', NULL),
 (152, '027/2026', 190, NULL, 946, NULL, 2, 23732.00, 'Enviada', 'CIF', 0.00, '', '2026-03-10', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 45 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-02-10 16:31:00', 2),
 (153, '028/2026', 191, NULL, 249, NULL, 4, 23732.00, 'Negociando', 'CIF', 0.00, '', '2026-03-10', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '30 dias', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-02-10 17:28:34', 1),
-(154, '029/2026', 197, NULL, 763, NULL, 12, 15010.00, 'Rascunho', 'CIF', 0.00, 'teste', '2026-02-13', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-02-12 14:41:57', NULL),
+(154, '029/2026', 194, NULL, 947, NULL, 2, 9500.00, 'Enviada', 'CIF', 0.00, '', '2026-02-23', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 10 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-02-13 14:35:09', NULL),
 (155, '030/2026', 198, NULL, 336, NULL, 7, 1000.00, 'Negociando', 'CIF', 0.00, '', '2026-02-15', 'POULP ', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '30 DIAS BOLETO', 'IMEDIATO', '', '', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', '', NULL, '2026-02-12 17:23:30', NULL),
-(156, '031/2026', 199, 283, NULL, NULL, 2, 10837.40, 'Enviada', 'CIF', 0.00, '', '2026-02-22', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '30 Dias ', 'Até 10 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-02-12 20:54:35', NULL);
+(156, '031/2026', 199, 283, NULL, NULL, 2, 10837.40, 'Enviada', 'CIF', 0.00, '', '2026-02-22', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '30 Dias ', 'Até 10 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-02-12 20:54:35', NULL),
+(157, '032/2026', 200, NULL, 221, NULL, 1, 23082.00, 'Rascunho', 'CIF', 0.00, '', '2026-02-14', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-02-13 14:55:52', NULL),
+(158, '033/2026', 201, NULL, 317, 28, 4, 79000.00, 'Enviada', 'CIF', 0.00, '', '2026-02-23', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-02-13 15:11:29', NULL);
 
 -- --------------------------------------------------------
 
@@ -2175,352 +2124,114 @@ CREATE TABLE `proposta_itens` (
   `imagem_url` varchar(512) DEFAULT NULL,
   `quantidade` int(11) NOT NULL,
   `valor_unitario` decimal(20,2) NOT NULL COMMENT 'Valor personalizado no momento da proposta',
-  `desconto_percent` decimal(5,2) DEFAULT 0.00,
   `status` enum('VENDA','LOCAÇÃO') DEFAULT 'VENDA',
   `unidade_medida` varchar(50) DEFAULT NULL,
   `parametros` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Armazena os parâmetros do produto no momento da criação da proposta' CHECK (json_valid(`parametros`)),
   `meses_locacao` int(11) DEFAULT 1,
-  `meses` int(11) DEFAULT 1
+  `meses` int(11) DEFAULT 1,
+  `desconto_percent` decimal(5,2) NOT NULL DEFAULT 0.00
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Despejando dados para a tabela `proposta_itens`
 --
 
-INSERT INTO `proposta_itens` (`id`, `proposta_id`, `produto_id`, `descricao`, `descricao_detalhada`, `fabricante`, `modelo`, `imagem_url`, `quantidade`, `valor_unitario`, `desconto_percent`, `status`, `unidade_medida`, `parametros`, `meses_locacao`, `meses`) VALUES
-(189, 65, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 18, 5702.58, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(190, 62, 12, 'DESFIBRILADOR ', 'Principais funções concentradas em apenas um botão seletor. \nRápida inicialização carregamento de 360 J em menos de 6 segundos', 'INSTRAMED', 'APOLUS ', 'https://frpe.app.br/crm/uploads/products/prod_690a099525520.webp', 1, 12569.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(199, 68, 15, 'Traqueia pediátrica 1200MM X 15MM com 1 conector reto 15mm', 'Circuito para ventilação pediátrico.', 'GLOBALTEC', 'Traqueia pediátrica 1200MM X 15MM  c/1 conector reto.', '', 80, 350.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(204, 69, 19, 'OXIMETRO ', 'Monitor portátil com SPO2, PR, PI, RRP', 'MASIMO ', 'RAD G SEM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911e01074fe3.png', 1, 6600.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(205, 69, 17, 'OXIMETRO', 'Monitor portátil com SPO2, PR, PI, RRP e módulo de temperatura integrado ', 'MASIMO', 'RAD G COM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911dd39c9342.png', 1, 8358.90, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(206, 69, 16, 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'Destinado a profissionais da saúde.\nDesign de mesa ideal para consultórios. ​\nModo de medição totalmente automático oscilométrico ou auscultatório.​\nFunção Indicador Zero ​\nPode ser usado com 4 pilhas AA ou com adaptador CA (bivolt automático)​', 'MICROMED', 'OMRON', 'https://frpe.app.br/crm/uploads/products/prod_6911dd100a3fb.webp', 1, 1290.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(207, 69, 18, 'OXÍMETRO DE PULSO DE CABECEIRA', 'Rad-97 com pressão arterial não invasiva (PANI) integrada oferece diversas tecnologias avançadas de monitoramento do paciente — incluindo oximetria de pulso Masimo SET® — em um dispositivo independente compacto, portátil e altamente configurável.', 'MASIMO', 'Rad-97 COM PNI', 'https://frpe.app.br/crm/uploads/products/prod_6911df74c6064.png', 1, 20059.49, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(208, 70, 21, 'PÁ ADESIVA ADULTO DESCARTAVEL DEA / CARDIOMAX', 'PÁ ADESIVA ADULTO DESCARTÁVEL', 'INSTRAMED', 'ADULTO', 'https://frpe.app.br/crm/uploads/products/prod_691249bfe6282.png', 1, 615.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(209, 70, 20, 'PÁ ADESIVA INFANTIL DESCARTAVEL DEA/CARDIOMAX', 'PÁ ADESIVA INFANTIL DESCARTAVEL - DEA/CARDIOMAX', 'INSTRAMED', 'INFANTIL', 'https://frpe.app.br/crm/uploads/products/prod_69124901583c3.png', 1, 615.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(212, 71, 7, 'CARDIOVERSOR ', 'Configuração Básica (ECG, Resp, Desf, ASC, PMS, Li-ion 4 Ah)', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 2, 25098.00, 0.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMP (Impressora)\",\"valor\":4152},{\"nome\":\"MP (Marcapasso) \",\"valor\":2758},{\"nome\":\"DEA (Desfibrilador Externo Autom\\u00e1tico) \",\"valor\":1602}]', NULL, 1),
-(242, 76, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\nAdicionais: MP + IMP + DEA', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23990.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(245, 78, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 10, 7283.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(246, 78, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 10, 4369.80, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(255, 81, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(257, 87, 22, 'MODULO DE BATERIA CARDIOMAX LI-ON 14,4V 4AH 57,6WH', 'Modulo de bateria recarregável para carDiomax li-on 14,4V 4AH 57,6WH', 'INSTRAMED', 'CARDIOMAX', 'https://frpe.app.br/crm/uploads/products/prod_692f33e61ffc4.jpg', 2, 3420.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(268, 88, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(269, 88, 23, 'SUPORTE DE PAREDE EM ACRÍLICO ', 'Suporte de parede em acrílico para DEA', 'INSTRAMED', 'I ON ', 'https://frpe.app.br/crm/uploads/products/prod_69302adc0a423.webp', 1, 635.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(270, 88, 24, 'PLACA ESPAÇO CARDIOPROTEGIDO', '', '', '', 'https://frpe.app.br/crm/uploads/products/prod_69302bd5e098a.png', 1, 0.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(271, 88, 25, 'PLACA PASSO A PASSO ', '', '', '', 'https://frpe.app.br/crm/uploads/products/prod_69302dcc1a1e9.png', 1, 0.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(278, 92, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(279, 92, 28, 'CARRO DE PARADA ', 'Estrutura interna em aço carbono, revestido em polímero de alto impacto ABS com nano tecnologia anti-bacteriana.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(316, 98, NULL, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 0.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMP\",\"valor\":4152}]', 1, 1),
-(319, 109, 21, 'PÁ ADESIVA ADULTO DESCARTAVEL DEA / CARDIOMAX', 'PÁ ADESIVA ADULTO DESCARTÁVEL', 'INSTRAMED', 'ADULTO', 'https://frpe.app.br/crm/uploads/products/prod_691249bfe6282.png', 1, 615.00, 0.00, 'VENDA', 'Unidade', NULL, 1, 1),
-(321, 111, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 0.00, 'VENDA', 'Unidade', NULL, 1, 1),
-(322, 111, 31, 'CILINDRO DE O2', 'Capacidade hidráulica 2.8L\nPressão  de serviço 139bar\nAltura 412.8mm\nDiâmetro 111.1mm\nRosca de entrada 3/4 \nPeso 2.3kg ', '', 'GWA15', 'https://frpe.app.br/crm/uploads/products/prod_694ace6e98b05.webp', 1, 2860.00, 0.00, 'VENDA', 'Unidade', NULL, 1, 1),
-(323, 111, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 0.00, 'VENDA', 'Unidade', NULL, 1, 1),
-(337, 114, 32, 'Módulo de bateria (NiMH) - CardioMax', 'Modulo de bateria recarregável para Cardiomax (NiMH)', 'INSTRAMED', 'CARDIOMAX ', 'https://frpe.app.br/crm/uploads/products/prod_695ff7e024858.jpg', 6, 2900.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(338, 114, 22, 'MODULO DE BATERIA CARDIOMAX LI-ON 14,4V 4AH 57,6WH', 'Modulo de bateria recarregável para carDiomax li-on 14,4V 4AH 57,6WH', 'INSTRAMED', 'CARDIOMAX', 'https://frpe.app.br/crm/uploads/products/prod_692f33e61ffc4.jpg', 1, 3920.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(350, 116, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(351, 116, 31, 'CILINDRO DE O2 (vazio)', 'Capacidade hidráulica 2.8L\nPressão  de serviço 139bar\nAltura 412.8mm\nDiâmetro 111.1mm\nRosca de entrada 3/4 \nPeso 2.3kg ', '', 'GWA15', 'https://frpe.app.br/crm/uploads/products/prod_694ace6e98b05.webp', 1, 2860.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(352, 116, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS. \n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 0.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMPRESSORA\",\"valor\":4152},{\"nome\":\"MARCAPASSO\",\"valor\":2758},{\"nome\":\"DEA\",\"valor\":1602}]', NULL, 1),
-(353, 90, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS \nParâmetros adicionais: MP + DEA + IMP', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 10, 16800.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(364, 120, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA  RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LCD', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 10749.00, 0.00, 'VENDA', 'Unidade', '[{\"nome\":\"Fun\\u00e7\\u00e3o 3V Monitora\\u00e7\\u00e3o atraves cabo ECG 3vias\",\"valor\":1253},{\"nome\":\"Conector para RCP (somente conector)\",\"valor\":752}]', NULL, 1),
-(399, 129, 34, 'SENSOR LÍDICO', 'SENSOR LIDICO (Em comodato acompanha; Monitor multiparamétrico compacto Root® com Modulo Cabo).', 'MASIMO ', 'RD Raimbow set2 4026', 'https://frpe.app.br/crm/uploads/products/prod_6970da50f1c05.png', 10, 2500.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(400, 130, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, MP , Li-ion 4Ah \n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 5, 16050.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(421, 132, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 10, 23082.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(422, 132, 27, 'MONITOR BLT', 'Configuração ECG, SPO2, PNI', 'INSTRAMED', 'M10', 'https://frpe.app.br/crm/uploads/products/prod_6931df2fb1be3.webp', 30, 7720.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(423, 132, 26, 'VENTILADOR BEIRA LEITO ', 'Ventilação invasiva e não invasiva \nBateria interna com autonomia de aproximadamente 4 horas \nNebulizador integrado \n', 'INSTRAMED', 'VG70', 'https://frpe.app.br/crm/uploads/products/prod_6931ddcc8f088.webp', 30, 62900.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(424, 122, 33, 'Eletrocardiógrafo de 12 canais', 'AQUISIÇÃO E IMPRESÃO EM 12 CANAIS SIMUTÂNEOS, INTERPRETATIVO, IMPRESSÃO EM PAPEL TÉRMICO A4, Display Colorido 8”- Teclado QWERTY- Memória 800 exames- Exporta exames em PDF.', 'EDAN', 'SE 1200 EXPRESS', 'https://frpe.app.br/crm/uploads/products/prod_696a54b7a29fa.png', 1, 12876.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(425, 97, 23, 'SUPORTE DE PAREDE EM ACRÍLICO ', 'Suporte de parede em acrílico para DEA', 'INSTRAMED', 'I ON ', 'https://frpe.app.br/crm/uploads/products/prod_69302adc0a423.webp', 1, 635.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(426, 97, 13, 'GABINETE DEA', 'Gabinete metálico para desfibrilador externo automático (DEA), equipado com alarme sonoro.\n\n', 'INSTRAMED', 'DEA', 'https://frpe.app.br/crm/uploads/products/prod_690de965c8b36.webp', 1, 1737.40, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(427, 117, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 2, 8471.00, 0.00, 'VENDA', 'Unidade', '[{\"nome\":\"FUN\\u00c7\\u00c3O 3V (MONITORIZA\\u00c7\\u00c3O ATRAVES DE CABO DE ECG 3VIAS)\",\"valor\":1253},{\"nome\":\"CONECTOR PARA RCP (SOMENTE CONECTOR)\",\"valor\":1253},{\"nome\":\"RCP MAESTRO (COM DISPLAY)\",\"valor\":4174},{\"nome\":\"GRAVADOR DE SOM AMBIENTE (MICROFONE) \",\"valor\":317}]', NULL, 1),
-(428, 110, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(429, 108, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9711.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(430, 108, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(431, 95, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(432, 96, 12, 'DESFIBRILADOR ', 'Principais funções concentradas em apenas um botão seletor. \nRápida inicialização carregamento de 360 J em menos de 6 segundos', 'INSTRAMED', 'APOLUS ', 'https://frpe.app.br/crm/uploads/products/prod_690a099525520.webp', 1, 10055.20, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(433, 94, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9711.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(434, 94, 20, 'PÁ ADESIVA INFANTIL DESCARTAVEL DEA/CARDIOMAX', 'PÁ ADESIVA INFANTIL DESCARTAVEL - DEA/CARDIOMAX', 'INSTRAMED', 'INFANTIL', 'https://frpe.app.br/crm/uploads/products/prod_69124901583c3.png', 1, 615.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(435, 93, 29, 'SENSOR DE FLUXO ', 'Sensor de fluxo para utilização no ventilador pulmonar Shangrila 510S\n', 'AEONMED', '', 'https://frpe.app.br/crm/uploads/products/prod_69383041db97a.webp', 6, 155.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(436, 80, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 12, 500.00, 0.00, 'LOCAÇÃO', 'mensal', NULL, 12, 1),
-(437, 79, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(438, 77, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 0.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMP \",\"valor\":4152},{\"nome\":\"DEA\",\"valor\":1602}]', NULL, 1),
-(439, 75, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(440, 74, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(441, 73, NULL, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/proposal_items/item_691b672009fc1.png', 1, 7283.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(442, 73, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 4369.80, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(443, 72, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(444, 67, 14, 'VENTILADOR ', 'Tela sensível ao toque de 18,5 com interface intuitiva, projetada para agilizar a configuração em situações críticas.\nSeu design versátil permite a utilização em múltiplos ambientes hospitalares da UTI adulta à neonatologia com uma única unidade, otimizando recursos e garantindo continuidade no cuidado ao paciente.', 'TECME', 'BRINA', 'https://frpe.app.br/crm/uploads/products/prod_690df701cb457.png', 1, 69000.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(445, 60, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 0.00, 'VENDA', 'Unidade', '[{\"nome\":\"Marcapasso\",\"valor\":2758},{\"nome\":\"Impressora\",\"valor\":4152}]', NULL, 1),
-(451, 135, NULL, 'Bateria Cardiomax', 'Uma bateria niquel e uma bateria litio', 'Instramed', 'Níquel e Litio', '', 2, 3524.54, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(452, 133, NULL, 'Bateria Cardiomax', '', 'Instramed', 'Níquel', '', 2, 2900.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(453, 133, 32, 'Módulo de bateria (NiMH) - CardioMax', 'Modulo de bateria recarregável para Cardiomax (NiMH)', 'INSTRAMED', 'CARDIOMAX ', 'https://frpe.app.br/crm/uploads/products/prod_695ff7e024858.jpg', 0, 0.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(454, 136, NULL, 'Bateria Cardiomax', '', 'Instramed', 'Níquel', '', 2, 3349.09, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(456, 131, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 5, 23082.00, 0.00, 'VENDA', 'Unidade', '[{\"nome\":\"marcapasso\",\"valor\":2758},{\"nome\":\"Impressora\",\"valor\":4152}]', NULL, 1),
-(457, 138, 36, 'SISTEMA PARA ERGOMETRIA ERGO PC AIR', 'Eletrocardiógrafo digital sem fio de 3, 12 ou 13 derivações simultâneas para realização de teste de esforço.', 'MICROMED', 'ERGOPC AIR', 'uploads/products/prod_697ba726bed16.jpeg', 1, 20713.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(458, 138, 37, 'ESTERIRA ERGOMETRICA', 'Leve, resistente e moderna, feita em alumínio, ideal para uso médico em testes de esforço e cardiopulmonares. Suporta até 200 kg, com ampla área de caminhada, inclinação de 0 a 26% e velocidade máxima de 18 km/h. Possui saída USB nativa para controle automático digital, sistema de fricção reduzida que dispensa lubrificação e operação em 220V/60Hz. Compatível com Ergo PC, Ergo PC Air e Ergo PC Elite. Garantia de 1 ano para a esteira (já incluída a garantia legal) e 3 meses para acessórios (já incluída a garantia legal). Inclui cabo USB. Recomenda-se uso de Nobreak Onda Senoidal (5 KVA, 220V) e instalação em circuito elétrico isolado e aterrado', 'MICROMED', 'C300', 'uploads/products/prod_697ba85eb0a8e.jpeg', 1, 35000.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(470, 137, NULL, 'US Kosmos', '', 'Brasil Médica', 'Torso One', 'uploads/proposal_items/item_6978e021d55d9.jpeg', 1, 49000.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(471, 91, 26, 'VENTILADOR BEIRA LEITO ', 'Ventilação invasiva e não invasiva \nBateria interna com autonomia de aproximadamente 4 horas \nNebulizador integrado \n', 'INSTRAMED', 'VG70', 'https://frpe.app.br/crm/uploads/products/prod_6931ddcc8f088.webp', 30, 62900.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(472, 91, 27, 'MONITOR BLT', 'Configuração ECG, SPO2, PNI', 'INSTRAMED', 'M10', 'https://frpe.app.br/crm/uploads/products/prod_6931df2fb1be3.webp', 30, 7720.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(473, 139, 38, 'CARRO DE EMERGÊNCIA COM NANOTECNOLOGIA ANTIBACTERIANA', '- 01 tábua para massagem cardíaca, 02 gavetas em monobloco de polímero com nanotecnologia antibacteriana, 01 gavetas em monobloco de polímero com nanotecnologia antibacteriana - 01 jogo de divisórias em polímero para 1ra. Gaveta, contendo 20 nichos;  01 braço móvel e bandeja em aço inox com movimento de rotação de 90°; 01 bandeja em aço inox com movimento de rotação de 180° para acomodar o desfibrilador, 02 cintas velcro para segurança do desfibrilador / cardioversor; 01 suporte de soro com haste em aço inox regulável em altura com dois ganchos em polímero;  01 suporte em aço inox para tubo de oxigênio; 01 cinta velcro para fixação de cilindro de oxigênio; 01 jogo de divisórias em polímero para compartimento superior tipo colmeia regulável e removível com 12 nichos; 01 dispositivo em acrílico 4mm para armazenar materiais, 01 cesto aramado para colocação de aspirador. Medidas: comprimento 1025 mm, largura: 570 mm, altura 910 mm aproximadamente.', 'HEALTH ', 'CARRO LIFE AID LA3-101 STANDARD', 'uploads/products/prod_697cfbebea61b.png', 7, 15800.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(486, 143, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\nParâmetros adicionais: MP + DEA + IMP\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 14, 16800.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(487, 143, 27, 'MONITOR BLT', 'Configuração ECG, SPO2, PNI', 'INSTRAMED', 'M10', 'https://frpe.app.br/crm/uploads/products/prod_6931df2fb1be3.webp', 14, 6000.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(488, 143, 39, 'VENTILADOR DE TRANSPORTE', 'Ventilador de Transporte de Emergência Multifuncional, Tela LCD 5\", Atende à norma EN1789, Nível IPX4 à prova d\'água, Alarmes sonoros e visuais.\nNÃO ACOMPANHA CILINDRO DE GÁS.', 'AEONMED', 'SHANGRILAR 510s', 'uploads/products/prod_69823148160d9.png', 14, 21990.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(490, 142, 39, 'VENTILADOR DE TRANSPORTE', 'Ventilador de Transporte de Emergência Multifuncional, Tela LCD 5\", Atende à norma EN1789, Nível IPX4 à prova d\'água, Alarmes sonoros e visuais.\nNÃO ACOMPANHA CILINDRO DE GÁS.', 'AEONMED', 'SHANGRILAR 510s', 'uploads/products/prod_69823148160d9.png', 3, 28000.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(497, 89, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\nParâmetros adicionais: MP, IMP E DEA\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(498, 144, 40, 'VENTILADOR ', 'Ventilador beira leito, com suporte para ventilação invasiva e não invasiva, indicado para pacientes adultos, pediátricos e neonatais, adequado para transporte intra-hospitalar.', 'TECME ', 'TS+', 'uploads/products/prod_698614e2deb07.png', 3, 61900.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(507, 141, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(508, 141, 14, 'VENTILADOR ', 'Tela sensível ao toque de 18,5 com interface intuitiva, projetada para agilizar a configuração em situações críticas.\nSeu design versátil permite a utilização em múltiplos ambientes hospitalares da UTI adulta à neonatologia com uma única unidade, otimizando recursos e garantindo continuidade no cuidado ao paciente.', 'TECME', 'BRINA', 'https://frpe.app.br/crm/uploads/products/prod_690df701cb457.png', 1, 118312.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(509, 141, 35, 'MONITOR ', 'Configuração ECG, Resp, PMS, ST, SPO2, PNI Z, 2 Temp, Bateria', 'INSTRAMED', 'InMax 12', 'uploads/products/prod_69810e0520771.webp', 1, 13890.00, 0.00, 'VENDA', 'Unidade', '[{\"nome\":\"EtCO2 (capnografia Microstream)\",\"valor\":11922}]', NULL, 1),
-(511, 151, 42, 'VÁLVULA EXPIRATÓRIA ', '', 'TECME ', 'VÁLVULA EXPIRATÓRIA GRAPHNET ', 'uploads/products/prod_698a1cc4e47bf.png', 4, 1506.10, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(512, 66, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(513, 66, 13, 'GABINETE DEA', 'Gabinete metálico para desfibrilador externo automático (DEA), equipado com alarme sonoro.\n\n', 'INSTRAMED', 'DEA', 'https://frpe.app.br/crm/uploads/products/prod_690de965c8b36.webp', 1, 1737.40, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(515, 152, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23732.00, 0.00, 'VENDA', 'Unidade', '[{\"nome\":\"Marcapasso\",\"valor\":2836}]', NULL, 1),
-(517, 153, NULL, 'Cardiomax', 'Com Marca Passo', 'Instramed', 'Lite', '', 1, 23732.00, 0.00, 'VENDA', 'Unidade', '[{\"nome\":\"Marca Passo\",\"valor\":2836}]', NULL, 1),
-(518, 150, 14, 'VENTILADOR ', 'Tela sensível ao toque de 18,5 com interface intuitiva, projetada para agilizar a configuração em situações críticas.\nSeu design versátil permite a utilização em múltiplos ambientes hospitalares da UTI adulta à neonatologia com uma única unidade, otimizando recursos e garantindo continuidade no cuidado ao paciente.', 'TECME', 'BRINA', 'https://frpe.app.br/crm/uploads/products/prod_690df701cb457.png', 1, 89000.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(519, 154, 38, 'CARRO DE EMERGÊNCIA COM NANOTECNOLOGIA ANTIBACTERIANA', '- 01 tábua para massagem cardíaca, 02 gavetas em monobloco de polímero com nanotecnologia antibacteriana, 01 gavetas em monobloco de polímero com nanotecnologia antibacteriana - 01 jogo de divisórias em polímero para 1ra. Gaveta, contendo 20 nichos;  01 braço móvel e bandeja em aço inox com movimento de rotação de 90°; 01 bandeja em aço inox com movimento de rotação de 180° para acomodar o desfibrilador, 02 cintas velcro para segurança do desfibrilador / cardioversor; 01 suporte de soro com haste em aço inox regulável em altura com dois ganchos em polímero;  01 suporte em aço inox para tubo de oxigênio; 01 cinta velcro para fixação de cilindro de oxigênio; 01 jogo de divisórias em polímero para compartimento superior tipo colmeia regulável e removível com 12 nichos; 01 dispositivo em acrílico 4mm para armazenar materiais, 01 cesto aramado para colocação de aspirador. Medidas: comprimento 1025 mm, largura: 570 mm, altura 910 mm aproximadamente.', 'HEALTH ', 'CARRO LIFE AID LA3-101 STANDARD', 'uploads/products/prod_697cfbebea61b.png', 1, 15800.00, 5.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(520, 155, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 2, 500.00, 0.00, 'LOCAÇÃO', 'Unidade', NULL, 1, 1),
-(521, 156, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9100.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(522, 156, 13, 'GABINETE DEA', 'Gabinete metálico para desfibrilador externo automático (DEA), equipado com alarme sonoro.\n\n', 'INSTRAMED', 'DEA', 'https://frpe.app.br/crm/uploads/products/prod_690de965c8b36.webp', 1, 1737.40, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(523, 156, 24, 'PLACA ESPAÇO CARDIOPROTEGIDO', '', 'FR - GRAFICA RECIFE', '', 'https://frpe.app.br/crm/uploads/products/prod_69302bd5e098a.png', 1, 0.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1),
-(524, 156, 25, 'PLACA PASSO A PASSO ', '', 'FR - GRAFICA RECIFE', '', 'https://frpe.app.br/crm/uploads/products/prod_69302dcc1a1e9.png', 1, 0.00, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1);
-
--- --------------------------------------------------------
-
---
--- Estrutura para tabela `roles`
---
-
-CREATE TABLE `roles` (
-  `id` int(11) NOT NULL,
-  `name` varchar(50) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
---
--- Despejando dados para a tabela `roles`
---
-
-INSERT INTO `roles` (`id`, `name`, `created_at`) VALUES
-(1, 'SUPER_ADMIN', '2026-02-13 10:57:02'),
-(2, 'DIRETOR', '2026-02-13 10:57:02'),
-(3, 'GESTOR', '2026-02-13 10:57:02'),
-(4, 'ANALISTA', '2026-02-13 10:57:02'),
-(5, 'COMERCIAL', '2026-02-13 10:57:02'),
-(6, 'FINANCEIRO', '2026-02-13 10:57:02'),
-(7, 'VENDEDOR', '2026-02-13 10:57:02'),
-(8, 'TECNICO', '2026-02-13 10:57:02'),
-(9, 'ESPECIALISTA', '2026-02-13 10:57:02'),
-(10, 'MARKETING', '2026-02-13 10:57:02');
-
--- --------------------------------------------------------
-
---
--- Estrutura para tabela `role_permissions`
---
-
-CREATE TABLE `role_permissions` (
-  `role_id` int(11) NOT NULL,
-  `permission_id` int(11) NOT NULL,
-  `allowed` tinyint(1) NOT NULL DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
---
--- Despejando dados para a tabela `role_permissions`
---
-
-INSERT INTO `role_permissions` (`role_id`, `permission_id`, `allowed`, `created_at`) VALUES
-(1, 1, 1, '2026-02-13 10:57:02'),
-(1, 2, 1, '2026-02-13 10:57:02'),
-(1, 3, 1, '2026-02-13 10:57:02'),
-(1, 4, 1, '2026-02-13 10:57:02'),
-(1, 5, 1, '2026-02-13 10:57:02'),
-(1, 6, 1, '2026-02-13 10:57:02'),
-(1, 7, 1, '2026-02-13 10:57:02'),
-(1, 8, 1, '2026-02-13 10:57:02'),
-(1, 9, 1, '2026-02-13 10:57:02'),
-(1, 10, 1, '2026-02-13 10:57:02'),
-(1, 11, 1, '2026-02-13 10:57:02'),
-(1, 12, 1, '2026-02-13 10:57:02'),
-(1, 13, 1, '2026-02-13 10:57:02'),
-(1, 14, 1, '2026-02-13 10:57:02'),
-(1, 15, 1, '2026-02-13 10:57:02'),
-(1, 16, 1, '2026-02-13 10:57:02'),
-(1, 17, 1, '2026-02-13 10:57:02'),
-(1, 18, 1, '2026-02-13 10:57:02'),
-(1, 19, 1, '2026-02-13 10:57:02'),
-(1, 20, 1, '2026-02-13 10:57:02'),
-(1, 21, 1, '2026-02-13 10:57:02'),
-(1, 22, 1, '2026-02-13 10:57:02'),
-(1, 23, 1, '2026-02-13 10:57:02'),
-(1, 24, 1, '2026-02-13 10:57:02'),
-(2, 1, 1, '2026-02-13 10:57:02'),
-(2, 2, 1, '2026-02-13 10:57:02'),
-(2, 3, 1, '2026-02-13 10:57:02'),
-(2, 4, 1, '2026-02-13 10:57:02'),
-(2, 5, 1, '2026-02-13 10:57:02'),
-(2, 6, 1, '2026-02-13 10:57:02'),
-(2, 7, 1, '2026-02-13 10:57:02'),
-(2, 8, 1, '2026-02-13 10:57:02'),
-(2, 9, 1, '2026-02-13 10:57:02'),
-(2, 10, 1, '2026-02-13 10:57:02'),
-(2, 11, 1, '2026-02-13 10:57:02'),
-(2, 12, 1, '2026-02-13 10:57:02'),
-(2, 13, 1, '2026-02-13 10:57:02'),
-(2, 14, 1, '2026-02-13 10:57:02'),
-(2, 15, 1, '2026-02-13 10:57:02'),
-(2, 16, 1, '2026-02-13 10:57:02'),
-(2, 17, 1, '2026-02-13 10:57:02'),
-(2, 18, 1, '2026-02-13 10:57:02'),
-(2, 19, 1, '2026-02-13 10:57:02'),
-(2, 20, 1, '2026-02-13 10:57:02'),
-(2, 21, 1, '2026-02-13 10:57:02'),
-(2, 22, 1, '2026-02-13 10:57:02'),
-(2, 23, 1, '2026-02-13 10:57:02'),
-(2, 24, 1, '2026-02-13 10:57:02'),
-(3, 1, 1, '2026-02-13 10:57:02'),
-(3, 2, 1, '2026-02-13 10:57:02'),
-(3, 3, 1, '2026-02-13 10:57:02'),
-(3, 4, 1, '2026-02-13 10:57:02'),
-(3, 5, 1, '2026-02-13 10:57:02'),
-(3, 6, 1, '2026-02-13 10:57:02'),
-(3, 7, 1, '2026-02-13 10:57:02'),
-(3, 8, 1, '2026-02-13 10:57:02'),
-(3, 9, 1, '2026-02-13 10:57:02'),
-(3, 10, 1, '2026-02-13 10:57:02'),
-(3, 11, 1, '2026-02-13 10:57:02'),
-(3, 12, 1, '2026-02-13 10:57:02'),
-(3, 13, 1, '2026-02-13 10:57:02'),
-(3, 14, 1, '2026-02-13 10:57:02'),
-(3, 15, 1, '2026-02-13 10:57:02'),
-(3, 16, 1, '2026-02-13 10:57:02'),
-(3, 17, 1, '2026-02-13 10:57:02'),
-(3, 18, 1, '2026-02-13 10:57:02'),
-(3, 19, 1, '2026-02-13 10:57:02'),
-(3, 20, 1, '2026-02-13 10:57:02'),
-(3, 21, 1, '2026-02-13 10:57:02'),
-(3, 22, 1, '2026-02-13 10:57:02'),
-(3, 23, 1, '2026-02-13 10:57:02'),
-(3, 24, 1, '2026-02-13 10:57:02'),
-(4, 1, 1, '2026-02-13 10:57:02'),
-(4, 2, 1, '2026-02-13 10:57:02'),
-(4, 3, 1, '2026-02-13 10:57:02'),
-(4, 4, 1, '2026-02-13 10:57:02'),
-(4, 5, 1, '2026-02-13 10:57:02'),
-(4, 6, 1, '2026-02-13 10:57:02'),
-(4, 7, 1, '2026-02-13 10:57:02'),
-(4, 8, 1, '2026-02-13 10:57:02'),
-(4, 9, 1, '2026-02-13 10:57:02'),
-(4, 10, 1, '2026-02-13 10:57:02'),
-(4, 11, 1, '2026-02-13 10:57:02'),
-(4, 12, 1, '2026-02-13 10:57:02'),
-(4, 13, 1, '2026-02-13 10:57:02'),
-(4, 14, 1, '2026-02-13 10:57:02'),
-(4, 15, 1, '2026-02-13 10:57:02'),
-(4, 16, 1, '2026-02-13 10:57:02'),
-(4, 17, 1, '2026-02-13 10:57:02'),
-(4, 18, 1, '2026-02-13 10:57:02'),
-(4, 19, 1, '2026-02-13 10:57:02'),
-(4, 20, 1, '2026-02-13 10:57:02'),
-(4, 21, 1, '2026-02-13 10:57:02'),
-(4, 22, 1, '2026-02-13 10:57:02'),
-(4, 23, 1, '2026-02-13 10:57:02'),
-(4, 24, 1, '2026-02-13 10:57:02'),
-(5, 1, 1, '2026-02-13 10:57:02'),
-(5, 2, 1, '2026-02-13 10:57:02'),
-(5, 3, 1, '2026-02-13 10:57:02'),
-(5, 4, 1, '2026-02-13 10:57:02'),
-(5, 5, 1, '2026-02-13 10:57:02'),
-(5, 6, 1, '2026-02-13 10:57:02'),
-(5, 7, 1, '2026-02-13 10:57:02'),
-(5, 8, 1, '2026-02-13 10:57:02'),
-(5, 9, 1, '2026-02-13 10:57:02'),
-(5, 10, 1, '2026-02-13 10:57:02'),
-(5, 11, 1, '2026-02-13 10:57:02'),
-(5, 12, 1, '2026-02-13 10:57:02'),
-(5, 13, 1, '2026-02-13 10:57:02'),
-(5, 14, 1, '2026-02-13 10:57:02'),
-(5, 15, 1, '2026-02-13 10:57:02'),
-(5, 16, 1, '2026-02-13 10:57:02'),
-(5, 17, 1, '2026-02-13 10:57:02'),
-(5, 18, 1, '2026-02-13 10:57:02'),
-(5, 19, 1, '2026-02-13 10:57:02'),
-(5, 20, 1, '2026-02-13 10:57:02'),
-(5, 21, 1, '2026-02-13 10:57:02'),
-(5, 22, 1, '2026-02-13 10:57:02'),
-(5, 23, 0, '2026-02-13 11:15:32'),
-(5, 24, 0, '2026-02-13 11:15:32'),
-(6, 1, 1, '2026-02-13 10:57:02'),
-(6, 2, 1, '2026-02-13 10:57:02'),
-(6, 9, 1, '2026-02-13 10:57:02'),
-(6, 10, 1, '2026-02-13 10:57:02'),
-(6, 11, 1, '2026-02-13 10:57:02'),
-(6, 12, 1, '2026-02-13 10:57:02'),
-(6, 13, 1, '2026-02-13 10:57:02'),
-(6, 18, 1, '2026-02-13 10:57:02'),
-(6, 22, 1, '2026-02-13 10:57:02'),
-(7, 1, 1, '2026-02-13 10:57:02'),
-(7, 2, 1, '2026-02-13 10:57:02'),
-(7, 3, 1, '2026-02-13 10:57:02'),
-(7, 4, 1, '2026-02-13 10:57:02'),
-(7, 5, 1, '2026-02-13 10:57:02'),
-(7, 6, 1, '2026-02-13 10:57:02'),
-(7, 9, 1, '2026-02-13 10:57:02'),
-(7, 10, 1, '2026-02-13 10:57:02'),
-(7, 11, 1, '2026-02-13 10:57:02'),
-(7, 12, 1, '2026-02-13 10:57:02'),
-(7, 13, 1, '2026-02-13 10:57:02'),
-(7, 14, 1, '2026-02-13 10:57:02'),
-(7, 15, 1, '2026-02-13 10:57:02'),
-(7, 16, 1, '2026-02-13 10:57:02'),
-(7, 18, 1, '2026-02-13 10:57:02'),
-(8, 1, 1, '2026-02-13 10:57:02'),
-(8, 2, 1, '2026-02-13 10:57:02'),
-(8, 3, 1, '2026-02-13 10:57:02'),
-(8, 4, 1, '2026-02-13 10:57:02'),
-(8, 5, 1, '2026-02-13 10:57:02'),
-(8, 6, 1, '2026-02-13 10:57:02'),
-(8, 7, 0, '2026-02-13 11:18:52'),
-(8, 8, 0, '2026-02-13 11:18:52'),
-(8, 9, 1, '2026-02-13 10:57:02'),
-(8, 10, 1, '2026-02-13 10:57:02'),
-(8, 11, 1, '2026-02-13 10:57:02'),
-(8, 12, 1, '2026-02-13 10:57:02'),
-(8, 13, 1, '2026-02-13 10:57:02'),
-(8, 14, 1, '2026-02-13 10:57:02'),
-(8, 15, 1, '2026-02-13 10:57:02'),
-(8, 16, 1, '2026-02-13 10:57:02'),
-(8, 17, 0, '2026-02-13 11:18:52'),
-(8, 18, 1, '2026-02-13 10:57:02'),
-(8, 19, 0, '2026-02-13 11:18:52'),
-(8, 20, 0, '2026-02-13 11:18:52'),
-(8, 21, 0, '2026-02-13 11:18:52'),
-(8, 22, 0, '2026-02-13 11:18:52'),
-(8, 23, 0, '2026-02-13 11:18:52'),
-(8, 24, 0, '2026-02-13 11:18:52'),
-(9, 1, 1, '2026-02-13 10:57:02'),
-(9, 2, 1, '2026-02-13 10:57:02'),
-(9, 3, 1, '2026-02-13 10:57:02'),
-(9, 4, 1, '2026-02-13 10:57:02'),
-(9, 5, 1, '2026-02-13 10:57:02'),
-(9, 6, 1, '2026-02-13 10:57:02'),
-(9, 9, 1, '2026-02-13 10:57:02'),
-(9, 10, 1, '2026-02-13 10:57:02'),
-(9, 11, 1, '2026-02-13 10:57:02'),
-(9, 12, 1, '2026-02-13 10:57:02'),
-(9, 13, 1, '2026-02-13 10:57:02'),
-(9, 14, 1, '2026-02-13 10:57:02'),
-(9, 15, 1, '2026-02-13 10:57:02'),
-(9, 16, 1, '2026-02-13 10:57:02'),
-(9, 18, 1, '2026-02-13 10:57:02'),
-(10, 1, 1, '2026-02-13 10:57:02'),
-(10, 2, 1, '2026-02-13 10:57:02'),
-(10, 7, 1, '2026-02-13 10:57:02'),
-(10, 8, 1, '2026-02-13 10:57:02'),
-(10, 9, 1, '2026-02-13 10:57:02'),
-(10, 10, 1, '2026-02-13 10:57:02'),
-(10, 11, 1, '2026-02-13 10:57:02'),
-(10, 13, 1, '2026-02-13 10:57:02'),
-(10, 18, 1, '2026-02-13 10:57:02'),
-(10, 20, 1, '2026-02-13 10:57:02'),
-(10, 21, 1, '2026-02-13 10:57:02');
+INSERT INTO `proposta_itens` (`id`, `proposta_id`, `produto_id`, `descricao`, `descricao_detalhada`, `fabricante`, `modelo`, `imagem_url`, `quantidade`, `valor_unitario`, `status`, `unidade_medida`, `parametros`, `meses_locacao`, `meses`, `desconto_percent`) VALUES
+(189, 65, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 18, 5702.58, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(190, 62, 12, 'DESFIBRILADOR ', 'Principais funções concentradas em apenas um botão seletor. \nRápida inicialização carregamento de 360 J em menos de 6 segundos', 'INSTRAMED', 'APOLUS ', 'https://frpe.app.br/crm/uploads/products/prod_690a099525520.webp', 1, 12569.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(199, 68, 15, 'Traqueia pediátrica 1200MM X 15MM com 1 conector reto 15mm', 'Circuito para ventilação pediátrico.', 'GLOBALTEC', 'Traqueia pediátrica 1200MM X 15MM  c/1 conector reto.', '', 80, 350.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(204, 69, 19, 'OXIMETRO ', 'Monitor portátil com SPO2, PR, PI, RRP', 'MASIMO ', 'RAD G SEM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911e01074fe3.png', 1, 6600.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(205, 69, 17, 'OXIMETRO', 'Monitor portátil com SPO2, PR, PI, RRP e módulo de temperatura integrado ', 'MASIMO', 'RAD G COM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911dd39c9342.png', 1, 8358.90, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(206, 69, 16, 'MONITOR DE PRESSÃO ARTERIAL DE BRAÇO PROFISSIONAL - MPA', 'Destinado a profissionais da saúde.\nDesign de mesa ideal para consultórios. ​\nModo de medição totalmente automático oscilométrico ou auscultatório.​\nFunção Indicador Zero ​\nPode ser usado com 4 pilhas AA ou com adaptador CA (bivolt automático)​', 'MICROMED', 'OMRON', 'https://frpe.app.br/crm/uploads/products/prod_6911dd100a3fb.webp', 1, 1290.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(207, 69, 18, 'OXÍMETRO DE PULSO DE CABECEIRA', 'Rad-97 com pressão arterial não invasiva (PANI) integrada oferece diversas tecnologias avançadas de monitoramento do paciente — incluindo oximetria de pulso Masimo SET® — em um dispositivo independente compacto, portátil e altamente configurável.', 'MASIMO', 'Rad-97 COM PNI', 'https://frpe.app.br/crm/uploads/products/prod_6911df74c6064.png', 1, 20059.49, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(208, 70, 21, 'PÁ ADESIVA ADULTO DESCARTAVEL DEA / CARDIOMAX', 'PÁ ADESIVA ADULTO DESCARTÁVEL', 'INSTRAMED', 'ADULTO', 'https://frpe.app.br/crm/uploads/products/prod_691249bfe6282.png', 1, 615.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(209, 70, 20, 'PÁ ADESIVA INFANTIL DESCARTAVEL DEA/CARDIOMAX', 'PÁ ADESIVA INFANTIL DESCARTAVEL - DEA/CARDIOMAX', 'INSTRAMED', 'INFANTIL', 'https://frpe.app.br/crm/uploads/products/prod_69124901583c3.png', 1, 615.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(212, 71, 7, 'CARDIOVERSOR ', 'Configuração Básica (ECG, Resp, Desf, ASC, PMS, Li-ion 4 Ah)', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 2, 25098.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMP (Impressora)\",\"valor\":4152},{\"nome\":\"MP (Marcapasso) \",\"valor\":2758},{\"nome\":\"DEA (Desfibrilador Externo Autom\\u00e1tico) \",\"valor\":1602}]', NULL, 1, 0.00),
+(242, 76, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\nAdicionais: MP + IMP + DEA', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23990.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(245, 78, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 10, 7283.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(246, 78, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 10, 4369.80, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(255, 81, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(257, 87, 22, 'MODULO DE BATERIA CARDIOMAX LI-ON 14,4V 4AH 57,6WH', 'Modulo de bateria recarregável para carDiomax li-on 14,4V 4AH 57,6WH', 'INSTRAMED', 'CARDIOMAX', 'https://frpe.app.br/crm/uploads/products/prod_692f33e61ffc4.jpg', 2, 3420.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(268, 88, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(269, 88, 23, 'SUPORTE DE PAREDE EM ACRÍLICO ', 'Suporte de parede em acrílico para DEA', 'INSTRAMED', 'I ON ', 'https://frpe.app.br/crm/uploads/products/prod_69302adc0a423.webp', 1, 635.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(270, 88, 24, 'PLACA ESPAÇO CARDIOPROTEGIDO', '', '', '', 'https://frpe.app.br/crm/uploads/products/prod_69302bd5e098a.png', 1, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(271, 88, 25, 'PLACA PASSO A PASSO ', '', '', '', 'https://frpe.app.br/crm/uploads/products/prod_69302dcc1a1e9.png', 1, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(278, 92, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(279, 92, 28, 'CARRO DE PARADA ', 'Estrutura interna em aço carbono, revestido em polímero de alto impacto ABS com nano tecnologia anti-bacteriana.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(316, 98, NULL, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMP\",\"valor\":4152}]', 1, 1, 0.00),
+(319, 109, 21, 'PÁ ADESIVA ADULTO DESCARTAVEL DEA / CARDIOMAX', 'PÁ ADESIVA ADULTO DESCARTÁVEL', 'INSTRAMED', 'ADULTO', 'https://frpe.app.br/crm/uploads/products/prod_691249bfe6282.png', 1, 615.00, 'VENDA', 'Unidade', NULL, 1, 1, 0.00),
+(321, 111, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, 1, 1, 0.00),
+(322, 111, 31, 'CILINDRO DE O2', 'Capacidade hidráulica 2.8L\nPressão  de serviço 139bar\nAltura 412.8mm\nDiâmetro 111.1mm\nRosca de entrada 3/4 \nPeso 2.3kg ', '', 'GWA15', 'https://frpe.app.br/crm/uploads/products/prod_694ace6e98b05.webp', 1, 2860.00, 'VENDA', 'Unidade', NULL, 1, 1, 0.00),
+(323, 111, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 'VENDA', 'Unidade', NULL, 1, 1, 0.00),
+(337, 114, 32, 'Módulo de bateria (NiMH) - CardioMax', 'Modulo de bateria recarregável para Cardiomax (NiMH)', 'INSTRAMED', 'CARDIOMAX ', 'https://frpe.app.br/crm/uploads/products/prod_695ff7e024858.jpg', 6, 2900.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(338, 114, 22, 'MODULO DE BATERIA CARDIOMAX LI-ON 14,4V 4AH 57,6WH', 'Modulo de bateria recarregável para carDiomax li-on 14,4V 4AH 57,6WH', 'INSTRAMED', 'CARDIOMAX', 'https://frpe.app.br/crm/uploads/products/prod_692f33e61ffc4.jpg', 1, 3920.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(350, 116, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(351, 116, 31, 'CILINDRO DE O2 (vazio)', 'Capacidade hidráulica 2.8L\nPressão  de serviço 139bar\nAltura 412.8mm\nDiâmetro 111.1mm\nRosca de entrada 3/4 \nPeso 2.3kg ', '', 'GWA15', 'https://frpe.app.br/crm/uploads/products/prod_694ace6e98b05.webp', 1, 2860.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(352, 116, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS. \n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMPRESSORA\",\"valor\":4152},{\"nome\":\"MARCAPASSO\",\"valor\":2758},{\"nome\":\"DEA\",\"valor\":1602}]', NULL, 1, 0.00),
+(353, 90, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS \nParâmetros adicionais: MP + DEA + IMP', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 10, 16800.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(364, 120, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA  RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LCD', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 10749.00, 'VENDA', 'Unidade', '[{\"nome\":\"Fun\\u00e7\\u00e3o 3V Monitora\\u00e7\\u00e3o atraves cabo ECG 3vias\",\"valor\":1253},{\"nome\":\"Conector para RCP (somente conector)\",\"valor\":752}]', NULL, 1, 0.00),
+(399, 129, 34, 'SENSOR LÍDICO', 'SENSOR LIDICO (Em comodato acompanha; Monitor multiparamétrico compacto Root® com Modulo Cabo).', 'MASIMO ', 'RD Raimbow set2 4026', 'https://frpe.app.br/crm/uploads/products/prod_6970da50f1c05.png', 10, 2500.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(400, 130, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, MP , Li-ion 4Ah \n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 5, 16050.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(421, 132, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 10, 23082.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(422, 132, 27, 'MONITOR BLT', 'Configuração ECG, SPO2, PNI', 'INSTRAMED', 'M10', 'https://frpe.app.br/crm/uploads/products/prod_6931df2fb1be3.webp', 30, 7720.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(423, 132, 26, 'VENTILADOR BEIRA LEITO ', 'Ventilação invasiva e não invasiva \nBateria interna com autonomia de aproximadamente 4 horas \nNebulizador integrado \n', 'INSTRAMED', 'VG70', 'https://frpe.app.br/crm/uploads/products/prod_6931ddcc8f088.webp', 30, 62900.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(424, 122, 33, 'Eletrocardiógrafo de 12 canais', 'AQUISIÇÃO E IMPRESÃO EM 12 CANAIS SIMUTÂNEOS, INTERPRETATIVO, IMPRESSÃO EM PAPEL TÉRMICO A4, Display Colorido 8”- Teclado QWERTY- Memória 800 exames- Exporta exames em PDF.', 'EDAN', 'SE 1200 EXPRESS', 'https://frpe.app.br/crm/uploads/products/prod_696a54b7a29fa.png', 1, 12876.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(425, 97, 23, 'SUPORTE DE PAREDE EM ACRÍLICO ', 'Suporte de parede em acrílico para DEA', 'INSTRAMED', 'I ON ', 'https://frpe.app.br/crm/uploads/products/prod_69302adc0a423.webp', 1, 635.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(426, 97, 13, 'GABINETE DEA', 'Gabinete metálico para desfibrilador externo automático (DEA), equipado com alarme sonoro.\n\n', 'INSTRAMED', 'DEA', 'https://frpe.app.br/crm/uploads/products/prod_690de965c8b36.webp', 1, 1737.40, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(427, 117, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 2, 8471.00, 'VENDA', 'Unidade', '[{\"nome\":\"FUN\\u00c7\\u00c3O 3V (MONITORIZA\\u00c7\\u00c3O ATRAVES DE CABO DE ECG 3VIAS)\",\"valor\":1253},{\"nome\":\"CONECTOR PARA RCP (SOMENTE CONECTOR)\",\"valor\":1253},{\"nome\":\"RCP MAESTRO (COM DISPLAY)\",\"valor\":4174},{\"nome\":\"GRAVADOR DE SOM AMBIENTE (MICROFONE) \",\"valor\":317}]', NULL, 1, 0.00),
+(428, 110, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(429, 108, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9711.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(430, 108, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(431, 95, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(432, 96, 12, 'DESFIBRILADOR ', 'Principais funções concentradas em apenas um botão seletor. \nRápida inicialização carregamento de 360 J em menos de 6 segundos', 'INSTRAMED', 'APOLUS ', 'https://frpe.app.br/crm/uploads/products/prod_690a099525520.webp', 1, 10055.20, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(433, 94, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9711.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(434, 94, 20, 'PÁ ADESIVA INFANTIL DESCARTAVEL DEA/CARDIOMAX', 'PÁ ADESIVA INFANTIL DESCARTAVEL - DEA/CARDIOMAX', 'INSTRAMED', 'INFANTIL', 'https://frpe.app.br/crm/uploads/products/prod_69124901583c3.png', 1, 615.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(435, 93, 29, 'SENSOR DE FLUXO ', 'Sensor de fluxo para utilização no ventilador pulmonar Shangrila 510S\n', 'AEONMED', '', 'https://frpe.app.br/crm/uploads/products/prod_69383041db97a.webp', 6, 155.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(436, 80, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 12, 500.00, 'LOCAÇÃO', 'mensal', NULL, 12, 1, 0.00),
+(437, 79, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(438, 77, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, DEA/PMS\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"IMP \",\"valor\":4152},{\"nome\":\"DEA\",\"valor\":1602}]', NULL, 1, 0.00),
+(439, 75, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(440, 74, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(441, 73, NULL, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/proposal_items/item_691b672009fc1.png', 1, 7283.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(442, 73, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 4369.80, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(443, 72, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 7990.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(444, 67, 14, 'VENTILADOR ', 'Tela sensível ao toque de 18,5 com interface intuitiva, projetada para agilizar a configuração em situações críticas.\nSeu design versátil permite a utilização em múltiplos ambientes hospitalares da UTI adulta à neonatologia com uma única unidade, otimizando recursos e garantindo continuidade no cuidado ao paciente.', 'TECME', 'BRINA', 'https://frpe.app.br/crm/uploads/products/prod_690df701cb457.png', 1, 69000.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(445, 60, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"Marcapasso\",\"valor\":2758},{\"nome\":\"Impressora\",\"valor\":4152}]', NULL, 1, 0.00),
+(451, 135, NULL, 'Bateria Cardiomax', 'Uma bateria niquel e uma bateria litio', 'Instramed', 'Níquel e Litio', '', 2, 3524.54, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(452, 133, NULL, 'Bateria Cardiomax', '', 'Instramed', 'Níquel', '', 2, 2900.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(453, 133, 32, 'Módulo de bateria (NiMH) - CardioMax', 'Modulo de bateria recarregável para Cardiomax (NiMH)', 'INSTRAMED', 'CARDIOMAX ', 'https://frpe.app.br/crm/uploads/products/prod_695ff7e024858.jpg', 0, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(454, 136, NULL, 'Bateria Cardiomax', '', 'Instramed', 'Níquel', '', 2, 3349.09, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(456, 131, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 5, 23082.00, 'VENDA', 'Unidade', '[{\"nome\":\"marcapasso\",\"valor\":2758},{\"nome\":\"Impressora\",\"valor\":4152}]', NULL, 1, 0.00),
+(457, 138, 36, 'SISTEMA PARA ERGOMETRIA ERGO PC AIR', 'Eletrocardiógrafo digital sem fio de 3, 12 ou 13 derivações simultâneas para realização de teste de esforço.', 'MICROMED', 'ERGOPC AIR', 'uploads/products/prod_697ba726bed16.jpeg', 1, 20713.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(458, 138, 37, 'ESTERIRA ERGOMETRICA', 'Leve, resistente e moderna, feita em alumínio, ideal para uso médico em testes de esforço e cardiopulmonares. Suporta até 200 kg, com ampla área de caminhada, inclinação de 0 a 26% e velocidade máxima de 18 km/h. Possui saída USB nativa para controle automático digital, sistema de fricção reduzida que dispensa lubrificação e operação em 220V/60Hz. Compatível com Ergo PC, Ergo PC Air e Ergo PC Elite. Garantia de 1 ano para a esteira (já incluída a garantia legal) e 3 meses para acessórios (já incluída a garantia legal). Inclui cabo USB. Recomenda-se uso de Nobreak Onda Senoidal (5 KVA, 220V) e instalação em circuito elétrico isolado e aterrado', 'MICROMED', 'C300', 'uploads/products/prod_697ba85eb0a8e.jpeg', 1, 35000.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(470, 137, NULL, 'US Kosmos', '', 'Brasil Médica', 'Torso One', 'uploads/proposal_items/item_6978e021d55d9.jpeg', 1, 49000.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(471, 91, 26, 'VENTILADOR BEIRA LEITO ', 'Ventilação invasiva e não invasiva \nBateria interna com autonomia de aproximadamente 4 horas \nNebulizador integrado \n', 'INSTRAMED', 'VG70', 'https://frpe.app.br/crm/uploads/products/prod_6931ddcc8f088.webp', 30, 62900.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(472, 91, 27, 'MONITOR BLT', 'Configuração ECG, SPO2, PNI', 'INSTRAMED', 'M10', 'https://frpe.app.br/crm/uploads/products/prod_6931df2fb1be3.webp', 30, 7720.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(473, 139, 38, 'CARRO DE EMERGÊNCIA COM NANOTECNOLOGIA ANTIBACTERIANA', '- 01 tábua para massagem cardíaca, 02 gavetas em monobloco de polímero com nanotecnologia antibacteriana, 01 gavetas em monobloco de polímero com nanotecnologia antibacteriana - 01 jogo de divisórias em polímero para 1ra. Gaveta, contendo 20 nichos;  01 braço móvel e bandeja em aço inox com movimento de rotação de 90°; 01 bandeja em aço inox com movimento de rotação de 180° para acomodar o desfibrilador, 02 cintas velcro para segurança do desfibrilador / cardioversor; 01 suporte de soro com haste em aço inox regulável em altura com dois ganchos em polímero;  01 suporte em aço inox para tubo de oxigênio; 01 cinta velcro para fixação de cilindro de oxigênio; 01 jogo de divisórias em polímero para compartimento superior tipo colmeia regulável e removível com 12 nichos; 01 dispositivo em acrílico 4mm para armazenar materiais, 01 cesto aramado para colocação de aspirador. Medidas: comprimento 1025 mm, largura: 570 mm, altura 910 mm aproximadamente.', 'HEALTH ', 'CARRO LIFE AID LA3-101 STANDARD', 'uploads/products/prod_697cfbebea61b.png', 7, 15800.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(486, 143, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\nParâmetros adicionais: MP + DEA + IMP\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 14, 16800.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(487, 143, 27, 'MONITOR BLT', 'Configuração ECG, SPO2, PNI', 'INSTRAMED', 'M10', 'https://frpe.app.br/crm/uploads/products/prod_6931df2fb1be3.webp', 14, 6000.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(488, 143, 39, 'VENTILADOR DE TRANSPORTE', 'Ventilador de Transporte de Emergência Multifuncional, Tela LCD 5\", Atende à norma EN1789, Nível IPX4 à prova d\'água, Alarmes sonoros e visuais.\nNÃO ACOMPANHA CILINDRO DE GÁS.', 'AEONMED', 'SHANGRILAR 510s', 'uploads/products/prod_69823148160d9.png', 14, 21990.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(490, 142, 39, 'VENTILADOR DE TRANSPORTE', 'Ventilador de Transporte de Emergência Multifuncional, Tela LCD 5\", Atende à norma EN1789, Nível IPX4 à prova d\'água, Alarmes sonoros e visuais.\nNÃO ACOMPANHA CILINDRO DE GÁS.', 'AEONMED', 'SHANGRILAR 510s', 'uploads/products/prod_69823148160d9.png', 3, 28000.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(497, 89, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\nParâmetros adicionais: MP, IMP E DEA\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(498, 144, 40, 'VENTILADOR ', 'Ventilador beira leito, com suporte para ventilação invasiva e não invasiva, indicado para pacientes adultos, pediátricos e neonatais, adequado para transporte intra-hospitalar.', 'TECME ', 'TS+', 'uploads/products/prod_698614e2deb07.png', 3, 61900.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(507, 141, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(508, 141, 14, 'VENTILADOR ', 'Tela sensível ao toque de 18,5 com interface intuitiva, projetada para agilizar a configuração em situações críticas.\nSeu design versátil permite a utilização em múltiplos ambientes hospitalares da UTI adulta à neonatologia com uma única unidade, otimizando recursos e garantindo continuidade no cuidado ao paciente.', 'TECME', 'BRINA', 'https://frpe.app.br/crm/uploads/products/prod_690df701cb457.png', 1, 118312.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(509, 141, 35, 'MONITOR ', 'Configuração ECG, Resp, PMS, ST, SPO2, PNI Z, 2 Temp, Bateria', 'INSTRAMED', 'InMax 12', 'uploads/products/prod_69810e0520771.webp', 1, 13890.00, 'VENDA', 'Unidade', '[{\"nome\":\"EtCO2 (capnografia Microstream)\",\"valor\":11922}]', NULL, 1, 0.00),
+(510, 150, 14, 'VENTILADOR ', 'Tela sensível ao toque de 18,5 com interface intuitiva, projetada para agilizar a configuração em situações críticas.\nSeu design versátil permite a utilização em múltiplos ambientes hospitalares da UTI adulta à neonatologia com uma única unidade, otimizando recursos e garantindo continuidade no cuidado ao paciente.', 'TECME', 'BRINA', 'https://frpe.app.br/crm/uploads/products/prod_690df701cb457.png', 1, 89000.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(511, 151, 42, 'VÁLVULA EXPIRATÓRIA ', '', 'TECME ', 'VÁLVULA EXPIRATÓRIA GRAPHNET ', 'uploads/products/prod_698a1cc4e47bf.png', 4, 1506.10, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(512, 66, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 8471.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(513, 66, 13, 'GABINETE DEA', 'Gabinete metálico para desfibrilador externo automático (DEA), equipado com alarme sonoro.\n\n', 'INSTRAMED', 'DEA', 'https://frpe.app.br/crm/uploads/products/prod_690de965c8b36.webp', 1, 1737.40, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(515, 152, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23732.00, 'VENDA', 'Unidade', '[{\"nome\":\"Marcapasso\",\"valor\":2836}]', NULL, 1, 0.00),
+(517, 153, NULL, 'Cardiomax', 'Com Marca Passo', 'Instramed', 'Lite', '', 1, 23732.00, 'VENDA', 'Unidade', '[{\"nome\":\"Marca Passo\",\"valor\":2836}]', NULL, 1, 0.00),
+(518, 154, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9500.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(519, 154, 38, 'CARRO DE EMERGÊNCIA COM NANOTECNOLOGIA ANTIBACTERIANA', '- 01 tábua para massagem cardíaca, 02 gavetas em monobloco de polímero com nanotecnologia antibacteriana, 01 gavetas em monobloco de polímero com nanotecnologia antibacteriana - 01 jogo de divisórias em polímero para 1ra. Gaveta, contendo 20 nichos;  01 braço móvel e bandeja em aço inox com movimento de rotação de 90°; 01 bandeja em aço inox com movimento de rotação de 180° para acomodar o desfibrilador, 02 cintas velcro para segurança do desfibrilador / cardioversor; 01 suporte de soro com haste em aço inox regulável em altura com dois ganchos em polímero;  01 suporte em aço inox para tubo de oxigênio; 01 cinta velcro para fixação de cilindro de oxigênio; 01 jogo de divisórias em polímero para compartimento superior tipo colmeia regulável e removível com 12 nichos; 01 dispositivo em acrílico 4mm para armazenar materiais, 01 cesto aramado para colocação de aspirador. Medidas: comprimento 1025 mm, largura: 570 mm, altura 910 mm aproximadamente.', 'HEALTH ', 'CARRO LIFE AID LA3-101 STANDARD', 'uploads/products/prod_697cfbebea61b.png', 1, 15800.00, 'VENDA', 'Unidade', NULL, NULL, 1, 5.00),
+(520, 155, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 2, 500.00, 'LOCAÇÃO', 'Unidade', NULL, 1, 1, 0.00),
+(521, 156, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9100.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(522, 156, 13, 'GABINETE DEA', 'Gabinete metálico para desfibrilador externo automático (DEA), equipado com alarme sonoro.\n\n', 'INSTRAMED', 'DEA', 'https://frpe.app.br/crm/uploads/products/prod_690de965c8b36.webp', 1, 1737.40, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(523, 156, 24, 'PLACA ESPAÇO CARDIOPROTEGIDO', '', 'FR - GRAFICA RECIFE', '', 'https://frpe.app.br/crm/uploads/products/prod_69302bd5e098a.png', 1, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(524, 156, 25, 'PLACA PASSO A PASSO ', '', 'FR - GRAFICA RECIFE', '', 'https://frpe.app.br/crm/uploads/products/prod_69302dcc1a1e9.png', 1, 0.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(525, 157, 7, 'CARDIOVERSOR ', 'Configuração ECG, Resp, Desf, ASC, PMS, Li-ion 4Ah.\n', 'INSTRAMED', 'CARDIOMAX LITE ', 'https://frpe.app.br/crm/uploads/products/prod_6903595b83c0b.png', 1, 23082.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(526, 158, NULL, 'US Kosmos', 'Sonda Lexsa + Bridge ', 'Brasil Médica', 'Lexsa + Bridge', 'uploads/proposal_items/item_698f3e38cdc94.jpeg', 1, 79000.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00);
 
 -- --------------------------------------------------------
 
@@ -2534,8 +2245,7 @@ CREATE TABLE `usuarios` (
   `email` varchar(255) NOT NULL,
   `telefone` varchar(255) DEFAULT NULL,
   `senha` varchar(255) NOT NULL,
-  `role` varchar(50) NOT NULL,
-  `cargo` varchar(100) DEFAULT NULL,
+  `role` enum('Gestor','Comercial','Vendedor','Especialista','Analista','Representante','Marketing') NOT NULL,
   `status` enum('Ativo','Inativo') NOT NULL DEFAULT 'Ativo',
   `data_criacao` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -2544,17 +2254,17 @@ CREATE TABLE `usuarios` (
 -- Despejando dados para a tabela `usuarios`
 --
 
-INSERT INTO `usuarios` (`id`, `nome`, `email`, `telefone`, `senha`, `role`, `cargo`, `status`, `data_criacao`) VALUES
-(1, 'Eduardo Cabral', 'licitacao@frpe.com.br', '(81) 99555-0880', '$2y$10$CbHF8TihTVGnFyuHgDAMZ.05kOfQ0M4ydw.E4NFjCaDH/dgMU.MwS', 'SUPER_ADMIN', 'Analista', 'Ativo', '2025-09-22 17:47:11'),
-(2, 'Laylla Costa', 'frpe@frpe.com.br', '8199181-2762', '$2y$10$bqCebYDYud5ruK2Gwo29U.FI8LBiYq45wsDq/CiNJ0DTEE2axzAK.', 'COMERCIAL', 'Comercial/Vendas', 'Ativo', '2025-09-29 10:59:25'),
-(3, 'Mateus Brito', 'mateusbrito@frpe.com.br', '81 99921-7832', '$2y$10$DCI6XFAVfguwFtllPYkNsetvQhl1JmcjxV/9GAjPJnLx8uMy.BzBC', 'ESPECIALISTA', 'Especialista', 'Ativo', '2025-09-29 13:56:47'),
-(4, 'Paulo Quintino', 'paulo@frpe.com.br', '81 99163-1034', '$2y$10$65Q5asKCHOsC00W9uihGZuuNGO6eLjZcy0eW.QuTxG7lWqYYhowzi', 'VENDEDOR', 'Executivo de Vendas', 'Ativo', '2025-09-29 13:57:22'),
-(6, 'Gustavo Miguel', 'gustavo@frpe.com.br', '(81) 9996-70423', '$2y$10$9zfom.2Lg00kkUbSyACDBOfDJQVYLmdDKeKV6h3OBL3.eE1c3F1oi', 'VENDEDOR', 'Executivo de Vendas', 'Ativo', '2025-10-16 01:32:43'),
-(7, 'Rubens Arantes Júnior', 'rubensjr@frpe.com.br', '81 9978-6252', '$2y$10$n16/G4GRJyjRVbjNVsey7.mQl4cHOiTmbM7VFxPXZNaxmZlZbJeum', 'DIRETOR', 'CEO', 'Ativo', '2025-10-17 12:17:54'),
-(8, 'Sandra Remigio', 'sandra@frpe.com.br', '81 99290-9200', '$2y$10$.WjtoMgDh5Pdvx7U5LCon.K7Pl6kG50tZVMqMi9WYTwYBAMS03xSC', 'GESTOR', 'Gestora Comercial', 'Ativo', '2025-11-10 20:58:55'),
-(9, 'Dyara ', 'dyara@frpe.com.br', '84 98730-3243', '$2y$10$IoSBau78YoB/QzX1vNbTm.b1I9TWFA7zlJxNVoWOFdPfh3HoNEXVG', 'VENDEDOR', 'Executivo de Vendas', 'Ativo', '2026-01-09 14:52:48'),
-(10, 'Betânia ', 'betania@frpe.com.br', '84 99407-3545', '$2y$10$Oc30.vk.MCYpNf0NJDZbnOGzmOT/BpCn5SlSXUHmo35riKbe607iu', 'VENDEDOR', 'Executivo de Vendas', 'Ativo', '2026-01-09 14:54:30'),
-(12, 'Eduardo', 'frpe@frpe.app.br', '8199221570', '$2y$10$dU4s/gpb54a7fmqznpqMV.BfDe6aEebWVNshuVDNd53mGB9k1U20.', 'TECNICO', 'SUPORTE', 'Ativo', '2026-02-04 20:37:04');
+INSERT INTO `usuarios` (`id`, `nome`, `email`, `telefone`, `senha`, `role`, `status`, `data_criacao`) VALUES
+(1, 'Eduardo Cabral', 'licitacao@frpe.com.br', '(81) 99555-0880', '$2y$10$WkzOh.1X0fch7tATSm4S6O909ZQJkco.V8EWd9e7rN969cIlZgqc.', 'Analista', 'Ativo', '2025-09-22 17:47:11'),
+(2, 'Laylla Costa', 'frpe@frpe.com.br', '8199181-2762', '$2y$10$bqCebYDYud5ruK2Gwo29U.FI8LBiYq45wsDq/CiNJ0DTEE2axzAK.', 'Comercial', 'Ativo', '2025-09-29 10:59:25'),
+(3, 'Mateus Brito', 'mateusbrito@frpe.com.br', '81 99921-7832', '$2y$10$DCI6XFAVfguwFtllPYkNsetvQhl1JmcjxV/9GAjPJnLx8uMy.BzBC', 'Especialista', 'Ativo', '2025-09-29 13:56:47'),
+(4, 'Paulo Quintino', 'paulo@frpe.com.br', '81 99163-1034', '$2y$10$65Q5asKCHOsC00W9uihGZuuNGO6eLjZcy0eW.QuTxG7lWqYYhowzi', 'Vendedor', 'Ativo', '2025-09-29 13:57:22'),
+(6, 'Gustavo Miguel', 'gustavo@frpe.com.br', '(81) 9996-70423', '$2y$10$9zfom.2Lg00kkUbSyACDBOfDJQVYLmdDKeKV6h3OBL3.eE1c3F1oi', 'Vendedor', 'Ativo', '2025-10-16 01:32:43'),
+(7, 'Rubens Arantes Júnior', 'rubensjr@frpe.com.br', '81 9978-6252', '$2y$10$n16/G4GRJyjRVbjNVsey7.mQl4cHOiTmbM7VFxPXZNaxmZlZbJeum', 'Gestor', 'Ativo', '2025-10-17 12:17:54'),
+(8, 'Sandra Remigio', 'sandra@frpe.com.br', '81 99290-9200', '$2y$10$.WjtoMgDh5Pdvx7U5LCon.K7Pl6kG50tZVMqMi9WYTwYBAMS03xSC', 'Gestor', 'Ativo', '2025-11-10 20:58:55'),
+(9, 'Dyara ', 'dyara@frpe.com.br', '84 98730-3243', '$2y$10$IoSBau78YoB/QzX1vNbTm.b1I9TWFA7zlJxNVoWOFdPfh3HoNEXVG', 'Vendedor', 'Ativo', '2026-01-09 14:52:48'),
+(10, 'Betânia ', 'betania@frpe.com.br', '84 99407-3545', '$2y$10$Oc30.vk.MCYpNf0NJDZbnOGzmOT/BpCn5SlSXUHmo35riKbe607iu', 'Vendedor', 'Ativo', '2026-01-09 14:54:30'),
+(12, 'Eduardo', 'frpe@frpe.app.br', '8199221570', '$2y$10$EbWfU9YJwMW4pELGLYOHr.UIXOHiXTjyEGD3Ybxa6b6an1vqKIGoW', 'Comercial', 'Ativo', '2026-02-04 20:37:04');
 
 -- --------------------------------------------------------
 
@@ -2752,14 +2462,6 @@ ALTER TABLE `organizacoes`
   ADD UNIQUE KEY `cnpj` (`cnpj`);
 
 --
--- Índices de tabela `permissions`
---
-ALTER TABLE `permissions`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uniq_resource_action` (`resource`,`action`),
-  ADD UNIQUE KEY `unique_res_act` (`resource`,`action`);
-
---
 -- Índices de tabela `produtos`
 --
 ALTER TABLE `produtos`
@@ -2784,20 +2486,6 @@ ALTER TABLE `proposta_itens`
   ADD PRIMARY KEY (`id`),
   ADD KEY `proposta_id` (`proposta_id`),
   ADD KEY `fk_item_produto` (`produto_id`);
-
---
--- Índices de tabela `roles`
---
-ALTER TABLE `roles`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `name` (`name`);
-
---
--- Índices de tabela `role_permissions`
---
-ALTER TABLE `role_permissions`
-  ADD PRIMARY KEY (`role_id`,`permission_id`),
-  ADD KEY `fk_rp_perm` (`permission_id`);
 
 --
 -- Índices de tabela `usuarios`
@@ -2832,7 +2520,7 @@ ALTER TABLE `vendas_objetivos`
 -- AUTO_INCREMENT de tabela `agendamentos`
 --
 ALTER TABLE `agendamentos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT de tabela `clientes_pf`
@@ -2844,7 +2532,7 @@ ALTER TABLE `clientes_pf`
 -- AUTO_INCREMENT de tabela `contatos`
 --
 ALTER TABLE `contatos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT de tabela `etapas_funil`
@@ -2862,13 +2550,13 @@ ALTER TABLE `fornecedores`
 -- AUTO_INCREMENT de tabela `fornecedor_metas`
 --
 ALTER TABLE `fornecedor_metas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT de tabela `fornecedor_metas_estados`
 --
 ALTER TABLE `fornecedor_metas_estados`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
 
 --
 -- AUTO_INCREMENT de tabela `funis`
@@ -2892,25 +2580,19 @@ ALTER TABLE `leads`
 -- AUTO_INCREMENT de tabela `oportunidades`
 --
 ALTER TABLE `oportunidades`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=200;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=202;
 
 --
 -- AUTO_INCREMENT de tabela `oportunidade_itens`
 --
 ALTER TABLE `oportunidade_itens`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=114;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=115;
 
 --
 -- AUTO_INCREMENT de tabela `organizacoes`
 --
 ALTER TABLE `organizacoes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=947;
-
---
--- AUTO_INCREMENT de tabela `permissions`
---
-ALTER TABLE `permissions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=949;
 
 --
 -- AUTO_INCREMENT de tabela `produtos`
@@ -2922,19 +2604,13 @@ ALTER TABLE `produtos`
 -- AUTO_INCREMENT de tabela `propostas`
 --
 ALTER TABLE `propostas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=157;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=159;
 
 --
 -- AUTO_INCREMENT de tabela `proposta_itens`
 --
 ALTER TABLE `proposta_itens`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=525;
-
---
--- AUTO_INCREMENT de tabela `roles`
---
-ALTER TABLE `roles`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=527;
 
 --
 -- AUTO_INCREMENT de tabela `usuarios`
@@ -3009,13 +2685,6 @@ ALTER TABLE `oportunidades`
 --
 ALTER TABLE `propostas`
   ADD CONSTRAINT `fk_propostas_atualizado_por` FOREIGN KEY (`atualizado_por_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL;
-
---
--- Restrições para tabelas `role_permissions`
---
-ALTER TABLE `role_permissions`
-  ADD CONSTRAINT `fk_rp_perm` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_rp_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE;
 
 --
 -- Restrições para tabelas `vendas_objetivos`

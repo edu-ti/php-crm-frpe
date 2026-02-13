@@ -1,6 +1,6 @@
 // js/views/email_marketing.js
 
-import { appState } from '../script.js';
+import { appState } from '../state.js';
 import { apiCall } from '../api.js';
 import { showToast, showLoading } from '../utils.js';
 import { renderModal, closeModal } from '../ui.js';

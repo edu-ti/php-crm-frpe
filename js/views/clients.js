@@ -1,5 +1,6 @@
 // js/views/clients.js
-import { appState, initializeApp } from '../script.js'; // Adicionado initializeApp
+import { appState } from '../state.js';
+import { initializeApp } from '../script.js'; // Adicionado initializeApp
 import { apiCall } from '../api.js';
 import { showToast, setupApiFetch, showLoading } from '../utils.js'; // Adicionado showLoading
 import { renderModal, closeModal } from '../ui.js'; // Adicionado renderModal, closeModal

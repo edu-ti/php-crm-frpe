@@ -1,6 +1,7 @@
 // js/views/agenda.js
 
-import { appState, initializeApp } from '../script.js'; // Importa initializeApp
+import { appState } from '../state.js';
+import { initializeApp } from '../script.js'; // Importa initializeApp
 import { apiCall } from '../api.js';
 import { showToast, formatDate, showLoading } from '../utils.js';
 import { renderModal, closeModal } from '../ui.js';
