@@ -52,7 +52,7 @@ export async function initProposalsView() {
             return;
         }
         loadProposals(true);
-    }, 1000); // 1 segundos
+    }, 5000); // 5 segundos
 }
 
 export async function loadProposals(isSilent = false) {
@@ -303,6 +303,9 @@ function renderProposalsList() {
         return direction === 'asc' ? '<i class="fas fa-sort-up ml-2"></i>' : '<i class="fas fa-sort-down ml-2"></i>';
     };
 
+    const scrollContainer = container.querySelector('.overflow-x-auto');
+    const scrollLeft = scrollContainer ? scrollContainer.scrollLeft : 0;
+
     container.innerHTML = `
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 responsive-table">
@@ -356,6 +359,12 @@ function renderProposalsList() {
             </div>
         </div>
     `;
+
+    // Restaura a posição do scroll
+    const newScrollContainer = container.querySelector('.overflow-x-auto');
+    if (newScrollContainer) {
+        newScrollContainer.scrollLeft = scrollLeft;
+    }
 
     addProposalCardEventListeners();
 
@@ -695,7 +704,12 @@ function renderProposalItemsSection() {
         // O multiplicador "24" antigo foi removido em favor da entrada manual.
         const itemTotal = (item.quantidade || 0) * valor_unitario_total * meses;
 
-        totalProposta += itemTotal;
+        // Aplica o desconto se houver
+        const descontoPercent = parseFloat(item.desconto_percent) || 0;
+        const valorDesconto = itemTotal * (descontoPercent / 100);
+        const itemTotalComDesconto = itemTotal - valorDesconto;
+
+        totalProposta += itemTotalComDesconto;
         const imageUrl = item.imagem_url || 'https://placehold.co/100x100/e2e8f0/64748b?text=Imagem';
         // --- FIM: Lógica de Cálculo de Valor ---
 
@@ -765,7 +779,10 @@ function renderProposalItemsSection() {
 
                  <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4 pt-4 border-t">
                     <div><label class="form-label">Quantidade*</label><input type="number" data-index="${index}" name="item_quantidade" required class="form-input" value="${item.quantidade || 1}" min="1"></div>
-                    <div><label class="form-label">Valor Unitário*</label><input type="text" inputmode="decimal" data-index="${index}" name="item_valor_unitario" required class="form-input" value="${formatCurrencyForInput(item.valor_unitario)}" placeholder="0,00"></div>
+                    <div>
+                        <label class="form-label">Valor Unitário*</label>
+                        <input type="text" inputmode="decimal" data-index="${index}" name="item_valor_unitario" required class="form-input" value="${formatCurrencyForInput(item.valor_unitario)}" placeholder="0,00" ${canEditUnitPrice() ? '' : 'disabled'}>
+                    </div>
                     
                     <!-- CAMPO MESES LOCAÇÃO: Condicional -->
                     <div class="${isLocacao ? '' : 'hidden'}">
@@ -774,7 +791,14 @@ function renderProposalItemsSection() {
                     </div>
                     
                     <div><label class="form-label">Unidade de Medida</label><input type="text" data-index="${index}" name="item_unidade_medida" class="form-input" value="${item.unidade_medida || 'Unidade'}"></div>
-                    <div><label class="form-label">Subtotal</label><input type="text" class="form-input bg-gray-100 font-bold" value="${formatCurrency(itemTotal)}" readonly></div>
+                    
+                     <!-- --- NOVO CAMPO: DESCONTO (%) --- -->
+                    <div>
+                        <label class="form-label">Desconto (%)</label>
+                        <input type="number" data-index="${index}" name="item_desconto_percent" class="form-input" value="${item.desconto_percent || 0}" min="0" max="10" step="0.1" placeholder="0">
+                    </div>
+                    
+                    <div><label class="form-label">Subtotal</label><input type="text" class="form-input bg-gray-100 font-bold" value="${formatCurrency(itemTotalComDesconto)}" readonly></div>
                 </div>
             </div>
         `;
@@ -969,6 +993,10 @@ function renderPropCatalogResults(searchTerm) {
             const productId = e.currentTarget.dataset.productId;
             const product = appState.products.find(p => p.id == productId);
             if (product) {
+
+                // Remove item vazio antes de adicionar um novo do catálogo
+                appState.proposal.items = appState.proposal.items.filter(item => item.descricao && item.descricao.trim() !== '');
+
                 appState.proposal.items.push({
                     id: `temp_prod_${product.id}_${Date.now()}`,
                     produto_id: product.id,
@@ -1013,6 +1041,13 @@ function handleItemInputChange(e) {
         renderProposalItemsSection();
     } else if (prop === 'quantidade') {
         appState.proposal.items[index][prop] = parseInt(value) || 0;
+        // Re-renderiza para atualizar o subtotal
+        renderProposalItemsSection();
+    } else if (prop === 'desconto_percent') {
+        let val = parseFloat(value) || 0;
+        if (val > 10) val = 10;
+        if (val < 0) val = 0;
+        appState.proposal.items[index][prop] = val;
         // Re-renderiza para atualizar o subtotal
         renderProposalItemsSection();
     } else {
@@ -1197,7 +1232,8 @@ async function handleCreateProposalFromOpp(e) {
         // Garante que parâmetros sejam um array, mesmo se nulos
         parametros: (item.parametros && Array.isArray(item.parametros))
             ? item.parametros.map(p => ({ nome: p.nome, valor: parseCurrency(p.valor) }))
-            : []
+            : [],
+        desconto_percent: 0
     }));
 
     // Fallback se 'items' não veio da API
@@ -1213,7 +1249,8 @@ async function handleCreateProposalFromOpp(e) {
             valor_unitario: parseFloat(opp.valor_unitario) || 0,
             status: 'VENDA',
             unidade_medida: 'Unidade',
-            parametros: []
+            parametros: [],
+            desconto_percent: 0
         });
     }
     // --- FIM DA ALTERAÇÃO ---
@@ -1266,6 +1303,7 @@ async function handleProposalFormSubmit(e) {
         }
         // Garante que valor unitário seja número
         newItem.valor_unitario = parseCurrency(newItem.valor_unitario);
+        newItem.desconto_percent = parseFloat(newItem.desconto_percent) || 0;
         // --- ALTERAÇÃO: Garante que valor do parâmetro é NÚMERO ---
         if (newItem.parametros && Array.isArray(newItem.parametros)) {
             newItem.parametros = newItem.parametros.map(param => ({
@@ -1395,3 +1433,11 @@ function renderClientPfFormFieldsForModal(data) {
     `;
 }
 
+
+function canEditUnitPrice() {
+    const { role } = appState.currentUser;
+    // Permite: ANALISTA, COMERCIAL, GESTOR, DIRETOR, SUPER_ADMIN
+    // Bloqueia: VENDEDOR, ESPECIALISTA, MARKETING, REPRESENTANTE, FINANCEIRO, TECNICO
+    const allowedRoles = ['Analista', 'Comercial', 'Gestor', 'Diretor', 'Super Admin', 'Admin'];
+    return allowedRoles.includes(role);
+}

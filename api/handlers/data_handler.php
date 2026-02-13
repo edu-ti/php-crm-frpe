@@ -260,7 +260,7 @@ function handle_get_data($pdo)
 
     $response_data = [
         'currentUser' => $currentUser,
-        'users' => $pdo->query("SELECT id, nome, role, email, telefone, status FROM usuarios")->fetchAll(PDO::FETCH_ASSOC),
+        'users' => $pdo->query("SELECT id, nome, role, email, telefone, cargo, status FROM usuarios")->fetchAll(PDO::FETCH_ASSOC),
         'opportunities' => $opportunities,
         'organizations' => $pdo->query("SELECT * FROM organizacoes ORDER BY nome_fantasia ASC")->fetchAll(PDO::FETCH_ASSOC),
         'contacts' => $pdo->query("SELECT c.*, o.nome_fantasia as organizacao_nome FROM contatos c JOIN organizacoes o ON c.organizacao_id = o.id ORDER BY c.nome ASC")->fetchAll(PDO::FETCH_ASSOC),

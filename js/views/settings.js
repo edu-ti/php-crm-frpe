@@ -163,7 +163,12 @@ function openUserModal(user) {
             }
             renderSettingsView();
             closeModal();
-        } catch (error) { }
+            renderSettingsView();
+            closeModal();
+        } catch (error) {
+            console.error(error);
+            showToast(error.message || 'Erro ao salvar usuário.', 'error');
+        }
     });
 }
 
