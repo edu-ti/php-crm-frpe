@@ -356,7 +356,7 @@ function populateFilters() {
     renderMultiSelect('filter-supplier-container', 'supplier-select', suppliers.map(s => ({ value: s.id, label: s.nome })), 'Todos os Fornecedores');
 
     const users = appState.users || [];
-    const sellers = users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista', 'CEO', 'Executivo de Vendas', 'Gestor Comercial', 'Comercial/Vendas'].includes(u.role));
+    const sellers = users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista'].includes(u.role));
     renderMultiSelect('filter-user-container', 'user-select', sellers.map(u => ({ value: u.id, label: u.nome })), 'Todos os Vendedores');
 
     // --- Novos Filtros ---
@@ -556,34 +556,20 @@ async function loadReportData() {
 
 function renderReports(data, container, type, startStr, endStr) {
     if (!data) data = [];
+    if (!Array.isArray(data)) {
+        console.warn('Data is not an array, converting from object:', data);
+        data = Object.values(data);
+    }
 
-    // Special handling for lost_reasons which returns an object { summary: [], details: [] }
-    if (type === 'lost_reasons') {
-        // Validation for lost_reasons object
-        if (data.summary && Array.isArray(data.summary) && data.summary.length === 0 &&
-            data.details && Array.isArray(data.details) && data.details.length === 0) {
-            container.innerHTML = `<div class="bg-blue-50 p-8 border border-blue-200 text-blue-700 rounded text-center">Nenhum dado encontrado para o período.</div>`;
-            return;
-        }
-    } else {
-        // Logic for other reports which are arrays
-        if (!Array.isArray(data)) {
-            console.warn('Data is not an array, converting from object:', data);
-            data = Object.values(data);
-        }
-
-        if (data.length === 0) {
-            container.innerHTML = `<div class="bg-blue-50 p-8 border border-blue-200 text-blue-700 rounded text-center">Nenhum dado encontrado para o período.</div>`;
-            return;
-        }
+    if (data.length === 0) {
+        container.innerHTML = `<div class="bg-blue-50 p-8 border border-blue-200 text-blue-700 rounded text-center">Nenhum dado encontrado para o período.</div>`;
+        return;
     }
 
     const monthsRange = getMonthsBetween(startStr, endStr);
 
     // Render Chart
-    // lost_reasons is an object {summary, details}, so we handle its chart inside its specific block or pass summary here.
-    // However, since we handle it specifically below, we skip it here to avoid passing the object.
-    if (typeof renderSalesChart === 'function' && type !== 'lost_reasons') {
+    if (typeof renderSalesChart === 'function') {
         renderSalesChart(data, monthsRange, type);
     }
 
@@ -610,13 +596,7 @@ function renderReports(data, container, type, startStr, endStr) {
     }
 
     if (type === 'lost_reasons') {
-        const summary = data.summary || [];
-        const details = data.details || [];
-        // Pass summary to chart
-        if (typeof renderSalesChart === 'function') {
-            renderSalesChart(summary, monthsRange, type);
-        }
-        const html = renderLostReasonsTable(summary, details);
+        const html = renderLostReasonsTable(data);
         container.innerHTML = html;
         return;
     }
@@ -730,7 +710,6 @@ function renderSalesChart(data, monthsRange, type) {
 
     // --- LOST REASONS CHART ---
     if (type === 'lost_reasons') {
-        // Data passed here is summary array
         const labels = data.map(r => r.motivo);
         const values = data.map(r => parseInt(r.qtd));
 
@@ -1304,11 +1283,11 @@ function renderFunnelTable(data) {
     `;
 }
 
-function renderLostReasonsTable(summary, details = []) {
+function renderLostReasonsTable(data) {
     const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-    const totalCount = summary.reduce((acc, row) => acc + parseInt(row.qtd), 0);
+    const totalCount = data.reduce((acc, row) => acc + parseInt(row.qtd), 0);
 
-    const summaryHtml = `
+    return `
         <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
             <div class="px-6 py-4 bg-red-50 border-b border-red-100 flex justify-between items-center">
                 <h3 class="font-bold text-red-700">Análise de Propostas recusadas</h3>
@@ -1326,7 +1305,7 @@ function renderLostReasonsTable(summary, details = []) {
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            ${summary.map((row, index) => {
+                            ${data.map((row, index) => {
         const count = parseInt(row.qtd) || 0;
         const percent = totalCount > 0 ? (count / totalCount) * 100 : 0;
         return `
@@ -1341,58 +1320,15 @@ function renderLostReasonsTable(summary, details = []) {
                     </table>
                 </div>
                 
+                <!-- Chart Area (Managed by separate canvas in main container usually, but let's try embedding specific here or use the main one) -->
+                <!-- Note: The main chart logic uses #sales-chart which is outside this container. -->
+                <!-- For Pie chart, it's better to use the main chart area. -->
                 <div class="flex items-center justify-center text-gray-400 text-sm italic">
                     (Visualize o gráfico acima)
                 </div>
             </div>
         </div>
     `;
-
-    // New Details Table
-    let detailsHtml = '';
-    if (details.length > 0) {
-        detailsHtml = `
-            <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
-                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900">Detalhes das Propostas Recusadas</h3>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                         <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número da Proposta</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            ${details.map(row => `
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600 hover:text-indigo-800">
-                                        <a href="#proposals?id=${row.proposta_id}" target="_blank">${row.numero_proposta || 'N/A'}</a>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${row.motivo}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">${format(parseFloat(row.valor_total) || 0)}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">
-                                        ${new Date(row.data_criacao).toLocaleDateString('pt-BR')}
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    } else {
-        detailsHtml = `
-             <div class="mb-8 bg-white shadow rounded-lg p-6 text-center text-gray-500">
-                Nenhuma proposta encontrada no período.
-            </div>
-        `;
-    }
-
-    return summaryHtml + detailsHtml;
 }
 
 // Fallback logic to prevent "is not defined" errors during cache updates

@@ -121,7 +121,7 @@ async function switchView(viewName) {
         'agenda': renderAgendaView,
         'clients': renderClientsView,
         'proposals': initProposalsView,
-        // 'leads': renderLeadsView,
+        'leads': renderLeadsView,
         'settings': renderSettingsView,
         'catalog': renderCatalogView,
         'email-marketing': renderEmailMarketingView
@@ -129,7 +129,7 @@ async function switchView(viewName) {
 
     if (renderFunction) {
         try {
-            renderFunction(appState);
+            renderFunction();
         } catch (error) {
             console.error(`Erro ao renderizar a view "${viewName}":`, error);
             // Opcional: Mostrar uma mensagem de erro na UI
@@ -299,13 +299,13 @@ function renderUI() {
     const navLinks = [
         { id: 'dashboard', icon: 'fa-chart-pie', text: 'Dashboard', permission: true },
         { id: 'funil', icon: 'fa-columns', text: 'Funil Vendas', permission: true },
-        { id: 'leads', icon: 'fa-filter', text: 'Funil Leads Online', permission: permissions.canViewLeadsOnline },
-        { id: 'agenda', icon: 'fa-calendar-alt', text: 'Agenda', permission: permissions.canSeeSchedule },
+        { id: 'leads', icon: 'fa-filter', text: 'Funil Leads Online', permission: permissions.canSeeLeads && !['Vendedor', 'Especialista'].includes(currentUser.role) },
+        { id: 'agenda', icon: 'fa-calendar-alt', text: 'Agenda', permission: true },
         { id: 'clients', icon: 'fa-users', text: 'Clientes', permission: true },
-        { id: 'proposals', icon: 'fa-file-invoice-dollar', text: 'Propostas', permission: permissions.canViewProposals !== false }, // Only hide if explicitly restricted
-        { id: 'catalog', icon: 'fa-book-open', text: 'Catálogo', permission: permissions.canSeeCatalog },
-        { id: 'email-marketing', icon: 'fa-bullhorn', text: 'Marketing', permission: permissions.canSeeMarketing },
-        { id: 'reports', icon: 'fa-chart-line', text: 'Relatórios', permission: permissions.canSeeReports },
+        { id: 'proposals', icon: 'fa-file-invoice-dollar', text: 'Propostas', permission: true },
+        { id: 'catalog', icon: 'fa-book-open', text: 'Catálogo', permission: permissions.canSeeCatalog }, // Usar permissão
+        { id: 'email-marketing', icon: 'fa-bullhorn', text: 'Marketing', permission: permissions.canManageLeads && !['Vendedor', 'Especialista'].includes(currentUser.role) }, // Nova aba e permissão
+        { id: 'reports', icon: 'fa-chart-line', text: 'Relatórios', permission: permissions.canSeeReports }, // Nova aba Relatórios
         { id: 'settings', icon: 'fa-cog', text: 'Configurações', permission: permissions.canSeeSettings }
     ];
 

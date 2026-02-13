@@ -3,19 +3,17 @@
 
 require_once dirname(__DIR__, 2) . '/config.php';
 
-function handle_create_user($pdo, $data)
-{
-    if (!in_array($_SESSION['role'], ['SUPER_ADMIN', 'DIRETOR', 'Gestor', 'Analista', 'CEO', 'Gestor Comercial'])) {
+function handle_create_user($pdo, $data) {
+    if ($_SESSION['role'] !== 'Gestor' && $_SESSION['role'] !== 'Analista') {
         json_response(['success' => false, 'error' => 'Acesso negado.'], 403);
     }
     if (empty($data['nome']) || empty($data['email']) || empty($data['senha']) || empty($data['role']) || empty($data['status'])) {
         json_response(['success' => false, 'error' => 'Todos os campos são obrigatórios.'], 400);
     }
-
+    
     $hashed_password = hashPassword($data['senha']);
-
-    // Adicionado campo 'cargo'
-    $sql = "INSERT INTO usuarios (nome, email, telefone, senha, role, status, cargo) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    
+    $sql = "INSERT INTO usuarios (nome, email, telefone, senha, role, status) VALUES (?, ?, ?, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
     $success = $stmt->execute([
         $data['nome'],
@@ -23,13 +21,12 @@ function handle_create_user($pdo, $data)
         isset($data['telefone']) ? $data['telefone'] : null,
         $hashed_password,
         $data['role'],
-        $data['status'],
-        $data['cargo'] ?? null // Cargo opcional
+        $data['status']
     ]);
-
+    
     if ($success) {
         $lastId = $pdo->lastInsertId();
-        $stmt_new = $pdo->prepare("SELECT id, nome, email, telefone, role, status, cargo FROM usuarios WHERE id = ?");
+        $stmt_new = $pdo->prepare("SELECT id, nome, email, telefone, role, status FROM usuarios WHERE id = ?");
         $stmt_new->execute([$lastId]);
         json_response(['success' => true, 'user' => $stmt_new->fetch(PDO::FETCH_ASSOC)]);
     } else {
@@ -37,9 +34,8 @@ function handle_create_user($pdo, $data)
     }
 }
 
-function handle_update_user($pdo, $data)
-{
-    if (!in_array($_SESSION['role'], ['SUPER_ADMIN', 'DIRETOR', 'Gestor', 'Analista', 'CEO', 'Gestor Comercial'])) {
+function handle_update_user($pdo, $data) {
+    if ($_SESSION['role'] !== 'Gestor' && $_SESSION['role'] !== 'Analista') {
         json_response(['success' => false, 'error' => 'Acesso negado.'], 403);
     }
     if (empty($data['id']) || empty($data['nome']) || empty($data['email']) || empty($data['role']) || empty($data['status'])) {
@@ -51,26 +47,25 @@ function handle_update_user($pdo, $data)
         $data['email'],
         isset($data['telefone']) ? $data['telefone'] : null,
         $data['role'],
-        $data['status'],
-        $data['cargo'] ?? null // Cargo
+        $data['status']
     ];
-
-    $sql = "UPDATE usuarios SET nome = ?, email = ?, telefone = ?, role = ?, status = ?, cargo = ?";
-
+    
+    $sql = "UPDATE usuarios SET nome = ?, email = ?, telefone = ?, role = ?, status = ?";
+    
     if (!empty($data['senha'])) {
         $hashed_password = hashPassword($data['senha']);
         $sql .= ", senha = ?";
         $params[] = $hashed_password;
     }
-
+    
     $sql .= " WHERE id = ?";
     $params[] = $data['id'];
-
+    
     $stmt = $pdo->prepare($sql);
     $success = $stmt->execute($params);
-
+    
     if ($success) {
-        $stmt_updated = $pdo->prepare("SELECT id, nome, email, telefone, role, status, cargo FROM usuarios WHERE id = ?");
+        $stmt_updated = $pdo->prepare("SELECT id, nome, email, telefone, role, status FROM usuarios WHERE id = ?");
         $stmt_updated->execute([$data['id']]);
         json_response(['success' => true, 'user' => $stmt_updated->fetch(PDO::FETCH_ASSOC)]);
     } else {
@@ -78,9 +73,8 @@ function handle_update_user($pdo, $data)
     }
 }
 
-function handle_delete_user($pdo, $data)
-{
-    if (!in_array($_SESSION['role'], ['SUPER_ADMIN', 'DIRETOR', 'Gestor', 'Analista', 'CEO', 'Gestor Comercial'])) {
+function handle_delete_user($pdo, $data) {
+    if ($_SESSION['role'] !== 'Gestor' && $_SESSION['role'] !== 'Analista') {
         json_response(['success' => false, 'error' => 'Acesso negado.'], 403);
     }
     if (empty($data['id'])) {
@@ -92,7 +86,7 @@ function handle_delete_user($pdo, $data)
 
     $stmt = $pdo->prepare("DELETE FROM usuarios WHERE id = ?");
     $success = $stmt->execute([$data['id']]);
-
+    
     json_response(['success' => $success]);
 }
 

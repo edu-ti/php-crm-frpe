@@ -349,10 +349,8 @@ function addKanbanEventListeners() {
     const cards = document.querySelectorAll('#funil-inner-container .opportunity-card');
     const trainingCards = document.querySelectorAll('#funil-inner-container .training-card');
 
-    const canEditOpp = permissions.canEditOpportunity !== undefined ? permissions.canEditOpportunity : permissions.canEdit;
-
     cards.forEach(card => {
-        if (canEditOpp) {
+        if (permissions.canEdit) {
             card.draggable = true;
             card.addEventListener('dragstart', handleDragStart);
         } else {
@@ -370,7 +368,7 @@ function addKanbanEventListeners() {
     });
 
 
-    if (canEditOpp) {
+    if (permissions.canEdit) {
         const columns = document.querySelectorAll('#funil-inner-container .kanban-column');
         columns.forEach(column => {
             column.removeEventListener('dragover', handleDragOver); // Remove antes de adicionar
@@ -770,12 +768,10 @@ function renderOpportunityModal(opportunity = null) {
     const isEditing = !!opportunity;
     const data = opportunity || {}; // Usa dados da oportunidade se existirem
 
-    // Check specific permissions
-    const canEditOpp = permissions.canEditOpportunity !== undefined ? permissions.canEditOpportunity : permissions.canEdit;
-
+    const { permissions } = appState.currentUser;
     // Verifica se PODE editar: (É nova OU (é existente E tem permissão de edição))
     // E (não está associada a uma proposta, pois não deve ser editada por aqui)
-    const canEdit = (!isEditing || canEditOpp) && !data.proposta_id;
+    const canEdit = (!isEditing || permissions.canEdit) && !data.proposta_id;
 
     const isDisabled = !canEdit ? 'disabled' : '';
     let title = isEditing ? 'Editar Oportunidade' : 'Criar Oportunidade';
@@ -793,7 +789,7 @@ function renderOpportunityModal(opportunity = null) {
     const contactOptions = data.organizacao_id ? appState.contacts
         .filter(c => c.organizacao_id == data.organizacao_id)
         .map(c => `<option value="${c.id}" ${data.contato_id == c.id ? 'selected' : ''}>${c.nome}</option>`).join('') : '';
-    const userOptions = appState.users.filter(u => ['Comercial', 'Gestor', 'Analista', 'Vendedor', 'Especialista', 'CEO', 'Executivo de Vendas', 'Gestor Comercial', 'Comercial/Vendas'].includes(u.role))
+    const userOptions = appState.users.filter(u => ['Comercial', 'Gestor', 'Analista', 'Vendedor', 'Especialista'].includes(u.role))
         .map(u => `<option value="${u.id}" ${data.comercial_user_id == u.id ? 'selected' : ''}>${u.nome}</option>`).join('');
 
     const clienteSelectedValue = data.cliente_pf_id ? `pf-${data.cliente_pf_id}` : (data.organizacao_id || '');

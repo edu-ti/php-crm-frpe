@@ -173,7 +173,7 @@ function handle_update_proposal($pdo, $data)
 
     // --- VERIFICAÇÃO DE SEGURANÇA (RBAC) ---
     $currentRole = $_SESSION['role'];
-    if (in_array($currentRole, ['Vendedor', 'Especialista', 'Executivo de Vendas'])) {
+    if (in_array($currentRole, ['Vendedor', 'Especialista'])) {
         $stmt_check = $pdo->prepare("SELECT usuario_id FROM propostas WHERE id = ?");
         $stmt_check->execute([$proposalId]);
         $ownerId = $stmt_check->fetchColumn();
@@ -286,7 +286,7 @@ function handle_update_proposal($pdo, $data)
 // --- HELPER FUNCTIONS ---
 
 /**
- * Calcula o valor total da proposta baseado nos itens e frete e desconto.
+ * Calcula o valor total da proposta baseado nos itens e frete.
  */
 function calculate_proposal_total($items, $frete_valor)
 {
@@ -294,13 +294,7 @@ function calculate_proposal_total($items, $frete_valor)
     foreach ($items as $item) {
         $meses = (int) ($item['meses_locacao'] ?? 12);
         $multiplicador = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') ? $meses : 1;
-
-        $baseItemVal = (($item['quantidade'] ?? 1) * ($item['valor_unitario'] ?? 0) * $multiplicador);
-
-        $descPercent = (float) ($item['desconto_percent'] ?? 0);
-        $discountAmount = $baseItemVal * ($descPercent / 100);
-
-        $valor_total += ($baseItemVal - $discountAmount);
+        $valor_total += (($item['quantidade'] ?? 1) * ($item['valor_unitario'] ?? 0) * $multiplicador);
     }
     return $valor_total + (float) $frete_valor;
 }
@@ -310,7 +304,7 @@ function calculate_proposal_total($items, $frete_valor)
  */
 function insert_proposal_items($pdo, $proposal_id, $items)
 {
-    $item_sql = "INSERT INTO proposta_itens (proposta_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros, meses_locacao, desconto_percent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $item_sql = "INSERT INTO proposta_itens (proposta_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros, meses_locacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $item_stmt = $pdo->prepare($item_sql);
 
     foreach ($items as $item) {
@@ -320,12 +314,6 @@ function insert_proposal_items($pdo, $proposal_id, $items)
         } else {
             $meses_val = null;
         }
-
-        $desconto_percent = (float) ($item['desconto_percent'] ?? 0);
-        if ($desconto_percent < 0)
-            $desconto_percent = 0;
-        if ($desconto_percent > 10)
-            $desconto_percent = 10;
 
         // Parametros handling
         $parametros = $item['parametros'] ?? [];
@@ -349,8 +337,7 @@ function insert_proposal_items($pdo, $proposal_id, $items)
             $item['status'] ?? 'VENDA',
             $item['unidade_medida'] ?? null,
             $item_parametros_json,
-            $meses_val,
-            $desconto_percent
+            $meses_val
         ]);
     }
 }
@@ -733,11 +720,11 @@ function handle_delete_proposal($pdo, $data)
     // Apenas Gestor, Analista e Comercial podem excluir
     // Vendedor e Especialista podem excluir APENAS SE FOREM DONOS
     $currentRole = $_SESSION['role'];
-    $allowedGlobal = ['Gestor', 'Analista', 'Comercial', 'CEO', 'Gestor Comercial', 'Comercial/Vendas'];
+    $allowedGlobal = ['Gestor', 'Analista', 'Comercial'];
 
     if (in_array($currentRole, $allowedGlobal)) {
         // Permite excluir qualquer proposta
-    } elseif (in_array($currentRole, ['Vendedor', 'Especialista', 'Executivo de Vendas'])) {
+    } elseif (in_array($currentRole, ['Vendedor', 'Especialista'])) {
         // Verifica se é dono
         $stmt_check = $pdo->prepare("SELECT usuario_id FROM propostas WHERE id = ?");
         $stmt_check->execute([$proposalId]);

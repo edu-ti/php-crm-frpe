@@ -101,17 +101,6 @@ export function renderProposalsView() {
     const p = appState.proposal;
     const { permissions } = appState.currentUser;
 
-    // Check specific permissions (with fallbacks if migration not run yet, though map handles it)
-    const canCreate = permissions.canCreateProposal !== undefined ? permissions.canCreateProposal : permissions.canCreate;
-    const canEdit = permissions.canEditProposal !== undefined ? permissions.canEditProposal : permissions.canEdit;
-    // const canDelete = permissions.canDeleteProposal !== undefined ? permissions.canDeleteProposal : permissions.canDelete; 
-
-    // Access Control
-    if (permissions.canViewProposals === false) { // Strict check for explicit false
-        container.innerHTML = `<div class="p-8 text-center text-red-500">Você não tem permissão para visualizar propostas.</div>`;
-        return;
-    }
-
     const statusOptions = ['Rascunho', 'Enviada', 'Aprovada', 'Recusada', 'Negociando']
         .map(s => `<option value="${s}" ${p.status === s ? 'selected' : ''}>${s}</option>`).join('');
 
@@ -124,7 +113,7 @@ export function renderProposalsView() {
                     <input type="text" id="proposal-search" placeholder="Pesquisar..." class="form-input w-full">
                     <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 </div>
-                ${canCreate ? `
+                ${permissions.canCreate ? `
                 <button id="add-proposal-btn" class="btn btn-primary btn-sm w-full sm:w-auto text-center justify-center"><i class="fas fa-plus mr-2"></i>Criar Nova</button>
                 ` : ''}
             </div>
@@ -137,10 +126,9 @@ export function renderProposalsView() {
                 <div class="flex justify-end space-x-4 mb-4">
                     <button type="button" id="close-proposal-top-btn" class="btn btn-outline-secondary">Fechar</button>
                     <button type="button" id="cancel-proposal-top-btn" class="btn btn-secondary">Cancelar</button>
-                    ${canEdit || (!p.id && canCreate) ? `<button type="button" id="save-proposal-top-btn" class="btn btn-primary">${p.id ? 'Salvar Alterações' : 'Criar Proposta'}</button>` : ''}
+                    <button type="button" id="save-proposal-top-btn" class="btn btn-primary">${p.id ? 'Salvar Alterações' : 'Criar Proposta'}</button>
                 </div>
                 <form id="proposal-form" class="space-y-6">
-                     <fieldset ${!canEdit && p.id ? 'disabled' : ''}>
                      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 border-b pb-4">
                         <div>
                             <label class="form-label">Data de Criação</label>
@@ -175,11 +163,10 @@ export function renderProposalsView() {
                             <div class="md:col-span-2"><label class="form-label">Observações</label><textarea name="observacoes" rows="3" class="form-input">${p.observacoes}</textarea></div>
                          </div>
                     </div>
-                    </fieldset>
                      <div class="flex justify-end space-x-4 pt-4 border-t">
                         <button type="button" id="close-proposal-bottom-btn" class="btn btn-outline-secondary">Fechar</button>
                         <button type="button" id="cancel-proposal-edit-btn" class="btn btn-secondary">Cancelar</button>
-                        ${canEdit || (!p.id && canCreate) ? `<button type="submit" class="btn btn-primary">${p.id ? 'Salvar Alterações' : 'Criar Proposta'}</button>` : ''}
+                        <button type="submit" class="btn btn-primary">${p.id ? 'Salvar Alterações' : 'Criar Proposta'}</button>
                     </div>
                 </form>
             </div>
@@ -685,12 +672,7 @@ function renderProposalItemsSection() {
     if (!container) return;
 
     const { items } = appState.proposal;
-    const { currentUser } = appState;
     let totalProposta = 0;
-
-    // Define roles allowed to edit unit price
-    const allowedRoles = ['ANALISTA', 'COMERCIAL', 'DIRETOR', 'GESTOR', 'SUPER_ADMIN'];
-    const canEditPrice = allowedRoles.includes(currentUser.role) || currentUser.role === 'SUPER_ADMIN'; // SUPER_ADMIN check redundant but safe
 
     const itemsHtml = (items || []).map((item, index) => {
         // --- INÍCIO: Lógica de Cálculo de Valor ---
@@ -709,15 +691,9 @@ function renderProposalItemsSection() {
         const isLocacaoStatus = (item.status || '').toUpperCase() === 'LOCAÇÃO';
         const meses = (isLocacaoStatus && item.meses_locacao) ? parseInt(item.meses_locacao) : 1;
 
-        // Discount Calculation
-        const descontoPercent = parseFloat(item.desconto_percent || 0);
-
         // Se for locação, o total é Qtd * Valor * Meses. Se for venda, é Qtd * Valor.
-        let itemTotalBase = (item.quantidade || 0) * valor_unitario_total * meses;
-
-        // Apply discount
-        const valorDesconto = itemTotalBase * (descontoPercent / 100);
-        const itemTotal = itemTotalBase - valorDesconto;
+        // O multiplicador "24" antigo foi removido em favor da entrada manual.
+        const itemTotal = (item.quantidade || 0) * valor_unitario_total * meses;
 
         totalProposta += itemTotal;
         const imageUrl = item.imagem_url || 'https://placehold.co/100x100/e2e8f0/64748b?text=Imagem';
@@ -787,25 +763,9 @@ function renderProposalItemsSection() {
                  </div>
                  <!-- --- Fim: Seção de Parâmetros --- -->
 
-                 <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mt-4 pt-4 border-t">
+                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4 pt-4 border-t">
                     <div><label class="form-label">Quantidade*</label><input type="number" data-index="${index}" name="item_quantidade" required class="form-input" value="${item.quantidade || 1}" min="1"></div>
-                    
-                    <div>
-                        <label class="form-label">Valor Unitário*</label>
-                        <input type="text" inputmode="decimal" data-index="${index}" name="item_valor_unitario" required 
-                               class="form-input ${!canEditPrice ? 'bg-gray-100 cursor-not-allowed' : ''}" 
-                               value="${formatCurrencyForInput(item.valor_unitario)}" 
-                               placeholder="0,00"
-                               ${!canEditPrice ? 'readonly' : ''}>
-                    </div>
-
-                    <div>
-                        <label class="form-label">Desconto (%)</label>
-                        <input type="number" data-index="${index}" name="item_desconto_percent" 
-                               class="form-input" 
-                               value="${item.desconto_percent || 0}" 
-                               min="0" max="10" step="0.01" placeholder="0%">
-                    </div>
+                    <div><label class="form-label">Valor Unitário*</label><input type="text" inputmode="decimal" data-index="${index}" name="item_valor_unitario" required class="form-input" value="${formatCurrencyForInput(item.valor_unitario)}" placeholder="0,00"></div>
                     
                     <!-- CAMPO MESES LOCAÇÃO: Condicional -->
                     <div class="${isLocacao ? '' : 'hidden'}">
@@ -870,7 +830,7 @@ function renderProposalItemsSection() {
             id: `temp_${Date.now()}`,
             descricao: '', fabricante: '', modelo: '', quantidade: 1, valor_unitario: 0,
             status: 'VENDA', imagem_url: '', unidade_medida: 'Unidade', descricao_detalhada: '',
-            parametros: [], desconto_percent: 0
+            parametros: []
         });
         renderProposalItemsSection();
     });
@@ -1076,20 +1036,6 @@ function handleValueBlur(e) {
     else if (e.target.id.startsWith('proposal-param-valor-')) {
         const valorNumerico = parseCurrency(e.target.value);
         e.target.value = formatCurrencyForInput(valorNumerico); // Apenas formata o input
-    }
-    // Handle Discount Change
-    else if (e.target.name === 'item_desconto_percent') {
-        let value = parseFloat(e.target.value) || 0;
-        if (value < 0) value = 0;
-        if (value > 10) value = 10;
-
-        // Update state
-        appState.proposal.items[index].desconto_percent = value;
-        // Update input to reflect capped value
-        e.target.value = value;
-
-        // Re-render to update subtotal and total
-        renderProposalItemsSection();
     }
 
 

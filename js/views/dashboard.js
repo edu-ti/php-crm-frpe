@@ -173,4 +173,3 @@ function renderCombinedSalesChart(oppsData, salesData) {
         }
     });
 }
-

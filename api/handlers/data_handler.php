@@ -1,13 +1,11 @@
 <?php
 // api/handlers/data_handler.php
 
-require_once __DIR__ . '/../core/auth.php';
-
 function handle_get_data($pdo)
 {
     $current_user_id = $_SESSION['user_id'];
 
-    $stmt_user = $pdo->prepare("SELECT id, nome, role, email, telefone, cargo FROM usuarios WHERE id = ?");
+    $stmt_user = $pdo->prepare("SELECT id, nome, role, email, telefone FROM usuarios WHERE id = ?");
     $stmt_user->execute([$current_user_id]);
     $currentUser = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
@@ -21,14 +19,31 @@ function handle_get_data($pdo)
     $current_user_role = $currentUser['role'];
 
     // --- LÓGICA DE PERMISSÕES ATUALIZADA ---
-    // --- LÓGICA DE PERMISSÕES ATUALIZADA (Centralizada) ---
-    require_once __DIR__ . '/../core/auth.php'; // Garante include no escopo local também se necessário ou redundante, mas OK
-    $permissions = get_user_permissions($current_user_role, $pdo);
+    $permissions = [
+        'canSeeLeads' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Marketing', 'Vendedor', 'Especialista']),
+        'canSeeSettings' => in_array($current_user_role, ['Gestor', 'Analista']), // Comercial removido
+        'canSeeCatalog' => true,
+        // canCreate genérico mantido para compatibilidade, mas recomenda-se usar específicos
+        'canCreate' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
+        'canEdit' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
+        'canDelete' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
+        'canPrint' => true,
+        // Permissões Específicas
+        'canCreateOpportunity' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
+        'canCreateClient' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista']),
+        'canCreateProduct' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Especialista']), // Vendedor removido
+        'canDeleteProduct' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Especialista']), // Nova permissão específica
+        'canEditOwnedItems' => in_array($current_user_role, ['Vendedor', 'Especialista', 'Representante']),
+        'canManageLeads' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Marketing', 'Vendedor', 'Especialista']), // Permissão para gerir leads
+        'canCreateSchedule' => true,
+        'canEditSchedule' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial', 'Vendedor', 'Especialista', 'Representante']),
+        'canSeeReports' => in_array($current_user_role, ['Gestor', 'Analista', 'Comercial']), // Adicionado Comercial
+    ];
     $currentUser['permissions'] = $permissions;
 
     // --- FILTRAGEM BASEADA NO PERFIL ---
     // Perfis restritos que só veem o que criaram
-    $is_restricted = in_array($current_user_role, ['Vendedor', 'Especialista', 'Executivo de Vendas']);
+    $is_restricted = in_array($current_user_role, ['Vendedor', 'Especialista']);
 
     // Filtro para Oportunidades
     $where_opp = "";
@@ -240,27 +255,16 @@ function handle_get_data($pdo)
     // --- NOVO: Inclui 'produto_interesse' na busca de leads ---
     $leads = $pdo->query("SELECT id, nome, email, telefone, origem, sub_origem, produto, produto_interesse, campanha, observacao, status, data_chegada, oportunidade_id FROM leads ORDER BY data_chegada DESC")->fetchAll(PDO::FETCH_ASSOC);
 
-    // --- NOVO: Inclui 'produto_interesse' na busca de leads ---
-    // SE for MARKETING, focar em leads. Se tiver permissão de ver leads.
-    $leads = [];
-    if ($permissions['canSeeLeads']) {
-        $leads = $pdo->query("SELECT id, nome, email, telefone, origem, sub_origem, produto, produto_interesse, campanha, observacao, status, data_chegada, oportunidade_id FROM leads ORDER BY data_chegada DESC")->fetchAll(PDO::FETCH_ASSOC);
-    }
-
     // Buscar produtos do catálogo
-    // SE for MARKETING, NÃO vê produtos (canSeeCatalog = false)
-    $products = [];
-    if ($permissions['canSeeCatalog']) {
-        $products = $pdo->query("SELECT * FROM produtos ORDER BY nome_produto ASC")->fetchAll(PDO::FETCH_ASSOC);
-    }
+    $products = $pdo->query("SELECT * FROM produtos ORDER BY nome_produto ASC")->fetchAll(PDO::FETCH_ASSOC);
 
     $response_data = [
         'currentUser' => $currentUser,
-        'users' => $pdo->query("SELECT id, nome, role, email, telefone, status, cargo FROM usuarios")->fetchAll(PDO::FETCH_ASSOC),
+        'users' => $pdo->query("SELECT id, nome, role, email, telefone, status FROM usuarios")->fetchAll(PDO::FETCH_ASSOC),
         'opportunities' => $opportunities,
         'organizations' => $pdo->query("SELECT * FROM organizacoes ORDER BY nome_fantasia ASC")->fetchAll(PDO::FETCH_ASSOC),
         'contacts' => $pdo->query("SELECT c.*, o.nome_fantasia as organizacao_nome FROM contatos c JOIN organizacoes o ON c.organizacao_id = o.id ORDER BY c.nome ASC")->fetchAll(PDO::FETCH_ASSOC),
-        'clients_pf' => $permissions['canSeeClients'] ? $pdo->query("SELECT * FROM clientes_pf ORDER BY nome ASC")->fetchAll(PDO::FETCH_ASSOC) : [], // Proteção para Clientes PF
+        'clients_pf' => $pdo->query("SELECT * FROM clientes_pf ORDER BY nome ASC")->fetchAll(PDO::FETCH_ASSOC),
         'funnels' => $pdo->query("SELECT * FROM funis")->fetchAll(PDO::FETCH_ASSOC),
         'stages' => $pdo->query("SELECT * FROM etapas_funil ORDER BY ordem ASC")->fetchAll(PDO::FETCH_ASSOC),
         'proposals' => $proposals,

@@ -15,19 +15,6 @@ class ReportHandler
 
     public function handleRequest($method, $action)
     {
-        if (!isset($_SESSION['user_id'])) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Unauthorized']);
-            return;
-        }
-
-        $role = $_SESSION['role'] ?? 'Vendedor';
-        if (!hasPermission2($role, 'reports', 'view', $this->db)) {
-            http_response_code(403);
-            echo json_encode(['error' => 'Forbidden']);
-            return;
-        }
-
         if ($method !== 'GET') {
             http_response_code(405);
             echo json_encode(['error' => 'Method not allowed']);
@@ -36,6 +23,9 @@ class ReportHandler
 
         $startDate = $_GET['start_date'] ?? date('Y-m-01');
         $endDate = $_GET['end_date'] ?? date('Y-m-t');
+
+
+        // DEBUG: Logging Removed
 
         switch ($action) {
             case 'dashboard_summary':
@@ -65,23 +55,27 @@ class ReportHandler
     private function getDashboardSummary($start, $end)
     {
         try {
+            // Total Sales: Sum of 'valor_total' from 'propostas' with status 'Aprovada'
             $sqlSales = "SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
                          WHERE data_criacao BETWEEN :start AND :end AND status = 'Aprovada'";
             $stmtSales = $this->db->prepare($sqlSales);
             $stmtSales->execute([':start' => $start . ' 00:00:00', ':end' => $end . ' 23:59:59']);
             $totalSales = $stmtSales->fetch(PDO::FETCH_ASSOC)['total'];
 
+            // Open Opportunities: Count of 'oportunidades' created in period
             $sqlOpps = "SELECT COUNT(*) as total FROM oportunidades WHERE data_criacao BETWEEN :start AND :end";
             $stmtOpps = $this->db->prepare($sqlOpps);
             $stmtOpps->execute([':start' => $start . ' 00:00:00', ':end' => $end . ' 23:59:59']);
             $openOpps = $stmtOpps->fetch(PDO::FETCH_ASSOC)['total'];
 
+            // Active Proposals: Count of 'propostas' with status 'Enviada'
             $sqlProps = "SELECT COUNT(*) as total FROM propostas 
                          WHERE data_criacao BETWEEN :start AND :end AND status = 'Enviada'";
             $stmtProps = $this->db->prepare($sqlProps);
             $stmtProps->execute([':start' => $start . ' 00:00:00', ':end' => $end . ' 23:59:59']);
             $activeProps = $stmtProps->fetch(PDO::FETCH_ASSOC)['total'];
 
+            // Conversion Rate: (Aprovada / (Aprovada + Recusada)) * 100
             $sqlConv = "SELECT 
                             SUM(CASE WHEN status = 'Aprovada' THEN 1 ELSE 0 END) as won,
                             SUM(CASE WHEN status IN ('Aprovada', 'Recusada') THEN 1 ELSE 0 END) as total_closed
@@ -108,6 +102,7 @@ class ReportHandler
     private function getSalesByVendor($start, $end)
     {
         try {
+            // Using 'propostas' LEFT JOIN 'usuarios'
             $sql = "SELECT u.nome as label, COUNT(p.id) as count, COALESCE(SUM(p.valor_total), 0) as value
                     FROM propostas p 
                     LEFT JOIN usuarios u ON p.usuario_id = u.id
@@ -124,6 +119,7 @@ class ReportHandler
     private function getPurchasesBySupplier($start, $end)
     {
         try {
+            // Using 'propostas' -> 'oportunidades' -> 'fornecedores'
             $sql = "SELECT f.nome as label, COUNT(p.id) as count, COALESCE(SUM(p.valor_total), 0) as value
                     FROM propostas p 
                     JOIN oportunidades o ON p.oportunidade_id = o.id 
@@ -143,6 +139,7 @@ class ReportHandler
     private function getItemsSold($start, $end)
     {
         try {
+            // Using 'proposta_itens' -> 'propostas' -> 'produtos'
             $sql = "SELECT pr.nome_produto as label, SUM(pi.quantidade) as count, COALESCE(SUM(pi.quantidade * pi.valor_unitario), 0) as value
                     FROM proposta_itens pi 
                     JOIN propostas p ON pi.proposta_id = p.id 
@@ -174,6 +171,7 @@ class ReportHandler
     private function getBiddingFunnel($start, $end)
     {
         try {
+            // Funnel usage for Licitacoes (ID 2 in 'funis' table)
             $sql = "SELECT ef.nome as label, COUNT(o.id) as count, COALESCE(SUM(p.valor_total), 0) as value
                     FROM oportunidades o
                     JOIN etapas_funil ef ON o.etapa_id = ef.id
@@ -205,20 +203,8 @@ class ReportHandler
 // --- LEGACY COMPATIBILITY FUNCTIONS ---
 // Ensures existing frontend continues to work while new functions are available.
 
-function handle_get_report_data($pdo, $data = [])
+function handle_get_report_data($pdo)
 {
-    // Merge passed data into $_GET for compatibility
-    if (is_array($data) && !empty($data)) {
-        $_GET = array_merge($_GET, $data);
-    }
-
-    // Security Check for Legacy Handler
-    $role = $_SESSION['role'] ?? 'Vendedor';
-    if (!hasPermission2($role, 'reports', 'view', $pdo)) {
-        json_response(['success' => false, 'error' => 'Sem permissão para visualizar relatórios'], 403);
-        return;
-    }
-
     // BRIDGE to New Class if action matches new logic keys
     $type = $_GET['report_type'] ?? ($_GET['type'] ?? '');
 
@@ -301,8 +287,7 @@ function handle_get_report_data($pdo, $data = [])
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         } elseif ($type === 'lost_reasons') {
-            // --- QUERY A: SUMMARY ---
-            $sqlSummary = "
+            $sql = "
             SELECT 
                 COALESCE(NULLIF(TRIM(p.motivo_status), ''), 'Não Informado') as motivo,
                 COUNT(p.id) as qtd,
@@ -314,64 +299,24 @@ function handle_get_report_data($pdo, $data = [])
                   p.status LIKE 'Recusad%'
               )
         ";
-            $paramsSummary = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+            $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
 
-            // Apply filters to Opportunity (o) for Summary
-            apply_report_filters_helper($sqlSummary, $paramsSummary, 'o', $supplier_ids, [], $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+            // Apply filters to Opportunity (o)
+            apply_report_filters_helper($sql, $params, 'o', $supplier_ids, [], $etapa_ids, $origem_ids, $uf_ids, $status_ids);
 
-            // Apply User Filter to Proposal (p) manually for Summary
+            // Apply User Filter to Proposal (p) manually if needed
             if (!empty($user_ids)) {
                 $in_params = trim(str_repeat('?,', count($user_ids)), ',');
-                $sqlSummary .= " AND p.usuario_id IN ($in_params)";
+                $sql .= " AND p.usuario_id IN ($in_params)";
                 foreach ($user_ids as $uid) {
-                    $paramsSummary[] = $uid;
+                    $params[] = $uid;
                 }
             }
 
-            $sqlSummary .= " GROUP BY motivo ORDER BY qtd DESC";
-            $stmtSummary = $pdo->prepare($sqlSummary);
-            $stmtSummary->execute($paramsSummary);
-            $summaryData = $stmtSummary->fetchAll(PDO::FETCH_ASSOC);
-
-            // --- QUERY B: DETAILS ---
-            $sqlDetails = "
-            SELECT 
-                p.id as proposta_id,
-                p.numero_proposta,
-                p.valor_total,
-                p.data_criacao,
-                COALESCE(NULLIF(TRIM(p.motivo_status), ''), 'Não Informado') as motivo
-            FROM propostas p
-            LEFT JOIN oportunidades o ON p.oportunidade_id = o.id
-            WHERE p.data_criacao BETWEEN ? AND ?
-              AND (
-                  p.status LIKE 'Recusad%'
-              )
-        ";
-            // Re-use same base params
-            $paramsDetails = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
-
-            // Apply filters to Opportunity (o) for Details
-            apply_report_filters_helper($sqlDetails, $paramsDetails, 'o', $supplier_ids, [], $etapa_ids, $origem_ids, $uf_ids, $status_ids);
-
-            // Apply User Filter to Proposal (p) manually for Details
-            if (!empty($user_ids)) {
-                $in_params = trim(str_repeat('?,', count($user_ids)), ',');
-                $sqlDetails .= " AND p.usuario_id IN ($in_params)";
-                foreach ($user_ids as $uid) {
-                    $paramsDetails[] = $uid;
-                }
-            }
-
-            $sqlDetails .= " ORDER BY p.data_criacao DESC";
-            $stmtDetails = $pdo->prepare($sqlDetails);
-            $stmtDetails->execute($paramsDetails);
-            $detailsData = $stmtDetails->fetchAll(PDO::FETCH_ASSOC);
-
-            $data = [
-                'summary' => $summaryData,
-                'details' => $detailsData
-            ];
+            $sql .= " GROUP BY motivo ORDER BY qtd DESC";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         } elseif ($type === 'funnel') {
             $sql = "
@@ -537,13 +482,8 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
         return [$placeholders, $ids];
     };
 
-    $sql = "SELECT vf.fornecedor_id, f.nome as fornecedor_nome, vf.usuario_id, u.nome as vendedor_nome, YEAR(vf.data_venda) as ano, MONTH(vf.data_venda) as mes, SUM(vf.valor_total) as total_vendido 
-            FROM vendas_fornecedores vf 
-            JOIN fornecedores f ON vf.fornecedor_id = f.id 
-            JOIN usuarios u ON vf.usuario_id = u.id 
-            LEFT JOIN organizacoes o ON vf.organizacao_id = o.id
-            WHERE vf.data_venda BETWEEN ? AND ?";
-    $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+    $sql = "SELECT vf.fornecedor_id, f.nome as fornecedor_nome, vf.usuario_id, u.nome as vendedor_nome, YEAR(vf.data_venda) as ano, MONTH(vf.data_venda) as mes, SUM(vf.valor_total) as total_vendido FROM vendas_fornecedores vf JOIN fornecedores f ON vf.fornecedor_id = f.id JOIN usuarios u ON vf.usuario_id = u.id WHERE vf.data_venda BETWEEN ? AND ?";
+    $params = [$start_date, $end_date];
 
     if (!empty($supplier_ids)) {
         list($ph, $vals) = $buildIn($supplier_ids);
@@ -555,21 +495,6 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
         $sql .= " AND vf.usuario_id IN ($ph)";
         $params = array_merge($params, $vals);
     }
-    if (!empty($origem_ids)) {
-        list($ph, $vals) = $buildIn($origem_ids); // Assuming origem is simple value or logic needed. vf.origem?
-        // Note: Check if vendas_fornecedores has 'origem'. If not, we can't filter.
-        // Assuming it does based on get_clients_report usage (though that passed [] for etapa/status, it passed $origem_ids).
-        // Let's assume vf.origem exists.
-        $sql .= " AND vf.origem IN ($ph)";
-        $params = array_merge($params, $vals);
-    }
-    if (!empty($uf_ids)) {
-        list($ph, $vals) = $buildIn($uf_ids);
-        $sql .= " AND o.estado IN ($ph)";
-        $params = array_merge($params, $vals);
-    }
-
-    // Note: Etapa/Status ignored for Sales (implied Won/Closed)
     $sql .= " GROUP BY vf.fornecedor_id, vf.usuario_id, YEAR(vf.data_venda), MONTH(vf.data_venda) ORDER BY f.nome, u.nome, ano, mes";
 
     $stmt = $pdo->prepare($sql);
@@ -856,9 +781,9 @@ function get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_i
                    LEFT JOIN clientes_pf pf ON vf.cliente_pf_id = pf.id
                    WHERE vf.data_venda BETWEEN ? AND ?";
 
-    $params_vendas = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+    $params_vendas = [$start_date, $end_date];
 
-    apply_report_filters_helper($sql_vendas, $params_vendas, 'vf', $supplier_ids, $user_ids, [], $origem_ids, $uf_ids, []);
+    apply_report_filters_helper($sql_vendas, $params_vendas, 'vf', $supplier_ids, $user_ids, [], $origem_ids, [], []);
 
     $sql_vendas .= " GROUP BY vf.organizacao_id, vf.cliente_pf_id, cliente_nome";
 

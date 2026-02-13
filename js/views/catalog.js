@@ -121,7 +121,7 @@ function renderProductList() {
                             <td data-label="Valor" class="table-cell">${formatCurrency(p.valor_unitario)}</td>
                             <td data-label="Unidade" class="table-cell">${p.unidade_medida || 'Unidade'}</td>
                             <td data-label="Ações" class="table-cell text-right space-x-2 actions-cell">
-                                ${permissions.canEditProduct ? `<button class="action-btn edit-product-btn" title="Editar" data-id="${p.id}"><i class="fas fa-pencil-alt"></i></button>` : ''}
+                                ${permissions.canCreateProduct ? `<button class="action-btn edit-product-btn" title="Editar" data-id="${p.id}"><i class="fas fa-pencil-alt"></i></button>` : ''}
                                 ${permissions.canDeleteProduct ? `<button class="action-btn delete-product-btn" title="Excluir" data-id="${p.id}"><i class="fas fa-trash-alt text-red-500 hover:text-red-700"></i></button>` : ''}
                             </td>
                         </tr>
