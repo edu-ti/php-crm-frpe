@@ -101,15 +101,23 @@ function renderKanbanBoard() {
     }
 
     // Filter stages by the current funnel
-    const stagesToRender = appState.stages.filter(stage => {
+    const restrictedRoles = ['Comercial', 'Gestor', 'Analista'];
+    const userRole = appState.currentUser.role;
+    const canManageRestrictedStages = restrictedRoles.includes(userRole) || appState.currentUser.permissions.isAdmin;
+
+    let stagesToRender = appState.stages.filter(stage => {
         // If funil_id is explicitly set, use it. Otherwise, assume ID 1 (legacy/default)
         if (stage.funil_id) {
             return stage.funil_id == currentFunnelId;
         }
         // Fallback: If no funil_id in DB yet (older entries?), or standard stages, assume funnel 1
-        // EXCEPT if we just added stages with funil_id 2, then undefined ones are likely funnel 1.
         return currentFunnelId === 1;
     }).sort((a, b) => a.ordem - b.ordem);
+
+    // Hide 'Faturado' if not allowed
+    if (!canManageRestrictedStages) {
+        stagesToRender = stagesToRender.filter(s => s.nome !== 'Faturado');
+    }
 
 
     if (stagesToRender.length === 0) {
@@ -168,19 +176,31 @@ function renderKanbanBoard() {
             extraCards = treinamentos.map(treinamento => createTrainingCard(treinamento)).join('');
         }
 
+        const isControleEntrega = stage.nome === 'Controle de Entrega';
+        const isFaturado = stage.nome === 'Faturado';
+        const isRestrictedColumn = (isControleEntrega || isFaturado) && !canManageRestrictedStages;
+
+        let extraClass = '';
+        if (isRestrictedColumn) {
+            extraClass = ' restricted-stage';
+        }
+
         const column = document.createElement('div');
-        column.className = 'kanban-column flex flex-col';
+        column.className = 'kanban-column flex flex-col' + extraClass;
         column.dataset.stageId = stage.id;
+        column.dataset.isRestricted = isRestrictedColumn ? 'true' : 'false';
+        column.dataset.stageName = stage.nome;
+
         column.innerHTML = `
              <div class="kanban-column-header">
                  <div class="flex justify-between items-center">
-                     <h3 class="font-semibold text-sm text-gray-700">${stage.nome}</h3>
+                     <h3 class="font-semibold text-sm text-gray-700">${stage.nome} ${isRestrictedColumn ? '<i class="fas fa-lock ml-1 text-xs" title="Somente Leitura"></i>' : ''}</h3>
                      <span class="font-bold text-xs text-gray-800">${formatCurrency(stageTotal)}</span>
                  </div>
              </div>
              <div class="stage-cards">
                  ${extraCards}
-                 ${opportunitiesInStage.map(opp => createOpportunityCard(opp)).join('') || (extraCards === '' ? '<div class="p-4 text-center text-xs text-gray-400">Nenhuma oportunidade.</div>' : '')}
+                 ${opportunitiesInStage.map(opp => createOpportunityCard(opp, stage.nome)).join('') || (extraCards === '' ? '<div class="p-4 text-center text-xs text-gray-400">Nenhuma oportunidade.</div>' : '')}
              </div>
          `;
         board.appendChild(column);
@@ -319,13 +339,18 @@ function createTrainingCard(treinamento) {
 }
 
 
-function createOpportunityCard(opp) {
+function createOpportunityCard(opp, stageName = '') {
     const timeInStage = calculateTimeInStage(opp.data_ultima_movimentacao);
     let timeAlertClass = '';
     if (timeInStage.days > 5) timeAlertClass = 'time-alert-danger';
     else if (timeInStage.days > 2) timeAlertClass = 'time-alert-warn';
 
     const contactInfo = opp.contato_nome ? `<p class="text-[10px] text-gray-600 truncate"><i class="fas fa-user mr-2 text-gray-400"></i>${opp.contato_nome}</p>` : '';
+
+    let uploadBtn = '';
+    if (stageName === 'Faturado') {
+        uploadBtn = `<button class="btn-invoice-upload mt-2 text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 rounded px-2 py-1 w-full text-center hover:bg-indigo-100 transition-colors" onclick="event.stopPropagation(); window.uploadInvoicePDF(${opp.id})"><i class="fas fa-file-invoice mr-1"></i>Ler Nota Fiscal</button>`;
+    }
 
     return `
          <div class="opportunity-card" draggable="true" data-opp-id="${opp.id}">
@@ -338,8 +363,9 @@ function createOpportunityCard(opp) {
                      <i class="far fa-clock mr-1"></i>${timeInStage.text}
                  </span>
              </div>
-             <div class="text-right mt-1.5">
-                 <span class="text-[10px] text-gray-500 mt-0.5">${opp.vendedor_nome || ''}</span>
+             <div class="text-right mt-1.5 flex justify-between items-end">
+                 ${uploadBtn}
+                 <span class="text-[10px] text-gray-500 mt-0.5 text-right w-full">${opp.vendedor_nome || ''}</span>
              </div>
          </div>
      `;
@@ -351,7 +377,10 @@ function addKanbanEventListeners() {
     const trainingCards = document.querySelectorAll('#funil-inner-container .training-card');
 
     cards.forEach(card => {
-        if (permissions.canEdit) {
+        const column = card.closest('.kanban-column');
+        const isRestrictedColumn = column && column.dataset.isRestricted === 'true';
+
+        if (permissions.canEdit && !isRestrictedColumn) {
             card.draggable = true;
             card.addEventListener('dragstart', handleDragStart);
         } else {
@@ -459,6 +488,48 @@ function handleDragLeave(e) {
     if (column) column.classList.remove('drag-over');
 }
 
+window.uploadInvoicePDF = function (opportunityId) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/pdf';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('invoice', file);
+        formData.append('opportunityId', opportunityId);
+
+        showToast('Enviando e processando Nota Fiscal...', 'info');
+
+        try {
+            const response = await fetch(`${appState.apiBaseUrl}?action=parse_invoice`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                showToast('Nota fiscal processada com sucesso!');
+                // Auto-fill values by refreshing logic or opening the modal and setting the values?
+                // For now, let's open the modal so they see the updated details and save
+                appState.opportunities = appState.opportunities.map(o => o.id == opportunityId ? result.opportunity : o);
+                renderKanbanBoard();
+                openOpportunityDetailsModal(opportunityId);
+            } else {
+                showToast(result.message || 'Erro ao processar nota fiscal.', 'error');
+            }
+        } catch (error) {
+            console.error("Erro no upload da NF:", error);
+            showToast('Erro de comunicação.', 'error');
+        }
+    };
+    input.click();
+};
+
 async function handleDrop(e) {
     e.preventDefault();
     const column = e.currentTarget.closest('.kanban-column');
@@ -483,6 +554,13 @@ async function handleDrop(e) {
 
     const opportunityId = e.dataTransfer.getData('text/plain');
     const newStageId = column.dataset.stageId;
+    const isRestrictedTarget = column.dataset.isRestricted === 'true';
+
+    if (isRestrictedTarget) {
+        showToast("Você não tem permissão para mover oportunidades para esta etapa.", "error");
+        renderKanbanBoard();
+        return;
+    }
 
     if (!opportunityId || !newStageId) {
         console.error("ID da Oportunidade ou ID da Etapa inválido no drop.");
@@ -926,6 +1004,25 @@ function renderOpportunityModal(opportunity = null) {
     if (canEdit) {
         setupClientContactSelectionLogic(form);
     }
+
+    // --- ADIÇÃO: Botão de Upload NF ---
+    const currentStageName = appState.stages.find(s => s.id == data.etapa_id)?.nome;
+    if (isEditing && currentStageName === 'Faturado' && canEdit) {
+        const footer = document.querySelector('#modal-box .p-4.bg-gray-50');
+        if (footer) {
+            const uploadBtn = document.createElement('button');
+            uploadBtn.innerHTML = '<i class="fas fa-file-invoice mr-2"></i>Ler Nota Fiscal (PDF)';
+            uploadBtn.className = 'btn text-indigo-700 bg-indigo-100 hover:bg-indigo-200 border border-indigo-300 mr-2';
+            uploadBtn.type = 'button';
+            uploadBtn.onclick = () => {
+                // Ao invés de fechar, já chamamos o seletor. Quando atualizar, reabre o modal.
+                window.uploadInvoicePDF(data.id);
+            };
+            // Insere antes do botão fechar/salvar
+            footer.insertBefore(uploadBtn, footer.firstChild);
+        }
+    }
+    // --- FIM ADIÇÃO ---
 
     // --- ADIÇÃO: Botão de Excluir com SweetAlert2 ---
     if (isEditing && permissions.canDelete) {

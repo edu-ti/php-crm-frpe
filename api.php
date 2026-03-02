@@ -181,6 +181,9 @@ try {
         'get_supplier_targets' => ['method' => 'GET', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_supplier_targets'],
         'save_targets' => ['method' => 'POST', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_save_targets'],
         'get_report_kpis' => ['method' => 'GET', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_report_kpis'],
+
+        // Upload NF
+        'parse_invoice' => ['method' => 'POST', 'file' => '/api/handlers/invoice_parser_handler.php', 'function' => 'handle_parse_invoice'],
     ];
 
     if (isset($protected_routes[$action])) {

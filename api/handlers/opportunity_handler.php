@@ -399,6 +399,25 @@ function handle_move_opportunity($pdo, $data)
             return;
         }
     }
+
+    // Check if moving to or from a restricted stage
+    $restricted_stages = ['Controle de Entrega', 'Faturado'];
+    $allowed_restricted_roles = ['Comercial', 'Gestor', 'Analista'];
+
+    // get old stage
+    $stmt_old_stage = $pdo->prepare("SELECT ef.nome FROM oportunidades o JOIN etapas_funil ef ON o.etapa_id = ef.id WHERE o.id = ?");
+    $stmt_old_stage->execute([$data['opportunityId']]);
+    $oldStageName = $stmt_old_stage->fetchColumn();
+
+    // get new stage
+    $stmt_new_stage = $pdo->prepare("SELECT nome FROM etapas_funil WHERE id = ?");
+    $stmt_new_stage->execute([$data['newStageId']]);
+    $newStageName = $stmt_new_stage->fetchColumn();
+
+    if ((in_array($oldStageName, $restricted_stages) || in_array($newStageName, $restricted_stages)) && !in_array($currentRole, $allowed_restricted_roles)) {
+        json_response(['success' => false, 'error' => 'Acesso negado: Você não tem permissão para interagir com esta etapa do funil.'], 403);
+        return;
+    }
     // ---------------------------------------
 
     $stmt = $pdo->prepare("UPDATE oportunidades SET etapa_id = ?, data_ultima_movimentacao = NOW() WHERE id = ?");

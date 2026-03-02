@@ -246,6 +246,11 @@ function handle_get_report_data($pdo)
 
     $supplier_ids = $parseIds($supplier_id_input);
     $user_ids = $parseIds($user_id_input);
+    $cliente_ids_input = isset($_GET['cliente_id']) ? $_GET['cliente_id'] : null;
+    $cliente_ids = [];
+    if (!empty($cliente_ids_input)) {
+        $cliente_ids = explode(',', $cliente_ids_input);
+    }
     $etapa_ids = $parseIds($_GET['etapa_id'] ?? null);
     $origem_ids = [];
     if (isset($_GET['origem']) && !empty($_GET['origem'])) {
@@ -266,9 +271,9 @@ function handle_get_report_data($pdo)
         $data = [];
 
         if ($type === 'products') {
-            $data = get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+            $data = get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
         } elseif ($type === 'clients') {
-            $data = get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+            $data = get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
         } elseif ($type === 'forecast') {
             $sql = "
             SELECT 
@@ -280,7 +285,7 @@ function handle_get_report_data($pdo)
             WHERE COALESCE(o.data_abertura, o.data_criacao) BETWEEN ? AND ?
         ";
             $params = [$start_date, $end_date];
-            apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+            apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
             $sql .= " GROUP BY mes ORDER BY mes ASC";
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
@@ -302,7 +307,7 @@ function handle_get_report_data($pdo)
             $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
 
             // Apply filters to Opportunity (o)
-            apply_report_filters_helper($sql, $params, 'o', $supplier_ids, [], $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+            apply_report_filters_helper($sql, $params, 'o', $supplier_ids, [], $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
 
             // Apply User Filter to Proposal (p) manually if needed
             if (!empty($user_ids)) {
@@ -328,18 +333,18 @@ function handle_get_report_data($pdo)
             WHERE o.data_criacao BETWEEN ? AND ?
         ";
             $params = [$start_date, $end_date];
-            apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+            apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
             $sql .= " GROUP BY ef.id, ef.nome, ef.ordem ORDER BY ef.ordem ASC";
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         } elseif ($type === 'licitacoes_funnel') {
-            $data = get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+            $data = get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
         } elseif ($type === 'licitacoes') {
-            $data = get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+            $data = get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
         } else {
-            $data = get_sales_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+            $data = get_sales_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
         }
 
         echo json_encode(['success' => true, 'report_data' => $data, 'type' => $type]);
@@ -473,7 +478,7 @@ function handle_save_targets($pdo)
 
 // --- HELPER FUNCTIONS ---
 
-function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $user_ids = [], $etapa_ids = [], $origem_ids = [], $uf_ids = [], $status_ids = [])
+function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $user_ids = [], $etapa_ids = [], $origem_ids = [], $uf_ids = [], $status_ids = [], $cliente_ids = [])
 {
     $buildIn = function ($ids) {
         if (empty($ids))
@@ -494,6 +499,58 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
         list($ph, $vals) = $buildIn($user_ids);
         $sql .= " AND vf.usuario_id IN ($ph)";
         $params = array_merge($params, $vals);
+    }
+    if (!empty($origem_ids)) {
+        $in_params = trim(str_repeat('?,', count($origem_ids)), ',');
+        $sql .= " AND vf.origem IN ($in_params)";
+        foreach ($origem_ids as $id)
+            $params[] = $id;
+    }
+    if (!empty($uf_ids)) {
+        $in_params = trim(str_repeat('?,', count($uf_ids)), ',');
+        $sql .= " AND (vf.organizacao_id IN (SELECT id FROM organizacoes WHERE estado IN ($in_params)))";
+        foreach ($uf_ids as $id)
+            $params[] = $id;
+    }
+    if (!empty($status_ids)) {
+        $has_won = false;
+        foreach ($status_ids as $st) {
+            if ($st === 'Ganho' || $st === 'Won')
+                $has_won = true;
+        }
+        if (!$has_won) {
+            $sql .= " AND 1=0";
+        }
+    }
+    if (!empty($cliente_ids)) {
+        $org_ids = [];
+        $pf_ids = [];
+        foreach ($cliente_ids as $cid) {
+            if (strpos($cid, 'org-') === 0) {
+                $org_ids[] = (int) substr($cid, 4);
+            } elseif (strpos($cid, 'pf-') === 0) {
+                $pf_ids[] = (int) substr($cid, 3);
+            }
+        }
+        $cliente_conditions = [];
+        if (!empty($org_ids)) {
+            list($ph_org, $vals_org) = $buildIn($org_ids);
+            $cliente_conditions[] = "vf.organizacao_id IN ($ph_org)";
+            $params = array_merge($params, $vals_org);
+        }
+        if (!empty($pf_ids)) {
+            list($ph_pf, $vals_pf) = $buildIn($pf_ids);
+            $cliente_conditions[] = "vf.cliente_pf_id IN ($ph_pf)";
+            $params = array_merge($params, $vals_pf);
+        }
+        if (!empty($cliente_conditions)) {
+            $sql .= " AND (" . implode(' OR ', $cliente_conditions) . ")";
+        }
+    }
+    if (!empty($etapa_ids)) {
+        // vendas_fornecedores generally does not map to early etapas.
+        // We can either ignore or enforce it if they select Ganho stage ID.
+        // For now, if they filter by specific stages, we can't accurately filter vendas_fornecedores without joining opportunities. To be perfectly accurate we would join it. Since there's no link, we just ignore it so it returns data if Status allows.
     }
     $sql .= " GROUP BY vf.fornecedor_id, vf.usuario_id, YEAR(vf.data_venda), MONTH(vf.data_venda) ORDER BY f.nome, u.nome, ano, mes";
 
@@ -584,7 +641,7 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
     return $report_data;
 }
 
-function get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids)
+function get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids = [])
 {
     $sql = "SELECT p.usuario_id as fornecedor_id, u.nome as fornecedor_nome, pi.produto_id, pr.nome_produto as produto_nome, SUM(pi.quantidade) as quantidade, AVG(pi.valor_unitario) as valor_unitario, MAX(pi.valor_unitario) as valor_max, SUM(pi.quantidade * pi.valor_unitario) as valor_total 
             FROM proposta_itens pi 
@@ -625,7 +682,7 @@ function get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_
         foreach ($supplier_ids as $id)
             $params[] = $id;
     }
-    apply_report_filters_helper($sql, $params, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+    apply_report_filters_helper($sql, $params, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids, 'fornecedor_id', 'p.usuario_id');
     $sql .= " GROUP BY o.fornecedor_id, pi.produto_id, pr.nome_produto ORDER BY f.nome, valor_total DESC";
 
     $stmt = $pdo->prepare($sql);
@@ -642,7 +699,7 @@ function get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_
     return $report_data;
 }
 
-function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids)
+function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids = [])
 {
     // Updated to use 'propostas' and 'proposta_itens' for value calculation if available, 
     // falling back to opportunity items if no proposal or just counting on opportunity value?
@@ -672,7 +729,7 @@ function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $use
         foreach ($supplier_ids as $id)
             $params[] = $id;
     }
-    apply_report_filters_helper($sql, $params, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+    apply_report_filters_helper($sql, $params, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids, 'fornecedor_id', 'p.usuario_id');
     $sql .= " GROUP BY o.id, o.fornecedor_id ORDER BY f.nome, o.data_criacao DESC";
 
     $stmt = $pdo->prepare($sql);
@@ -690,7 +747,7 @@ function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $use
     return $report_data;
 }
 
-function apply_report_filters_helper(&$sql, &$params, $table_alias, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $supplier_col = 'fornecedor_id', $user_col = 'usuario_id')
+function apply_report_filters_helper(&$sql, &$params, $table_alias, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids = [], $supplier_col = 'fornecedor_id', $user_col = 'usuario_id')
 {
     $buildIn = function ($ids) {
         if (empty($ids))
@@ -706,7 +763,8 @@ function apply_report_filters_helper(&$sql, &$params, $table_alias, $supplier_id
     }
     if (!empty($user_ids)) {
         list($ph, $vals) = $buildIn($user_ids);
-        $sql .= " AND $table_alias.$user_col IN ($ph)";
+        $u_alias = (strpos($user_col, '.') !== false) ? $user_col : "$table_alias.$user_col";
+        $sql .= " AND $u_alias IN ($ph)";
         $params = array_merge($params, $vals);
     }
     if (!empty($etapa_ids)) {
@@ -740,9 +798,34 @@ function apply_report_filters_helper(&$sql, &$params, $table_alias, $supplier_id
         foreach ($uf_ids as $id)
             $params[] = $id;
     }
+    if (!empty($cliente_ids)) {
+        $org_ids = [];
+        $pf_ids = [];
+        foreach ($cliente_ids as $cid) {
+            if (strpos($cid, 'org-') === 0) {
+                $org_ids[] = substr($cid, 4);
+            } elseif (strpos($cid, 'pf-') === 0) {
+                $pf_ids[] = substr($cid, 3);
+            }
+        }
+        $cliente_conditions = [];
+        if (!empty($org_ids)) {
+            list($ph_org, $vals_org) = $buildIn($org_ids);
+            $cliente_conditions[] = "$table_alias.organizacao_id IN ($ph_org)";
+            $params = array_merge($params, $vals_org);
+        }
+        if (!empty($pf_ids)) {
+            list($ph_pf, $vals_pf) = $buildIn($pf_ids);
+            $cliente_conditions[] = "$table_alias.cliente_pf_id IN ($ph_pf)";
+            $params = array_merge($params, $vals_pf);
+        }
+        if (!empty($cliente_conditions)) {
+            $sql .= " AND (" . implode(' OR ', $cliente_conditions) . ")";
+        }
+    }
 }
 
-function get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids)
+function get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids = [])
 {
     // Source A: Propostas Aprovadas
     $sql_prop = "SELECT 
@@ -761,7 +844,7 @@ function get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_i
     $params_prop = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
 
     // Apply filters to Propostas
-    apply_report_filters_helper($sql_prop, $params_prop, 'p', [], $user_ids, [], $origem_ids, $uf_ids, []);
+    apply_report_filters_helper($sql_prop, $params_prop, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids, 'fornecedor_id', 'p.usuario_id');
 
     $sql_prop .= " GROUP BY p.organizacao_id, p.cliente_pf_id, cliente_nome";
 
@@ -783,7 +866,7 @@ function get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_i
 
     $params_vendas = [$start_date, $end_date];
 
-    apply_report_filters_helper($sql_vendas, $params_vendas, 'vf', $supplier_ids, $user_ids, [], $origem_ids, [], []);
+    apply_report_filters_helper($sql_vendas, $params_vendas, 'vf', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
 
     $sql_vendas .= " GROUP BY vf.organizacao_id, vf.cliente_pf_id, cliente_nome";
 
@@ -835,7 +918,7 @@ function get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_i
     return $final_data;
 }
 
-function get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids)
+function get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids = [])
 {
     // Funnel ID 2 = Licitações
     $sql = "
@@ -863,7 +946,7 @@ function get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_id
     $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
 
     // Apply filters (using standardized helper, aliased to 'o')
-    apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids);
+    apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
 
     $sql .= " GROUP BY ef.id, ef.nome, ef.ordem ORDER BY ef.ordem ASC";
 

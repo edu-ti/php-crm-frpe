@@ -124,6 +124,11 @@ export async function renderReportsView(state) {
                         </div>
                     </div>
 
+                    <div class="w-full md:w-auto">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Cliente</label>
+                        <div id="filter-client-container" class="w-full md:w-64 relative"></div>
+                    </div>
+
                     <!-- Novos Filtros (Fase 2) -->
                     <div class="w-full md:w-auto">
                         <label class="block text-xs font-bold text-gray-700 mb-1">Etapa</label>
@@ -235,11 +240,11 @@ export async function renderReportsView(state) {
             }
             .multiselect-button:focus { outline: 2px solid #a5b4fc; border-color: #6366f1; }
             .multiselect-list {
-                display: none; position: absolute; z-index: 50; width: 100%; max-height: 15rem; overflow-y: auto;
+                display: none; position: absolute; z-index: 50; width: 100%;
                 background: white; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-top: 0.25rem;
                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             }
-            .multiselect-list.show { display: block; }
+            .multiselect-list.show { display: flex; flex-direction: column; }
             .multiselect-item {
                 display: flex; align-items: center; padding: 0.5rem; cursor: pointer; transition: background-color 0.15s;
             }
@@ -319,6 +324,7 @@ function restoreFilters() {
 
         if (f.suppliers) restoreMulti('supplier-select', f.suppliers);
         if (f.users) restoreMulti('user-select', f.users);
+        if (f.clients) restoreMulti('client-select', f.clients);
         if (f.etapas) restoreMulti('etapa-select', f.etapas);
         if (f.origens) restoreMulti('origem-select', f.origens);
         if (f.ufs) restoreMulti('uf-select', f.ufs);
@@ -358,6 +364,13 @@ function populateFilters() {
     const users = appState.users || [];
     const sellers = users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista'].includes(u.role));
     renderMultiSelect('filter-user-container', 'user-select', sellers.map(u => ({ value: u.id, label: u.nome })), 'Todos os Vendedores');
+
+    // Cliente (Organizations + PF)
+    const clients = [];
+    appState.organizations?.forEach(o => clients.push({ value: 'org-' + o.id, label: o.nome_fantasia || o.razao_social || 'Org ' + o.id }));
+    appState.clients_pf?.forEach(p => clients.push({ value: 'pf-' + p.id, label: p.nome || 'PF ' + p.id }));
+    clients.sort((a, b) => a.label.localeCompare(b.label));
+    renderMultiSelect('filter-client-container', 'client-select', clients, 'Todos os Clientes');
 
     // --- Novos Filtros ---
 
@@ -399,17 +412,22 @@ function renderMultiSelect(containerId, selectId, options, defaultText) {
                 <i class="fas fa-chevron-down text-gray-400 text-xs ml-2"></i>
             </button>
             <div class="multiselect-list" id="${selectId}-list">
-                <div class="p-2 border-b border-gray-100 flex justify-between">
-                     <button type="button" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium" onclick="toggleAllMultiSelect('${selectId}', true)">Marcar Todos</button>
-                     <button type="button" class="text-xs text-gray-500 hover:text-gray-700" onclick="toggleAllMultiSelect('${selectId}', false)">Limpar</button>
+                <div class="p-2 border-b border-gray-100 flex flex-col gap-2 shrink-0">
+                     <input type="text" placeholder="Pesquisar..." class="w-full text-xs p-1.5 border border-gray-300 rounded focus:outline-none focus:border-indigo-500" oninput="filterMultiSelect('${selectId}', this.value)" onclick="event.stopPropagation()">
+                     <div class="flex justify-between">
+                         <button type="button" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium" onclick="toggleAllMultiSelect('${selectId}', true)">Marcar Todos</button>
+                         <button type="button" class="text-xs text-gray-500 hover:text-gray-700" onclick="toggleAllMultiSelect('${selectId}', false)">Limpar</button>
+                     </div>
                 </div>
-                <!-- Options -->
-                ${options.map(opt => `
-                    <label class="multiselect-item">
-                        <input type="checkbox" value="${opt.value}" class="${selectId}-checkbox" onchange="updateMultiSelectText('${selectId}', '${defaultText}')">
-                        <span class="text-sm text-gray-700">${opt.label}</span>
-                    </label>
-                `).join('')}
+                <div class="overflow-y-auto max-h-48 flex-grow">
+                    <!-- Options -->
+                    ${options.map(opt => `
+                        <label class="multiselect-item" data-label="${opt.label.toLowerCase().replace(/"/g, '&quot;')}">
+                            <input type="checkbox" value="${opt.value}" class="${selectId}-checkbox" onchange="updateMultiSelectText('${selectId}', '${defaultText}')">
+                            <span class="text-sm text-gray-700">${opt.label}</span>
+                        </label>
+                    `).join('')}
+                </div>
             </div>
         </div>
     `;
@@ -417,6 +435,22 @@ function renderMultiSelect(containerId, selectId, options, defaultText) {
 }
 
 // Global scope helpers for onclick events (since module scope)
+window.filterMultiSelect = function (id, term) {
+    const list = document.getElementById(`${id}-list`);
+    if (!list) return;
+    const items = list.querySelectorAll('.multiselect-item');
+    const lowerTerm = term.toLowerCase();
+
+    items.forEach(el => {
+        const label = el.getAttribute('data-label') || '';
+        if (label.includes(lowerTerm)) {
+            el.style.display = 'flex';
+        } else {
+            el.style.display = 'none';
+        }
+    });
+};
+
 window.toggleMultiSelect = function (id) {
     const list = document.getElementById(`${id}-list`);
     // Close others
@@ -464,8 +498,12 @@ window.updateMultiSelectText = function (id, defaultText) {
 
 window.getMultiSelectValues = function (id) {
     const checkboxes = document.querySelectorAll(`.${id}-checkbox:checked`);
-    // If none selected, return empty (implies all in backend logic if we passed null, or restrict?)
-    // Based on backend change: empty sends null.
+    const total = document.querySelectorAll(`.${id}-checkbox`).length;
+    // If none are selected OR all are selected, we pass empty to bypass the SQL IN() filter entirely.
+    // This handles NULLs correctly (as filtering by all options explicitly often drops NULL DB values).
+    if (checkboxes.length === 0 || checkboxes.length === total) {
+        return [];
+    }
     return Array.from(checkboxes).map(cb => cb.value);
 };
 
@@ -480,6 +518,7 @@ async function loadReportData() {
     // Get Multi-select values
     const supplierIds = window.getMultiSelectValues('supplier-select');
     const userIds = window.getMultiSelectValues('user-select');
+    const clientIds = window.getMultiSelectValues('client-select');
     const etapaIds = window.getMultiSelectValues('etapa-select');
     const origemIds = window.getMultiSelectValues('origem-select');
     const ufIds = window.getMultiSelectValues('uf-select');
@@ -492,6 +531,7 @@ async function loadReportData() {
 
     const supplierPayload = supplierIds.length > 0 ? supplierIds.join(',') : '';
     const userPayload = userIds.length > 0 ? userIds.join(',') : '';
+    const clientPayload = clientIds.length > 0 ? clientIds.join(',') : '';
     const etapaPayload = etapaIds.length > 0 ? etapaIds.join(',') : '';
     const origemPayload = origemIds.length > 0 ? origemIds.join(',') : '';
     const ufPayload = ufIds.length > 0 ? ufIds.join(',') : '';
@@ -504,6 +544,7 @@ async function loadReportData() {
         end: end,
         suppliers: supplierIds,
         users: userIds,
+        clients: clientIds,
         etapas: etapaIds,
         origens: origemIds,
         ufs: ufIds,
@@ -533,6 +574,7 @@ async function loadReportData() {
             end_date: formattedEnd,
             supplier_id: supplierPayload,
             user_id: userPayload,
+            cliente_id: clientPayload,
             etapa_id: etapaPayload,
             origem: origemPayload, // API expects 'origem' (plural handled by explode) or 'origem_id'? Handler has 'origei' typo variable but gets 'origem'.
             uf: ufPayload,
@@ -563,6 +605,8 @@ function renderReports(data, container, type, startStr, endStr) {
 
     if (data.length === 0) {
         container.innerHTML = `<div class="bg-blue-50 p-8 border border-blue-200 text-blue-700 rounded text-center">Nenhum dado encontrado para o período.</div>`;
+        const chartContainer = document.getElementById('chart-container-wrapper');
+        if (chartContainer) chartContainer.classList.add('hidden');
         return;
     }
 
