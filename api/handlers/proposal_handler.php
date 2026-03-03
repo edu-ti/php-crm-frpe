@@ -629,12 +629,12 @@ function handle_get_proposal_details($pdo, $get_data)
 function handle_upload_image()
 {
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar'];
         $filename = $_FILES['image']['name'];
         $filetype = pathinfo($filename, PATHINFO_EXTENSION);
 
         if (!in_array(strtolower($filetype), $allowed)) {
-            json_response(['success' => false, 'error' => 'Tipo de arquivo inválido.'], 400);
+            json_response(['success' => false, 'error' => 'Tipo de arquivo inválido. Formatos permitidos: imagens, pdf, office e compactados.'], 400);
         }
 
         $upload_dir = 'uploads/proposal_items/'; // Diretório específico para itens de proposta

@@ -119,6 +119,10 @@ function renderKanbanBoard() {
         stagesToRender = stagesToRender.filter(s => s.nome !== 'Faturado');
     }
 
+    // Hide 'Faturado' from Sales funnel (ID 1) as requested (moved to Financeiro)
+    if (currentFunnelId === 1) {
+        stagesToRender = stagesToRender.filter(s => s.nome !== 'Faturado');
+    }
 
     if (stagesToRender.length === 0) {
         board.innerHTML = `<div class="p-8 text-center w-full"><p class="text-gray-500">Nenhuma etapa encontrada para este funil (ID ${currentFunnelId}).</p></div>`;
@@ -791,6 +795,9 @@ function openCreateOpportunityModal() {
     }];
     renderOpportunityModal(); // Chama o renderizador principal
 }
+
+// Expondo para uso global (ex: financeiro)
+window.openOpportunityDetailsModal = openOpportunityDetailsModal;
 
 async function openOpportunityDetailsModal(oppId) {
     currentOpportunityId = oppId; // Define ID para edição

@@ -69,6 +69,7 @@ try {
         'login' => ['method' => 'POST', 'file' => '/api/handlers/auth_handler.php', 'function' => 'handle_login'],
         'fetch_cnpj' => ['method' => 'GET', 'file' => '/api/handlers/external_api_handler.php', 'function' => 'handle_fetch_cnpj'],
         'fetch_cep' => ['method' => 'GET', 'file' => '/api/handlers/external_api_handler.php', 'function' => 'handle_fetch_cep'],
+        'migrate_db' => ['method' => 'GET', 'file' => '/api/handlers/opportunity_handler.php', 'function' => 'handle_migrate_db_opps'],
     ];
 
     // Verifica rotas públicas
@@ -182,8 +183,17 @@ try {
         'save_targets' => ['method' => 'POST', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_save_targets'],
         'get_report_kpis' => ['method' => 'GET', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_report_kpis'],
 
-        // Upload NF
+        // Upload NF e Documentos
         'parse_invoice' => ['method' => 'POST', 'file' => '/api/handlers/invoice_parser_handler.php', 'function' => 'handle_parse_invoice'],
+        'upload_document' => ['method' => 'POST', 'file' => '/api/handlers/opportunity_handler.php', 'function' => 'handle_upload_document'],
+
+        // Funil Financeiro (Empenhos e NFs)
+        'create_empenho' => ['method' => 'POST', 'file' => '/api/handlers/finance_handler.php', 'function' => 'handle_create_empenho'],
+        'update_empenho' => ['method' => 'POST', 'file' => '/api/handlers/finance_handler.php', 'function' => 'handle_update_empenho'],
+        'delete_empenho' => ['method' => 'POST', 'file' => '/api/handlers/finance_handler.php', 'function' => 'handle_delete_empenho'],
+        'create_nota_fiscal' => ['method' => 'POST', 'file' => '/api/handlers/finance_handler.php', 'function' => 'handle_create_nota_fiscal'],
+        'update_nota_fiscal' => ['method' => 'POST', 'file' => '/api/handlers/finance_handler.php', 'function' => 'handle_update_nota_fiscal'],
+        'delete_nota_fiscal' => ['method' => 'POST', 'file' => '/api/handlers/finance_handler.php', 'function' => 'handle_delete_nota_fiscal'],
     ];
 
     if (isset($protected_routes[$action])) {

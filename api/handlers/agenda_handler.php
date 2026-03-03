@@ -56,7 +56,7 @@ function handle_create_agendamento($pdo, $data)
     // ***** ALTERAÇÃO: Insere no BD usando transação e tabela de ligação *****
     error_log("DEBUG: [Agenda Create] Tentando inserir agendamento no BD...");
     // Não insere mais usuario_id na tabela principal
-    $sql_agendamento = "INSERT INTO agendamentos (titulo, descricao, data_inicio, tipo, criado_por_id, oportunidade_id) VALUES (?, ?, ?, ?, ?, ?)";
+    $sql_agendamento = "INSERT INTO agendamentos (titulo, descricao, data_inicio, tipo, criado_por_id, oportunidade_id, data_entrega) VALUES (?, ?, ?, ?, ?, ?, ?)";
     $stmt_agendamento = $pdo->prepare($sql_agendamento);
     $success = false;
     $lastId = null;
@@ -65,13 +65,16 @@ function handle_create_agendamento($pdo, $data)
         $pdo->beginTransaction(); // Inicia transação
 
         // 1. Insere o agendamento principal usando a data formatada para MySQL
+        $sql_agendamento = "INSERT INTO agendamentos (titulo, descricao, data_inicio, tipo, criado_por_id, oportunidade_id, data_entrega) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $stmt_agendamento = $pdo->prepare($sql_agendamento);
         $success = $stmt_agendamento->execute([
             $data['titulo'],
             $data['observacoes'] ?? null,
             $data_inicio_mysql, // Usa a data formatada
             $data['tipo'],
             $_SESSION['user_id'],
-            !empty($data['oportunidade_id']) ? $data['oportunidade_id'] : null
+            !empty($data['oportunidade_id']) ? $data['oportunidade_id'] : null,
+            !empty($data['data_entrega']) ? $data['data_entrega'] : null
         ]);
 
         if ($success) {
@@ -88,6 +91,20 @@ function handle_create_agendamento($pdo, $data)
                 }
             }
             error_log("DEBUG: [Agenda Create] Associações de usuário inseridas para ID: " . $lastId);
+
+            // 3. Se for 'Controle de Entrega' e tiver oportunidade associada, move a oportunidade
+            if ($data['tipo'] === 'Controle de Entrega' && !empty($data['oportunidade_id'])) {
+                // Tenta achar a etapa 'Controle de Entrega' no banco de dados para o funil atual da oportunidade, ou global
+                $stmt_etapa = $pdo->prepare("SELECT id FROM etapas_funil WHERE nome = 'Controle de Entrega' LIMIT 1");
+                $stmt_etapa->execute();
+                $etapaId = $stmt_etapa->fetchColumn();
+
+                if ($etapaId) {
+                    $stmt_opp = $pdo->prepare("UPDATE oportunidades SET etapa_id = ?, data_ultima_movimentacao = NOW() WHERE id = ?");
+                    $stmt_opp->execute([$etapaId, $data['oportunidade_id']]);
+                    error_log("DEBUG: [Agenda Create] Oportunidade ID " . $data['oportunidade_id'] . " movida para a etapa Controle de Entrega (ID: " . $etapaId . ")");
+                }
+            }
 
             $pdo->commit(); // Confirma transação
         } else {
@@ -296,7 +313,7 @@ function handle_update_agendamento($pdo, $data)
         $pdo->beginTransaction();
 
         // 1. Atualiza o agendamento principal (sem usuario_id) usando data formatada
-        $sql_update = "UPDATE agendamentos SET titulo = ?, descricao = ?, data_inicio = ?, tipo = ?, oportunidade_id = ? WHERE id = ?";
+        $sql_update = "UPDATE agendamentos SET titulo = ?, descricao = ?, data_inicio = ?, tipo = ?, oportunidade_id = ?, data_entrega = ? WHERE id = ?";
         $stmt_update = $pdo->prepare($sql_update);
         $success = $stmt_update->execute([
             $data['titulo'],
@@ -304,6 +321,7 @@ function handle_update_agendamento($pdo, $data)
             $data_inicio_mysql, // Usa data formatada
             $data['tipo'],
             !empty($data['oportunidade_id']) ? $data['oportunidade_id'] : null,
+            !empty($data['data_entrega']) ? $data['data_entrega'] : null,
             $agendamentoId
         ]);
 
@@ -323,6 +341,20 @@ function handle_update_agendamento($pdo, $data)
                 }
             }
             error_log("DEBUG: [Agenda Update] Novas associações inseridas.");
+
+            // 4. Se for 'Controle de Entrega' e tiver oportunidade associada, move a oportunidade
+            if ($data['tipo'] === 'Controle de Entrega' && !empty($data['oportunidade_id'])) {
+                // Tenta achar a etapa 'Controle de Entrega' no banco de dados para o funil atual da oportunidade, ou global
+                $stmt_etapa = $pdo->prepare("SELECT id FROM etapas_funil WHERE nome = 'Controle de Entrega' LIMIT 1");
+                $stmt_etapa->execute();
+                $etapaId = $stmt_etapa->fetchColumn();
+
+                if ($etapaId) {
+                    $stmt_opp = $pdo->prepare("UPDATE oportunidades SET etapa_id = ?, data_ultima_movimentacao = NOW() WHERE id = ?");
+                    $stmt_opp->execute([$etapaId, $data['oportunidade_id']]);
+                    error_log("DEBUG: [Agenda Update] Oportunidade ID " . $data['oportunidade_id'] . " movida para a etapa Controle de Entrega (ID: " . $etapaId . ")");
+                }
+            }
 
             $pdo->commit();
         } else {
@@ -516,7 +548,7 @@ function handle_delete_agendamento($pdo, $data)
     // 3. Envia notificação SE a exclusão foi bem-sucedida E temos os dados
     if ($success && $agendamento_deleted) {
         error_log("DEBUG: [Agenda Delete] Exclusão bem-sucedida. Enviando notificação...");
-        
+
         // Coleta emails dos envolvidos (Criador + Associados)
         $recipientEmails = [];
 

@@ -258,6 +258,30 @@ function handle_get_data($pdo)
     // Buscar produtos do catálogo
     $products = $pdo->query("SELECT * FROM produtos ORDER BY nome_produto ASC")->fetchAll(PDO::FETCH_ASSOC);
 
+    // --- NOVO: Buscar empenhos e notas fiscais (com Try/Catch caso as tabelas ainda não existam) ---
+    $empenhos = [];
+    try {
+        // Traz o nome da empresa/contrato via join para facilitar
+        $sql_emp = "SELECT e.*, o.numero_edital as numero_contrato, org.nome_fantasia as organizacao_nome 
+                    FROM empenhos e 
+                    LEFT JOIN oportunidades o ON e.oportunidade_id = o.id 
+                    LEFT JOIN organizacoes org ON o.organizacao_id = org.id 
+                    ORDER BY e.data_prevista DESC";
+        $empenhos = $pdo->query($sql_emp)->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) { /* Tabela pode não existir ainda */
+    }
+
+    $notas_fiscais = [];
+    try {
+        $sql_nf = "SELECT nf.*, o.numero_edital as numero_contrato, org.nome_fantasia as organizacao_nome 
+                   FROM notas_fiscais nf 
+                   LEFT JOIN oportunidades o ON nf.oportunidade_id = o.id 
+                   LEFT JOIN organizacoes org ON o.organizacao_id = org.id 
+                   ORDER BY nf.data_prevista DESC";
+        $notas_fiscais = $pdo->query($sql_nf)->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) { /* Tabela pode não existir ainda */
+    }
+
     $response_data = [
         'currentUser' => $currentUser,
         'users' => $pdo->query("SELECT id, nome, role, email, telefone, cargo, status FROM usuarios")->fetchAll(PDO::FETCH_ASSOC),
@@ -273,7 +297,9 @@ function handle_get_data($pdo)
         'vendasFornecedores' => $vendas_fornecedores,
         'agendamentos' => $agendamentos,
         'leads' => $leads,
-        'products' => $products
+        'products' => $products,
+        'empenhos' => $empenhos,
+        'notas_fiscais' => $notas_fiscais
     ];
     json_response($response_data);
 }
