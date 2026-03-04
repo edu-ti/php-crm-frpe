@@ -331,6 +331,7 @@ function handle_get_report_data($pdo)
             FROM oportunidades o
             JOIN etapas_funil ef ON o.etapa_id = ef.id
             WHERE o.data_criacao BETWEEN ? AND ?
+              AND ef.funil_id = 1
         ";
             $params = [$start_date, $end_date];
             apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
@@ -665,7 +666,7 @@ function get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_
     }
 
     // Re-writing the query to include Opportunity and Supplier for consistent filtering
-    $sql = "SELECT o.fornecedor_id, f.nome as fornecedor_nome, pi.produto_id, pr.nome_produto as produto_nome, 
+    $sql = "SELECT COALESCE(o.fornecedor_id, 0) as fornecedor_id, COALESCE(f.nome, pi.fabricante, 'Fornecedor Não Informado') as fornecedor_nome, pi.produto_id, COALESCE(pr.nome_produto, pi.descricao) as produto_nome, 
             SUM(pi.quantidade) as quantidade, AVG(pi.valor_unitario) as valor_unitario, 
             MAX(pi.valor_unitario) as valor_max, SUM(pi.quantidade * pi.valor_unitario) as valor_total 
             FROM proposta_itens pi 
@@ -683,7 +684,7 @@ function get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_
             $params[] = $id;
     }
     apply_report_filters_helper($sql, $params, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids, 'fornecedor_id', 'p.usuario_id');
-    $sql .= " GROUP BY o.fornecedor_id, pi.produto_id, pr.nome_produto ORDER BY f.nome, valor_total DESC";
+    $sql .= " GROUP BY fornecedor_id, fornecedor_nome, pi.produto_id, produto_nome ORDER BY fornecedor_nome, valor_total DESC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);

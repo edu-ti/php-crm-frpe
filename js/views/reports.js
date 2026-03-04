@@ -88,7 +88,7 @@ export async function renderReportsView(state) {
                 <!-- Removido md:flex para iniciar oculto também no desktop -->
                 <div id="reports-filters-container" class="hidden flex-wrap items-end gap-4 mb-4 md:mb-0 transition-all duration-300 ease-in-out">
                     <div class="w-full md:w-auto">
-                        <select id="report-type" class="form-select border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-full md:w-40">
+                        <select id="report-type" class="form-select border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-full md:w-50">
                             <option value="sales">Vendas Gerais</option>
                             <option value="forecast">Forecast (Previsão)</option>
                             <option value="funnel">Funil de Vendas</option>
@@ -140,11 +140,11 @@ export async function renderReportsView(state) {
                     </div>
                     <div class="w-full md:w-auto">
                         <label class="block text-xs font-bold text-gray-700 mb-1">UF</label>
-                        <div id="filter-uf-container" class="w-full md:w-32 relative"></div>
+                        <div id="filter-uf-container" class="w-full md:w-40 relative"></div>
                     </div>
                     <div class="w-full md:w-auto">
                         <label class="block text-xs font-bold text-gray-700 mb-1">Status</label>
-                        <div id="filter-status-container" class="w-full md:w-32 relative"></div>
+                        <div id="filter-status-container" class="w-full md:w-40 relative"></div>
                     </div>
 
                     <div class="flex flex-wrap gap-2 w-full md:w-auto ml-auto">
@@ -634,7 +634,7 @@ function renderReports(data, container, type, startStr, endStr) {
     }
 
     if (type === 'funnel' || type === 'licitacoes_funnel') {
-        const html = renderFunnelTable(data);
+        const html = renderFunnelTable(data, type);
         container.innerHTML = html;
         return;
     }
@@ -800,7 +800,7 @@ function renderSalesChart(data, monthsRange, type) {
         // const valuesVal = data.map(r => parseFloat(r.valor_total)); // Maybe toggle between count/value?
 
         const titleEl = container.querySelector('h3');
-        if (titleEl) titleEl.innerText = "Funil de Vendas (Quantidade)";
+        if (titleEl) titleEl.innerText = type === 'licitacoes_funnel' ? "Funil de Licitações (Quantidade)" : "Funil de Vendas (Quantidade)";
 
         chartInstance = new Chart(ctx, {
             type: 'bar',
@@ -1262,15 +1262,16 @@ function renderClientsTable(data) {
     `;
 }
 
-function renderFunnelTable(data) {
+function renderFunnelTable(data, type = 'funnel') {
     const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
     const totalRevenue = data.reduce((acc, row) => acc + (parseFloat(row.valor_total) || 0), 0);
     const totalCount = data.reduce((acc, row) => acc + parseInt(row.qtd_oportunidades), 0);
+    const title = type === 'licitacoes_funnel' ? 'Funil de Licitações (Conversão)' : 'Funil de Vendas (Conversão)';
 
     return `
         <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
             <div class="px-6 py-4 bg-teal-50 border-b border-teal-100 flex justify-between items-center">
-                <h3 class="font-bold text-teal-700">Funil de Vendas (Conversão)</h3>
+                <h3 class="font-bold text-teal-700">${title}</h3>
                 <span class="text-xs bg-teal-200 text-teal-800 px-2 py-1 rounded-full">${totalCount} Oportunidades</span>
             </div>
             <div class="overflow-x-auto">
