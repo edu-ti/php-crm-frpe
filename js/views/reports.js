@@ -90,6 +90,7 @@ export async function renderReportsView(state) {
                     <div class="w-full md:w-auto">
                         <select id="report-type" class="form-select border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-full md:w-50">
                             <option value="sales">Vendas Gerais</option>
+                            <option value="contratos">Contratos</option>
                             <option value="forecast">Forecast (Previsão)</option>
                             <option value="funnel">Funil de Vendas</option>
                             <option value="lost_reasons">Propostas recusadas</option>
@@ -639,6 +640,12 @@ function renderReports(data, container, type, startStr, endStr) {
         return;
     }
 
+    if (type === 'contratos') {
+        const html = renderContractsTable(data);
+        container.innerHTML = html;
+        return;
+    }
+
     if (type === 'lost_reasons') {
         const html = renderLostReasonsTable(data);
         container.innerHTML = html;
@@ -680,8 +687,8 @@ function renderSalesChart(data, monthsRange, type) {
 
     if (!ctx || !container) return;
 
-    // Show chart for Sales, Clients, Funnel, Lost Reasons, Forecast, Licitacoes Funnel
-    if (!['sales', 'clients', 'funnel', 'lost_reasons', 'forecast', 'licitacoes_funnel'].includes(type) || !data || data.length === 0) {
+    // Show chart for Sales, Contratos, Clients, Funnel, Lost Reasons, Forecast, Licitacoes Funnel
+    if (!['sales', 'contratos', 'clients', 'funnel', 'lost_reasons', 'forecast', 'licitacoes_funnel'].includes(type) || !data || data.length === 0) {
         container.classList.add('hidden');
         return;
     }
@@ -794,13 +801,17 @@ function renderSalesChart(data, monthsRange, type) {
     }
 
     // --- FUNNEL CHART ---
-    if (type === 'funnel' || type === 'licitacoes_funnel') {
+    if (type === 'funnel' || type === 'licitacoes_funnel' || type === 'contratos') {
         const labels = data.map(r => r.etapa_nome);
         const values = data.map(r => parseInt(r.qtd_oportunidades));
         // const valuesVal = data.map(r => parseFloat(r.valor_total)); // Maybe toggle between count/value?
 
         const titleEl = container.querySelector('h3');
-        if (titleEl) titleEl.innerText = type === 'licitacoes_funnel' ? "Funil de Licitações (Quantidade)" : "Funil de Vendas (Quantidade)";
+        if (titleEl) {
+            if (type === 'licitacoes_funnel') titleEl.innerText = "Funil de Licitações (Quantidade)";
+            else if (type === 'contratos') titleEl.innerText = "Funil Financeiro (Quantidade de Contratos)";
+            else titleEl.innerText = "Funil de Vendas (Quantidade)";
+        }
 
         chartInstance = new Chart(ctx, {
             type: 'bar',
@@ -889,7 +900,9 @@ function renderSalesChart(data, monthsRange, type) {
     } else {
         // Reset Title for Sales
         const titleEl = container.querySelector('h3');
-        if (titleEl) titleEl.innerText = "Evolução de Vendas vs Metas";
+        if (titleEl) {
+            titleEl.innerText = "Evolução de Vendas vs Metas";
+        }
     }
 
     // --- SALES CHART (Existing Logic) ---
@@ -1266,13 +1279,21 @@ function renderFunnelTable(data, type = 'funnel') {
     const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
     const totalRevenue = data.reduce((acc, row) => acc + (parseFloat(row.valor_total) || 0), 0);
     const totalCount = data.reduce((acc, row) => acc + parseInt(row.qtd_oportunidades), 0);
-    const title = type === 'licitacoes_funnel' ? 'Funil de Licitações (Conversão)' : 'Funil de Vendas (Conversão)';
+
+    let title = 'Funil de Vendas (Conversão)';
+    let unit = 'Oportunidades';
+    if (type === 'licitacoes_funnel') {
+        title = 'Funil de Licitações (Conversão)';
+    } else if (type === 'contratos') {
+        title = 'Funil Financeiro (Contratos)';
+        unit = 'Contratos';
+    }
 
     return `
         <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
             <div class="px-6 py-4 bg-teal-50 border-b border-teal-100 flex justify-between items-center">
                 <h3 class="font-bold text-teal-700">${title}</h3>
-                <span class="text-xs bg-teal-200 text-teal-800 px-2 py-1 rounded-full">${totalCount} Oportunidades</span>
+                <span class="text-xs bg-teal-200 text-teal-800 px-2 py-1 rounded-full">${totalCount} ${unit}</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -2004,4 +2025,101 @@ async function saveTargets() {
     } finally {
         showLoading(false);
     }
+}
+
+function renderContractsTable(data) {
+    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+    // Calcula o total geral baseando-se no valor considerado para cada contrato
+    let totalRevenue = 0;
+    let totalCount = 0;
+
+    data.forEach(stage => {
+        totalCount += parseInt(stage.qtd_oportunidades) || 0;
+        if (stage.contratos) {
+            stage.contratos.forEach(c => {
+                totalRevenue += c.valor_considerado || 0;
+            });
+        }
+    });
+
+    let html = `
+        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
+            <div class="px-6 py-4 bg-teal-50 border-b border-teal-100 flex justify-between items-center">
+                <h3 class="font-bold text-teal-700">Funil Financeiro (Contratos)</h3>
+                <span class="text-xs bg-teal-200 text-teal-800 px-2 py-1 rounded-full">${totalCount} Contratos</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Etapa / Cliente</th>
+                            <th class="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Valor do Contrato</th>
+                            <th class="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Valor Empenhado</th>
+                            <th class="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Valor Faturado</th>
+                            <th class="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Saldo do Valor</th>
+                            <th class="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">% (Volume Geral)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+    `;
+
+    data.forEach((stage, index) => {
+        const count = parseInt(stage.qtd_oportunidades) || 0;
+
+        // Render Group Header
+        html += `
+            <tr class="bg-gray-50">
+                <td colspan="6" class="px-6 py-3 text-left font-bold text-gray-800">
+                    ${stage.etapa_nome} 
+                </td>
+            </tr>
+        `;
+
+        if (stage.contratos && stage.contratos.length > 0) {
+            stage.contratos.forEach(c => {
+                const percent = totalRevenue > 0 ? (c.valor_considerado / totalRevenue) * 100 : 0;
+
+                html += `
+                    <tr class="hover:bg-gray-50 transition-colors duration-150">
+                        <td class="px-6 py-4 text-left font-medium text-gray-700 text-sm">
+                            <div class="flex items-center">
+                                <span class="w-6 h-6 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-xs ml-4 mr-3 font-bold">${index + 1}</span>
+                                ${c.cliente_nome}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm text-gray-500">${format(c.valor_contrato)}</td>
+                        <td class="px-6 py-4 text-right text-sm text-gray-500">${format(c.valor_empenhado)}</td>
+                        <td class="px-6 py-4 text-right text-sm text-gray-500">${format(c.valor_faturado)}</td>
+                        <td class="px-6 py-4 text-right text-sm font-semibold text-gray-700">${format(c.saldo)}</td>
+                        <td class="px-6 py-4 text-right text-sm text-gray-500">
+                            <div class="flex items-center justify-end">
+                                <span class="mr-2">${percent.toFixed(1)}%</span>
+                                <div class="w-16 bg-gray-200 rounded-full h-1.5 hidden sm:block">
+                                    <div class="bg-teal-500 h-1.5 rounded-full" style="width: ${percent}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+    });
+
+    html += `
+                        <tr class="bg-gray-100 font-bold border-t-2 border-gray-200">
+                            <td class="px-6 py-4 text-center text-gray-900 border-r border-gray-200">TOTAL</td>
+                            <td class="px-6 py-4 text-right text-gray-900 border-r border-gray-200">—</td>
+                            <td class="px-6 py-4 text-right text-gray-900 border-r border-gray-200">—</td>
+                            <td class="px-6 py-4 text-right text-gray-900 border-r border-gray-200">—</td>
+                            <td class="px-6 py-4 text-right text-gray-900 border-r border-gray-200 text-lg">${format(totalRevenue)}</td>
+                            <td class="px-6 py-4 text-right text-gray-900">100%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+    return html;
 }

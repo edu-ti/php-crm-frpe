@@ -344,6 +344,8 @@ function handle_get_report_data($pdo)
             $data = get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
         } elseif ($type === 'licitacoes') {
             $data = get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
+        } elseif ($type === 'contratos') {
+            $data = get_contracts_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
         } else {
             $data = get_sales_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
         }
@@ -573,6 +575,40 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
     $stmt->execute($params);
     $vendas_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Notas Fiscais (Faturado) Fetching Logic
+    // We join empenhos -> oportunidades to get fornecedor and usuario
+    $sql_nf = "SELECT o.fornecedor_id, f.nome as fornecedor_nome, o.usuario_id, u.nome as vendedor_nome, YEAR(nf.data_faturamento) as ano, MONTH(nf.data_faturamento) as mes, SUM(nf.valor) as total_faturado 
+               FROM notas_fiscais nf 
+               JOIN oportunidades o ON nf.oportunidade_id = o.id 
+               LEFT JOIN fornecedores f ON o.fornecedor_id = f.id 
+               LEFT JOIN usuarios u ON o.usuario_id = u.id 
+               WHERE nf.data_faturamento BETWEEN ? AND ?";
+
+    $params_nf = [$start_date, $end_date];
+
+    if (!empty($supplier_ids)) {
+        list($ph, $vals) = $buildIn($supplier_ids);
+        $sql_nf .= " AND o.fornecedor_id IN ($ph)";
+        $params_nf = array_merge($params_nf, $vals);
+    }
+    if (!empty($user_ids)) {
+        list($ph, $vals) = $buildIn($user_ids);
+        $sql_nf .= " AND o.usuario_id IN ($ph)";
+        $params_nf = array_merge($params_nf, $vals);
+    }
+    if (!empty($origem_ids)) {
+        $in_params = trim(str_repeat('?,', count($origem_ids)), ',');
+        $sql_nf .= " AND o.origem IN ($in_params)";
+        foreach ($origem_ids as $id)
+            $params_nf[] = $id;
+    }
+    // Simplification for UF and status on NF logic to match general structure
+
+    $sql_nf .= " GROUP BY o.fornecedor_id, o.usuario_id, YEAR(nf.data_faturamento), MONTH(nf.data_faturamento)";
+    $stmt_nf = $pdo->prepare($sql_nf);
+    $stmt_nf->execute($params_nf);
+    $nf_data = $stmt_nf->fetchAll(PDO::FETCH_ASSOC);
+
     // Targets fetching logic omitted but required for full functionality. 
     // Assuming simple sales report for brevity or re-implementing target fetching if critical.
     // For consistency with previous file breakdown, I'll include the targets fetch if possible or just return sales.
@@ -606,7 +642,18 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
 
     foreach ($vendas_data as $row) {
         $initStructure($report_data, $row['fornecedor_id'], $row['fornecedor_nome'], $row['usuario_id'], $row['vendedor_nome']);
-        $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'] = (float) $row['total_vendido'];
+        // Initialize if not set
+        if (!isset($report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'])) {
+            $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'] = 0;
+        }
+        $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'] += (float) $row['total_vendido'];
+    }
+    foreach ($nf_data as $row) {
+        $initStructure($report_data, $row['fornecedor_id'], $row['fornecedor_nome'], $row['usuario_id'], $row['vendedor_nome']);
+        if (!isset($report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'])) {
+            $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'] = 0;
+        }
+        $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'] += (float) $row['total_faturado'];
     }
     foreach ($metas_data as $row) {
         $initStructure($report_data, $row['fornecedor_id'], $row['fornecedor_nome'], $row['usuario_id'], $row['vendedor_nome']);
@@ -636,6 +683,29 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
         $stmt_ss->execute([$fid, $start_date, $end_date]);
         $supplier['state_sales'] = $stmt_ss->fetchAll(PDO::FETCH_KEY_PAIR); // [PE => 1000, PB => 500]
 
+        // Add NF state sales
+        $sql_state_nf = "
+            SELECT org.estado, SUM(nf.valor) as total 
+            FROM notas_fiscais nf
+            JOIN oportunidades o ON nf.oportunidade_id = o.id
+            LEFT JOIN organizacoes org ON o.organizacao_id = org.id
+            WHERE o.fornecedor_id = ? 
+            AND nf.data_faturamento BETWEEN ? AND ?
+            AND org.estado IS NOT NULL
+            GROUP BY org.estado
+        ";
+        $stmt_snf = $pdo->prepare($sql_state_nf);
+        $stmt_snf->execute([$fid, $start_date, $end_date]);
+        $nfStateSales = $stmt_snf->fetchAll(PDO::FETCH_KEY_PAIR);
+
+        foreach ($nfStateSales as $st => $val) {
+            if (isset($supplier['state_sales'][$st])) {
+                $supplier['state_sales'][$st] += $val;
+            } else {
+                $supplier['state_sales'][$st] = $val;
+            }
+        }
+
         // 2. State Goals (Annual/Monthly for the year of start_date)
         // Assuming we want the Annual Goal for the state for the year of the start_date
         $year = date('Y', strtotime($start_date));
@@ -654,6 +724,95 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
     // I should include apply_report_filters_helper usage though.
 
     return $report_data;
+}
+
+function get_contracts_report($pdo, $start_date, $end_date, $supplier_ids = [], $user_ids = [], $etapa_ids = [], $origem_ids = [], $uf_ids = [], $status_ids = [], $cliente_ids = [])
+{
+    // Find the Finance/Contracts funnel ID. Usually it's the highest or named 'Financeiro'/'Contratos'
+    $funnel_query = $pdo->query("SELECT id FROM funis WHERE nome LIKE '%Financeiro%' OR nome LIKE '%Contrato%' LIMIT 1");
+    $funnel_id = $funnel_query->fetchColumn();
+
+    if (!$funnel_id) {
+        // Fallback to highest funil_id like frontend does
+        $funnel_query = $pdo->query("SELECT MAX(funil_id) FROM etapas_funil");
+        $funnel_id = $funnel_query->fetchColumn();
+    }
+
+    $sql = "
+        SELECT 
+            ef.id as etapa_id,
+            ef.nome as etapa_nome, 
+            ef.ordem as etapa_ordem,
+            o.id as oportunidade_id,
+            COALESCE(org.nome_fantasia, pf.nome, 'Cliente Desconhecido') as cliente_nome,
+            o.valor as valor_contrato,
+            (SELECT SUM(valor) FROM empenhos e WHERE e.oportunidade_id = o.id) as valor_empenhado,
+            (SELECT SUM(valor) FROM notas_fiscais nf WHERE nf.oportunidade_id = o.id) as valor_faturado
+        FROM oportunidades o
+        JOIN etapas_funil ef ON o.etapa_id = ef.id
+        LEFT JOIN organizacoes org ON o.organizacao_id = org.id
+        LEFT JOIN clientes_pf pf ON o.cliente_pf_id = pf.id
+        WHERE o.data_criacao BETWEEN ? AND ?
+          AND ef.funil_id = ?
+    ";
+
+    $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59', $funnel_id];
+
+    // Apply filters
+    apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
+
+    $sql .= " ORDER BY ef.ordem ASC, cliente_nome ASC";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Group the data by stage to match the funnel logic structure in JS, but containing rows
+    $grouped_data = [];
+    foreach ($data as $row) {
+        $etapa_id = $row['etapa_id'];
+        if (!isset($grouped_data[$etapa_id])) {
+            $grouped_data[$etapa_id] = [
+                'etapa_nome' => $row['etapa_nome'],
+                'etapa_ordem' => $row['etapa_ordem'],
+                'qtd_oportunidades' => 0,
+                'valor_total' => 0, // This is for the chart
+                'contratos' => []
+            ];
+        }
+
+        $val_fat = (float) $row['valor_faturado'];
+        $val_emp = (float) $row['valor_empenhado'];
+        $val_base = (float) $row['valor_contrato'];
+
+        // Logic for total value chart: Faturado > Empenhado > Base
+        $val_considerado = 0;
+        if ($val_fat > 0)
+            $val_considerado = $val_fat;
+        else if ($val_emp > 0)
+            $val_considerado = $val_emp;
+        else
+            $val_considerado = $val_base;
+
+        $grouped_data[$etapa_id]['qtd_oportunidades']++;
+        $grouped_data[$etapa_id]['valor_total'] += $val_considerado;
+        $grouped_data[$etapa_id]['contratos'][] = [
+            'cliente_nome' => $row['cliente_nome'],
+            'valor_contrato' => $val_base,
+            'valor_empenhado' => $val_emp,
+            'valor_faturado' => $val_fat,
+            'saldo' => max(0, $val_base - $val_fat), // Valor do contrato - Valor faturado
+            'valor_considerado' => $val_considerado // To calculate the percentage later
+        ];
+    }
+
+    // Convert back to index array sorting by step order
+    $final_data = array_values($grouped_data);
+    usort($final_data, function ($a, $b) {
+        return $a['etapa_ordem'] <=> $b['etapa_ordem'];
+    });
+
+    return $final_data;
 }
 
 function get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids = [])
