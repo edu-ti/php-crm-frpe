@@ -1112,6 +1112,45 @@ function renderSalesTable(group, monthsRange) {
     const grandSaldo = grandVenda - grandMeta;
     const grandSaldoClass = grandSaldo >= 0 ? 'text-green-600' : 'text-red-600';
 
+    // Row: Factory Total (Global)
+    const factoryMetaMensal = parseFloat(group.meta_global_mensal) || 0;
+    const factoryTotalCells = monthKeys.map(key => {
+        const t = totals[key];
+        const v = t.venda || 0;
+        const m = factoryMetaMensal;
+        const s = v - m;
+
+        const sClass = s >= 0 ? 'text-green-600' : 'text-red-600';
+        const bgClass = m > 0 ? (v >= m ? 'bg-green-50' : 'bg-red-50') : 'bg-blue-50';
+
+        return `
+            <td class="px-2 py-3 whitespace-nowrap text-xs text-right font-bold border-r border-gray-200 ${bgClass}">
+                <div class="text-blue-900 text-sm">${format(v)}</div>
+                ${m > 0 ? `<div class="text-gray-500 text-[10px]">M: ${format(m)}</div>` : ''}
+                ${m > 0 ? `<div class="${sClass} text-[10px] border-t border-gray-200 pt-1 mt-1">S: ${format(s)}</div>` : ''}
+            </td>
+        `;
+    }).join('');
+
+    const factoryGrandVenda = Object.values(totals).reduce((a, b) => a + b.venda, 0);
+    const factoryGrandMeta = factoryMetaMensal * numMonths;
+    const factoryGrandSaldo = factoryGrandVenda - factoryGrandMeta;
+    const factoryGrandSaldoClass = factoryGrandSaldo >= 0 ? 'text-green-600' : 'text-red-600';
+
+    const factoryTotalRow = `
+        <tr class="bg-blue-100 border-b-2 border-blue-200 shadow-sm">
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-blue-900 border-r border-gray-200 sticky left-0 bg-blue-100 z-10">
+                TOTAL ${(group.fornecedor_nome || 'FÁBRICA').toUpperCase()}
+            </td>
+            ${factoryTotalCells}
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold bg-blue-200 border-l border-gray-200">
+                <div class="text-blue-900 text-sm">${format(factoryGrandVenda)}</div>
+                ${factoryGrandMeta > 0 ? `<div class="text-gray-600 text-[10px]">M: ${format(factoryGrandMeta)}</div>` : ''}
+                ${factoryGrandMeta > 0 ? `<div class="${factoryGrandSaldoClass} text-[10px] border-t border-blue-300 pt-1 mt-1">S: ${format(factoryGrandSaldo)}</div>` : ''}
+            </td>
+        </tr>
+    `;
+
     return `
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 border border-gray-200">
@@ -1123,6 +1162,7 @@ function renderSalesTable(group, monthsRange) {
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
+                    ${factoryTotalRow}
                     ${tableBody}
                     <tr class="bg-gray-100 border-t-2 border-gray-300">
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 border-r border-gray-200 sticky left-0 bg-gray-100 z-10">TOTAIS</td>

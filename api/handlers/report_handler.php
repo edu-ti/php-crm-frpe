@@ -660,11 +660,30 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
         $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['meta'] = (float) $row['valor_meta'];
     }
 
+    // Busca das Metas Globais do Fornecedor para a linha de Totalizador de Fábrica
+    $year = date('Y', strtotime($start_date));
+    $sql_global_metas = "SELECT fornecedor_id, meta_anual, meta_mensal FROM fornecedor_metas WHERE ano = ?";
+    $stmt_global_metas = $pdo->prepare($sql_global_metas);
+    $stmt_global_metas->execute([$year]);
+    $global_metas_data = $stmt_global_metas->fetchAll(PDO::FETCH_ASSOC);
+    $global_metas_map = [];
+    foreach ($global_metas_data as $gm) {
+        $global_metas_map[$gm['fornecedor_id']] = [
+            'anual' => (float) $gm['meta_anual'],
+            'mensal' => (float) $gm['meta_mensal']
+        ];
+    }
+
     foreach ($report_data as &$supplier) {
         if (isset($supplier['rows_map'])) {
             $supplier['rows'] = array_values($supplier['rows_map']);
             unset($supplier['rows_map']);
         }
+
+        // Incluir a meta global do fornecedor na resposta
+        $fid = $supplier['fornecedor_id'];
+        $supplier['meta_global_anual'] = $global_metas_map[$fid]['anual'] ?? 0;
+        $supplier['meta_global_mensal'] = $global_metas_map[$fid]['mensal'] ?? 0;
 
         // Restore State Report Data
         $fid = $supplier['fornecedor_id'];
