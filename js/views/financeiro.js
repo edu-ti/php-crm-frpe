@@ -1522,10 +1522,22 @@ window.openAddNotaFiscalModal = async function (editId = null) {
     };
 
     window.removeNfProduct = (itemIdx, pIdx) => {
-        if (confirm("Remover este produto do item?")) {
-            modalItems[itemIdx].produtos.splice(pIdx, 1);
-            renderItemsTable();
-        }
+        Swal.fire({
+            title: 'Tem certeza?',
+            text: 'Remover este produto do item?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Apagar',
+            cancelButtonText: 'Cancelar',
+            backdrop: `rgba(0,0,0,0.8)`
+        }).then((result) => {
+            if (result.isConfirmed) {
+                modalItems[itemIdx].produtos.splice(pIdx, 1);
+                renderItemsTable();
+            }
+        });
     };
 
     window.editNfProduct = (itemIdx, pIdx) => {
@@ -1601,28 +1613,40 @@ window.openAddNotaFiscalModal = async function (editId = null) {
 };
 
 window.deleteSubEntity = async function (id, type) {
-    if (!confirm(`Tem certeza que deseja excluir ${type === 'Empenho' ? 'este' : 'esta'} ${type}? Isso não poderá ser desfeito.`)) return;
+    Swal.fire({
+        title: 'Tem certeza?',
+        text: `Tem certeza que deseja excluir ${type === 'Empenho' ? 'este' : 'esta'} ${type}? Isso não poderá ser desfeito.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Apagar',
+        cancelButtonText: 'Cancelar',
+        backdrop: `rgba(0,0,0,0.8)`
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                showLoading(true);
+                const endpoint = type === 'Empenho' ? 'delete_empenho' : 'delete_nota_fiscal';
+                const res = await apiCall(endpoint, { method: 'POST', body: JSON.stringify({ id: id }) });
 
-    try {
-        showLoading(true);
-        const endpoint = type === 'Empenho' ? 'delete_empenho' : 'delete_nota_fiscal';
-        const res = await apiCall(endpoint, { method: 'POST', body: JSON.stringify({ id: id }) });
-
-        if (res.success) {
-            showToast(`${type} excluso com sucesso.`, "success");
-            if (type === 'Empenho') {
-                appState.empenhos = appState.empenhos.filter(e => e.id != id);
-            } else {
-                appState.notas_fiscais = appState.notas_fiscais.filter(n => n.id != id);
+                if (res.success) {
+                    showToast(`${type} excluso com sucesso.`, "success");
+                    if (type === 'Empenho') {
+                        appState.empenhos = appState.empenhos.filter(e => e.id != id);
+                    } else {
+                        appState.notas_fiscais = appState.notas_fiscais.filter(n => n.id != id);
+                    }
+                    renderFinanceiroBoard();
+                } else {
+                    showToast(res.error || `Erro ao excluir ${type}.`, "error");
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("Erro de comunicação ao excluir.", "error");
+            } finally {
+                showLoading(false);
             }
-            renderFinanceiroBoard();
-        } else {
-            showToast(res.error || `Erro ao excluir ${type}.`, "error");
         }
-    } catch (e) {
-        console.error(e);
-        showToast("Erro de comunicação ao excluir.", "error");
-    } finally {
-        showLoading(false);
-    }
+    });
 };

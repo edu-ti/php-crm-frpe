@@ -459,8 +459,22 @@ function handle_save_targets($pdo)
         $stmt->execute([$supplier_id, $year, $supGoals['annual'], $supGoals['monthly'], $monthlyDetailedJson, $userTargetsEnabled]);
 
         $stmtState = $pdo->prepare("INSERT INTO fornecedor_metas_estados (fornecedor_id, ano, estado, meta_anual, meta_mensal_json) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE meta_anual = VALUES(meta_anual), meta_mensal_json = VALUES(meta_mensal_json)");
+        $savedStates = [];
         foreach ($stateTargets as $state => $sData) {
             $stmtState->execute([$supplier_id, $year, $state, $sData['annual'], json_encode($sData['monthly'])]);
+            $savedStates[] = $state;
+        }
+
+        // Remove old states that were deleted from the UI
+        if (!empty($savedStates)) {
+            $placeholders = implode(',', array_fill(0, count($savedStates), '?'));
+            $deleteParams = array_merge([$supplier_id, $year], $savedStates);
+            $stmtDeleteStates = $pdo->prepare("DELETE FROM fornecedor_metas_estados WHERE fornecedor_id = ? AND ano = ? AND estado NOT IN ($placeholders)");
+            $stmtDeleteStates->execute($deleteParams);
+        } else {
+            // If mapping is entirely empty, delete all states for this supplier and year
+            $stmtDeleteStates = $pdo->prepare("DELETE FROM fornecedor_metas_estados WHERE fornecedor_id = ? AND ano = ?");
+            $stmtDeleteStates->execute([$supplier_id, $year]);
         }
 
         $stmtUser = $pdo->prepare("INSERT INTO vendas_objetivos (fornecedor_id, usuario_id, ano, mes, valor_meta, created_at) VALUES (?, ?, ?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE valor_meta = VALUES(valor_meta), updated_at = NOW()");

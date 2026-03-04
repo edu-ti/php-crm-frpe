@@ -1130,8 +1130,8 @@ function renderStateReport(group) {
     const stateSales = group.state_sales || {};
     const stateGoals = group.state_goals || {};
 
-    // Get unique states from both sales and goals
-    const states = [...new Set([...Object.keys(stateSales), ...Object.keys(stateGoals)])].sort();
+    // Get only states that have defined goals for this supplier
+    const states = Object.keys(stateGoals).sort();
 
     if (states.length === 0) return ''; // No state data
 
@@ -1784,11 +1784,23 @@ function loadTargetsEditor(supplierId, year = null) {
                 });
 
                 tr.querySelector('.btn-remove-state').addEventListener('click', () => {
-                    if (confirm(`Remover estado ${uf}?`)) {
-                        div.remove();
-                        tr.remove();
-                        updateGrandTotal(container);
-                    }
+                    Swal.fire({
+                        title: 'Tem certeza?',
+                        text: 'Você tem certeza que deseja apagar esse registro!',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Apagar',
+                        cancelButtonText: 'Cancelar',
+                        backdrop: `rgba(0,0,0,0.8)`
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            div.remove();
+                            tr.remove();
+                            updateGrandTotal(container);
+                        }
+                    });
                 });
             };
 
