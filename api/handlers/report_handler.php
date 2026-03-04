@@ -692,12 +692,12 @@ function get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_
 
     $report_data = [];
     foreach ($data as $row) {
-        $fid = $row['fornecedor_id'];
+        $fid = strtoupper(trim($row['fornecedor_nome'])); // Use normalized name as key
         if (!isset($report_data[$fid]))
-            $report_data[$fid] = ['fornecedor_id' => $fid, 'fornecedor_nome' => $row['fornecedor_nome'], 'rows' => []];
+            $report_data[$fid] = ['fornecedor_id' => $row['fornecedor_id'], 'fornecedor_nome' => $row['fornecedor_nome'], 'rows' => []];
         $report_data[$fid]['rows'][] = $row;
     }
-    return $report_data;
+    return array_values($report_data); // Reset keys for frontend
 }
 
 function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids = [])

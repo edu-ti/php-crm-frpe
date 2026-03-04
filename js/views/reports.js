@@ -650,7 +650,7 @@ function renderReports(data, container, type, startStr, endStr) {
         wrapper.className = "mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid";
 
         const header = document.createElement('div');
-        header.className = "px-6 py-4 bg-gray-50 border-b border-gray-200";
+        header.className = "px-6 py-4 bg-blue-50 border-b border-gray-200";
         header.innerHTML = `<h3 class="text-lg font-medium text-gray-900">${group.fornecedor_nome || 'Fornecedor'}</h3>`;
         wrapper.appendChild(header);
 
