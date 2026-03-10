@@ -124,10 +124,52 @@ function renderFinanceiroBoard() {
         return;
     }
 
+    // --- PRÉ-CÁLCULO: Empenhos e Notas do mês (para usar em ambas as colunas) ---
+    let empenhosInMonth = (appState.empenhos || []).filter(emp => {
+        let dateStr = emp.data_prevista || emp.data_emissao;
+        if (!dateStr) return false;
+        let eMonth, eYear;
+        if (dateStr.includes('-')) {
+            const parts = dateStr.split('-');
+            eYear = parseInt(parts[0], 10);
+            eMonth = parseInt(parts[1], 10);
+        } else {
+            const date = new Date(dateStr);
+            eYear = date.getFullYear();
+            eMonth = date.getMonth() + 1;
+        }
+        return (eMonth === financeiroMonth && eYear === financeiroYear);
+    });
+
+    let nfsInMonth = (appState.notas_fiscais || []).filter(nf => {
+        let dateStr = nf.data_prevista || nf.data_faturamento;
+        if (!dateStr) return false;
+        let nMonth, nYear;
+        if (dateStr.includes('-')) {
+            const parts = dateStr.split('-');
+            nYear = parseInt(parts[0], 10);
+            nMonth = parseInt(parts[1], 10);
+        } else {
+            const date = new Date(dateStr);
+            nYear = date.getFullYear();
+            nMonth = date.getMonth() + 1;
+        }
+        return (nMonth === financeiroMonth && nYear === financeiroYear);
+    });
+
+    // Filtrar por contrato selecionado (se houver)
+    let empenhosFiltered = financeiroSelectedOppId ? empenhosInMonth.filter(emp => emp.oportunidade_id == financeiroSelectedOppId) : empenhosInMonth;
+    let nfsFiltered = financeiroSelectedOppId ? nfsInMonth.filter(nf => nf.oportunidade_id == financeiroSelectedOppId) : nfsInMonth;
+
+    const totalEmpenhado = empenhosFiltered.reduce((sum, e) => sum + parseFloat(e.valor || 0), 0);
+    const totalFaturado = nfsFiltered.reduce((sum, n) => sum + parseFloat(n.valor || 0), 0);
+    const faltaFaturar = Math.max(0, totalEmpenhado - totalFaturado);
+
     financeiroStages.forEach(stage => {
         let itemsHTML = '';
         let stageTotal = 0;
         let columnHeaderExtra = '';
+        let columnHeaderValues = '';
 
         if (stage.nome === 'Clientes') {
             // Coluna de Contratos
@@ -159,31 +201,23 @@ function renderFinanceiroBoard() {
             itemsHTML = opportunitiesInStage.map(opp => createContratoCard(opp)).join('') || '<div class="p-4 text-center text-xs text-gray-400 border-2 border-dashed border-gray-200 rounded mt-2">Nenhum contrato encontrado.</div>';
 
         } else if (stage.nome === 'Aguardando Faturamento') {
-            // Coluna de Empenhos
-            let empenhosInMonth = (appState.empenhos || []).filter(emp => {
-                let dateStr = emp.data_prevista || emp.data_emissao;
-                if (!dateStr) return false;
-                // Avoid timezone issues by parsing string directly if format is YYYY-MM-DD
-                let eMonth, eYear;
-                if (dateStr.includes('-')) {
-                    const parts = dateStr.split('-');
-                    eYear = parseInt(parts[0], 10);
-                    eMonth = parseInt(parts[1], 10);
-                } else {
-                    const date = new Date(dateStr);
-                    eYear = date.getFullYear();
-                    eMonth = date.getMonth() + 1;
-                }
-                return (eMonth === financeiroMonth && eYear === financeiroYear);
-            });
+            // Coluna de Empenhos — usa dados pré-calculados
+            stageTotal = totalEmpenhado;
 
-            if (financeiroSelectedOppId) {
-                empenhosInMonth = empenhosInMonth.filter(emp => emp.oportunidade_id == financeiroSelectedOppId);
-            }
+            columnHeaderValues = `
+                <div class="mt-1.5 space-y-1">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-orange-700 uppercase">Valor Empenhado</span>
+                        <span class="font-bold text-xs text-orange-700 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">${formatCurrency(totalEmpenhado)}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-red-600 uppercase">Falta Faturar</span>
+                        <span class="font-bold text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">${formatCurrency(faltaFaturar)}</span>
+                    </div>
+                </div>
+            `;
 
-            stageTotal = empenhosInMonth.reduce((sum, e) => sum + parseFloat(e.valor || 0), 0);
-
-            itemsHTML = empenhosInMonth.map(emp => createSubEntityCard(emp, 'Empenho')).join('') || '<div class="p-4 text-center text-xs text-gray-400 bg-white border border-gray-200 rounded mt-2 shadow-sm font-medium">Nenhum empenho/pedido_para este mês.</div>';
+            itemsHTML = empenhosFiltered.map(emp => createSubEntityCard(emp, 'Empenho')).join('') || '<div class="p-4 text-center text-xs text-gray-400 bg-white border border-gray-200 rounded mt-2 shadow-sm font-medium">Nenhum empenho/pedido para este mês.</div>';
 
             // Botão Adicionar
             itemsHTML += `
@@ -194,31 +228,23 @@ function renderFinanceiroBoard() {
             `;
 
         } else if (stage.nome === 'Faturado') {
-            // Coluna de Notas Fiscais
-            let nfsInMonth = (appState.notas_fiscais || []).filter(nf => {
-                // Filtro pela Data Prevista (se houver, senao Data Faturamento)
-                let dateStr = nf.data_prevista || nf.data_faturamento;
-                if (!dateStr) return false;
-                let nMonth, nYear;
-                if (dateStr.includes('-')) {
-                    const parts = dateStr.split('-');
-                    nYear = parseInt(parts[0], 10);
-                    nMonth = parseInt(parts[1], 10);
-                } else {
-                    const date = new Date(dateStr);
-                    nYear = date.getFullYear();
-                    nMonth = date.getMonth() + 1;
-                }
-                return (nMonth === financeiroMonth && nYear === financeiroYear);
-            });
+            // Coluna de Notas Fiscais — usa dados pré-calculados
+            stageTotal = totalFaturado;
 
-            if (financeiroSelectedOppId) {
-                nfsInMonth = nfsInMonth.filter(nf => nf.oportunidade_id == financeiroSelectedOppId);
-            }
+            columnHeaderValues = `
+                <div class="mt-1.5 space-y-1">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-green-700 uppercase">Faturado no Mês</span>
+                        <span class="font-bold text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200">${formatCurrency(totalFaturado)}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-red-600 uppercase">Falta Faturar</span>
+                        <span class="font-bold text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">${formatCurrency(faltaFaturar)}</span>
+                    </div>
+                </div>
+            `;
 
-            stageTotal = nfsInMonth.reduce((sum, n) => sum + parseFloat(n.valor || 0), 0);
-
-            itemsHTML = nfsInMonth.map(nf => createSubEntityCard(nf, 'Nota Fiscal')).join('') || '<div class="p-4 text-center text-xs text-gray-400 bg-white border border-gray-200 rounded mt-2 shadow-sm font-medium">Nenhuma nota fiscal para este mês.</div>';
+            itemsHTML = nfsFiltered.map(nf => createSubEntityCard(nf, 'Nota Fiscal')).join('') || '<div class="p-4 text-center text-xs text-gray-400 bg-white border border-gray-200 rounded mt-2 shadow-sm font-medium">Nenhuma nota fiscal para este mês.</div>';
 
             // Botão Adicionar
             itemsHTML += `
@@ -241,6 +267,7 @@ function renderFinanceiroBoard() {
                      <h3 class="font-semibold text-sm text-[#002f5c]">${stage.nome}</h3>
                      <span class="font-bold text-xs text-gray-800 bg-gray-100 px-2 py-0.5 rounded border">${formatCurrency(stageTotal)}</span>
                  </div>
+                 ${columnHeaderValues}
                  ${columnHeaderExtra}
              </div>
              <div class="stage-cards">
@@ -1101,11 +1128,19 @@ window.openAddEmpenhoModal = async function (editId = null) {
             if (res.success) {
                 showToast(empToEdit ? "Empenho atualizado com sucesso!" : "Empenho cadastrado com sucesso!", "success");
                 appState.empenhos = appState.empenhos || [];
+                // Enriquecer o objeto retornado com dados locais (fallback caso JOINs faltem)
+                const empenhoData = res.empenho || {};
+                if (!empenhoData.numero_contrato && oFast) empenhoData.numero_contrato = oFast.numero_contrato || oFast.numero_edital || oFast.titulo;
+                if (!empenhoData.organizacao_nome && oFast) empenhoData.organizacao_nome = oFast.organizacao_nome || '';
+                // Garantir que os campos de data estejam presentes
+                if (!empenhoData.data_prevista && payload.data_prevista) empenhoData.data_prevista = payload.data_prevista;
+                if (!empenhoData.data_emissao && payload.data_emissao) empenhoData.data_emissao = payload.data_emissao;
+                if (!empenhoData.oportunidade_id) empenhoData.oportunidade_id = oFast.id;
                 if (empToEdit) {
                     const idx = appState.empenhos.findIndex(e => e.id == empToEdit.id);
-                    if (idx > -1) appState.empenhos[idx] = res.empenho;
+                    if (idx > -1) appState.empenhos[idx] = empenhoData;
                 } else {
-                    appState.empenhos.push(res.empenho);
+                    appState.empenhos.push(empenhoData);
                 }
                 closeModal();
                 renderFinanceiroBoard();
@@ -1145,6 +1180,7 @@ window.openAddNotaFiscalModal = async function (editId = null) {
 
     if (!oFast) return;
     const oppName = oFast.numero_contrato || oFast.titulo;
+    const oppClient = oFast.organizacao_nome || '';
 
     let oppWithItems = null;
     try {
@@ -1167,56 +1203,63 @@ window.openAddNotaFiscalModal = async function (editId = null) {
     let modalItems = [];
     let initialRenderDone = false;
 
+    const generateId = () => Math.random().toString(36).substr(2, 9);
+
+    const mapToFlat = (sourceItems, source) => {
+        return sourceItems.map(dbItem => {
+            let itemVal = dbItem.item_empenho || dbItem.item || '';
+            let loteVal = dbItem.lote || '';
+            if (source === 'contract' && dbItem.parametros) {
+                try {
+                    const params = typeof dbItem.parametros === 'string' ? JSON.parse(dbItem.parametros) : dbItem.parametros;
+                    if (Array.isArray(params)) {
+                        const lP = params.find(p => p.nome === 'Lote');
+                        if (lP) loteVal = lP.valor;
+                        const iP = params.find(p => p.nome === 'Item_Num');
+                        if (iP) itemVal = iP.valor;
+                    }
+                } catch (e) { }
+            }
+
+            let qtdEmp = parseFloat(dbItem.qtd_empenhada || dbItem.quantidade || 0);
+            let qtdFat = parseFloat(dbItem.qtd_faturada || dbItem.quantidade || 0);
+
+            if (source !== 'nf') qtdFat = qtdEmp;
+
+            return {
+                _uid: generateId(),
+                fornecedor: dbItem.fornecedor || dbItem.fabricante || '',
+                lote: loteVal,
+                item_empenho: itemVal,
+                descricao: dbItem.descricao || '',
+                unidade: dbItem.unidade || dbItem.unidade_medida || 'UN',
+                qtd_empenhada: qtdEmp,
+                qtd_faturada: qtdFat,
+                valor_unitario: parseFloat(dbItem.valor_unitario || 0),
+                observacao: dbItem.observacao || '',
+                produto_id: dbItem.produto_id || dbItem.base_item_id || null
+            };
+        });
+    };
+
     const loadItemsFromSource = (empenhoId) => {
         if (nfToEdit && !initialRenderDone) {
+            let parsed = [];
             if (nfToEdit.itens) {
-                try {
-                    modalItems = typeof nfToEdit.itens === 'string' ? JSON.parse(nfToEdit.itens) : nfToEdit.itens;
-                } catch (e) {
-                    modalItems = [];
-                }
-            } else {
-                modalItems = [];
+                try { parsed = typeof nfToEdit.itens === 'string' ? JSON.parse(nfToEdit.itens) : nfToEdit.itens; } catch (e) { }
             }
+            modalItems = mapToFlat(parsed, 'nf');
             initialRenderDone = true;
         } else if (empenhoId) {
             const emp = empenhosContrato.find(e => e.id == empenhoId);
+            let parsed = [];
             if (emp && emp.itens) {
-                try {
-                    modalItems = typeof emp.itens === 'string' ? JSON.parse(emp.itens) : emp.itens;
-                } catch (e) {
-                    modalItems = [];
-                }
-            } else {
-                modalItems = [];
+                try { parsed = typeof emp.itens === 'string' ? JSON.parse(emp.itens) : emp.itens; } catch (e) { }
             }
+            modalItems = mapToFlat(parsed, 'empenho');
         } else {
             if (oppWithItems && oppWithItems.items && oppWithItems.items.length > 0) {
-                modalItems = oppWithItems.items.map(dbItem => {
-                    let loteVal = '';
-                    let itemVal = '';
-                    if (dbItem.parametros) {
-                        try {
-                            const params = typeof dbItem.parametros === 'string' ? JSON.parse(dbItem.parametros) : dbItem.parametros;
-                            if (Array.isArray(params)) {
-                                const lP = params.find(p => p.nome === 'Lote');
-                                if (lP) loteVal = lP.valor;
-                                const iP = params.find(p => p.nome === 'Item_Num');
-                                if (iP) itemVal = iP.valor;
-                            }
-                        } catch (e) { }
-                    }
-                    return {
-                        base_item_id: dbItem.id,
-                        descricao: dbItem.descricao,
-                        lote: loteVal,
-                        item: itemVal,
-                        fabricante: dbItem.fabricante || '',
-                        modelo: dbItem.modelo || '',
-                        quantidade: dbItem.quantidade || 1,
-                        valor_unitario: dbItem.valor_unitario || 0
-                    };
-                });
+                modalItems = mapToFlat(oppWithItems.items, 'contract');
             } else {
                 modalItems = [];
             }
@@ -1226,328 +1269,266 @@ window.openAddNotaFiscalModal = async function (editId = null) {
 
     const content = `
         <form id="modal-form" class="space-y-4">
-            <div class="bg-indigo-50 text-indigo-800 p-3 rounded text-sm mb-4 border border-indigo-100 flex justify-between items-center">
-                <div><strong>Contrato Vinculado:</strong> ${oppName}</div>
-            </div>
-            
-            <div class="mb-4">
-                <label class="form-label text-xs font-semibold">Vincular a um Empenho/Pedido Existente</label>
-                <select id="nf-empenho-id" class="form-input">
-                    ${empenhosOptions}
-                </select>
-                <p class="text-[10px] text-gray-500 mt-1">Ao selecionar um empenho, os itens da tabela serão atualizados e você pode dar "baixa" neles na NF.</p>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <div>
-                    <label class="form-label text-xs font-semibold">Número da Nota Fiscal</label>
-                    <input type="text" id="nf-numero" class="form-input" required value="${nfToEdit ? nfToEdit.numero : ''}">
+                    <label class="form-label text-xs font-semibold text-gray-600">Número do Contrato</label>
+                    <input type="text" class="form-input bg-gray-100 text-gray-500 font-bold" value="${oppName}" readonly>
                 </div>
                 <div>
-                    <label class="form-label text-xs font-semibold">Valor (R$)</label>
-                    <input type="text" id="nf-valor" class="form-input bg-gray-50 text-gray-500 font-bold" placeholder="0,00" readonly value="${nfToEdit && nfToEdit.valor ? formatCurrencyForInput(nfToEdit.valor) : ''}">
-                    <p class="text-[9px] text-gray-500 mt-1">Preenchido automaticamente pela soma dos itens</p>
+                    <label class="form-label text-xs font-semibold text-gray-600">Nome do Cliente</label>
+                    <input type="text" class="form-input bg-gray-100 text-gray-500 font-bold" value="${oppClient}" readonly>
+                </div>
+                
+                <div>
+                    <label class="form-label text-xs font-semibold text-gray-600">Número do Empenho/Pedido</label>
+                    <select id="nf-empenho-id" class="form-input border-gray-300">
+                        ${empenhosOptions}
+                    </select>
                 </div>
                 <div>
-                    <label class="form-label text-xs font-semibold">Data de Emissão (Faturamento)</label>
+                    <label class="form-label text-xs font-semibold text-gray-600">Número da Nota Fiscal</label>
+                    <input type="text" id="nf-numero" class="form-input" required placeholder="Ex: 000.123.456 (Série 1)" value="${nfToEdit ? nfToEdit.numero : ''}">
+                </div>
+
+                <div>
+                    <label class="form-label text-xs font-semibold text-gray-600">Data de Emissão (Faturamento)</label>
                     <input type="date" id="nf-data-fat" class="form-input" required value="${nfToEdit && nfToEdit.data_faturamento ? nfToEdit.data_faturamento : ''}">
                 </div>
                 <div>
-                    <label class="form-label text-xs font-semibold">Mês de Competência / Previsão</label>
+                    <label class="form-label text-xs font-semibold text-gray-600">Mês de Competência / Previsão</label>
                     <input type="date" id="nf-data-prevista" class="form-input" required value="${nfToEdit && nfToEdit.data_prevista ? nfToEdit.data_prevista : ''}">
-                    <p class="text-[9px] text-gray-500 mt-1">Usada para filtrar o mês na coluna</p>
                 </div>
             </div>
 
             <!-- Tabela de Itens da NF -->
-            <div id="nf-items-container" class="mt-4 overflow-x-auto border border-gray-200 rounded-md">
+            <div class="mt-4 border border-gray-200 rounded-lg overflow-hidden flex flex-col">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left bg-white text-xs whitespace-nowrap">
+                        <thead class="bg-gray-100 text-gray-600 border-b">
+                            <tr>
+                                <th class="p-2 font-semibold min-w-[120px]">Fornecedor</th>
+                                <th class="p-2 font-semibold w-24">Lote</th>
+                                <th class="p-2 font-semibold w-24">Item do Emp.</th>
+                                <th class="p-2 font-semibold min-w-[200px]">Descrição</th>
+                                <th class="p-2 font-semibold w-16 text-center">Unidade</th>
+                                <th class="p-2 font-semibold w-24 text-right">Qtd Emp.</th>
+                                <th class="p-2 font-semibold w-24 text-right">Qtd Fat.</th>
+                                <th class="p-2 font-semibold w-32 text-right">V. Unitário</th>
+                                <th class="p-2 font-semibold w-32 text-right">Valor Total</th>
+                                <th class="p-2 font-semibold min-w-[150px]">Obs</th>
+                                <th class="p-2 font-semibold w-10 text-center">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="nf-items-tbody">
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="bg-gray-50 p-3 flex justify-between items-center border-t border-gray-200">
+                    <button type="button" class="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1 border-gray-300 hover:bg-white transition-colors" onclick="window.addNfItemRow()">
+                        <i class="fas fa-plus text-gray-400"></i> Adicionar Item
+                    </button>
+                    <div class="font-bold text-gray-700 bg-gray-200 px-3 py-1.5 rounded flex items-center gap-2">
+                        Total Geral da Nota: <span id="nf-total-geral" class="text-blue-700 text-sm">R$ 0,00</span>
+                    </div>
+                </div>
             </div>
+            <!-- Campo de valor invisivel para envio -->
+            <input type="hidden" id="nf-valor" value="0">
         </form>
     `;
 
+    const getCatalogOptions = (filter = '') => {
+        return (appState.products || [])
+            .filter(p => p.nome_produto.toLowerCase().includes(filter.toLowerCase()) || (p.fabricante || '').toLowerCase().includes(filter.toLowerCase()))
+            .slice(0, 100) // Limit to avoid performance issues
+            .map(p => {
+                const safeName = p.nome_produto.replace(/"/g, '&quot;');
+                const safeFab = (p.fabricante || '').replace(/"/g, '&quot;');
+                return `<div class="p-2 hover:bg-blue-50 cursor-pointer border-b last:border-0 text-[11px]" onclick="window.selectNfItemCatalog(${idx}, ${p.id}, '${safeName}', '${safeFab}', '${p.unidade_medida || 'UN'}', ${p.valor_unitario || 0})">
+                    <div class="font-bold text-gray-800">${safeName}</div>
+                    <div class="text-gray-500 text-[10px]">${safeFab}</div>
+                </div>`;
+            }).join('');
+    };
+
     const renderItemsTable = () => {
-        const container = document.getElementById('nf-items-container');
-        if (!container) return;
-
-        if (modalItems.length === 0) {
-            container.innerHTML = '<div class="p-4 text-center text-sm text-gray-500">Nenhum item encontrado.</div>';
-            return;
-        }
-
-        // Initialize produtos array if missing
-        modalItems.forEach(it => {
-            if (!it.produtos) it.produtos = [];
-            // Parse numerical values to ensure calculation works
-            it.quantidade = parseFloat(it.quantidade) || 0;
-        });
-
-        // Group by Lote
-        const grouped = {};
-        modalItems.forEach((it, idx) => {
-            const lName = it.lote ? `LOTE ${String(it.lote).padStart(2, '0')}` : 'ITENS GERAIS';
-            if (!grouped[lName]) grouped[lName] = [];
-            grouped[lName].push({ ...it, idx });
-        });
+        const tbody = document.getElementById('nf-items-tbody');
+        if (!tbody) return;
 
         let html = '';
-        let sumGlobal = 0;
+        let totalGeral = 0;
 
-        Object.keys(grouped).sort().forEach(loteName => {
+        modalItems.forEach((it, idx) => {
+            const vUnit = parseFloat(it.valor_unitario) || 0;
+            const qFat = parseFloat(it.qtd_faturada) || 0;
+            const vTot = vUnit * qFat;
+            totalGeral += vTot;
+
+            it.valor_total = vTot;
+
+            const safeDesc = (it.descricao || '').replace(/"/g, '&quot;');
+
             html += `
-                <div class="mt-6 mb-4">
-                    <h3 class="text-sm font-bold text-blue-600 uppercase mb-2 border-b border-gray-200 pb-1">${loteName}</h3>
-                    <div class="space-y-4">
-            `;
-
-            grouped[loteName].forEach(it => {
-                // Calculate Totals based on Products
-                let sumUnitario = 0;
-                let sumTotalItem = 0;
-
-                if (it.produtos && it.produtos.length > 0) {
-                    it.produtos.forEach(p => {
-                        const pUnit = parseFloat(p.valor_unitario) || 0;
-                        const pQtd = parseFloat(p.quantidade) || 0;
-                        sumUnitario += pUnit;
-                        sumTotalItem += (pUnit * pQtd);
-                    });
-                } else {
-                    // Fallback to item's own value if no products are linked yet (legacy support)
-                    sumUnitario = parseFloat(it.valor_unitario) || 0;
-                    sumTotalItem = sumUnitario * (it.quantidade || 0);
-                }
-
-                // Update the item's internal values so they are saved
-                modalItems[it.idx].valor_unitario = sumUnitario;
-                modalItems[it.idx].valor_total_calculado = sumTotalItem; // We'll save it for ease
-
-                sumGlobal += sumTotalItem;
-
-                // Render Products Table
-                let productsHtml = '';
-                if (it.produtos && it.produtos.length > 0) {
-                    it.produtos.forEach((p, pIdx) => {
-                        const pTot = (parseFloat(p.valor_unitario) || 0) * (parseFloat(p.quantidade) || 0);
-                        productsHtml += `
-                            <tr class="border-b last:border-0 hover:bg-gray-50">
-                                <td class="p-1 px-2 truncate max-w-[120px]" title="${p.nome_produto}">${p.nome_produto}</td>
-                                <td class="p-1 truncate max-w-[80px]" title="${p.fabricante || '-'}">${p.fabricante || '-'}</td>
-                                <td class="p-1 truncate max-w-[80px]" title="${p.modelo || '-'}">${p.modelo || '-'}</td>
-                                <td class="p-1 text-center font-semibold text-gray-700">${p.quantidade}</td>
-                                <td class="p-1 text-right text-gray-700">${formatCurrency(p.valor_unitario || 0)}</td>
-                                <td class="p-1 text-center">
-                                    <button type="button" class="text-xs text-blue-600 hover:underline mr-2" onclick="editNfProduct(${it.idx}, ${pIdx})">Editar</button>
-                                    <button type="button" class="text-xs text-red-600 hover:underline" onclick="removeNfProduct(${it.idx}, ${pIdx})">Excluir</button>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                } else {
-                    productsHtml = `<tr><td colspan="6" class="p-3 text-center text-xs text-gray-400 italic">Nenhum produto selecionado</td></tr>`;
-                }
-
-                html += `
-                    <!-- Item Block -->
-                    <div class="border border-gray-300 rounded-lg p-0 bg-white flex flex-col xl:flex-row overflow-hidden shadow-sm">
-                        <!-- Lado Esquerdo (Detalhes do Item) -->
-                        <div class="w-full xl:w-5/12 p-4 bg-gray-50 border-b xl:border-b-0 xl:border-r border-gray-200 flex flex-col gap-3">
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">${loteName}</span>
-                                <span class="bg-gray-200 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded">ITEM ${String(it.item || '').padStart(2, '0')}</span>
+                <tr class="border-b last:border-0 hover:bg-gray-50 group transition-colors" data-idx="${idx}">
+                    <td class="p-1.5">
+                        <input type="text" class="w-full border border-transparent group-hover:border-gray-300 focus:border-blue-500 rounded px-2 py-1 bg-transparent group-hover:bg-white transition-all" value="${it.fornecedor || ''}" onchange="window.updateNfItem(${idx}, 'fornecedor', this.value)" placeholder="Fornecedor">
+                    </td>
+                    <td class="p-1.5">
+                        <input type="text" class="w-full border border-transparent group-hover:border-gray-300 focus:border-blue-500 rounded px-2 py-1 bg-transparent group-hover:bg-white transition-all text-center" value="${it.lote || ''}" onchange="window.updateNfItem(${idx}, 'lote', this.value)" placeholder="Lote">
+                    </td>
+                    <td class="p-1.5">
+                        <input type="text" class="w-full border border-transparent group-hover:border-gray-300 focus:border-blue-500 rounded px-2 py-1 bg-transparent group-hover:bg-white transition-all text-center" value="${it.item_empenho || ''}" onchange="window.updateNfItem(${idx}, 'item_empenho', this.value)" placeholder="Item">
+                    </td>
+                    <td class="p-1.5 align-middle">
+                        <div class="flex items-center gap-1 group/desc relative">
+                            <div class="relative w-full">
+                                <input type="text" id="nf-item-desc-${idx}" class="w-full border border-transparent group-hover:border-gray-300 focus:border-blue-500 rounded px-2 py-1 bg-transparent group-hover:bg-white transition-all text-xs pr-7" 
+                                    value="${safeDesc}" 
+                                    onchange="window.updateNfItem(${idx}, 'descricao', this.value)" 
+                                    oninput="window.filterNfCatalog(${idx}, this.value)"
+                                    placeholder="Descrição do item">
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                    <i class="fas fa-search text-gray-300 text-[10px]"></i>
+                                </div>
                             </div>
-                            
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Descrição</label>
-                                <div class="text-xs text-gray-800 bg-white border border-gray-200 p-2 rounded max-h-24 overflow-y-auto mt-1">${it.descricao}</div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-3 mt-auto">
-                                <div>
-                                    <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Qtd Solicitada <span class="text-red-500">*</span></label>
-                                    <input type="number" class="form-input w-full text-sm mt-1 nf-item-qtd" data-idx="${it.idx}" value="${it.quantidade}" min="0">
-                                </div>
-                                <div class="col-span-2 sm:col-span-1">
-                                    <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide cursor-help" title="Soma automática dos valores unitários dos produtos vinculados">V. Unitário (Soma)</label>
-                                    <div class="form-input bg-gray-100 text-gray-500 w-full text-sm mt-1 font-semibold">${formatCurrency(sumUnitario)}</div>
-                                </div>
-                                <div class="col-span-2">
-                                    <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide cursor-help" title="Soma automática de (Val. Unit x Qtd) de cada produto">Valor Total do Item</label>
-                                    <div class="form-input bg-gray-100 text-green-700 border-green-200 w-full text-sm mt-1 font-bold">${formatCurrency(sumTotalItem)}</div>
-                                </div>
-                                <div class="col-span-2">
-                                    <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Observação</label>
-                                    <input type="text" class="form-input w-full text-xs mt-1 nf-item-obs" data-idx="${it.idx}" value="${it.observacao || ''}" placeholder="Insira observações">
-                                </div>
+                            <div id="cat-drop-${idx}" class="hidden absolute top-full left-0 mt-1 w-[400px] max-h-[250px] overflow-y-auto bg-white border border-gray-200 shadow-xl rounded z-50">
+                                <!-- Ajax results -->
                             </div>
                         </div>
-
-                        <!-- Lado Direito (Produtos) -->
-                        <div class="w-full xl:w-7/12 p-4 flex flex-col bg-white">
-                            <div class="flex justify-between items-center mb-3">
-                                <h4 class="text-xs font-bold text-gray-700 capitalize tracking-wide">Produtos Vinculados</h4>
-                                <button type="button" class="btn-secondary text-xs px-3 py-1 flex items-center gap-1 border-blue-500 text-blue-600 hover:bg-blue-50" onclick="window.openAddProductToNfItem(${it.idx})">
-                                    <i class="fas fa-plus"></i> PRODUTOS
-                                </button>
-                            </div>
-
-                            <!-- Formulário Inline Add Produto (Oculto) -->
-                            <div id="inline-prod-form-${it.idx}" class="hidden mb-3 p-3 bg-blue-50 border border-blue-200 rounded shadow-inner text-xs">
-                                <div class="grid grid-cols-12 gap-2 items-end">
-                                    <div class="col-span-12 sm:col-span-6">
-                                        <label class="font-bold text-blue-800">Selecione o Produto</label>
-                                        <select id="prod-sel-${it.idx}" class="form-input w-full mt-1" onchange="window.onProdNfSelectChange(${it.idx})">
-                                            <option value="">...selecione do catálogo...</option>
-                                            ${(appState.products || []).map(p => `<option value="${p.id}" data-unit="${p.valor_unitario}">${p.nome_produto} (${p.fabricante || 'S/F'})</option>`).join('')}
-                                        </select>
-                                    </div>
-                                    <div class="col-span-6 sm:col-span-2">
-                                        <label class="font-bold text-blue-800">Qtd</label>
-                                        <input type="number" id="prod-qtd-${it.idx}" class="form-input w-full mt-1 text-center" min="1" value="1">
-                                    </div>
-                                    <div class="col-span-6 sm:col-span-2">
-                                        <label class="font-bold text-blue-800">V. Unit.</label>
-                                        <input type="text" id="prod-val-${it.idx}" class="form-input w-full mt-1 text-right prod-val-mask" onblur="window.formatProdNfValue(${it.idx})">
-                                    </div>
-                                    <div class="col-span-12 sm:col-span-2 flex justify-end">
-                                        <button type="button" class="btn-primary text-xs px-2 py-1 w-full" onclick="window.saveNfProduct(${it.idx})">OK</button>
-                                        <button type="button" class="btn-secondary text-xs px-2 py-1 ml-1" onclick="document.getElementById('inline-prod-form-${it.idx}').classList.add('hidden')"><i class="fas fa-times"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="overflow-x-auto border border-gray-200 rounded flex-1">
-                                <table class="w-full text-left bg-white text-[10px]">
-                                    <thead class="bg-gray-50 text-gray-500 border-b">
-                                        <tr>
-                                            <th class="p-2 font-semibold">Nome do Produto</th>
-                                            <th class="p-2 font-semibold w-20">Fabricante</th>
-                                            <th class="p-2 font-semibold w-20">Modelo</th>
-                                            <th class="p-2 font-semibold w-12 text-center">Qtd</th>
-                                            <th class="p-2 font-semibold w-20 text-right">V. Unitário</th>
-                                            <th class="p-2 font-semibold w-16 text-center">Ação</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${productsHtml}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            html += `
-                    </div>
-                </div>
+                    </td>
+                    <td class="p-1.5">
+                        <input type="text" class="w-full border border-transparent group-hover:border-gray-300 focus:border-blue-500 rounded px-2 py-1 text-center bg-transparent group-hover:bg-white transition-all" value="${it.unidade || ''}" onchange="window.updateNfItem(${idx}, 'unidade', this.value)">
+                    </td>
+                    <td class="p-1.5">
+                        <input type="number" class="w-full border border-transparent group-hover:border-gray-300 focus:border-blue-500 rounded px-2 py-1 text-right bg-transparent group-hover:bg-white transition-all" value="${it.qtd_empenhada}" onchange="window.updateNfItem(${idx}, 'qtd_empenhada', this.value)" min="0" step="any">
+                    </td>
+                    <td class="p-1.5">
+                        <input type="number" class="w-full border border-transparent group-hover:border-gray-300 focus:border-blue-500 rounded px-2 py-1 text-right bg-blue-50 focus:bg-white transition-all font-semibold text-blue-800" value="${it.qtd_faturada}" onchange="window.updateNfItem(${idx}, 'qtd_faturada', this.value)" min="0" step="any">
+                    </td>
+                    <td class="p-1.5 relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none">R$</span>
+                        <input type="text" class="w-full border border-transparent group-hover:border-gray-300 focus:border-blue-500 rounded px-2 py-1 pl-7 text-right bg-transparent group-hover:bg-white transition-all" value="${vUnit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}" onchange="window.updateNfItemCurrency(${idx}, 'valor_unitario', this)">
+                    </td>
+                    <td class="p-1.5 text-right font-bold text-gray-700">
+                        ${formatCurrency(vTot)}
+                    </td>
+                    <td class="p-1.5">
+                        <input type="text" class="w-full border border-transparent group-hover:border-gray-300 focus:border-blue-500 rounded px-2 py-1 bg-transparent group-hover:bg-white transition-all" value="${it.observacao || ''}" onchange="window.updateNfItem(${idx}, 'observacao', this.value)" placeholder="Obs">
+                    </td>
+                    <td class="p-1.5 text-center">
+                        <button type="button" class="text-gray-400 hover:text-red-500 focus:outline-none p-1 transition-colors" onclick="window.removeNfItemRow(${idx})" title="Remover item">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </td>
+                </tr>
             `;
         });
 
-        container.innerHTML = html;
-
-        // Atualizar valor principal da NF
-        const nfValorInput = document.getElementById('nf-valor');
-        if (nfValorInput) {
-            nfValorInput.value = sumGlobal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (modalItems.length === 0) {
+            html = `<tr><td colspan="11" class="p-6 text-center text-gray-400 italic">Nenhum item. Clique em "+ Adicionar Item".</td></tr>`;
         }
 
-        // Listeners
-        container.querySelectorAll('.nf-item-qtd').forEach(inp => {
-            inp.addEventListener('change', (e) => {
-                const idx = e.target.dataset.idx;
-                modalItems[idx].quantidade = parseFloat(e.target.value) || 0;
-                // No need to re-render everything just for Qtd Solicitada change unless it affects totals. 
-                // But it's safer to re-render in case we want to show it.
-                // renderItemsTable(); // Optional
-            });
+        tbody.innerHTML = html;
+
+        const nfTotalGeral = document.getElementById('nf-total-geral');
+        if (nfTotalGeral) nfTotalGeral.innerText = formatCurrency(totalGeral);
+        const nfValor = document.getElementById('nf-valor');
+        if (nfValor) nfValor.value = totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    window.addNfItemRow = () => {
+        modalItems.push({
+            _uid: generateId(),
+            fornecedor: '',
+            lote: '',
+            item_empenho: '',
+            descricao: '',
+            unidade: 'UN',
+            qtd_empenhada: 1,
+            qtd_faturada: 1,
+            valor_unitario: 0,
+            observacao: '',
+            produto_id: null
         });
-
-        container.querySelectorAll('.nf-item-obs').forEach(inp => {
-            inp.addEventListener('change', (e) => {
-                const idx = e.target.dataset.idx;
-                modalItems[idx].observacao = e.target.value;
-            });
-        });
+        renderItemsTable();
     };
 
-    window.openAddProductToNfItem = (idx) => {
-        const form = document.getElementById(`inline-prod-form-${idx}`);
-        if (form) form.classList.remove('hidden');
+    window.removeNfItemRow = (idx) => {
+        modalItems.splice(idx, 1);
+        renderItemsTable();
     };
 
-    window.onProdNfSelectChange = (idx) => {
-        const sel = document.getElementById(`prod-sel-${idx}`);
-        const opt = sel.options[sel.selectedIndex];
-        if (!opt || !opt.value) return;
-        const unit = parseFloat(opt.getAttribute('data-unit')) || 0;
-        const valInp = document.getElementById(`prod-val-${idx}`);
-        if (valInp) valInp.value = unit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    window.updateNfItem = (idx, field, value) => {
+        if (field === 'qtd_empenhada' || field === 'qtd_faturada') {
+            modalItems[idx][field] = parseFloat(value) || 0;
+            renderItemsTable();
+        } else {
+            modalItems[idx][field] = value;
+        }
     };
 
-    window.formatProdNfValue = (idx) => {
-        const valInp = document.getElementById(`prod-val-${idx}`);
-        if (!valInp) return;
-        let val = valInp.value.replace(/\D/g, '');
+    window.updateNfItemCurrency = (idx, field, rawInputElem) => {
+        let val = rawInputElem.value.replace(/\D/g, '');
         if (val === '') val = '0';
-        val = parseInt(val, 10) / 100;
-        valInp.value = val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        modalItems[idx][field] = parseInt(val, 10) / 100;
+        renderItemsTable();
     };
 
-    window.saveNfProduct = (idx) => {
-        const pId = document.getElementById(`prod-sel-${idx}`).value;
-        const qtd = parseFloat(document.getElementById(`prod-qtd-${idx}`).value) || 0;
-        let valStr = document.getElementById(`prod-val-${idx}`).value.replace(/\D/g, '');
-        if (valStr === '') valStr = '0';
-        const valFloat = parseInt(valStr, 10) / 100;
+    window.filterNfCatalog = (idx, filter) => {
+        const drop = document.getElementById(`cat-drop-${idx}`);
+        if (!drop) return;
 
-        if (!pId) {
-            showToast("Selecione um produto.", "warning");
+        if (filter.length < 2) {
+            drop.classList.add('hidden');
             return;
         }
 
-        const prodData = appState.products.find(p => p.id == pId);
-        if (!prodData) return;
+        const options = (appState.products || [])
+            .filter(p => p.nome_produto.toLowerCase().includes(filter.toLowerCase()) || (p.fabricante || '').toLowerCase().includes(filter.toLowerCase()))
+            .slice(0, 50);
 
-        if (!modalItems[idx].produtos) modalItems[idx].produtos = [];
+        if (options.length === 0) {
+            drop.innerHTML = '<div class="p-4 text-center text-gray-400 text-xs">Nenhum produto encontrado no catálogo.</div>';
+        } else {
+            drop.innerHTML = options.map(p => {
+                const safeName = p.nome_produto.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                const safeFab = (p.fabricante || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                return `<div class="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 text-[11px] group/item transition-colors" onclick="window.selectNfItemCatalog(${idx}, ${p.id}, '${safeName}', '${safeFab}', '${p.unidade_medida || 'UN'}', ${p.valor_unitario || 0})">
+                    <div class="font-bold text-gray-800 group-hover/item:text-blue-700">${p.nome_produto}</div>
+                    <div class="text-gray-500 text-[10px] mt-0.5 flex justify-between">
+                        <span>${p.fabricante || 'Fabricante N/D'}</span>
+                        <span class="font-bold text-blue-600">${formatCurrency(p.valor_unitario)}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
 
-        modalItems[idx].produtos.push({
-            id: prodData.id,
-            nome_produto: prodData.nome_produto,
-            fabricante: prodData.fabricante,
-            modelo: prodData.modelo,
-            quantidade: qtd,
-            valor_unitario: valFloat
+        // Hide other drops
+        document.querySelectorAll('[id^="cat-drop-"]').forEach(el => {
+            if (el !== drop) el.classList.add('hidden');
         });
+        drop.classList.remove('hidden');
+    };
+
+    window.selectNfItemCatalog = (idx, prodId, name, fab, un, val) => {
+        const drop = document.getElementById(`cat-drop-${idx}`);
+        if (drop) drop.classList.add('hidden');
+
+        modalItems[idx].produto_id = prodId;
+        modalItems[idx].descricao = name;
+        modalItems[idx].fornecedor = fab;
+        modalItems[idx].unidade = un;
+        modalItems[idx].valor_unitario = val;
 
         renderItemsTable();
     };
 
-    window.removeNfProduct = (itemIdx, pIdx) => {
-        Swal.fire({
-            title: 'Tem certeza?',
-            text: 'Remover este produto do item?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Apagar',
-            cancelButtonText: 'Cancelar',
-            backdrop: `rgba(0,0,0,0.8)`
-        }).then((result) => {
-            if (result.isConfirmed) {
-                modalItems[itemIdx].produtos.splice(pIdx, 1);
-                renderItemsTable();
-            }
-        });
-    };
-
-    window.editNfProduct = (itemIdx, pIdx) => {
-        const p = modalItems[itemIdx].produtos[pIdx];
-        window.openAddProductToNfItem(itemIdx);
-        document.getElementById(`prod-sel-${itemIdx}`).value = p.id;
-        document.getElementById(`prod-qtd-${itemIdx}`).value = p.quantidade;
-        document.getElementById(`prod-val-${itemIdx}`).value = parseFloat(p.valor_unitario).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        modalItems[itemIdx].produtos.splice(pIdx, 1);
-    };
+    document.addEventListener('mousedown', (e) => {
+        if (!e.target.closest('.group\\/desc')) {
+            document.querySelectorAll('[id^="cat-drop-"]').forEach(el => el.classList.add('hidden'));
+        }
+    });
 
     renderModal(nfToEdit ? 'Editar Nota Fiscal' : 'Adicionar Nova Nota Fiscal', content, async (form) => {
         if (!form.reportValidity()) return;
@@ -1562,9 +1543,7 @@ window.openAddNotaFiscalModal = async function (editId = null) {
             itens: modalItems
         };
 
-        if (nfToEdit) {
-            payload.id = nfToEdit.id;
-        }
+        if (nfToEdit) payload.id = nfToEdit.id;
 
         try {
             showLoading(true);
@@ -1573,11 +1552,19 @@ window.openAddNotaFiscalModal = async function (editId = null) {
             if (res.success) {
                 showToast(nfToEdit ? "Nota Fiscal atualizada com sucesso!" : "Nota Fiscal cadastrada com sucesso!", "success");
                 appState.notas_fiscais = appState.notas_fiscais || [];
+                const nfData = res.nota_fiscal || {};
+
+                if (!nfData.numero_contrato && oFast) nfData.numero_contrato = oFast.numero_contrato || oFast.numero_edital || oFast.titulo;
+                if (!nfData.organizacao_nome && oFast) nfData.organizacao_nome = oFast.organizacao_nome || '';
+                if (!nfData.data_prevista && payload.data_prevista) nfData.data_prevista = payload.data_prevista;
+                if (!nfData.data_faturamento && payload.data_faturamento) nfData.data_faturamento = payload.data_faturamento;
+                if (!nfData.oportunidade_id) nfData.oportunidade_id = oFast.id;
+
                 if (nfToEdit) {
                     const idx = appState.notas_fiscais.findIndex(n => n.id == nfToEdit.id);
-                    if (idx > -1) appState.notas_fiscais[idx] = res.nota_fiscal;
+                    if (idx > -1) appState.notas_fiscais[idx] = nfData;
                 } else {
-                    appState.notas_fiscais.push(res.nota_fiscal);
+                    appState.notas_fiscais.push(nfData);
                 }
                 closeModal();
                 renderFinanceiroBoard();
@@ -1590,24 +1577,19 @@ window.openAddNotaFiscalModal = async function (editId = null) {
         } finally {
             showLoading(false);
         }
-    }, nfToEdit ? 'Salvar NF' : 'Adicionar NF');
+    }, nfToEdit ? 'Salvar NF' : 'Adicionar NF', 'btn-primary', 'xl');
 
-    // Inicializar Tabela e Change do Select
     setTimeout(() => {
-        // Se já houver um empenho selecionado ou se for editar, o loadItemsFromSource() com null / id apropriado foi chamado.
-        // O event listener para trocar continua:
+        const modalBox = document.getElementById('modal-box');
+        if (modalBox) {
+            modalBox.classList.remove('max-w-4xl', 'max-w-lg');
+            modalBox.classList.add('w-11/12', 'max-w-[95vw]', 'xl:max-w-[1400px]');
+        }
+
         const selEmpenho = document.getElementById('nf-empenho-id');
         if (selEmpenho) {
-            selEmpenho.addEventListener('change', (e) => {
-                loadItemsFromSource(e.target.value);
-            });
-            // Opcional: já carregar com valor atual inicial se for edit
-            if (!nfToEdit) {
-                loadItemsFromSource(selEmpenho.value);
-            } else {
-                // Já rodou na listagem
-                loadItemsFromSource(selEmpenho.value);
-            }
+            selEmpenho.addEventListener('change', (e) => loadItemsFromSource(e.target.value));
+            loadItemsFromSource(selEmpenho.value);
         }
     }, 100);
 };

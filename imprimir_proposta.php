@@ -477,6 +477,7 @@ function format_date($value, $format = 'd/m/Y')
                     <th class="text-center">Unid.</th>
                     <th class="text-center">Qtd</th>
                     <th class="text-right">Vlr. Unit.</th>
+                    <th class="text-center">Desc.</th>
                     <th class="text-right">Subtotal</th>
                 </tr>
             </thead>
@@ -507,7 +508,12 @@ function format_date($value, $format = 'd/m/Y')
                     $valor_unitario_total = $valor_unitario_base + $valor_parametros;
                     $quantidade = (int) ($item['quantidade'] ?? 1);
                     $multiplicador = $is_locacao ? $meses_locacao : 1;
-                    $subtotal = $valor_unitario_total * $quantidade * $multiplicador;
+                    $subtotal_sem_desconto = $valor_unitario_total * $quantidade * $multiplicador;
+
+                    // Aplica desconto se houver
+                    $desconto_percent = (float) ($item['desconto_percent'] ?? 0);
+                    $valor_desconto = $subtotal_sem_desconto * ($desconto_percent / 100);
+                    $subtotal = $subtotal_sem_desconto - $valor_desconto;
                     $total_geral += $subtotal;
                     $unidade_medida = $is_locacao ? 'Mês' : ($item['unidade_medida'] ?: 'Unidade');
                     ?>
@@ -542,8 +548,20 @@ function format_date($value, $format = 'd/m/Y')
                         <td class="text-right whitespace-nowrap text-slate-600">
                             <?php echo format_currency($valor_unitario_base); ?>
                         </td>
+                        <td class="text-center whitespace-nowrap text-slate-600">
+                            <?php if ($desconto_percent > 0): ?>
+                                <span
+                                    class="inline-block bg-red-100 text-red-700 text-[7pt] font-bold px-1.5 py-0.5 rounded"><?php echo number_format($desconto_percent, 1); ?>%</span>
+                            <?php else: ?>
+                                <span class="text-slate-400">-</span>
+                            <?php endif; ?>
+                        </td>
                         <td class="text-right font-bold text-slate-600 whitespace-nowrap">
-                            <?php echo format_currency($valor_unitario_base * $quantidade * ($is_locacao ? $meses_locacao : 1)); ?>
+                            <?php
+                            $base_subtotal = $valor_unitario_base * $quantidade * ($is_locacao ? $meses_locacao : 1);
+                            $base_desconto = $base_subtotal * ($desconto_percent / 100);
+                            echo format_currency($base_subtotal - $base_desconto);
+                            ?>
                         </td>
                     </tr>
                     <?php if (!empty($visible_params)): ?>
@@ -551,11 +569,11 @@ function format_date($value, $format = 'd/m/Y')
                         <tr class="bg-blue-50 print:bg-blue-50"
                             style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
                             <td class="py-1"></td> <!-- Img col spacing -->
-                            <td colspan="4"
+                            <td colspan="5"
                                 class="py-1 pl-2 text-[8.5pt] font-bold text-gray-900 uppercase leading-none rounded-l-lg">
                                 PARAMETROS ADICIONAIS
                             </td>
-                            <td class="py-1"></td> <!-- Price col -->
+                            <td class="py-1"></td> <!-- Desc col -->
                             <td class="rounded-r-lg"></td> <!-- Subtotal col -->
                         </tr>
                         <!-- ROWS: Params Items -->
@@ -574,7 +592,7 @@ function format_date($value, $format = 'd/m/Y')
                             <tr class="bg-white print:bg-white"
                                 style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
                                 <td></td>
-                                <td colspan="4" class="pl-2 pr-2 text-[8pt] text-gray-800">
+                                <td colspan="5" class="pl-2 pr-2 text-[8pt] text-gray-800">
                                     <div class="flex items-end">
                                         <span
                                             class="uppercase font-semibold leading-tight pr-1 whitespace-nowrap"><?php echo htmlspecialchars($param['nome']); ?></span>
@@ -597,7 +615,7 @@ function format_date($value, $format = 'd/m/Y')
                         <tr class="bg-gray-100 print:bg-gray-100"
                             style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
                             <td></td>
-                            <td colspan="4" class="py-1 pl-2 text-right rounded-l-lg">
+                            <td colspan="5" class="py-1 pl-2 text-right rounded-l-lg">
                                 <span class="text-[8.5pt] font-black text-gray-900 uppercase">VALOR UNITÁRIO FINAL (Base +
                                     Adicionais):</span>
                             </td>
@@ -605,16 +623,17 @@ function format_date($value, $format = 'd/m/Y')
                                 <?php echo format_currency($valor_unitario_total); ?>
                             </td>
                             <td class="py-1 pr-2 text-right whitespace-nowrap text-[9pt] font-black text-red-600 rounded-r-lg">
-                                <?php  // Final Subtotal
+                                <?php  // Final Subtotal (com desconto)
                                         $final_subtotal = $valor_unitario_total * $quantidade * ($is_locacao ? $meses_locacao : 1);
-                                        echo format_currency($final_subtotal);
+                                        $final_desconto = $final_subtotal * ($desconto_percent / 100);
+                                        echo format_currency($final_subtotal - $final_desconto);
                                         ?>
                             </td>
                         </tr>
 
                         <!-- Spacer Row to separate from next item -->
                         <tr>
-                            <td colspan="7" class="h-2"></td>
+                            <td colspan="8" class="h-2"></td>
                         </tr>
                     <?php endif; ?>
                 <?php endforeach; ?>
@@ -627,7 +646,7 @@ function format_date($value, $format = 'd/m/Y')
                 ?>
                 <tr class="bg-gray-50 break-inside-avoid print:bg-gray-50"
                     style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                    <td colspan="6" class="text-right py-2 px-4 text-[8.5pt] uppercase font-bold text-slate-600">
+                    <td colspan="7" class="text-right py-2 px-4 text-[8.5pt] uppercase font-bold text-slate-600">
                         Frete (<?php echo htmlspecialchars($frete_tipo); ?>)
                     </td>
                     <td class="text-right py-2 px-4 text-[9pt] font-bold text-slate-700 whitespace-nowrap">
@@ -638,7 +657,7 @@ function format_date($value, $format = 'd/m/Y')
                 <!-- Total -->
                 <tr class="bg-[#D1D5DB] break-inside-avoid print:bg-[#D1D5DB]"
                     style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                    <td colspan="6"
+                    <td colspan="7"
                         class="text-right py-2 px-4 text-[8.5pt] uppercase font-bold text-slate-700 rounded-l-lg">Valor
                         Total Geral</td>
                     <td

@@ -504,71 +504,16 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
         return [$placeholders, $ids];
     };
 
-    $sql = "SELECT vf.fornecedor_id, f.nome as fornecedor_nome, vf.usuario_id, u.nome as vendedor_nome, YEAR(vf.data_venda) as ano, MONTH(vf.data_venda) as mes, SUM(vf.valor_total) as total_vendido FROM vendas_fornecedores vf JOIN fornecedores f ON vf.fornecedor_id = f.id JOIN usuarios u ON vf.usuario_id = u.id WHERE vf.data_venda BETWEEN ? AND ?";
+    $sql = "SELECT vf.fornecedor_id, f.nome as fornecedor_nome, vf.usuario_id, u.nome as vendedor_nome, YEAR(vf.data_venda) as ano, MONTH(vf.data_venda) as mes, SUM(vf.valor_total) as total_vendido 
+            FROM vendas_fornecedores vf 
+            LEFT JOIN fornecedores f ON vf.fornecedor_id = f.id 
+            LEFT JOIN usuarios u ON vf.usuario_id = u.id 
+            WHERE vf.data_venda BETWEEN ? AND ?";
     $params = [$start_date, $end_date];
 
-    if (!empty($supplier_ids)) {
-        list($ph, $vals) = $buildIn($supplier_ids);
-        $sql .= " AND vf.fornecedor_id IN ($ph)";
-        $params = array_merge($params, $vals);
-    }
-    if (!empty($user_ids)) {
-        list($ph, $vals) = $buildIn($user_ids);
-        $sql .= " AND vf.usuario_id IN ($ph)";
-        $params = array_merge($params, $vals);
-    }
-    if (!empty($origem_ids)) {
-        $in_params = trim(str_repeat('?,', count($origem_ids)), ',');
-        $sql .= " AND vf.origem IN ($in_params)";
-        foreach ($origem_ids as $id)
-            $params[] = $id;
-    }
-    if (!empty($uf_ids)) {
-        $in_params = trim(str_repeat('?,', count($uf_ids)), ',');
-        $sql .= " AND (vf.organizacao_id IN (SELECT id FROM organizacoes WHERE estado IN ($in_params)))";
-        foreach ($uf_ids as $id)
-            $params[] = $id;
-    }
-    if (!empty($status_ids)) {
-        $has_won = false;
-        foreach ($status_ids as $st) {
-            if ($st === 'Ganho' || $st === 'Won')
-                $has_won = true;
-        }
-        if (!$has_won) {
-            $sql .= " AND 1=0";
-        }
-    }
-    if (!empty($cliente_ids)) {
-        $org_ids = [];
-        $pf_ids = [];
-        foreach ($cliente_ids as $cid) {
-            if (strpos($cid, 'org-') === 0) {
-                $org_ids[] = (int) substr($cid, 4);
-            } elseif (strpos($cid, 'pf-') === 0) {
-                $pf_ids[] = (int) substr($cid, 3);
-            }
-        }
-        $cliente_conditions = [];
-        if (!empty($org_ids)) {
-            list($ph_org, $vals_org) = $buildIn($org_ids);
-            $cliente_conditions[] = "vf.organizacao_id IN ($ph_org)";
-            $params = array_merge($params, $vals_org);
-        }
-        if (!empty($pf_ids)) {
-            list($ph_pf, $vals_pf) = $buildIn($pf_ids);
-            $cliente_conditions[] = "vf.cliente_pf_id IN ($ph_pf)";
-            $params = array_merge($params, $vals_pf);
-        }
-        if (!empty($cliente_conditions)) {
-            $sql .= " AND (" . implode(' OR ', $cliente_conditions) . ")";
-        }
-    }
-    if (!empty($etapa_ids)) {
-        // vendas_fornecedores generally does not map to early etapas.
-        // We can either ignore or enforce it if they select Ganho stage ID.
-        // For now, if they filter by specific stages, we can't accurately filter vendas_fornecedores without joining opportunities. To be perfectly accurate we would join it. Since there's no link, we just ignore it so it returns data if Status allows.
-    }
+    // Apply standardized filters to vendas_fornecedores
+    apply_report_filters_helper($sql, $params, 'vf', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
+
     $sql .= " GROUP BY vf.fornecedor_id, vf.usuario_id, YEAR(vf.data_venda), MONTH(vf.data_venda) ORDER BY f.nome, u.nome, ano, mes";
 
     $stmt = $pdo->prepare($sql);
@@ -583,26 +528,10 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
                LEFT JOIN fornecedores f ON o.fornecedor_id = f.id 
                LEFT JOIN usuarios u ON o.usuario_id = u.id 
                WHERE nf.data_faturamento BETWEEN ? AND ?";
-
     $params_nf = [$start_date, $end_date];
 
-    if (!empty($supplier_ids)) {
-        list($ph, $vals) = $buildIn($supplier_ids);
-        $sql_nf .= " AND o.fornecedor_id IN ($ph)";
-        $params_nf = array_merge($params_nf, $vals);
-    }
-    if (!empty($user_ids)) {
-        list($ph, $vals) = $buildIn($user_ids);
-        $sql_nf .= " AND o.usuario_id IN ($ph)";
-        $params_nf = array_merge($params_nf, $vals);
-    }
-    if (!empty($origem_ids)) {
-        $in_params = trim(str_repeat('?,', count($origem_ids)), ',');
-        $sql_nf .= " AND o.origem IN ($in_params)";
-        foreach ($origem_ids as $id)
-            $params_nf[] = $id;
-    }
-    // Simplification for UF and status on NF logic to match general structure
+    // Apply standardized filters to notas_fiscais (using Opportunity alias 'o')
+    apply_report_filters_helper($sql_nf, $params_nf, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
 
     $sql_nf .= " GROUP BY o.fornecedor_id, o.usuario_id, YEAR(nf.data_faturamento), MONTH(nf.data_faturamento)";
     $stmt_nf = $pdo->prepare($sql_nf);
@@ -650,10 +579,10 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
     }
     foreach ($nf_data as $row) {
         $initStructure($report_data, $row['fornecedor_id'], $row['fornecedor_nome'], $row['usuario_id'], $row['vendedor_nome']);
-        if (!isset($report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'])) {
-            $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'] = 0;
+        if (!isset($report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['faturado'])) {
+            $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['faturado'] = 0;
         }
-        $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'] += (float) $row['total_faturado'];
+        $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['faturado'] += (float) $row['total_faturado'];
     }
     foreach ($metas_data as $row) {
         $initStructure($report_data, $row['fornecedor_id'], $row['fornecedor_nome'], $row['usuario_id'], $row['vendedor_nome']);
@@ -960,7 +889,8 @@ function apply_report_filters_helper(&$sql, &$params, $table_alias, $supplier_id
         $sql .= " AND $u_alias IN ($ph)";
         $params = array_merge($params, $vals);
     }
-    if (!empty($etapa_ids)) {
+    // Skip etapa_id for 'vf' (vendas_fornecedores) as it does not exist there
+    if (!empty($etapa_ids) && $table_alias !== 'vf') {
         list($ph, $vals) = $buildIn($etapa_ids);
         $sql .= " AND $table_alias.etapa_id IN ($ph)";
         $params = array_merge($params, $vals);
@@ -974,12 +904,22 @@ function apply_report_filters_helper(&$sql, &$params, $table_alias, $supplier_id
     if (!empty($status_ids)) {
         $status_conditions = [];
         foreach ($status_ids as $st) {
-            if ($st === 'Ganho' || $st === 'Won') {
-                $status_conditions[] = "$table_alias.etapa_id IN (SELECT id FROM etapas_funil WHERE nome LIKE '%Ganho%' OR nome LIKE '%Fechado%')";
-            } elseif ($st === 'Perdido' || $st === 'Lost') {
-                $status_conditions[] = "$table_alias.etapa_id IN (SELECT id FROM etapas_funil WHERE nome LIKE '%Perdido%' OR nome LIKE '%Recusada%' OR nome LIKE '%Lost%')";
-            } elseif ($st === 'Aberto' || $st === 'Open') {
-                $status_conditions[] = "$table_alias.etapa_id NOT IN (SELECT id FROM etapas_funil WHERE nome LIKE '%Ganho%' OR nome LIKE '%Fechado%' OR nome LIKE '%Perdido%' OR nome LIKE '%Recusada%' OR nome LIKE '%Lost%')";
+            if ($table_alias === 'vf') {
+                // 'vendas_fornecedores' only contains won/approved items.
+                // If filter is 'Ganho', it matches. If 'Perdido' or 'Aberto', it doesn't.
+                if ($st === 'Ganho' || $st === 'Won') {
+                    $status_conditions[] = "1=1"; // Always true for this table
+                } else {
+                    $status_conditions[] = "1=0"; // Always false for Open/Lost in this table
+                }
+            } else {
+                if ($st === 'Ganho' || $st === 'Won') {
+                    $status_conditions[] = "$table_alias.etapa_id IN (SELECT id FROM etapas_funil WHERE nome LIKE '%Ganho%' OR nome LIKE '%Fechado%')";
+                } elseif ($st === 'Perdido' || $st === 'Lost') {
+                    $status_conditions[] = "$table_alias.etapa_id IN (SELECT id FROM etapas_funil WHERE nome LIKE '%Perdido%' OR nome LIKE '%Recusada%' OR nome LIKE '%Lost%')";
+                } elseif ($st === 'Aberto' || $st === 'Open') {
+                    $status_conditions[] = "$table_alias.etapa_id NOT IN (SELECT id FROM etapas_funil WHERE nome LIKE '%Ganho%' OR nome LIKE '%Fechado%' OR nome LIKE '%Perdido%' OR nome LIKE '%Recusada%' OR nome LIKE '%Lost%')";
+                }
             }
         }
         if (!empty($status_conditions))
@@ -987,18 +927,25 @@ function apply_report_filters_helper(&$sql, &$params, $table_alias, $supplier_id
     }
     if (!empty($uf_ids)) {
         $in_params = trim(str_repeat('?,', count($uf_ids)), ',');
-        $sql .= " AND ($table_alias.organizacao_id IN (SELECT id FROM organizacoes WHERE estado IN ($in_params)))";
+        // Assume for state filter we check either organization (PJ) or client_pf (PF)
+        $sql .= " AND (
+            ($table_alias.organizacao_id IN (SELECT id FROM organizacoes WHERE estado IN ($in_params)))
+            OR
+            ($table_alias.cliente_pf_id IN (SELECT id FROM clientes_pf WHERE estado IN ($in_params)))
+        )";
         foreach ($uf_ids as $id)
             $params[] = $id;
+        foreach ($uf_ids as $id)
+            $params[] = $id; // Double for OR condition
     }
     if (!empty($cliente_ids)) {
         $org_ids = [];
         $pf_ids = [];
         foreach ($cliente_ids as $cid) {
             if (strpos($cid, 'org-') === 0) {
-                $org_ids[] = substr($cid, 4);
+                $org_ids[] = (int) substr($cid, 4);
             } elseif (strpos($cid, 'pf-') === 0) {
-                $pf_ids[] = substr($cid, 3);
+                $pf_ids[] = (int) substr($cid, 3);
             }
         }
         $cliente_conditions = [];

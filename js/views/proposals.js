@@ -795,7 +795,7 @@ function renderProposalItemsSection() {
                      <!-- --- NOVO CAMPO: DESCONTO (%) --- -->
                     <div>
                         <label class="form-label">Desconto (%)</label>
-                        <input type="number" data-index="${index}" name="item_desconto_percent" class="form-input" value="${item.desconto_percent || 0}" min="0" max="10" step="0.1" placeholder="0">
+                        <input type="number" data-index="${index}" name="item_desconto_percent" class="form-input" value="${item.desconto_percent || 0}" min="0" max="30" step="0.1" placeholder="0">
                     </div>
                     
                     <div><label class="form-label">Subtotal</label><input type="text" class="form-input bg-gray-100 font-bold" value="${formatCurrency(itemTotalComDesconto)}" readonly></div>
@@ -1045,7 +1045,7 @@ function handleItemInputChange(e) {
         renderProposalItemsSection();
     } else if (prop === 'desconto_percent') {
         let val = parseFloat(value) || 0;
-        if (val > 10) val = 10;
+        if (val > 30) val = 30;
         if (val < 0) val = 0;
         appState.proposal.items[index][prop] = val;
         // Re-renderiza para atualizar o subtotal

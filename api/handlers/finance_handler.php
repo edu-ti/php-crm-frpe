@@ -35,7 +35,7 @@ function handle_create_empenho($pdo, $data)
 
         if ($success) {
             $lastId = $pdo->lastInsertId();
-            $stmt_new = $pdo->prepare("SELECT * FROM empenhos WHERE id = ?");
+            $stmt_new = $pdo->prepare("SELECT e.*, o.numero_edital as numero_contrato, org.nome_fantasia as organizacao_nome FROM empenhos e LEFT JOIN oportunidades o ON e.oportunidade_id = o.id LEFT JOIN organizacoes org ON o.organizacao_id = org.id WHERE e.id = ?");
             $stmt_new->execute([$lastId]);
             json_response(['success' => true, 'empenho' => $stmt_new->fetch(PDO::FETCH_ASSOC)]);
         } else {
@@ -85,7 +85,7 @@ function handle_create_nota_fiscal($pdo, $data)
 
         if ($success) {
             $lastId = $pdo->lastInsertId();
-            $stmt_new = $pdo->prepare("SELECT * FROM notas_fiscais WHERE id = ?");
+            $stmt_new = $pdo->prepare("SELECT nf.*, o.numero_edital as numero_contrato, org.nome_fantasia as organizacao_nome FROM notas_fiscais nf LEFT JOIN oportunidades o ON nf.oportunidade_id = o.id LEFT JOIN organizacoes org ON o.organizacao_id = org.id WHERE nf.id = ?");
             $stmt_new->execute([$lastId]);
             json_response(['success' => true, 'nota_fiscal' => $stmt_new->fetch(PDO::FETCH_ASSOC)]);
         } else {
@@ -129,7 +129,7 @@ function handle_update_empenho($pdo, $data)
         ]);
 
         if ($success) {
-            $stmt_new = $pdo->prepare("SELECT * FROM empenhos WHERE id = ?");
+            $stmt_new = $pdo->prepare("SELECT e.*, o.numero_edital as numero_contrato, org.nome_fantasia as organizacao_nome FROM empenhos e LEFT JOIN oportunidades o ON e.oportunidade_id = o.id LEFT JOIN organizacoes org ON o.organizacao_id = org.id WHERE e.id = ?");
             $stmt_new->execute([$id]);
             json_response(['success' => true, 'empenho' => $stmt_new->fetch(PDO::FETCH_ASSOC)]);
         } else {
@@ -197,7 +197,7 @@ function handle_update_nota_fiscal($pdo, $data)
         ]);
 
         if ($success) {
-            $stmt_new = $pdo->prepare("SELECT * FROM notas_fiscais WHERE id = ?");
+            $stmt_new = $pdo->prepare("SELECT nf.*, o.numero_edital as numero_contrato, org.nome_fantasia as organizacao_nome FROM notas_fiscais nf LEFT JOIN oportunidades o ON nf.oportunidade_id = o.id LEFT JOIN organizacoes org ON o.organizacao_id = org.id WHERE nf.id = ?");
             $stmt_new->execute([$id]);
             json_response(['success' => true, 'nota_fiscal' => $stmt_new->fetch(PDO::FETCH_ASSOC)]);
         } else {
