@@ -87,6 +87,9 @@ if (!$proposal) {
 }
 
 $total_geral = 0;
+$total_subtotal_geral = 0;
+$total_desconto_geral = 0;
+$uniform_discount = null; // To check if all items have the same discount %
 
 function format_currency($value)
 {
@@ -477,7 +480,6 @@ function format_date($value, $format = 'd/m/Y')
                     <th class="text-center">Unid.</th>
                     <th class="text-center">Qtd</th>
                     <th class="text-right">Vlr. Unit.</th>
-                    <th class="text-center">Desc.</th>
                     <th class="text-right">Subtotal</th>
                 </tr>
             </thead>
@@ -514,7 +516,19 @@ function format_date($value, $format = 'd/m/Y')
                     $desconto_percent = (float) ($item['desconto_percent'] ?? 0);
                     $valor_desconto = $subtotal_sem_desconto * ($desconto_percent / 100);
                     $subtotal = $subtotal_sem_desconto - $valor_desconto;
+
+                    // Acumuladores globais
+                    $total_subtotal_geral += $subtotal_sem_desconto;
+                    $total_desconto_geral += $valor_desconto;
                     $total_geral += $subtotal;
+
+                    // Verifica se o desconto é uniforme
+                    if ($uniform_discount === null) {
+                        $uniform_discount = $desconto_percent;
+                    } elseif ($uniform_discount !== false && $uniform_discount != $desconto_percent) {
+                        $uniform_discount = false;
+                    }
+
                     $unidade_medida = $is_locacao ? 'Mês' : ($item['unidade_medida'] ?: 'Unidade');
                     ?>
                     <tr class="break-inside-avoid">
@@ -548,19 +562,10 @@ function format_date($value, $format = 'd/m/Y')
                         <td class="text-right whitespace-nowrap text-slate-600">
                             <?php echo format_currency($valor_unitario_base); ?>
                         </td>
-                        <td class="text-center whitespace-nowrap text-slate-600">
-                            <?php if ($desconto_percent > 0): ?>
-                                <span
-                                    class="inline-block bg-red-100 text-red-700 text-[7pt] font-bold px-1.5 py-0.5 rounded"><?php echo number_format($desconto_percent, 1); ?>%</span>
-                            <?php else: ?>
-                                <span class="text-slate-400">-</span>
-                            <?php endif; ?>
-                        </td>
                         <td class="text-right font-bold text-slate-600 whitespace-nowrap">
                             <?php
                             $base_subtotal = $valor_unitario_base * $quantidade * ($is_locacao ? $meses_locacao : 1);
-                            $base_desconto = $base_subtotal * ($desconto_percent / 100);
-                            echo format_currency($base_subtotal - $base_desconto);
+                            echo format_currency($base_subtotal);
                             ?>
                         </td>
                     </tr>
@@ -569,11 +574,11 @@ function format_date($value, $format = 'd/m/Y')
                         <tr class="bg-blue-50 print:bg-blue-50"
                             style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
                             <td class="py-1"></td> <!-- Img col spacing -->
-                            <td colspan="5"
+                            <td colspan="4"
                                 class="py-1 pl-2 text-[8.5pt] font-bold text-gray-900 uppercase leading-none rounded-l-lg">
                                 PARAMETROS ADICIONAIS
                             </td>
-                            <td class="py-1"></td> <!-- Desc col -->
+                            <td class="py-1"></td> <!-- Vlr Unit col -->
                             <td class="rounded-r-lg"></td> <!-- Subtotal col -->
                         </tr>
                         <!-- ROWS: Params Items -->
@@ -592,7 +597,7 @@ function format_date($value, $format = 'd/m/Y')
                             <tr class="bg-white print:bg-white"
                                 style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
                                 <td></td>
-                                <td colspan="5" class="pl-2 pr-2 text-[8pt] text-gray-800">
+                                <td colspan="4" class="pl-2 pr-2 text-[8pt] text-gray-800">
                                     <div class="flex items-end">
                                         <span
                                             class="uppercase font-semibold leading-tight pr-1 whitespace-nowrap"><?php echo htmlspecialchars($param['nome']); ?></span>
@@ -615,7 +620,7 @@ function format_date($value, $format = 'd/m/Y')
                         <tr class="bg-gray-100 print:bg-gray-100"
                             style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
                             <td></td>
-                            <td colspan="5" class="py-1 pl-2 text-right rounded-l-lg">
+                            <td colspan="4" class="py-1 pl-2 text-right rounded-l-lg">
                                 <span class="text-[8.5pt] font-black text-gray-900 uppercase">VALOR UNITÁRIO FINAL (Base +
                                     Adicionais):</span>
                             </td>
@@ -638,6 +643,31 @@ function format_date($value, $format = 'd/m/Y')
                     <?php endif; ?>
                 <?php endforeach; ?>
 
+                <!-- SUBTOTAL ITEMS -->
+                <tr class="bg-gray-50 break-inside-avoid print:bg-gray-50"
+                    style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                    <td colspan="6" class="text-right py-1 px-4 text-[8pt] uppercase font-bold text-slate-500">
+                        Subtotal dos Itens
+                    </td>
+                    <td class="text-right py-1 px-4 text-[8.5pt] font-semibold text-slate-600 whitespace-nowrap">
+                        <?php echo format_currency($total_subtotal_geral); ?>
+                    </td>
+                </tr>
+
+                <!-- GLOBAL DISCOUNT -->
+                <?php if ($total_desconto_geral > 0): ?>
+                    <tr class="bg-gray-50 break-inside-avoid print:bg-gray-50"
+                        style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <td colspan="6" class="text-right py-1 px-4 text-[8pt] uppercase font-bold text-red-500">
+                            Desconto
+                            <?php echo ($uniform_discount !== false ? '(' . number_format($uniform_discount, 1) . '%)' : ''); ?>
+                        </td>
+                        <td class="text-right py-1 px-4 text-[8.5pt] font-bold text-red-600 whitespace-nowrap">
+                            - <?php echo format_currency($total_desconto_geral); ?>
+                        </td>
+                    </tr>
+                <?php endif; ?>
+
                 <!-- FREIGHT ROW -->
                 <?php
                 $frete_tipo = $proposal['frete_tipo'] ?? 'CIF';
@@ -646,7 +676,7 @@ function format_date($value, $format = 'd/m/Y')
                 ?>
                 <tr class="bg-gray-50 break-inside-avoid print:bg-gray-50"
                     style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                    <td colspan="7" class="text-right py-2 px-4 text-[8.5pt] uppercase font-bold text-slate-600">
+                    <td colspan="6" class="text-right py-2 px-4 text-[8.5pt] uppercase font-bold text-slate-600">
                         Frete (<?php echo htmlspecialchars($frete_tipo); ?>)
                     </td>
                     <td class="text-right py-2 px-4 text-[9pt] font-bold text-slate-700 whitespace-nowrap">
@@ -657,11 +687,11 @@ function format_date($value, $format = 'd/m/Y')
                 <!-- Total -->
                 <tr class="bg-[#D1D5DB] break-inside-avoid print:bg-[#D1D5DB]"
                     style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                    <td colspan="7"
-                        class="text-right py-2 px-4 text-[8.5pt] uppercase font-bold text-slate-700 rounded-l-lg">Valor
+                    <td colspan="6"
+                        class="text-right py-3 px-4 text-[9pt] uppercase font-black text-slate-800 rounded-l-lg">Valor
                         Total Geral</td>
                     <td
-                        class="text-right py-2 px-4 text-[10pt] font-bold text-[#2e2a78] whitespace-nowrap rounded-r-lg">
+                        class="text-right py-3 px-4 text-[11pt] font-black text-[#2e2a78] whitespace-nowrap rounded-r-lg">
                         <?php echo format_currency($total_geral); ?>
                     </td>
                 </tr>
