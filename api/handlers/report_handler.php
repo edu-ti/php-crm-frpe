@@ -504,6 +504,13 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
         return [$placeholders, $ids];
     };
 
+    // Build supplier lookup map (Nome -> ID)
+    $stmt_sup = $pdo->query("SELECT id, nome FROM fornecedores");
+    $suppliers_map = [];
+    while ($s = $stmt_sup->fetch(PDO::FETCH_ASSOC)) {
+        $suppliers_map[strtoupper(trim($s['nome'] ?? ''))] = (int) $s['id'];
+    }
+
     $sql = "SELECT vf.fornecedor_id, f.nome as fornecedor_nome, vf.usuario_id, u.nome as vendedor_nome, YEAR(vf.data_venda) as ano, MONTH(vf.data_venda) as mes, SUM(vf.valor_total) as total_vendido 
             FROM vendas_fornecedores vf 
             LEFT JOIN fornecedores f ON vf.fornecedor_id = f.id 
@@ -521,8 +528,8 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
     $vendas_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Notas Fiscais (Faturado) Fetching Logic
-    // We join empenhos -> oportunidades to get fornecedor and usuario
-    $sql_nf = "SELECT o.fornecedor_id, f.nome as fornecedor_nome, o.usuario_id, u.nome as vendedor_nome, YEAR(nf.data_faturamento) as ano, MONTH(nf.data_faturamento) as mes, SUM(nf.valor) as total_faturado 
+    // We fetch individual NFs and their items to attribute values correctly to suppliers
+    $sql_nf = "SELECT nf.id, nf.itens, nf.valor as total_nf, o.fornecedor_id, f.nome as fornecedor_nome, o.usuario_id, u.nome as vendedor_nome, YEAR(nf.data_faturamento) as ano, MONTH(nf.data_faturamento) as mes
                FROM notas_fiscais nf 
                JOIN oportunidades o ON nf.oportunidade_id = o.id 
                LEFT JOIN fornecedores f ON o.fornecedor_id = f.id 
@@ -530,13 +537,69 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
                WHERE nf.data_faturamento BETWEEN ? AND ?";
     $params_nf = [$start_date, $end_date];
 
-    // Apply standardized filters to notas_fiscais (using Opportunity alias 'o')
-    apply_report_filters_helper($sql_nf, $params_nf, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
+    // Important: We do NOT filter by supplier_ids in the SQL for NFs here if we want to catch items from other suppliers inside mixed opportunities.
+    // However, we still filter by other criteria (Client, User, etc.)
+    apply_report_filters_helper($sql_nf, $params_nf, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
 
-    $sql_nf .= " GROUP BY o.fornecedor_id, o.usuario_id, YEAR(nf.data_faturamento), MONTH(nf.data_faturamento)";
     $stmt_nf = $pdo->prepare($sql_nf);
     $stmt_nf->execute($params_nf);
-    $nf_data = $stmt_nf->fetchAll(PDO::FETCH_ASSOC);
+    $raw_nf_data = $stmt_nf->fetchAll(PDO::FETCH_ASSOC);
+
+    $nf_data = []; // Aggregated results for report_data
+
+    foreach ($raw_nf_data as $nf) {
+        $items = !empty($nf['itens']) ? json_decode($nf['itens'], true) : [];
+        $has_item_supplier = false;
+        $attributed_by_supplier = [];
+
+        if (is_array($items) && !empty($items)) {
+            foreach ($items as $item) {
+                $item_val = (float) ($item['valor_total'] ?? (($item['quantidade'] ?? 0) * ($item['valor_unitario'] ?? 0)));
+                if ($item_val <= 0) continue;
+
+                $item_sup_name = strtoupper(trim($item['fornecedor'] ?? $item['fabricante'] ?? ''));
+                $item_sup_id = ($item_sup_name && isset($suppliers_map[$item_sup_name])) ? $suppliers_map[$item_sup_name] : null;
+
+                $target_fid = $item_sup_id ?: $nf['fornecedor_id'];
+                $target_fname = $item_sup_id ? $item['fornecedor'] : $nf['fornecedor_nome'];
+
+                $key = "{$target_fid}|{$nf['usuario_id']}|{$nf['ano']}|{$nf['mes']}";
+                if (!isset($attributed_by_supplier[$key])) {
+                    $attributed_by_supplier[$key] = [
+                        'fornecedor_id' => $target_fid,
+                        'fornecedor_nome' => $target_fname,
+                        'usuario_id' => $nf['usuario_id'],
+                        'vendedor_nome' => $nf['vendedor_nome'],
+                        'ano' => $nf['ano'],
+                        'mes' => $nf['mes'],
+                        'total_faturado' => 0
+                    ];
+                }
+                $attributed_by_supplier[$key]['total_faturado'] += $item_val;
+            }
+        }
+
+        if (empty($attributed_by_supplier)) {
+            // Fallback to opportunity supplier if no items or items have no value
+            $key = "{$nf['fornecedor_id']}|{$nf['usuario_id']}|{$nf['ano']}|{$nf['mes']}";
+            $attributed_by_supplier[$key] = [
+                'fornecedor_id' => $nf['fornecedor_id'],
+                'fornecedor_nome' => $nf['fornecedor_nome'],
+                'usuario_id' => $nf['usuario_id'],
+                'vendedor_nome' => $nf['vendedor_nome'],
+                'ano' => $nf['ano'],
+                'mes' => $nf['mes'],
+                'total_faturado' => (float) $nf['total_nf']
+            ];
+        }
+
+        foreach ($attributed_by_supplier as $attr) {
+            // Filter by supplier_ids manually in PHP if SQL filter was removed
+            if (!empty($supplier_ids) && !in_array($attr['fornecedor_id'], $supplier_ids)) continue;
+
+            $nf_data[] = $attr;
+        }
+    }
 
     // Targets fetching logic omitted but required for full functionality. 
     // Assuming simple sales report for brevity or re-implementing target fetching if critical.
@@ -563,6 +626,11 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
 
     $report_data = [];
     $initStructure = function (&$array, $fid, $fname, $uid, $uname) {
+        $fid = $fid ?: 0;
+        $uid = $uid ?: 0;
+        $fname = $fname ?: "Fornecedor não informado";
+        $uname = $uname ?: "Não informado";
+
         if (!isset($array[$fid]))
             $array[$fid] = ['fornecedor_id' => $fid, 'fornecedor_nome' => $fname, 'rows' => []];
         if (!isset($array[$fid]['rows_map'][$uid]))
@@ -571,22 +639,28 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
 
     foreach ($vendas_data as $row) {
         $initStructure($report_data, $row['fornecedor_id'], $row['fornecedor_nome'], $row['usuario_id'], $row['vendedor_nome']);
+        $fid = $row['fornecedor_id'] ?: 0;
+        $uid = $row['usuario_id'] ?: 0;
         // Initialize if not set
-        if (!isset($report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'])) {
-            $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'] = 0;
+        if (!isset($report_data[$fid]['rows_map'][$uid]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'])) {
+            $report_data[$fid]['rows_map'][$uid]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'] = 0;
         }
-        $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'] += (float) $row['total_vendido'];
+        $report_data[$fid]['rows_map'][$uid]['dados_mes'][$row['ano'] . '-' . $row['mes']]['venda'] += (float) $row['total_vendido'];
     }
     foreach ($nf_data as $row) {
         $initStructure($report_data, $row['fornecedor_id'], $row['fornecedor_nome'], $row['usuario_id'], $row['vendedor_nome']);
-        if (!isset($report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['faturado'])) {
-            $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['faturado'] = 0;
+        $fid = $row['fornecedor_id'] ?: 0;
+        $uid = $row['usuario_id'] ?: 0;
+        if (!isset($report_data[$fid]['rows_map'][$uid]['dados_mes'][$row['ano'] . '-' . $row['mes']]['faturado'])) {
+            $report_data[$fid]['rows_map'][$uid]['dados_mes'][$row['ano'] . '-' . $row['mes']]['faturado'] = 0;
         }
-        $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['faturado'] += (float) $row['total_faturado'];
+        $report_data[$fid]['rows_map'][$uid]['dados_mes'][$row['ano'] . '-' . $row['mes']]['faturado'] += (float) $row['total_faturado'];
     }
     foreach ($metas_data as $row) {
         $initStructure($report_data, $row['fornecedor_id'], $row['fornecedor_nome'], $row['usuario_id'], $row['vendedor_nome']);
-        $report_data[$row['fornecedor_id']]['rows_map'][$row['usuario_id']]['dados_mes'][$row['ano'] . '-' . $row['mes']]['meta'] = (float) $row['valor_meta'];
+        $fid = $row['fornecedor_id'] ?: 0;
+        $uid = $row['usuario_id'] ?: 0;
+        $report_data[$fid]['rows_map'][$uid]['dados_mes'][$row['ano'] . '-' . $row['mes']]['meta'] = (float) $row['valor_meta'];
     }
 
     // Busca das Metas Globais do Fornecedor para a linha de Totalizador de Fábrica
@@ -634,29 +708,52 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
         $stmt_ss->execute($params_ss);
         $supplier['state_sales'] = $stmt_ss->fetchAll(PDO::FETCH_KEY_PAIR); // [PE => 1000, PB => 500]
 
-        // Add NF state sales
+        // Add NF state sales (Item-aware logic)
         $sql_state_nf = "
-            SELECT org.estado, SUM(nf.valor) as total 
+            SELECT org.estado, nf.itens, nf.valor as total_nf, o.fornecedor_id
             FROM notas_fiscais nf
             JOIN oportunidades o ON nf.oportunidade_id = o.id 
             LEFT JOIN organizacoes org ON o.organizacao_id = org.id
-            WHERE o.fornecedor_id = ? 
-            AND nf.data_faturamento BETWEEN ? AND ?";
-        $params_snf = [$fid, $start_date, $end_date];
+            WHERE nf.data_faturamento BETWEEN ? AND ?";
+        $params_snf = [$start_date, $end_date];
 
-        // Apply filters to NF state sales
+        // Apply filters to NF state sales (except supplier_id to be item-aware)
         apply_report_filters_helper($sql_state_nf, $params_snf, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
 
-        $sql_state_nf .= " AND org.estado IS NOT NULL GROUP BY org.estado";
         $stmt_snf = $pdo->prepare($sql_state_nf);
         $stmt_snf->execute($params_snf);
-        $nfStateSales = $stmt_snf->fetchAll(PDO::FETCH_KEY_PAIR);
+        $raw_snf_data = $stmt_snf->fetchAll(PDO::FETCH_ASSOC);
 
-        foreach ($nfStateSales as $st => $val) {
-            if (isset($supplier['state_sales'][$st])) {
-                $supplier['state_sales'][$st] += $val;
+        foreach ($raw_snf_data as $nf) {
+            $items = !empty($nf['itens']) ? json_decode($nf['itens'], true) : [];
+            $attributed_val = 0;
+            $uf = $nf['estado'];
+            if (!$uf) continue;
+
+            if (is_array($items) && !empty($items)) {
+                foreach ($items as $item) {
+                    $item_sup_name = strtoupper(trim($item['fornecedor'] ?? $item['fabricante'] ?? ''));
+                    $item_sup_id = ($item_sup_name && isset($suppliers_map[$item_sup_name])) ? $suppliers_map[$item_sup_name] : null;
+
+                    $target_fid = $item_sup_id ?: $nf['fornecedor_id'];
+
+                    if ($target_fid == $fid) {
+                        $attributed_val += (float) ($item['valor_total'] ?? (($item['quantidade'] ?? 0) * ($item['valor_unitario'] ?? 0)));
+                    }
+                }
             } else {
-                $supplier['state_sales'][$st] = $val;
+                // No items or no supplier specified in items, fall back to opportunity supplier
+                if ($nf['fornecedor_id'] == $fid) {
+                    $attributed_val = (float) $nf['total_nf'];
+                }
+            }
+
+            if ($attributed_val > 0) {
+                if (isset($supplier['state_sales'][$uf])) {
+                    $supplier['state_sales'][$uf] += $attributed_val;
+                } else {
+                    $supplier['state_sales'][$uf] = $attributed_val;
+                }
             }
         }
 
