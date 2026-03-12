@@ -157,6 +157,23 @@ try {
         'update_product' => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_update_product'],
         'delete_product' => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_delete_product'],
 
+        // Tabela de Preço – Cabeçalho (Master)
+        'get_price_tables'    => ['method' => 'GET',  'file' => '/api/handlers/product_handler.php', 'function' => 'handle_get_price_tables'],
+        'create_price_table'  => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_create_price_table'],
+        'update_price_table'  => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_update_price_table'],
+        'delete_price_table'  => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_delete_price_table'],
+
+        // Tabela de Preço – Itens (Detail)
+        'create_price_table_item' => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_create_price_table_item'],
+        'update_price_table_item' => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_update_price_table_item'],
+        'delete_price_table_item' => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_delete_price_table_item'],
+
+        // Kits
+        'get_kits'    => ['method' => 'GET',  'file' => '/api/handlers/product_handler.php', 'function' => 'handle_get_kits'],
+        'create_kit'  => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_create_kit'],
+        'update_kit'  => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_update_kit'],
+        'delete_kit'  => ['method' => 'POST', 'file' => '/api/handlers/product_handler.php', 'function' => 'handle_delete_kit'],
+
         // Usuários
         'create_user' => ['method' => 'POST', 'file' => '/api/handlers/user_handler.php', 'function' => 'handle_create_user'],
         'update_user' => ['method' => 'POST', 'file' => '/api/handlers/user_handler.php', 'function' => 'handle_update_user'],

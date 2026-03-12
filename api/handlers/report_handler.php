@@ -623,27 +623,33 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
             FROM vendas_fornecedores vf
             LEFT JOIN organizacoes o ON vf.organizacao_id = o.id
             WHERE vf.fornecedor_id = ? 
-            AND vf.data_venda BETWEEN ? AND ?
-            AND o.estado IS NOT NULL
-            GROUP BY o.estado
-        ";
+            AND vf.data_venda BETWEEN ? AND ?";
+        $params_ss = [$fid, $start_date, $end_date];
+
+        // Apply filters to state sales
+        apply_report_filters_helper($sql_state_sales, $params_ss, 'vf', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
+
+        $sql_state_sales .= " AND o.estado IS NOT NULL GROUP BY o.estado";
         $stmt_ss = $pdo->prepare($sql_state_sales);
-        $stmt_ss->execute([$fid, $start_date, $end_date]);
+        $stmt_ss->execute($params_ss);
         $supplier['state_sales'] = $stmt_ss->fetchAll(PDO::FETCH_KEY_PAIR); // [PE => 1000, PB => 500]
 
         // Add NF state sales
         $sql_state_nf = "
             SELECT org.estado, SUM(nf.valor) as total 
             FROM notas_fiscais nf
-            JOIN oportunidades o ON nf.oportunidade_id = o.id
+            JOIN oportunidades o ON nf.oportunidade_id = o.id 
             LEFT JOIN organizacoes org ON o.organizacao_id = org.id
             WHERE o.fornecedor_id = ? 
-            AND nf.data_faturamento BETWEEN ? AND ?
-            AND org.estado IS NOT NULL
-            GROUP BY org.estado
-        ";
+            AND nf.data_faturamento BETWEEN ? AND ?";
+        $params_snf = [$fid, $start_date, $end_date];
+
+        // Apply filters to NF state sales
+        apply_report_filters_helper($sql_state_nf, $params_snf, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
+
+        $sql_state_nf .= " AND org.estado IS NOT NULL GROUP BY org.estado";
         $stmt_snf = $pdo->prepare($sql_state_nf);
-        $stmt_snf->execute([$fid, $start_date, $end_date]);
+        $stmt_snf->execute($params_snf);
         $nfStateSales = $stmt_snf->fetchAll(PDO::FETCH_KEY_PAIR);
 
         foreach ($nfStateSales as $st => $val) {
@@ -914,11 +920,11 @@ function apply_report_filters_helper(&$sql, &$params, $table_alias, $supplier_id
                 }
             } else {
                 if ($st === 'Ganho' || $st === 'Won') {
-                    $status_conditions[] = "$table_alias.etapa_id IN (SELECT id FROM etapas_funil WHERE nome LIKE '%Ganho%' OR nome LIKE '%Fechado%')";
+                    $status_conditions[] = "$table_alias.etapa_id IN (SELECT id FROM etapas_funil WHERE nome LIKE '%Ganho%' OR nome LIKE '%Fechado%' OR nome LIKE '%Vendido%' OR nome LIKE '%Empenhado%' OR nome LIKE '%Contrato%' OR nome LIKE '%Homologado%' OR nome LIKE '%Faturado%' OR nome LIKE '%Entrega%')";
                 } elseif ($st === 'Perdido' || $st === 'Lost') {
-                    $status_conditions[] = "$table_alias.etapa_id IN (SELECT id FROM etapas_funil WHERE nome LIKE '%Perdido%' OR nome LIKE '%Recusada%' OR nome LIKE '%Lost%')";
+                    $status_conditions[] = "$table_alias.etapa_id IN (SELECT id FROM etapas_funil WHERE nome LIKE '%Perdido%' OR nome LIKE '%Recusada%' OR nome LIKE '%Lost%' OR nome LIKE '%Desclassificado%' OR nome LIKE '%Fracassado%')";
                 } elseif ($st === 'Aberto' || $st === 'Open') {
-                    $status_conditions[] = "$table_alias.etapa_id NOT IN (SELECT id FROM etapas_funil WHERE nome LIKE '%Ganho%' OR nome LIKE '%Fechado%' OR nome LIKE '%Perdido%' OR nome LIKE '%Recusada%' OR nome LIKE '%Lost%')";
+                    $status_conditions[] = "$table_alias.etapa_id NOT IN (SELECT id FROM etapas_funil WHERE nome LIKE '%Ganho%' OR nome LIKE '%Fechado%' OR nome LIKE '%Vendido%' OR nome LIKE '%Empenhado%' OR nome LIKE '%Contrato%' OR nome LIKE '%Homologado%' OR nome LIKE '%Faturado%' OR nome LIKE '%Entrega%' OR nome LIKE '%Perdido%' OR nome LIKE '%Recusada%' OR nome LIKE '%Lost%' OR nome LIKE '%Desclassificado%' OR nome LIKE '%Fracassado%')";
                 }
             }
         }

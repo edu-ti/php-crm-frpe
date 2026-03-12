@@ -258,6 +258,38 @@ function handle_get_data($pdo)
     // Buscar produtos do catálogo
     $products = $pdo->query("SELECT * FROM produtos ORDER BY nome_produto ASC")->fetchAll(PDO::FETCH_ASSOC);
 
+    // Buscar Tabelas de Preço (master) com seus itens (detail)
+    $price_table = [];
+    try {
+        $tables = $pdo->query("SELECT * FROM tabela_preco ORDER BY nome_tabela ASC")->fetchAll(PDO::FETCH_ASSOC);
+        $stmt_pi = $pdo->prepare("SELECT * FROM tabela_preco_itens WHERE tabela_preco_id = ? ORDER BY id ASC");
+        foreach ($tables as &$tbl) {
+            $stmt_pi->execute([$tbl['id']]);
+            $tbl['itens'] = $stmt_pi->fetchAll(PDO::FETCH_ASSOC);
+        }
+        $price_table = $tables;
+    } catch (PDOException $e) { /* Tabela pode não existir ainda */ }
+
+    // Buscar Kits com seus itens (agora referenciando tabela_preco_itens)
+    $kits_data = [];
+    try {
+        $kits_rows = $pdo->query("SELECT * FROM kits ORDER BY nome ASC")->fetchAll(PDO::FETCH_ASSOC);
+        $stmt_ki = $pdo->prepare("
+            SELECT ki.id, ki.kit_id, ki.tabela_preco_item_id, ki.quantidade, ki.valor_unitario_snapshot,
+                   tpi.referencia, tpi.descricao, tpi.fabricante,
+                   tp.codigo as tabela_codigo, tp.nome_tabela
+            FROM kit_itens ki
+            INNER JOIN tabela_preco_itens tpi ON tpi.id = ki.tabela_preco_item_id
+            INNER JOIN tabela_preco tp ON tp.id = tpi.tabela_preco_id
+            WHERE ki.kit_id = ? ORDER BY ki.id ASC
+        ");
+        foreach ($kits_rows as &$kit_row) {
+            $stmt_ki->execute([$kit_row['id']]);
+            $kit_row['itens'] = $stmt_ki->fetchAll(PDO::FETCH_ASSOC);
+        }
+        $kits_data = $kits_rows;
+    } catch (PDOException $e) { /* Tabela pode não existir ainda */ }
+
     // --- NOVO: Buscar empenhos e notas fiscais (com Try/Catch caso as tabelas ainda não existam) ---
     $empenhos = [];
     try {
@@ -298,6 +330,8 @@ function handle_get_data($pdo)
         'agendamentos' => $agendamentos,
         'leads' => $leads,
         'products' => $products,
+        'priceTable' => $price_table,
+        'kits' => $kits_data,
         'empenhos' => $empenhos,
         'notas_fiscais' => $notas_fiscais
     ];

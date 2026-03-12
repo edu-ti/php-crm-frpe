@@ -1026,12 +1026,14 @@ function renderSalesTable(group, monthsRange) {
 
     // Calculate Totals per Month (Sum of Users)
     const totals = monthKeys.reduce((acc, monthKey) => {
-        acc[monthKey] = { venda: 0, meta: 0, saldo: 0 };
+        acc[monthKey] = { venda: 0, faturado: 0, meta: 0, saldo: 0 };
         rows.forEach(row => {
-            const cellData = row.dados_mes[monthKey] || { venda: 0, meta: 0 };
+            const cellData = row.dados_mes[monthKey] || { venda: 0, faturado: 0, meta: 0 };
             const venda = parseFloat(cellData.venda) || 0;
+            const faturado = parseFloat(cellData.faturado) || 0;
             const meta = parseFloat(cellData.meta) || 0;
             acc[monthKey].venda += venda;
+            acc[monthKey].faturado += faturado;
             // If user targets enabled, sum them up. Else we'll handle meta differently in display (use global)
             acc[monthKey].meta += meta;
             acc[monthKey].saldo += (venda - meta);
@@ -1045,24 +1047,40 @@ function renderSalesTable(group, monthsRange) {
     ).join('');
 
     // Body
-    const tableBody = rows.map(row => {
-        let rowVenda = 0, rowMeta = 0;
+    const tableBody = rows.filter(row => {
+        // Hide rows with no sales/NF if filters like Client, UF, etc. are active
+        const filterActive = (document.getElementById('client-select-btn')?.innerText.trim() !== 'Todos os Clientes') ||
+            (document.getElementById('uf-select-btn')?.innerText.trim() !== 'Todos os Estados') ||
+            (document.getElementById('status-select-btn')?.innerText.trim() !== 'Todos os Status') ||
+            (document.getElementById('origem-select-btn')?.innerText.trim() !== 'Todas as Origens');
+
+        if (!filterActive) return true;
+
+        const hasActivity = monthKeys.some(key => {
+            const d = row.dados_mes[key] || {};
+            return (parseFloat(d.venda) || 0) > 0 || (parseFloat(d.faturado) || 0) > 0;
+        });
+        return hasActivity;
+    }).map(row => {
+        let rowVenda = 0, rowFaturado = 0, rowMeta = 0;
 
         const cells = monthKeys.map(key => {
-            const d = row.dados_mes[key] || { venda: 0, meta: 0 };
+            const d = row.dados_mes[key] || { venda: 0, faturado: 0, meta: 0 };
             const v = parseFloat(d.venda) || 0;
+            const f = parseFloat(d.faturado) || 0;
             const m = parseFloat(d.meta) || 0;
             const s = v - m;
-            rowVenda += v; rowMeta += m;
+            rowVenda += v; rowFaturado += f; rowMeta += m;
 
             const saldoClass = s >= 0 ? 'text-green-600' : 'text-red-600';
             const bgClass = (userTargetsEnabled && m > 0) ? (v >= m ? 'bg-green-50' : 'bg-red-50') : '';
 
             return `
                 <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500 border-r border-gray-200 text-right ${bgClass}">
-                    <div class="font-medium text-gray-900">${v > 0 ? format(v) : '-'}</div>
-                    ${(userTargetsEnabled && m > 0) ? `<div class="text-gray-400 text-[10px]">M: ${format(m)}</div>` : ''}
-                    ${(userTargetsEnabled && m > 0) ? `<div class="${saldoClass} font-bold border-t border-gray-100 mt-1 pt-1 text-[10px]">S: ${format(s)}</div>` : ''}
+                    <div class="font-medium text-gray-900" title="Vendas">${v > 0 ? format(v) : '-'}</div>
+                    ${f > 0 ? `<div class="text-indigo-600 font-bold text-[10px]" title="Faturado (NF)">F: ${format(f)}</div>` : ''}
+                    ${(userTargetsEnabled && m > 0) ? `<div class="text-gray-400 text-[10px]" title="Meta">M: ${format(m)}</div>` : ''}
+                    ${(userTargetsEnabled && m > 0) ? `<div class="${saldoClass} font-bold border-t border-gray-100 mt-1 pt-1 text-[10px]" title="Saldo (Venda - Meta)">S: ${format(s)}</div>` : ''}
                 </td>
             `;
         }).join('');
@@ -1077,9 +1095,10 @@ function renderSalesTable(group, monthsRange) {
                 </td>
                 ${cells}
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-right bg-gray-50 font-bold border-l border-gray-200">
-                    <div>${format(rowVenda)}</div>
-                    ${userTargetsEnabled ? `<div class="text-[10px] text-gray-500">M: ${format(rowMeta)}</div>` : ''}
-                    ${userTargetsEnabled ? `<div class="${rowSaldoClass} text-[10px] border-t border-gray-200 pt-1">S: ${format(rowSaldo)}</div>` : ''}
+                    <div title="Total Vendas">${format(rowVenda)}</div>
+                    ${rowFaturado > 0 ? `<div class="text-indigo-600 text-[10px]" title="Total Faturado">F: ${format(rowFaturado)}</div>` : ''}
+                    ${userTargetsEnabled ? `<div class="text-[10px] text-gray-500" title="Total Meta">M: ${format(rowMeta)}</div>` : ''}
+                    ${userTargetsEnabled ? `<div class="${rowSaldoClass} text-[10px] border-t border-gray-200 pt-1" title="Saldo Acumulado">S: ${format(rowSaldo)}</div>` : ''}
                 </td>
             </tr>
         `;
@@ -1091,12 +1110,14 @@ function renderSalesTable(group, monthsRange) {
         // If targets disabled, use supplier global meta monthly divided or just flat?
         // Usually global meta is monthly.
         const metaVal = userTargetsEnabled ? t.meta : supplierMetaMensal;
+        const faturadoVal = t.faturado;
         const saldoVal = t.venda - metaVal;
 
         const sClass = saldoVal >= 0 ? 'text-green-600' : 'text-red-600';
         return `
             <td class="px-2 py-3 whitespace-nowrap text-xs text-right font-bold bg-gray-100 border-r border-gray-200">
                 <div>${format(t.venda)}</div>
+                ${faturadoVal > 0 ? `<div class="text-indigo-600 text-[10px]">F: ${format(faturadoVal)}</div>` : ''}
                 <div class="text-gray-500 text-[10px]">${format(metaVal)}</div>
                 <div class="${sClass} text-[10px]">${format(saldoVal)}</div>
             </td>
@@ -1117,6 +1138,7 @@ function renderSalesTable(group, monthsRange) {
     const factoryTotalCells = monthKeys.map(key => {
         const t = totals[key];
         const v = t.venda || 0;
+        const f = t.faturado || 0;
         const m = factoryMetaMensal;
         const s = v - m;
 
@@ -1125,14 +1147,16 @@ function renderSalesTable(group, monthsRange) {
 
         return `
             <td class="px-2 py-3 whitespace-nowrap text-xs text-right font-bold border-r border-gray-200 ${bgClass}">
-                <div class="text-blue-900 text-sm">${format(v)}</div>
-                ${m > 0 ? `<div class="text-gray-500 text-[10px]">M: ${format(m)}</div>` : ''}
-                ${m > 0 ? `<div class="${sClass} text-[10px] border-t border-gray-200 pt-1 mt-1">S: ${format(s)}</div>` : ''}
+                <div class="text-blue-900 text-sm" title="Total Vendas">${format(v)}</div>
+                ${f > 0 ? `<div class="text-indigo-700 font-bold text-[10px]" title="Total Faturado">F: ${format(f)}</div>` : ''}
+                ${m > 0 ? `<div class="text-gray-500 text-[10px]" title="Meta Fábrica">M: ${format(m)}</div>` : ''}
+                ${m > 0 ? `<div class="${sClass} text-[10px] border-t border-gray-200 pt-1 mt-1" title="Saldo Vendas meta">S: ${format(s)}</div>` : ''}
             </td>
         `;
     }).join('');
 
     const factoryGrandVenda = Object.values(totals).reduce((a, b) => a + b.venda, 0);
+    const factoryGrandFaturado = Object.values(totals).reduce((a, b) => a + b.faturado, 0);
     const factoryGrandMeta = factoryMetaMensal * numMonths;
     const factoryGrandSaldo = factoryGrandVenda - factoryGrandMeta;
     const factoryGrandSaldoClass = factoryGrandSaldo >= 0 ? 'text-green-600' : 'text-red-600';
@@ -1145,6 +1169,7 @@ function renderSalesTable(group, monthsRange) {
             ${factoryTotalCells}
             <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold bg-blue-200 border-l border-gray-200">
                 <div class="text-blue-900 text-sm">${format(factoryGrandVenda)}</div>
+                ${factoryGrandFaturado > 0 ? `<div class="text-indigo-700 text-[10px]">F: ${format(factoryGrandFaturado)}</div>` : ''}
                 ${factoryGrandMeta > 0 ? `<div class="text-gray-600 text-[10px]">M: ${format(factoryGrandMeta)}</div>` : ''}
                 ${factoryGrandMeta > 0 ? `<div class="${factoryGrandSaldoClass} text-[10px] border-t border-blue-300 pt-1 mt-1">S: ${format(factoryGrandSaldo)}</div>` : ''}
             </td>
@@ -1169,6 +1194,7 @@ function renderSalesTable(group, monthsRange) {
                         ${totalsCells}
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold bg-gray-200 border-l border-gray-200">
                             <div>${format(grandVenda)}</div>
+                            ${factoryGrandFaturado > 0 ? `<div class="text-indigo-700 text-[10px]">F: ${format(factoryGrandFaturado)}</div>` : ''}
                             <div class="text-gray-500 text-[10px]">${format(grandMeta)}</div>
                             <div class="${grandSaldoClass} text-[10px]">${format(grandSaldo)}</div>
                         </td>

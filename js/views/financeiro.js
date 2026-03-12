@@ -1250,19 +1250,9 @@ window.openAddNotaFiscalModal = async function (editId = null) {
             }
             modalItems = mapToFlat(parsed, 'nf');
             initialRenderDone = true;
-        } else if (empenhoId) {
-            const emp = empenhosContrato.find(e => e.id == empenhoId);
-            let parsed = [];
-            if (emp && emp.itens) {
-                try { parsed = typeof emp.itens === 'string' ? JSON.parse(emp.itens) : emp.itens; } catch (e) { }
-            }
-            modalItems = mapToFlat(parsed, 'empenho');
-        } else {
-            if (oppWithItems && oppWithItems.items && oppWithItems.items.length > 0) {
-                modalItems = mapToFlat(oppWithItems.items, 'contract');
-            } else {
-                modalItems = [];
-            }
+        } else if (!nfToEdit) {
+            // CRIAÇÃO: A pedido do usuário, itens NÃO são puxados do empenho/contrato mais. Inicia vazio para inserção manual.
+            modalItems = [];
         }
         renderItemsTable();
     };
@@ -1301,8 +1291,24 @@ window.openAddNotaFiscalModal = async function (editId = null) {
             </div>
 
             <!-- Tabela de Itens da NF -->
-            <div class="mt-4 border border-gray-200 rounded-lg overflow-hidden flex flex-col">
-                <div class="overflow-x-auto">
+            <div class="mt-4 border border-gray-200 rounded-lg flex flex-col bg-white">
+                
+                <div class="bg-blue-50/50 p-3 border-b border-gray-200 relative group/global-desc z-[60]">
+                    <label class="form-label text-xs font-bold text-[#002f5c] mb-1 block">Pesquisar e Adicionar Novo Item (Catálogo/Tabelas/Kits)</label>
+                    <div class="relative w-full">
+                        <input type="text" id="global-nf-search" class="w-full border border-gray-300 focus:border-[#002f5c] focus:ring-1 focus:ring-[#002f5c] rounded px-3 py-2 bg-white text-sm shadow-sm transition-all" 
+                            placeholder="Pesquisar por nome do produto, fabricante, tabela de preços, código ou kit..."
+                            oninput="window.filterNfCatalogGlobal(this.value)">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                    </div>
+                    <div id="global-cat-drop" class="hidden absolute top-[calc(100%+4px)] left-0 right-0 max-h-[350px] overflow-y-auto bg-white border border-gray-200 shadow-2xl rounded z-[100]">
+                        <!-- Ajax results for global search -->
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto min-h-[300px]">
                     <table class="w-full text-left bg-white text-xs whitespace-nowrap">
                         <thead class="bg-gray-100 text-gray-600 border-b">
                             <tr>
@@ -1338,19 +1344,6 @@ window.openAddNotaFiscalModal = async function (editId = null) {
         </form>
     `;
 
-    const getCatalogOptions = (filter = '') => {
-        return (appState.products || [])
-            .filter(p => p.nome_produto.toLowerCase().includes(filter.toLowerCase()) || (p.fabricante || '').toLowerCase().includes(filter.toLowerCase()))
-            .slice(0, 100) // Limit to avoid performance issues
-            .map(p => {
-                const safeName = p.nome_produto.replace(/"/g, '&quot;');
-                const safeFab = (p.fabricante || '').replace(/"/g, '&quot;');
-                return `<div class="p-2 hover:bg-blue-50 cursor-pointer border-b last:border-0 text-[11px]" onclick="window.selectNfItemCatalog(${idx}, ${p.id}, '${safeName}', '${safeFab}', '${p.unidade_medida || 'UN'}', ${p.valor_unitario || 0})">
-                    <div class="font-bold text-gray-800">${safeName}</div>
-                    <div class="text-gray-500 text-[10px]">${safeFab}</div>
-                </div>`;
-            }).join('');
-    };
 
     const renderItemsTable = () => {
         const tbody = document.getElementById('nf-items-tbody');
@@ -1381,21 +1374,10 @@ window.openAddNotaFiscalModal = async function (editId = null) {
                         <input type="text" class="w-full border border-transparent group-hover:border-gray-300 focus:border-blue-500 rounded px-2 py-1 bg-transparent group-hover:bg-white transition-all text-center" value="${it.item_empenho || ''}" onchange="window.updateNfItem(${idx}, 'item_empenho', this.value)" placeholder="Item">
                     </td>
                     <td class="p-1.5 align-middle">
-                        <div class="flex items-center gap-1 group/desc relative">
-                            <div class="relative w-full">
-                                <input type="text" id="nf-item-desc-${idx}" class="w-full border border-transparent group-hover:border-gray-300 focus:border-blue-500 rounded px-2 py-1 bg-transparent group-hover:bg-white transition-all text-xs pr-7" 
-                                    value="${safeDesc}" 
-                                    onchange="window.updateNfItem(${idx}, 'descricao', this.value)" 
-                                    oninput="window.filterNfCatalog(${idx}, this.value)"
-                                    placeholder="Descrição do item">
-                                <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                    <i class="fas fa-search text-gray-300 text-[10px]"></i>
-                                </div>
-                            </div>
-                            <div id="cat-drop-${idx}" class="hidden absolute top-full left-0 mt-1 w-[400px] max-h-[250px] overflow-y-auto bg-white border border-gray-200 shadow-xl rounded z-50">
-                                <!-- Ajax results -->
-                            </div>
-                        </div>
+                        <input type="text" id="nf-item-desc-${idx}" class="w-full border border-transparent group-hover:border-gray-300 focus:border-blue-500 rounded px-2 py-1 bg-transparent group-hover:bg-white transition-all text-xs" 
+                            value="${safeDesc}" 
+                            onchange="window.updateNfItem(${idx}, 'descricao', this.value)" 
+                            placeholder="Descrição do item">
                     </td>
                     <td class="p-1.5">
                         <input type="text" class="w-full border border-transparent group-hover:border-gray-300 focus:border-blue-500 rounded px-2 py-1 text-center bg-transparent group-hover:bg-white transition-all" value="${it.unidade || ''}" onchange="window.updateNfItem(${idx}, 'unidade', this.value)">
@@ -1475,8 +1457,8 @@ window.openAddNotaFiscalModal = async function (editId = null) {
         renderItemsTable();
     };
 
-    window.filterNfCatalog = (idx, filter) => {
-        const drop = document.getElementById(`cat-drop-${idx}`);
+    window.filterNfCatalogGlobal = (filter) => {
+        const drop = document.getElementById('global-cat-drop');
         if (!drop) return;
 
         if (filter.length < 2) {
@@ -1484,17 +1466,22 @@ window.openAddNotaFiscalModal = async function (editId = null) {
             return;
         }
 
-        const options = (appState.products || [])
-            .filter(p => p.nome_produto.toLowerCase().includes(filter.toLowerCase()) || (p.fabricante || '').toLowerCase().includes(filter.toLowerCase()))
-            .slice(0, 50);
+        const term = filter.toLowerCase();
+        let optionsHtml = '';
+        let foundAny = false;
 
-        if (options.length === 0) {
-            drop.innerHTML = '<div class="p-4 text-center text-gray-400 text-xs">Nenhum produto encontrado no catálogo.</div>';
-        } else {
-            drop.innerHTML = options.map(p => {
-                const safeName = p.nome_produto.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-                const safeFab = (p.fabricante || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
-                return `<div class="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 text-[11px] group/item transition-colors" onclick="window.selectNfItemCatalog(${idx}, ${p.id}, '${safeName}', '${safeFab}', '${p.unidade_medida || 'UN'}', ${p.valor_unitario || 0})">
+        // 1. Produtos
+        const produtos = (appState.products || [])
+            .filter(p => p.nome_produto.toLowerCase().includes(term) || (p.fabricante || '').toLowerCase().includes(term))
+            .slice(0, 15);
+            
+        if (produtos.length > 0) {
+            foundAny = true;
+            optionsHtml += '<div class="bg-gray-100 px-3 py-1 text-[10px] font-bold text-gray-500 uppercase">Produtos</div>';
+            optionsHtml += produtos.map(p => {
+                const encName = encodeURIComponent(p.nome_produto || '');
+                const encFab = encodeURIComponent(p.fabricante || '');
+                return `<div class="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 text-xs group/item transition-colors" onclick="window.selectNfItemCatalogGlobal('produto', ${p.id}, '${encName}', '${encFab}', '${p.unidade_medida || 'UN'}', ${p.valor_unitario || 0})">
                     <div class="font-bold text-gray-800 group-hover/item:text-blue-700">${p.nome_produto}</div>
                     <div class="text-gray-500 text-[10px] mt-0.5 flex justify-between">
                         <span>${p.fabricante || 'Fabricante N/D'}</span>
@@ -1504,29 +1491,142 @@ window.openAddNotaFiscalModal = async function (editId = null) {
             }).join('');
         }
 
-        // Hide other drops
-        document.querySelectorAll('[id^="cat-drop-"]').forEach(el => {
-            if (el !== drop) el.classList.add('hidden');
+        // 2. Tabela de Preços (master-detail)
+        let priceItems = [];
+        (appState.priceTable || []).forEach(master => {
+            if (master.itens) {
+                const arr = Array.isArray(master.itens) ? master.itens : JSON.parse(master.itens || '[]');
+                const matches = arr.filter(i => (i.descricao || '').toLowerCase().includes(term) || 
+                                                (i.fabricante || '').toLowerCase().includes(term) || 
+                                                (i.referencia || '').toLowerCase().includes(term) || 
+                                                (master.nome_tabela || '').toLowerCase().includes(term));
+                matches.forEach(m => priceItems.push({ ...m, nome_tabela: master.nome_tabela }));
+            }
         });
+        priceItems = priceItems.slice(0, 15);
+        
+        if (priceItems.length > 0) {
+            foundAny = true;
+            optionsHtml += '<div class="bg-blue-50 px-3 py-1 text-[10px] font-bold text-blue-600 uppercase border-y border-blue-100">Itens - Tabela de Preço</div>';
+            optionsHtml += priceItems.map(p => {
+                const encName = encodeURIComponent(p.descricao || '');
+                const encFab = encodeURIComponent(p.fabricante || '');
+                const un = p.unidade || 'UN'; // if not present, default to UN
+                return `<div class="p-3 hover:bg-blue-100 cursor-pointer border-b border-blue-50 last:border-0 text-xs group/item transition-colors" onclick="window.selectNfItemCatalogGlobal('tabela', ${p.id}, '${encName}', '${encFab}', '${un}', ${p.valor_unitario || 0})">
+                    <div class="font-bold text-blue-900 group-hover/item:text-blue-700">${p.descricao}</div>
+                    <div class="text-blue-600 text-[10px] mb-0.5">Tabela: ${p.nome_tabela} ${p.referencia ? '| Ref: '+p.referencia : ''}</div>
+                    <div class="text-gray-500 text-[10px] mt-0.5 flex justify-between">
+                        <span>${p.fabricante || 'Fabricante N/D'}</span>
+                        <span class="font-bold text-blue-700">${formatCurrency(p.valor_unitario)}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // 3. Kits
+        const kits = (appState.kits || [])
+            .filter(k => (k.nome || '').toLowerCase().includes(term) || (k.id + '').includes(term))
+            .slice(0, 10);
+            
+        if (kits.length > 0) {
+            foundAny = true;
+            optionsHtml += '<div class="bg-purple-100 px-3 py-1 text-[10px] font-bold text-purple-700 uppercase border-y border-purple-200">Kits / Conjuntos</div>';
+            optionsHtml += kits.map(k => {
+                const numItens = k.itens ? (Array.isArray(k.itens) ? k.itens.length : JSON.parse(k.itens).length) : 0;
+                // escape payload to add entire kit at once
+                const b64Kit = btoa(encodeURIComponent(JSON.stringify(k)));
+                return `<div class="p-3 hover:bg-purple-50 cursor-pointer border-b border-purple-100 last:border-0 text-xs group/item transition-colors" onclick="window.selectNfItemCatalogGlobal('kit', '${b64Kit}')">
+                    <div class="font-bold text-purple-900 group-hover/item:text-purple-700">📦 ${k.nome}</div>
+                    <div class="text-purple-600 text-[10px] mt-0.5 flex justify-between font-medium">
+                        <span>Contém ${numItens} item(ns)</span>
+                        <span class="font-bold">${formatCurrency(k.valor_total)}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        if (!foundAny) {
+            drop.innerHTML = '<div class="p-4 text-center text-gray-400 text-sm">Nenhum resultado encontrado para a sua pesquisa.</div>';
+        } else {
+            drop.innerHTML = optionsHtml;
+        }
+
         drop.classList.remove('hidden');
     };
 
-    window.selectNfItemCatalog = (idx, prodId, name, fab, un, val) => {
-        const drop = document.getElementById(`cat-drop-${idx}`);
+    window.selectNfItemCatalogGlobal = (type, arg1, arg2, arg3, arg4, arg5) => {
+        const drop = document.getElementById('global-cat-drop');
+        const input = document.getElementById('global-nf-search');
         if (drop) drop.classList.add('hidden');
+        if (input) {
+            input.value = ''; // Limpar a pesquisa
+        }
 
-        modalItems[idx].produto_id = prodId;
-        modalItems[idx].descricao = name;
-        modalItems[idx].fornecedor = fab;
-        modalItems[idx].unidade = un;
-        modalItems[idx].valor_unitario = val;
+        if (type === 'kit') {
+            const b64Kit = arg1;
+            const kit = JSON.parse(decodeURIComponent(atob(b64Kit)));
+            const itensKit = Array.isArray(kit.itens) ? kit.itens : JSON.parse(kit.itens || '[]');
+            
+            if (itensKit.length === 0) return;
+            
+            // Adiciona todas as linhas do kit
+            for (let i = 0; i < itensKit.length; i++) {
+                const kIt = itensKit[i];
+                modalItems.push({
+                    _uid: generateId(),
+                    fornecedor: kIt.fabricante || '',
+                    lote: '', 
+                    item_empenho: '',
+                    descricao: kIt.descricao,
+                    unidade: 'UN',
+                    qtd_empenhada: parseInt(kIt.quantidade || 1, 10),
+                    qtd_faturada: parseInt(kIt.quantidade || 1, 10),
+                    valor_unitario: parseFloat(kIt.valor_unitario_snapshot || kIt.valor_unitario || 0),
+                    observacao: '',
+                    produto_id: kIt.tabela_preco_item_id || kIt.id
+                });
+            }
+        } else {
+            // produto ou tabela
+            const prodId = arg1;
+            const name = arg2;
+            const fab = arg3;
+            const un = arg4;
+            const val = arg5;
+
+            modalItems.push({
+                _uid: generateId(),
+                fornecedor: decodeURIComponent(fab),
+                lote: '',
+                item_empenho: '',
+                descricao: decodeURIComponent(name),
+                unidade: un,
+                qtd_empenhada: 1,
+                qtd_faturada: 1,
+                valor_unitario: val,
+                observacao: '',
+                produto_id: prodId
+            });
+        }
+
+        // Scroll to the bottom of the table to show the nested items
+        setTimeout(() => {
+            const tbody = document.getElementById('nf-items-tbody');
+            if (tbody && tbody.parentElement) {
+                const container = tbody.closest('.overflow-x-auto');
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            }
+        }, 50);
 
         renderItemsTable();
     };
 
     document.addEventListener('mousedown', (e) => {
-        if (!e.target.closest('.group\\/desc')) {
-            document.querySelectorAll('[id^="cat-drop-"]').forEach(el => el.classList.add('hidden'));
+        if (!e.target.closest('.group\\/global-desc')) {
+            const drop = document.getElementById('global-cat-drop');
+            if (drop) drop.classList.add('hidden');
         }
     });
 
@@ -1587,9 +1687,12 @@ window.openAddNotaFiscalModal = async function (editId = null) {
         }
 
         const selEmpenho = document.getElementById('nf-empenho-id');
-        if (selEmpenho) {
-            selEmpenho.addEventListener('change', (e) => loadItemsFromSource(e.target.value));
-            loadItemsFromSource(selEmpenho.value);
+        if (nfToEdit) {
+            // Se for edição carrega o que tem salvo nela (id da propria NF passa pro load)
+            loadItemsFromSource(null);
+        } else {
+            // Criação: Inicia vazio, independente do empenho do Select
+            loadItemsFromSource(null);
         }
     }, 100);
 };
