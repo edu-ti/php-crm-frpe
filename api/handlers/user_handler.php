@@ -89,9 +89,32 @@ function handle_delete_user($pdo, $data)
         json_response(['success' => false, 'error' => 'Você não pode excluir sua própria conta.'], 400);
     }
 
-    $stmt = $pdo->prepare("DELETE FROM usuarios WHERE id = ?");
-    $success = $stmt->execute([$data['id']]);
+    try {
+        $stmt = $pdo->prepare("DELETE FROM usuarios WHERE id = ?");
+        $success = $stmt->execute([$data['id']]);
+        json_response(['success' => true, 'message' => 'Usuário excluído com sucesso.']);
+    } catch (PDOException $e) {
+        // Erro 23000: Violação de restrição de integridade (possui vínculos)
+        if ($e->getCode() == '23000') {
+            try {
+                $stmt = $pdo->prepare("UPDATE usuarios SET status = 'Inativo' WHERE id = ?");
+                $stmt->execute([$data['id']]);
 
-    json_response(['success' => $success]);
+                // Retornar usuário atualizado para o frontend refletir a mudança
+                $stmt_updated = $pdo->prepare("SELECT id, nome, email, telefone, cargo, role, status FROM usuarios WHERE id = ?");
+                $stmt_updated->execute([$data['id']]);
+                
+                json_response([
+                    'success' => true,
+                    'message' => 'O usuário possui registros vinculados e não pôde ser excluído permanentemente. Por segurança, ele foi DESATIVADO.',
+                    'user' => $stmt_updated->fetch(PDO::FETCH_ASSOC)
+                ]);
+            } catch (PDOException $ex) {
+                json_response(['success' => false, 'error' => 'Erro ao desativar usuário: ' . $ex->getMessage()], 500);
+            }
+        } else {
+            json_response(['success' => false, 'error' => 'Erro ao excluir usuário: ' . $e->getMessage()], 500);
+        }
+    }
 }
 
