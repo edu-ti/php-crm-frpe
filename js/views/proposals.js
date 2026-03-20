@@ -330,7 +330,7 @@ function renderProposalsList() {
                         <tr class="responsive-table-row">
                             <td data-label="Nº" class="table-cell font-medium">${p.numero_proposta || 'N/A'}</td>
                             <td data-label="Data" class="table-cell">${formatDate(p.data_criacao)}</td>
-                            <td data-label="Cliente" class="table-cell">${p.organizacao_nome || p.cliente_pf_nome || 'N/A'}</td>
+                            <td data-label="Cliente" class="table-cell whitespace-normal min-w-[200px]">${p.organizacao_nome || p.cliente_pf_nome || 'N/A'}</td>
                             <td data-label="Contato" class="table-cell">${contactName}</td>
                             <td data-label="CNPJ/CPF" class="table-cell">${p.cnpj || p.cpf || 'N/A'}</td>
                             <td data-label="Valor" class="table-cell">${formatCurrency(p.valor_total)}</td>
