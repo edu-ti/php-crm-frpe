@@ -20,10 +20,10 @@ class PDFReport extends FPDF {
     }
     
     function BasicTable($header, $data) {
-        $this->SetFillColor(220, 38, 38); // Tailwind Red 600
+        $this->SetFillColor(79, 70, 229); // Indigo 600
         $this->SetTextColor(255);
-        $this->SetDrawColor(209, 213, 219);
-        $this->SetLineWidth(.3);
+        $this->SetDrawColor(229, 231, 235);
+        $this->SetLineWidth(.1);
         $this->SetFont('Arial', 'B', 10);
         
         // Count columns and dynamically set width to sum ~ 190 (A4 with 10mm margins = 210-20=190)
@@ -209,22 +209,38 @@ function handle_export_pdf($pdo, $request_data) {
                 }
                 $pdf->BasicTable($header, $tableData);
             }
-        } elseif ($type === 'forecast') {
-            $header = ['Referencia (Mes)', 'Pipeline Pleno (Sem Fator)', 'Forecast Projetado'];
-            $tableData = [];
-            $totalPipeline = 0;
-            $totalForecast = 0;
-            foreach ($data as $r) {
-                $tableData[] = [
-                    $r['mes'], 
-                    'R$ ' . number_format($r['pipeline_total'], 2, ',', '.'),
-                    'R$ ' . number_format($r['forecast_ponderado'], 2, ',', '.')
-                ];
-                $totalPipeline += $r['pipeline_total'];
-                $totalForecast += $r['forecast_ponderado'];
-            }
-            $tableData[] = ['TOTALIZADO', 'R$ ' . number_format($totalPipeline, 2, ',', '.'), 'R$ ' . number_format($totalForecast, 2, ',', '.')];
             $pdf->BasicTable($header, $tableData);
+        } elseif ($type === 'performance') {
+            $month = $_GET['month'] ?? date('Y-m');
+            $header = ['Colaborador', 'Fixo', 'Meta', 'Vendas', '% At.', 'Comiss.', 'Total'];
+            
+            // Get data from handler directly to ensure consistency
+            $start = $month . '-01';
+            $lastDay = date('t', strtotime($start));
+            $end = $month . '-' . $lastDay;
+            
+            // Correct class instantiation and call
+            $handler = new ReportHandler();
+            $response = $handler->getCommissionAnalysis($start, $end, true);
+            
+            if ($response['success']) {
+                $tableData = [];
+                foreach ($response['data'] as $r) {
+                    $tableData[] = [
+                        $r['nome'],
+                        'R$ ' . number_format($r['valor_fixo'], 0, ',', '.'),
+                        'R$ ' . number_format($r['meta_mensal'], 0, ',', '.'),
+                        'R$ ' . number_format($r['total_vendas'], 0, ',', '.'),
+                        number_format($r['atingimento'], 1) . '%',
+                        'R$ ' . number_format($r['comissao_valor'], 0, ',', '.'),
+                        'R$ ' . number_format($r['total_periodo'], 0, ',', '.')
+                    ];
+                }
+                $pdf->BasicTable($header, $tableData);
+            } else {
+                 $pdf->SetFont('Arial', 'I', 12);
+                 $pdf->Cell(0, 10, utf8_decode('Erro ao carregar dados de performance.'), 0, 1, 'C');
+            }
         } else {
             $pdf->Cell(0, 10, utf8_decode('Este formato de relatório ainda não possui template PDF detalhado.'), 0, 1);
         }

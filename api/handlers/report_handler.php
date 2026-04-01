@@ -49,6 +49,15 @@ class ReportHandler
             case 'forecast':
                 $this->getForecastReport($startDate, $endDate);
                 break;
+            case 'bi_kpis':
+                $this->getKPISummary($startDate, $endDate);
+                break;
+            case 'sales_vs_goals':
+                $this->getSalesVsGoalsData($startDate, $endDate);
+                break;
+            case 'commission_analysis':
+                $this->getCommissionAnalysis($startDate, $endDate);
+                break;
             default:
                 http_response_code(400);
                 echo json_encode(['error' => 'Invalid action']);
@@ -310,6 +319,185 @@ class ReportHandler
             ]);
 
         } catch (Exception $e) {
+            $this->sendError($e);
+        }
+    }
+
+    private function getKPISummary($start, $end)
+    {
+        try {
+            $year = date('Y', strtotime($start));
+            
+            // Total Vendido (Aprovado) - Propostas Aprovadas + Vendas Fornecedores
+            $sqlSales = "SELECT SUM(total) as total FROM (
+                            SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
+                            WHERE status = 'Aprovada' AND YEAR(data_criacao) = :year
+                            UNION ALL
+                            SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores 
+                            WHERE YEAR(data_venda) = :year
+                         ) as sales";
+            $stmtSales = $this->db->prepare($sqlSales);
+            $stmtSales->execute([':year' => $year]);
+            $totalSales = $stmtSales->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Vendas Perdidas (Propostas Recusadas)
+            $sqlLost = "SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
+                        WHERE status = 'Recusada' AND YEAR(data_criacao) = :year";
+            $stmtLost = $this->db->prepare($sqlLost);
+            $stmtLost->execute([':year' => $year]);
+            $lostSales = $stmtLost->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Licitações Ativas (Funil ID 9 e status não final)
+            $sqlBids = "SELECT COUNT(*) as total FROM oportunidades o
+                        JOIN etapas_funil ef ON o.etapa_id = ef.id
+                        WHERE ef.funil_id = 9 AND ef.nome NOT IN ('Perdido', 'Fracassado', 'Concluído', 'Aprovado')";
+            $stmtBids = $this->db->prepare($sqlBids);
+            $stmtBids->execute();
+            $activeBids = $stmtBids->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Vendas do Mês Atual (Aprovadas)
+            $month = date('m', strtotime($start));
+            $sqlMonth = "SELECT SUM(total) as total FROM (
+                            SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
+                            WHERE status = 'Aprovada' AND MONTH(data_criacao) = :month AND YEAR(data_criacao) = :year
+                            UNION ALL
+                            SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores 
+                            WHERE MONTH(data_venda) = :month AND YEAR(data_venda) = :year
+                         ) as month_sales";
+            $stmtMonth = $this->db->prepare($sqlMonth);
+            $stmtMonth->execute([':month' => $month, ':year' => $year]);
+            $monthSales = $stmtMonth->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+            // Vendas por Vendedor (Ano Atual - Top 5)
+            $sqlByVendedor = "SELECT COALESCE(u.nome, 'Outros') as vendedor, SUM(total) as total FROM (
+                                SELECT usuario_id, SUM(valor_total) as total FROM propostas 
+                                WHERE status = 'Aprovada' AND YEAR(data_criacao) = :year GROUP BY usuario_id
+                                UNION ALL
+                                SELECT usuario_id, SUM(valor_total) FROM vendas_fornecedores 
+                                WHERE YEAR(data_venda) = :year GROUP BY usuario_id
+                             ) as vendedor_sales
+                             LEFT JOIN usuarios u ON vendedor_sales.usuario_id = u.id
+                             GROUP BY vendedor ORDER BY total DESC LIMIT 5";
+            $stmtByVel = $this->db->prepare($sqlByVendedor);
+            $stmtByVel->execute([':year' => $year]);
+            $salesByVendedor = $stmtByVel->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'success' => true,
+                'total_sales' => (float)$totalSales,
+                'lost_sales' => (float)$lostSales,
+                'active_bids' => (int)$activeBids,
+                'month_sales' => (float)$monthSales,
+                'sales_by_vendedor' => $salesByVendedor,
+                'year' => $year
+            ]);
+        } catch (Exception $e) {
+            $this->sendError($e);
+        }
+    }
+
+    private function getSalesVsGoalsData($start, $end)
+    {
+        try {
+            $year = date('Y', strtotime($start));
+            
+            // Monthly Sales
+            $sqlSales = "SELECT MONTH(dt) as mes, SUM(val) as total FROM (
+                            SELECT data_criacao as dt, valor_total as val FROM propostas WHERE status = 'Aprovada' AND YEAR(data_criacao) = :year
+                            UNION ALL
+                            SELECT data_venda as dt, valor_total as val FROM vendas_fornecedores WHERE YEAR(data_venda) = :year
+                         ) as combined GROUP BY mes";
+            $stmtSales = $this->db->prepare($sqlSales);
+            $stmtSales->execute([':year' => $year]);
+            $sales = $stmtSales->fetchAll(PDO::FETCH_KEY_PAIR);
+
+            // Monthly Goals (Sum of all supplier goals for that year)
+            // Note: Simplification here, we take meta_mensal_json if exists, or meta_mensal
+            $sqlGoals = "SELECT meta_mensal, meta_mensal_json FROM fornecedor_metas WHERE ano = :year";
+            $stmtGoals = $this->db->prepare($sqlGoals);
+            $stmtGoals->execute([':year' => $year]);
+            $goalsRaw = $stmtGoals->fetchAll(PDO::FETCH_ASSOC);
+
+            $monthlyGoals = array_fill(1, 12, 0);
+            foreach ($goalsRaw as $g) {
+                if (!empty($g['meta_mensal_json'])) {
+                    $json = json_decode($g['meta_mensal_json'], true);
+                    for ($m = 1; $m <= 12; $m++) {
+                        $monthlyGoals[$m] += (float)($json[$m] ?? 0);
+                    }
+                } else {
+                    for ($m = 1; $m <= 12; $m++) {
+                        $monthlyGoals[$m] += (float)($g['meta_mensal'] ?? 0);
+                    }
+                }
+            }
+
+            $labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            $salesData = [];
+            $goalsData = [];
+
+            for ($m = 1; $m <= 12; $m++) {
+                $salesData[] = (float)($sales[$m] ?? 0);
+                $goalsData[] = (float)($monthlyGoals[$m] ?? 0);
+            }
+
+            echo json_encode([
+                'success' => true,
+                'labels' => $labels,
+                'sales' => $salesData,
+                'goals' => $goalsData
+            ]);
+        } catch (Exception $e) {
+            $this->sendError($e);
+        }
+    }
+
+    public function getCommissionAnalysis($start, $end, $return = false)
+    {
+        try {
+            // Fetch users with their financial settings
+            $sql = "SELECT 
+                        u.id as usuario_id, 
+                        u.nome,
+                        COALESCE(uf.valor_fixo, 0) as valor_fixo,
+                        COALESCE(uf.percentual_comissao, 1.00) as percentual_comissao,
+                        COALESCE(uf.valor_trimestre, 0) as valor_trimestre,
+                        (SELECT COALESCE(SUM(valor_total), 0) FROM propostas WHERE usuario_id = u.id AND status = 'Aprovada' AND data_criacao BETWEEN :start AND :end) +
+                        (SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores WHERE usuario_id = u.id AND data_venda BETWEEN :start AND :end) as total_vendas,
+                        (SELECT COALESCE(SUM(valor_meta), 0) FROM vendas_objetivos WHERE usuario_id = u.id AND (mes = MONTH(:start) OR mes = 0) AND ano = YEAR(:start)) as meta_mensal
+                    FROM usuarios u
+                    LEFT JOIN usuarios_financas uf ON u.id = uf.usuario_id
+                    WHERE u.perfil IN ('Vendedor', 'Analista', 'Gestor') AND u.status = 'Ativo'";
+            
+            $stmt = $this->db->prepare($sql);
+            // Garantir que as datas estao no formato correto para o PHP e MySQL
+            $dtStart = date('Y-m-d', strtotime($start)) . ' 00:00:00';
+            $dtEnd = date('Y-m-d', strtotime($end)) . ' 23:59:59';
+            $yearVal = date('Y', strtotime($start));
+            $monthVal = date('n', strtotime($start)); // n = mes sem leading zero
+
+            $stmt->execute([
+                ':start' => $dtStart, 
+                ':end' => $dtEnd
+            ]);
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($data as &$row) {
+                $row['total_vendas'] = (float)$row['total_vendas'];
+                $row['comissao_valor'] = ($row['total_vendas'] * ($row['percentual_comissao'] / 100));
+                $row['total_periodo'] = (float)$row['valor_fixo'] + $row['comissao_valor'];
+                $row['atingimento'] = $row['meta_mensal'] > 0 ? ($row['total_vendas'] / $row['meta_mensal']) * 100 : 0;
+            }
+
+            $result = [
+                'success' => true,
+                'data' => $data
+            ];
+
+            if ($return) return $result;
+            echo json_encode($result);
+        } catch (Exception $e) {
+            if ($return) return ['success' => false, 'error' => $e->getMessage()];
             $this->sendError($e);
         }
     }

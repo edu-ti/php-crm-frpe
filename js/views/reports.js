@@ -6,301 +6,572 @@ let chartInstance = null;
 
 export async function renderReportsView(state) {
     if (state) appState = state;
-    const minDate = new Date().toISOString().split('T')[0];
     const currentYear = new Date().getFullYear();
-    const startDefault = `${currentYear}-01`;
-    const endDefault = `${currentYear}-12`;
+    const currentUser = appState.currentUser || {};
+    const isAdminOrAnalyst = ['Gestor', 'Analista', 'Admin'].includes(currentUser.role);
 
     const viewContainer = document.getElementById('reports-view');
     viewContainer.innerHTML = `
-        <div class="flex flex-col">
-            <!-- KPI Cards Section -->
-            <div id="kpi-cards-container" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 no-print">
-                <!-- Card 1: Vendas no Ano -->
-                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="text-xs text-gray-500 font-bold uppercase">Vendas no Ano (${currentYear})</p>
-                            <p id="kpi-total-sales" class="text-2xl font-bold text-gray-800">R$ 0,00</p>
-                        </div>
-                        <div class="bg-green-100 p-2 rounded-full text-green-600">
-                            <i class="fas fa-dollar-sign text-xl"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Card 2: Vendas Perdidas -->
-                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="text-xs text-gray-500 font-bold uppercase">Vendas Perdidas (${currentYear})</p>
-                            <p id="kpi-lost-sales" class="text-2xl font-bold text-gray-800">R$ 0,00</p>
-                        </div>
-                        <div class="bg-red-100 p-2 rounded-full text-red-600">
-                            <i class="fas fa-thumbs-down text-xl"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Card 3: Licitações Ativas -->
-                <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="text-xs text-gray-500 font-bold uppercase">Licitações Ativas</p>
-                            <p id="kpi-active-bids" class="text-2xl font-bold text-gray-800">0</p>
-                        </div>
-                        <div class="bg-blue-100 p-2 rounded-full text-blue-600">
-                            <i class="fas fa-gavel text-xl"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chart Section (Hidden by default, shown when data loaded) -->
-            <div id="chart-container-wrapper" class="bg-white p-4 rounded-lg shadow mb-4 hidden no-print">
-                <h3 class="text-lg font-bold text-gray-700 mb-2">Evolução de Vendas vs Metas</h3>
-                <div class="h-64 w-full">
-                    <canvas id="sales-chart"></canvas>
-                </div>
-            </div>
-
-            <!-- Header e Filtros -->
-            <div class="bg-white p-4 rounded-lg shadow mb-4 no-print border-l-4 border-indigo-600">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-                    <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                        <i class="fas fa-chart-line mr-2 text-indigo-600"></i>Relatórios
-                    </h2>
-                    
-                    <div class="flex space-x-2 mt-2 md:mt-0 w-full md:w-auto">
-                        <!-- Botão Toggle Filtros (Visível em todos dipositivos) -->
-                        <button id="toggle-filters-btn" class="btn btn-secondary text-sm flex-grow md:flex-grow-0">
-                            <i class="fas fa-filter mr-2"></i> Filtros
-                        </button>
-
-                         <!-- Botão de Metas (Apenas Gestor) -->
-                        <button id="set-targets-btn" class="btn bg-purple-600 text-white hover:bg-purple-700 text-sm hidden md:inline-flex">
-                            <i class="fas fa-bullseye mr-2"></i>Definir Objetivos
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Barra de Filtros (Collapsible - Default Hidden) -->
-                <!-- Removido md:flex para iniciar oculto também no desktop -->
-                <div id="reports-filters-container" class="hidden flex-wrap items-end gap-4 mb-4 md:mb-0 transition-all duration-300 ease-in-out">
-                    <div class="w-full md:w-auto">
-                        <select id="report-type" class="form-select border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-full md:w-50">
-                            <option value="sales">Vendas Gerais</option>
-                            <option value="contratos">Contratos</option>
-                            <option value="forecast">Forecast (Previsão)</option>
-                            <option value="funnel">Funil de Vendas</option>
-                            <option value="lost_reasons">Propostas recusadas</option>
-                            <option value="clients">Relatório de Clientes</option>
-                            <option value="products">Vendas por Produto</option>
-                            <option value="licitacoes_funnel">Licitações (Funil)</option>
-                            <option value="supplier_funnel">Fábricas (Funil)</option>
-                        </select>
-                    </div>
-
-                    <div class="flex space-x-2 w-full md:w-auto">
-                         <div class="flex flex-col flex-1">
-                            <label class="text-xs text-gray-500 mb-1">De</label>
-                            <input type="month" id="filter-start-date" class="form-input text-sm border-gray-300 rounded-md shadow-sm w-full md:w-48 font-semibold text-gray-700">
-                        </div>
-                        <div class="flex flex-col flex-1">
-                            <label class="text-xs text-gray-500 mb-1">Até</label>
-                            <input type="month" id="filter-end-date" class="form-input text-sm border-gray-300 rounded-md shadow-sm w-full md:w-48 font-semibold text-gray-700">
-                        </div>
-                    </div>
-
-                    <div class="w-full md:w-auto">
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Fornecedor</label>
-                        <div id="filter-supplier-container" class="w-full md:w-64 relative">
-                            <!-- Custom Multi-select injected here -->
-                        </div>
-                    </div>
-
-                    <div class="w-full md:w-auto">
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Vendedor</label>
-                         <div id="filter-user-container" class="w-full md:w-64 relative">
-                            <!-- Custom Multi-select injected here -->
-                        </div>
-                    </div>
-
-                    <div class="w-full md:w-auto">
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Cliente</label>
-                        <div id="filter-client-container" class="w-full md:w-64 relative"></div>
-                    </div>
-
-                    <!-- Novos Filtros (Fase 2) -->
-                    <div class="w-full md:w-auto">
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Etapa</label>
-                        <div id="filter-etapa-container" class="w-full md:w-48 relative"></div>
-                    </div>
-                    <div class="w-full md:w-auto">
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Origem</label>
-                        <div id="filter-origem-container" class="w-full md:w-48 relative"></div>
-                    </div>
-                    <div class="w-full md:w-auto">
-                        <label class="block text-xs font-bold text-gray-700 mb-1">UF</label>
-                        <div id="filter-uf-container" class="w-full md:w-40 relative"></div>
-                    </div>
-                    <div class="w-full md:w-auto">
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Status</label>
-                        <div id="filter-status-container" class="w-full md:w-40 relative"></div>
-                    </div>
-
-                    <div class="flex flex-wrap gap-2 w-full md:w-auto ml-auto">
-                        <button id="refresh-report-btn" class="btn btn-primary text-sm py-2 px-4 shadow-sm hover:shadow-md transition-shadow flex-grow md:flex-grow-0" title="Filtrar">
-                             <i class="fas fa-filter mr-1"></i>Filtrar
-                        </button>
-                        <button id="export-excel-btn" class="btn bg-green-600 text-white hover:bg-green-700 text-sm py-2 px-4 shadow-sm hover:shadow-md transition-shadow flex-grow md:flex-grow-0" title="Excel">
-                             <i class="fas fa-file-excel mr-1"></i>XLS
-                        </button>
-                        <button id="print-report-btn" class="btn btn-secondary text-sm py-2 px-4 shadow-sm hover:shadow-md transition-shadow flex-grow md:flex-grow-0" title="Imprimir/PDF">
-                             <i class="fas fa-file-pdf mr-1"></i>PDF
-                        </button>
-                         <!-- Botão Metas no Mobile dentro do menu -->
-                        <button id="set-targets-btn-mobile" class="md:hidden btn bg-purple-600 text-white hover:bg-purple-700 text-sm flex-grow w-full mt-2">
-                            <i class="fas fa-bullseye mr-2"></i>Definir Objetivos
-                        </button>
+        <div id="reports-module-container" class="flex flex-col min-h-screen bg-gray-50 text-gray-900">
+            <!-- Professional BI Header & Tabs -->
+            <div class="bg-white border-b no-print">
+                <div class="px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                            <i class="fas fa-chart-line mr-2 text-indigo-600"></i>Gestão de Performance & BI
+                        </h2>
+                        <p class="text-sm text-gray-500">Monitoramento estratégico e análise de resultados</p>
                     </div>
                 </div>
                 
-                <!-- Pills Row -->
-                <div id="active-filters-pills" class="flex flex-wrap gap-2 mt-4 hidden w-full"></div>
+                <div class="px-6 flex space-x-8 overflow-x-auto">
+                    <button class="report-tab active whitespace-nowrap py-4 border-b-2 border-transparent" data-tab="bi-dashboard">
+                        <i class="fas fa-th-large mr-2"></i>Dashboard BI
+                    </button>
+                    <button class="report-tab whitespace-nowrap py-4 border-b-2 border-transparent" data-tab="detailed-reports">
+                        <i class="fas fa-list-alt mr-2"></i>Relatórios Detalhes
+                    </button>
+                    ${isAdminOrAnalyst ? `
+                    <button class="report-tab whitespace-nowrap py-4 border-b-2 border-transparent" data-tab="performance-mgmt">
+                        <i class="fas fa-calculator mr-2"></i>Metas e Comissões
+                    </button>` : ''}
+                </div>
             </div>
 
-            <!-- Área de Relatórios (Tabelas) -->
-            <div id="reports-output-area" class="print-container space-y-8 pb-8">
-                <div id="report-loading" class="text-center p-8 hidden">
-                    <i class="fas fa-spinner fa-spin text-3xl text-indigo-600"></i>
-                    <p class="mt-2 text-gray-500">Processando dados...</p>
-                </div>
-                <div id="report-content" class="space-y-8">
-                    <!-- Tabelas injetadas aqui -->
-                     <p class="text-center text-gray-500 mt-10">Use os filtros acima para gerar o relatório.</p>
+            <div id="report-tab-content" class="p-4 md:p-6 flex-1">
+                <!-- Tab contents injected here -->
+            </div>
+
+            <!-- Global Modals (Accessible from any tab) -->
+            <div id="targets-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                 <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-4/5 shadow-lg rounded-md bg-white">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">Definir Metas</h3>
+                        <button class="close-modal"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="mb-4">
+                         <label class="block text-sm font-bold mb-1">Fornecedor</label>
+                         <select id="target-supplier-select" class="border p-2 w-full rounded"></select>
+                    </div>
+                    <div id="targets-grid-container" class="overflow-x-auto mb-4"></div>
+                    <div class="flex justify-end space-x-2">
+                        <button class="close-modal btn bg-gray-300">Cancelar</button>
+                        <button id="save-targets-btn" class="btn bg-green-600 text-white">Salvar</button>
+                    </div>
                 </div>
             </div>
+            <!-- Hidden trigger for legacy logic -->
+            <button id="set-targets-btn" class="hidden"></button>
         </div>
 
-        <!-- Modal (Mantido) -->
-        <div id="targets-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-             <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-4/5 shadow-lg rounded-md bg-white">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold">Definir Metas</h3>
-                    <button class="close-modal"><i class="fas fa-times"></i></button>
-                </div>
-                <div class="mb-4">
-                     <label class="block text-sm font-bold mb-1">Fornecedor</label>
-                     <select id="target-supplier-select" class="border p-2 w-full rounded"></select>
-                </div>
-                <div id="targets-grid-container" class="overflow-x-auto mb-4"></div>
-                <div class="flex justify-end space-x-2">
-                    <button class="close-modal btn bg-gray-300">Cancelar</button>
-                    <button id="save-targets-btn" class="btn bg-green-600 text-white">Salvar</button>
-                </div>
-            </div>
-        </div>
-        
         <style>
-             /* Estilos de Impressão */
+            /* Glassmorphism & Premium UI Tokens */
+            #reports-module-container { --glass: rgba(255, 255, 255, 0.7); --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+            
+            #reports-module-container .report-tab {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                font-weight: 600;
+                color: #94a3b8;
+                padding: 1rem 1.5rem;
+                position: relative;
+            }
+            #reports-module-container .report-tab:hover { color: #6366f1; }
+            #reports-module-container .report-tab.active { color: #4f46e5; }
+            #reports-module-container .report-tab.active::after {
+                content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+                background: linear-gradient(90deg, #4f46e5, #818cf8); border-radius: 3px;
+                animation: slideIn 0.3s ease-out;
+            }
+
+            @keyframes slideIn { from { width: 0; left: 50%; } to { width: 100%; left: 0; } }
+
+            /* Bento Filters Style */
+            #reports-module-container .filter-card {
+                background: white;
+                padding: 1rem;
+                border-radius: 1.25rem;
+                border: 1px solid #f1f5f9;
+                box-shadow: var(--shadow-sm);
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+            #reports-module-container .filter-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+            #reports-module-container .filter-label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; margin-bottom: 0.5rem; }
+            #reports-module-container .filter-label i { margin-right: 0.5rem; color: #4f46e5; opacity: 0.6; }
+
+            /* Custom Seller Card (Dashboard) */
+            #reports-module-container .seller-card {
+                min-width: 220px; flex: 1; min-height: 100px;
+                background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+                padding: 1.25rem; border-radius: 1.25rem; border: 1px solid #e2e8f0;
+                display: flex; align-items: center; gap: 1rem;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;
+            }
+            #reports-module-container .seller-card:hover { border-color: #818cf8; transform: scale(1.02); }
+            #reports-module-container .seller-avatar {
+                width: 48px; height: 48px; border-radius: 50%;
+                background: #f1f5f9; display: flex; align-items: center; justify-content: center;
+                font-weight: 900; color: #4f46e5; font-size: 1.25rem; border: 2px solid #eef2ff;
+            }
+
+            /* Custom Month Selectors */
+            #reports-module-container .custom-date-row { display: flex; gap: 0.5rem; align-items: center; width: 100%; }
+            #reports-module-container .custom-date-item {
+                flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem;
+                border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: #334155;
+                outline: none; cursor: pointer; transition: all 0.2s;
+            }
+            #reports-module-container .custom-date-item:hover { border-color: #818cf8; background: white; }
+
+            /* MultiSelect Dropdown Modern Style */
+            #reports-module-container .multiselect-dropdown { width: 100%; position: relative; }
+            #reports-module-container .multiselect-button {
+                width: 100%; display: flex; align-items: center; justify-content: space-between;
+                padding: 0.6rem 0.8rem; background: #f8fafc; border: 1px solid #e2e8f0;
+                border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: #334155;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;
+            }
+            #reports-module-container .multiselect-button:hover { border-color: #818cf8; background: white; }
+            #reports-module-container .multiselect-list {
+                position: absolute; top: calc(100% + 5px); left: 0; right: 0;
+                background: white; border: 1px solid #e2e8f0; border-radius: 1rem;
+                box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); z-index: 50;
+                display: none; flex-direction: column; max-height: 300px;
+            }
+            #reports-module-container .multiselect-list.show { display: flex; }
+            #reports-module-container .multiselect-item {
+                display: flex; align-items: center; padding: 0.6rem 0.8rem; gap: 0.6rem;
+                cursor: pointer; transition: background 0.2s;
+            }
+            #reports-module-container .multiselect-item:hover { background: #f1f5f9; }
+            #reports-module-container .multiselect-item input[type="checkbox"] {
+                width: 1rem; height: 1rem; border-radius: 4px; border: 2px solid #cbd5e1;
+                cursor: pointer; accent-color: #4f46e5;
+            }
+
+            /* KPIs and Cards Refinement */
+            #reports-module-container .kpi-card {
+                background: white; border: 1px solid #f1f5f9; border-radius: 1.5rem;
+                padding: 1.5rem; box-shadow: var(--shadow-sm); transition: all 0.3s;
+            }
+            #reports-module-container .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05); }
+
+            /* Grid Layouts */
+            #reports-module-container .bento-grid { display: grid; gap: 1.5rem; }
+            @media (min-width: 768px) {
+                #reports-module-container .bento-grid { grid-template-columns: repeat(3, 1fr); }
+                #reports-module-container .col-span-2 { grid-column: span 2 / span 2; }
+                #reports-module-container .col-span-3 { grid-column: span 3 / span 3; }
+            }
+
             @media print {
-                @page { size: landscape; margin: 5mm; }
-                body { background: white; -webkit-print-color-adjust: exact; }
                 .no-print { display: none !important; }
-                .sidebar, #main-header, #app-container { height: auto !important; overflow: visible !important; }
-                #main-content { padding: 0 !important; }
-                .print-container { overflow: visible !important; box-shadow: none !important; }
-                
-                table { page-break-inside: auto; width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 20px; }
-                thead { display: table-header-group; }
-                tr { page-break-inside: avoid; page-break-after: auto; }
-                th, td { border: 1px solid #000; padding: 4px; text-align: right; }
-                th { background-color: #f3f4f6 !important; font-weight: bold; text-align: center; }
-                
-                .supplier-header { background-color: #4f46e5 !important; color: white !important; font-size: 14px; text-align: left; padding: 8px; -webkit-print-color-adjust: exact; }
-                .total-row td { background-color: #ffffcc !important; font-weight: bold; }
-                .break-inside-avoid { page-break-inside: avoid; }
+                #reports-module-container { background: white !important; }
+                #main-content { padding: 0 !important; margin: 0 !important; }
             }
-            
-            /* Tabela Padrão */
-            .report-table { width: 100%; border-collapse: collapse; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-            .report-table th, .report-table td { border: 1px solid #e5e7eb; padding: 8px; text-align: right; font-size: 0.85rem; }
-            .report-table th { background-color: #f9fafb; font-weight: 600; text-align: center; white-space: nowrap; }
-            
-            .cell-content { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; min-height: 32px; }
-            .venda-val { font-weight: 600; color: #1f2937; }
-            .meta-val { font-size: 0.7em; color: #9ca3af; }
-            
-            .text-green-600 { color: #059669; }
-            .text-red-500 { color: #dc2626; }
-            .bg-yellow-pale { background-color: #fef9c3; }
-
-            /* Multi Select Custom Styles */
-            .multiselect-dropdown { user-select: none; }
-            .multiselect-button {
-                 display: flex; justify-content: space-between; align-items: center;
-                 width: 100%; padding: 0.5rem; background: white; border: 1px solid #d1d5db; border-radius: 0.375rem;
-                 font-size: 0.875rem; color: #1f2937; cursor: pointer; text-align: left;
-            }
-            .multiselect-button:focus { outline: 2px solid #a5b4fc; border-color: #6366f1; }
-            .multiselect-list {
-                display: none; position: absolute; z-index: 50; width: 100%;
-                background: white; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-top: 0.25rem;
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            }
-            .multiselect-list.show { display: flex; flex-direction: column; }
-            .multiselect-item {
-                display: flex; align-items: center; padding: 0.5rem; cursor: pointer; transition: background-color 0.15s;
-            }
-            .multiselect-item:hover { background-color: #f3f4f6; }
-            .multiselect-item input[type="checkbox"] { margin-right: 0.5rem; height: 1rem; width: 1rem; color: #4f46e5; border-radius: 0.25rem; border-color: #d1d5db; }
-
         </style>
     `;
 
-    // Popula Filtros
-    populateFilters();
-
-    // Set default dates (current year)
-    const now = new Date();
-    // currentYear already declared at top of function
-    document.getElementById('filter-start-date').value = `${currentYear}-01`;
-    document.getElementById('filter-end-date').value = `${currentYear}-12`;
-
-    // Event Listeners
-    document.getElementById('refresh-report-btn').addEventListener('click', loadReportData);
-    document.getElementById('print-report-btn').addEventListener('click', exportToPDF);
-    document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
-
-    // Toggle Filters Mobile & Desktop
-    const toggleBtn = document.getElementById('toggle-filters-btn');
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', () => {
-            const container = document.getElementById('reports-filters-container');
-            container.classList.toggle('hidden');
-            container.classList.toggle('flex'); // Add flex when visible to maintain layout
+    // Add Tab Event Listeners
+    document.querySelectorAll('.report-tab').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            const target = e.currentTarget.dataset.tab;
+            document.querySelectorAll('.report-tab').forEach(t => t.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            switchReportView(target);
         });
+    });
+
+    // Default View
+    switchReportView('bi-dashboard');
+}
+
+async function switchReportView(tab) {
+    const container = document.getElementById('report-tab-content');
+    container.innerHTML = `<div class="flex justify-center p-20"><i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i></div>`;
+
+    switch (tab) {
+        case 'bi-dashboard':
+            renderBIDashboard(container);
+            break;
+        case 'detailed-reports':
+            renderDetailedReports(container);
+            break;
+        case 'performance-mgmt':
+            renderPerformanceMgmt(container);
+            break;
+    }
+}
+
+async function renderBIDashboard(container) {
+    const currentYear = new Date().getFullYear();
+    container.innerHTML = `
+        <div class="bento-grid">
+            <!-- Row 1: Key Performance Metrics -->
+            <div class="kpi-card bg-indigo-600 !text-black !p-7 shadow-indigo-200 shadow-xl border-none">
+                <div class="flex flex-col">
+                    <p class="text-[10px] font-black uppercase text-green-900 tracking-widest opacity-70 mb-1">Total Vendido ${currentYear}</p>
+                    <h3 id="bi-sales-total" class="text-3xl font-black mb-4">R$ 0,00</h3>
+                    <div class="w-full bg-white/20 h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-white h-full" style="width: 75%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kpi-card !p-7 group hover:bg-slate-50">
+                <div class="flex flex-col">
+                    <p class="text-[10px] font-black uppercase text-blue-600 mb-1">Aprovado no Mês</p>
+                    <h3 id="bi-month-sales" class="text-3xl font-black text-slate-800">R$ 0,00</h3>
+                    <p class="text-xs text-slate-400 mt-2 flex items-center">
+                        <i class="fas fa-arrow-up text-emerald-500 mr-1"></i> <span class="font-bold text-slate-600">+12%</span> em relação ao mês anterior
+                    </p>
+                </div>
+            </div>
+
+            <div class="kpi-card !p-7">
+                <div class="flex flex-col">
+                    <p class="text-[10px] font-black uppercase text-rose-600 mb-1">Perdas de Oportunidades</p>
+                    <h3 id="bi-lost-total" class="text-3xl font-black text-slate-800">R$ 0,00</h3>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-2">Valor acumulado no ano</p>
+                </div>
+            </div>
+
+            <!-- Row 2: Secondary KPIs & Sellers -->
+            <div class="kpi-card !bg-emerald-50 border-emerald-100 flex items-center justify-between">
+                <div>
+                    <h3 id="bi-bids-count" class="text-4xl font-black text-emerald-700">0</h3>
+                    <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Licitações Ativas</p>
+                </div>
+                <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <i class="fas fa-gavel text-2xl text-emerald-500"></i>
+                </div>
+            </div>
+
+            <div class="col-span-2 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-hidden relative">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h4 class="font-black text-slate-800 text-sm uppercase">Performance por Vendedor</h4>
+                        <p class="text-[10px] text-slate-500">Mês de ${new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date())}</p>
+                    </div>
+                </div>
+                <div id="bi-top-sellers" class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                    <div class="flex items-center justify-center p-10 w-full text-slate-300 font-bold">
+                        <i class="fas fa-spinner fa-spin mr-2"></i> Analisando resultados...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Charts -->
+            <div class="col-span-2 bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
+                <div class="flex justify-between items-center mb-8">
+                     <h4 class="font-black text-slate-800 uppercase tracking-wider">Evolução de Mercado</h4>
+                     <div class="flex gap-2">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-indigo-50 text-indigo-600">Vendas</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-500">Metas</span>
+                     </div>
+                </div>
+                <div class="h-80 w-full"><canvas id="bi-main-chart"></canvas></div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm flex flex-col justify-center">
+                 <h4 class="font-black text-slate-800 uppercase tracking-widest text-center mb-6">Mix de Fornecedores</h4>
+                 <div class="h-64 w-full relative">
+                    <canvas id="bi-supplier-chart"></canvas>
+                 </div>
+            </div>
+        </div>
+    `;
+
+    try {
+        const [kpiData, chartData] = await Promise.all([
+            apiCall('get_report_data', { params: { report_type: 'bi_kpis', start_date: `${currentYear}-01-01` } }),
+            apiCall('get_report_data', { params: { report_type: 'sales_vs_goals', start_date: `${currentYear}-01-01` } })
+        ]);
+
+        if (kpiData.success) {
+            document.getElementById('bi-sales-total').innerText = formatCurrencyUtil(kpiData.total_sales || 0);
+            document.getElementById('bi-month-sales').innerText = formatCurrencyUtil(kpiData.month_sales || 0);
+            document.getElementById('bi-lost-total').innerText = formatCurrencyUtil(kpiData.lost_sales || 0);
+            document.getElementById('bi-bids-count').innerText = kpiData.active_bids || 0;
+
+            const sellerContainer = document.getElementById('bi-top-sellers');
+            if (sellerContainer && kpiData.sales_by_vendedor) {
+                sellerContainer.innerHTML = kpiData.sales_by_vendedor.map((s, i) => {
+                    const initials = s.vendedor.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    return `
+                        <div class="seller-card">
+                            <div class="seller-avatar">${initials}</div>
+                            <div class="flex flex-col">
+                                <span class="text-xs font-black text-slate-800 uppercase truncate w-32" title="${s.vendedor}">${s.vendedor}</span>
+                                <span class="text-sm font-bold text-indigo-600">${formatCurrencyUtil(s.total)}</span>
+                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Vendas Aprovadas</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        if (chartData.success) {
+            const ctx = document.getElementById('bi-main-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        {
+                            label: 'Realizado',
+                            data: chartData.sales,
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            borderColor: '#4f46e5',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Meta',
+                            data: chartData.goals,
+                            borderColor: '#10b981',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => 'R$ ' + v.toLocaleString() } } }
+                }
+            });
+        }
+
+        // Mini chart for variation or another metric
+        const ctxSup = document.getElementById('bi-supplier-chart').getContext('2d');
+        const salesBySup = await apiCall('get_report_data', { params: { report_type: 'by_supplier', start_date: `${currentYear}-01-01` } });
+        if (Array.isArray(salesBySup)) {
+            new Chart(ctxSup, {
+                type: 'doughnut',
+                data: {
+                    labels: salesBySup.slice(0, 5).map(s => s.label),
+                    datasets: [{
+                        data: salesBySup.slice(0, 5).map(s => s.value),
+                        backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#3b82f6']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+            });
+        }
+
+    } catch (e) {
+        console.error("Dashboard error:", e);
+    }
+}
+
+async function renderPerformanceMgmt(container) {
+    const currentYear = new Date().getFullYear();
+    const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+    container.innerHTML = `
+        <div class="flex flex-col space-y-6">
+            <div class="bg-indigo-900 rounded-[2rem] p-6 text-white shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6 no-print overflow-hidden relative">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                <div class="flex items-center gap-6 relative z-10">
+                    <div class="bg-indigo-600/50 p-4 rounded-2xl backdrop-blur-sm border border-indigo-500/30">
+                        <i class="fas fa-calculator text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold tracking-tight">Performance Financeira</h3>
+                        <p class="text-indigo-200/80 text-[10px] font-black uppercase tracking-[0.2em]">Gestão de metas e comissões</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-center gap-4 bg-white/5 p-2 rounded-2xl backdrop-blur-xl border border-white/10 relative z-10">
+                    <div class="flex bg-white/10 rounded-xl p-1 gap-1 border border-white/5">
+                        <select id="perf-month-select" class="bg-transparent border-none text-white text-xs font-bold uppercase cursor-pointer outline-none focus:ring-0">
+                            ${months.map((m, i) => `<option value="${i + 1}" class="bg-indigo-900" ${i + 1 === new Date().getMonth() + 1 ? 'selected' : ''}>${m}</option>`).join('')}
+                        </select>
+                        <select id="perf-year-select" class="bg-transparent border-none text-white text-xs font-black cursor-pointer outline-none focus:ring-0">
+                            <option value="${currentYear}" class="bg-indigo-900" selected>${currentYear}</option>
+                            <option value="${currentYear - 1}" class="bg-indigo-900">${currentYear - 1}</option>
+                        </select>
+                    </div>
+                    
+                    <div class="h-6 w-[1px] bg-white/20"></div>
+
+                    <div class="flex gap-2">
+                        <button id="load-performance-btn" class="bg-indigo-500 hover:bg-indigo-400 text-white w-10 h-10 rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 group">
+                            <i class="fas fa-play group-hover:scale-110 transition-transform"></i>
+                        </button>
+                        <button id="export-performance-btn" class="bg-emerald-500 hover:bg-emerald-400 text-white px-5 h-10 rounded-xl font-black uppercase text-[10px] transition-all shadow-lg shadow-emerald-500/20 flex items-center active:scale-95">
+                            <i class="fas fa-file-pdf mr-2"></i>Exportar
+                        </button>
+                        <button id="config-targets-btn" class="bg-amber-500 hover:bg-amber-400 text-white px-5 h-10 rounded-xl font-black uppercase text-[10px] transition-all shadow-lg shadow-amber-500/20 flex items-center active:scale-95">
+                            <i class="fas fa-bullseye mr-2"></i>Metas
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="performance-output" class="bg-white rounded-[2rem] shadow-xl shadow-indigo-100 border border-slate-50 overflow-hidden min-h-[500px]">
+                <div class="flex flex-col items-center justify-center p-40 text-slate-300">
+                    <div class="relative mb-6">
+                        <div class="absolute inset-0 bg-indigo-50 rounded-full animate-ping opacity-25"></div>
+                        <i class="fas fa-fingerprint text-6xl relative z-10"></i>
+                    </div>
+                    <p class="font-black uppercase tracking-widest text-sm">Pronto para processar dados</p>
+                    <p class="text-xs font-medium text-slate-400 mt-2">Selecione o período e clique no botão Play acima</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Bind Performance listeners immediately
+    const btnLoad = document.getElementById('load-performance-btn');
+    if (btnLoad) {
+        btnLoad.onclick = async () => {
+            const m = document.getElementById('perf-month-select').value;
+            const y = document.getElementById('perf-year-select').value;
+            const selectedMonth = `${y}-${m.padStart(2, '0')}`;
+            await loadPerformanceData(container, selectedMonth);
+        };
     }
 
-    // Mobile Target Button Listener
-    const mobileTargetBtn = document.getElementById('set-targets-btn-mobile');
-    if (mobileTargetBtn) {
-        mobileTargetBtn.addEventListener('click', () => {
+    const btnExport = document.getElementById('export-performance-btn');
+    if (btnExport) {
+        btnExport.onclick = () => {
+            const m = document.getElementById('perf-month-select').value;
+            const y = document.getElementById('perf-year-select').value;
+            const selectedMonth = `${y}-${m.padStart(2, '0')}`;
+            exportToPDF('performance', selectedMonth);
+        };
+    }
+
+    const btnConfig = document.getElementById('config-targets-btn');
+    if (btnConfig) {
+        btnConfig.onclick = () => {
+            // Dispatch event or click legacy hidden button if it exists
             const targetBtn = document.getElementById('set-targets-btn');
             if (targetBtn) targetBtn.click();
-        });
+        };
     }
+}
 
-    // Modal
+function renderDetailedReports(container) {
+    container.innerHTML = `
+        <div class="bg-white p-6 rounded-xl shadow-sm mb-6 no-print border border-gray-100">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800">Relatórios Analíticos</h3>
+                    <p class="text-sm text-gray-500">Filtre dados por fornecedor, vendedor e geografia.</p>
+                </div>
+                
+                <div class="flex space-x-2 mt-2 md:mt-0 w-full md:w-auto">
+                    <button id="toggle-filters-btn" class="btn btn-secondary text-sm px-4">
+                        <i class="fas fa-filter mr-2"></i> Filtros
+                    </button>
+                    <!-- Legacy buttons kept for internal logic if needed, but hidden -->
+                    <button id="set-targets-btn" class="hidden">Definir Objetivos</button>
+                </div>
+            </div>
+
+            <div id="reports-filters-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 transition-all">
+                <div class="filter-card border-l-4 border-l-indigo-500">
+                    <div class="filter-label"><i class="fas fa-file-invoice"></i>Tipo de Relatório</div>
+                    <select id="report-type" class="w-full bg-slate-50 border-none text-sm font-bold focus:ring-0 cursor-pointer">
+                        <option value="sales">Vendas Gerais</option>
+                        <option value="contratos">Contratos</option>
+                        <option value="forecast">Forecast (Previsão)</option>
+                        <option value="funnel">Funil de Vendas</option>
+                        <option value="lost_reasons">Propostas recusadas</option>
+                        <option value="clients">Relatório de Clientes</option>
+                        <option value="products">Vendas por Produto</option>
+                        <option value="licitacoes_funnel">Licitações (Funil)</option>
+                        <option value="supplier_funnel">Fábricas (Funil)</option>
+                    </select>
+                </div>
+
+                <div class="filter-card border-l-4 border-l-blue-400">
+                    <div class="filter-label"><i class="fas fa-calendar-alt"></i>Período de Análise</div>
+                    <div class="flex items-center gap-2">
+                        <div class="custom-date-row">
+                             <input type="month" id="filter-start-date" class="custom-date-item">
+                             <span class="text-slate-300">→</span>
+                             <input type="month" id="filter-end-date" class="custom-date-item">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-card border-l-4 border-l-emerald-400">
+                    <div class="filter-label"><i class="fas fa-building"></i>Fábrica / Sócio</div>
+                    <div class="flex gap-1 w-full">
+                         <div id="filter-supplier-container" class="flex-1"></div>
+                         <div id="filter-user-container" class="flex-1"></div>
+                    </div>
+                </div>
+
+                 <div class="filter-card border-l-4 border-l-amber-400">
+                    <div class="filter-label"><i class="fas fa-map-marker-alt"></i>Geografia & Cliente</div>
+                    <div class="flex gap-1 w-full">
+                        <div id="filter-uf-container" class="flex-1"></div>
+                        <div id="filter-client-container" class="flex-1"></div>
+                    </div>
+                </div>
+                
+                <div class="filter-card border-l-4 border-l-indigo-300 lg:col-span-2">
+                    <div class="filter-label"><i class="fas fa-tasks"></i>Etapa Processual</div>
+                    <div id="filter-etapa-container" class="w-full"></div>
+                </div>
+
+                <div class="lg:col-span-2 flex items-center justify-end">
+                    <div class="bg-indigo-600 p-1.5 rounded-2xl flex gap-2 w-full shadow-lg shadow-indigo-100">
+                        <button id="refresh-report-btn" class="flex-1 bg-white text-indigo-700 py-3 rounded-xl font-black uppercase text-xs hover:bg-slate-50 transition-all">
+                             <i class="fas fa-rocket mr-2"></i>Sincronizar Dados
+                        </button>
+                        <button id="export-excel-btn" class="aspect-square bg-emerald-500 text-white px-4 rounded-xl hover:bg-emerald-600 transition-all"><i class="fas fa-file-excel"></i></button>
+                        <button id="print-report-btn" class="aspect-square bg-rose-500 text-white px-4 rounded-xl hover:bg-rose-600 transition-all"><i class="fas fa-file-pdf"></i></button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="active-filters-pills" class="flex flex-wrap gap-2 mt-4 hidden w-full"></div>
+        </div>
+
+        <div id="chart-container-wrapper" class="bg-white p-6 rounded-xl shadow-sm mb-6 hidden no-print border border-gray-100">
+            <h4 class="font-bold text-gray-700 mb-4">Evolução de Vendas</h4>
+            <div class="h-80 w-full">
+                <canvas id="sales-chart"></canvas>
+            </div>
+        </div>
+
+        <div id="reports-output-area" class="print-container">
+            <div id="report-loading" class="text-center p-20 hidden">
+                <i class="fas fa-spinner fa-spin text-5xl text-indigo-600"></i>
+            </div>
+            <div id="report-content" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                 <div class="p-20 text-center text-gray-400">
+                    <i class="fas fa-chart-bar text-6xl mb-4 opacity-20"></i>
+                    <p>Selecione os parâmetros acima para realizar a análise detalhada.</p>
+                 </div>
+            </div>
+        </div>
+    `;
+
+    // Re-bind listeners for detailed reports
+    const currentYear = new Date().getFullYear();
+    document.getElementById('filter-start-date').value = `${currentYear}-01`;
+    document.getElementById('filter-end-date').value = `${currentYear}-12`;
+    document.getElementById('refresh-report-btn').addEventListener('click', loadReportData);
+    document.getElementById('print-report-btn').addEventListener('click', () => exportToPDF());
+    document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
+    document.getElementById('toggle-filters-btn').addEventListener('click', () => {
+        document.getElementById('reports-filters-container').classList.toggle('hidden');
+    });
+
+    populateFilters();
     setupModalLinks();
-
-    // Restaura Filtros Salvos (se houver)
     restoreFilters();
-
-    // Carrega Inicial
-    loadReportData();
-    loadKPIData();
 }
 
 function restoreFilters() {
@@ -1304,7 +1575,7 @@ function renderStateReport(group) {
                     </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500 border-l border-gray-100 font-mono">${format(goal)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold ${balClass} border-l border-gray-100 font-mono">${format(balance)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-bold ${balClass} border-l border-gray-100 font-mono">${format(balance)}</td>
             </tr>
         `;
     });
@@ -2158,7 +2429,7 @@ function updateFilterPills(type, start, end, supplierIds, userIds, clientIds, et
     const container = document.getElementById('active-filters-pills');
     if (!container) return;
     container.innerHTML = '';
-    
+
     let hasPills = false;
 
     const createPill = (label, filterId, isMulti = true) => {
@@ -2202,18 +2473,42 @@ function updateFilterPills(type, start, end, supplierIds, userIds, clientIds, et
     }
 }
 
-window.removeFilterPill = function(idBase, isMulti) {
+window.removeFilterPill = function (idBase, isMulti) {
     if (isMulti) {
         window.toggleAllMultiSelect(idBase, false);
     }
     document.getElementById('refresh-report-btn').click();
 };
 
-function exportToPDF() {
-    const type = document.getElementById('report-type').value;
-    const start = document.getElementById('filter-start-date').value;
-    const end = document.getElementById('filter-end-date').value;
-    
+function exportToPDF(forcedType = null) {
+    const type = forcedType || document.getElementById('report-type').value;
+
+    let start = '';
+    let end = '';
+
+    if (type === 'performance') {
+        const m = document.getElementById('perf-month-select')?.value;
+        const y = document.getElementById('perf-year-select')?.value;
+        if (m && y) {
+            start = `${y}-${m.padStart(2, '0')}`;
+            const lastDay = new Date(y, m, 0).getDate();
+            end = `${start}-${lastDay}`;
+        }
+    } else {
+        const startInput = document.getElementById('filter-start-date');
+        const endInput = document.getElementById('filter-end-date');
+        start = startInput ? startInput.value : '';
+        const rawEnd = endInput ? endInput.value : '';
+
+        if (rawEnd && rawEnd.length === 7) { // YYYY-MM
+            const [y, m] = rawEnd.split('-');
+            const lastDay = new Date(y, m, 0).getDate();
+            end = `${rawEnd}-${lastDay}`;
+        } else {
+            end = rawEnd;
+        }
+    }
+
     const supplierIds = window.getMultiSelectValues('supplier-select');
     const userIds = window.getMultiSelectValues('user-select');
     const clientIds = window.getMultiSelectValues('client-select');
@@ -2222,17 +2517,10 @@ function exportToPDF() {
     const ufIds = window.getMultiSelectValues('uf-select');
     const statusIds = window.getMultiSelectValues('status-select');
 
-    let formattedEnd = '';
-    if (end) {
-        const [y, m] = end.split('-');
-        const lastDay = new Date(y, m, 0).getDate();
-        formattedEnd = `${end}-${lastDay}`;
-    }
-
     const qs = new URLSearchParams({
         report_type: type,
-        start_date: `${start}-01`,
-        end_date: formattedEnd,
+        start_date: type === 'performance' ? start + '-01' : (start ? start + '-01' : ''),
+        end_date: end,
         supplier_id: supplierIds.join(','),
         user_id: userIds.join(','),
         cliente_id: clientIds.join(','),
@@ -2243,4 +2531,113 @@ function exportToPDF() {
     }).toString();
 
     window.open(`/api.php?action=export_pdf&${qs}`, '_blank');
+}
+
+/**
+ * Performance & Commission Logic
+ */
+async function loadPerformanceData(container, selectedMonth = null) {
+    const output = document.getElementById('performance-output');
+    if (!output) return;
+
+    let month = selectedMonth;
+    if (!month) {
+        const m = document.getElementById('perf-month-select')?.value;
+        const y = document.getElementById('perf-year-select')?.value;
+        month = (m && y) ? `${y}-${m.padStart(2, '0')}` : new Date().toISOString().slice(0, 7);
+    }
+
+    // Calculate start/end date for the selected month
+    const [year, mNum] = month.split('-');
+    const startDate = `${month}-01`;
+    const lastDay = new Date(year, mNum, 0).getDate();
+    const endDate = `${month}-${lastDay}`;
+
+    output.innerHTML = `
+        <div class="p-20 text-center text-gray-400">
+            <i class="fas fa-spinner fa-spin text-4xl mb-4 text-indigo-600"></i>
+            <p class="animate-pulse">Calculando metas e comissões...</p>
+        </div>
+    `;
+
+    try {
+        const response = await apiCall('get_report_data', {
+            params: {
+                report_type: 'commission_analysis',
+                start_date: startDate,
+                end_date: endDate
+            }
+        });
+
+        if (response && response.success) {
+            if (!response.data || response.data.length === 0) {
+                output.innerHTML = `<div class="p-20 text-center text-gray-500">Nenhum dado financeiro encontrado para o período ${month}.</div>`;
+                return;
+            }
+            renderPerformanceTable(output, response.data);
+        } else {
+            throw new Error(response?.error || 'Falha na resposta do servidor');
+        }
+    } catch (e) {
+        output.innerHTML = `
+            <div class="p-20 text-center text-red-500 bg-red-50 m-6 rounded-2xl border border-red-100">
+                <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                <h4 class="font-bold">Erro ao Carregar Dados</h4>
+                <p class="text-sm opacity-75">${e.message}</p>
+                <button onclick="location.reload()" class="btn btn-primary mt-6">Tentar Novamente</button>
+            </div>
+        `;
+    }
+}
+
+function renderPerformanceTable(container, data) {
+    const format = (v) => formatCurrencyUtil(v || 0);
+
+    container.innerHTML = `
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 text-left border-b border-gray-200">
+                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Colaborador</th>
+                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Fixo (R$)</th>
+                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Meta Mensal</th>
+                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Vendas Período</th>
+                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Atingimento (%)</th>
+                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Comissão (%)</th>
+                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Valor Comissão</th>
+                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right bg-indigo-50">Total a Pagar</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    ${data.map(row => {
+        const atingimento = parseFloat(row.atingimento) || 0;
+        const barColor = atingimento >= 100 ? 'bg-green-500' : (atingimento >= 70 ? 'bg-indigo-500' : 'bg-orange-500');
+        const textClass = atingimento >= 100 ? 'text-green-600' : (atingimento >= 70 ? 'text-indigo-600' : 'text-orange-600');
+
+        return `
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="p-4">
+                                    <div class="font-bold text-gray-800">${row.nome}</div>
+                                </td>
+                                <td class="p-4 text-right text-gray-600 font-mono">${format(row.valor_fixo)}</td>
+                                <td class="p-4 text-right text-gray-600 font-mono">${format(row.meta_mensal)}</td>
+                                <td class="p-4 text-right font-black text-gray-800 font-mono">${format(row.total_vendas)}</td>
+                                <td class="p-4 text-right">
+                                    <div class="flex flex-col items-end">
+                                        <span class="font-bold ${textClass}">${atingimento.toFixed(1)}%</span>
+                                        <div class="w-16 h-1 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                                            <div class="h-full ${barColor}" style="width: ${Math.min(atingimento, 100)}%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="p-4 text-right text-indigo-500 font-bold">${row.percentual_comissao}%</td>
+                                <td class="p-4 text-right text-gray-600 font-mono">${format(row.comissao_valor)}</td>
+                                <td class="p-4 text-right font-black text-indigo-900 bg-indigo-50/20 font-mono">${format(row.total_periodo)}</td>
+                            </tr>
+                        `;
+    }).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
