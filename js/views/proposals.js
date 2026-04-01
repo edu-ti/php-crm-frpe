@@ -1,6 +1,6 @@
 // js/views/proposals.js
 
-import { appState } from '../script.js';
+import { appState } from '../state.js';
 import { apiCall } from '../api.js';
 import { showToast, formatDate, formatCurrency, formatCurrencyForInput, parseCurrency, setupApiFetch, showLoading } from '../utils.js';
 import { renderModal, closeModal } from '../ui.js';
@@ -52,7 +52,7 @@ export async function initProposalsView() {
             return;
         }
         loadProposals(true);
-    }, 1000); // 1 segundos
+    }, 5000); // 5 segundos
 }
 
 export async function loadProposals(isSilent = false) {
@@ -303,6 +303,9 @@ function renderProposalsList() {
         return direction === 'asc' ? '<i class="fas fa-sort-up ml-2"></i>' : '<i class="fas fa-sort-down ml-2"></i>';
     };
 
+    const scrollContainer = container.querySelector('.overflow-x-auto');
+    const scrollLeft = scrollContainer ? scrollContainer.scrollLeft : 0;
+
     container.innerHTML = `
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 responsive-table">
@@ -327,7 +330,7 @@ function renderProposalsList() {
                         <tr class="responsive-table-row">
                             <td data-label="Nº" class="table-cell font-medium">${p.numero_proposta || 'N/A'}</td>
                             <td data-label="Data" class="table-cell">${formatDate(p.data_criacao)}</td>
-                            <td data-label="Cliente" class="table-cell">${p.organizacao_nome || p.cliente_pf_nome || 'N/A'}</td>
+                            <td data-label="Cliente" class="table-cell whitespace-normal min-w-[200px]">${p.organizacao_nome || p.cliente_pf_nome || 'N/A'}</td>
                             <td data-label="Contato" class="table-cell">${contactName}</td>
                             <td data-label="CNPJ/CPF" class="table-cell">${p.cnpj || p.cpf || 'N/A'}</td>
                             <td data-label="Valor" class="table-cell">${formatCurrency(p.valor_total)}</td>
@@ -356,6 +359,12 @@ function renderProposalsList() {
             </div>
         </div>
     `;
+
+    // Restaura a posição do scroll
+    const newScrollContainer = container.querySelector('.overflow-x-auto');
+    if (newScrollContainer) {
+        newScrollContainer.scrollLeft = scrollLeft;
+    }
 
     addProposalCardEventListeners();
 
@@ -675,27 +684,8 @@ function renderProposalItemsSection() {
     let totalProposta = 0;
 
     const itemsHtml = (items || []).map((item, index) => {
-        // --- INÍCIO: Lógica de Cálculo de Valor ---
-        const valor_unitario_base = parseCurrency(item.valor_unitario);
-        let valor_parametros = 0;
-
-        if (item.parametros && Array.isArray(item.parametros)) {
-            item.parametros.forEach(param => {
-                valor_parametros += (param.valor || 0);
-            });
-        }
-
-        const valor_unitario_total = valor_unitario_base + valor_parametros;
-
-        // ALTERAÇÃO: Usa o campo meses_locacao se for LOCAÇÃO (case insensitive), default 1.
-        const isLocacaoStatus = (item.status || '').toUpperCase() === 'LOCAÇÃO';
-        const meses = (isLocacaoStatus && item.meses_locacao) ? parseInt(item.meses_locacao) : 1;
-
-        // Se for locação, o total é Qtd * Valor * Meses. Se for venda, é Qtd * Valor.
-        // O multiplicador "24" antigo foi removido em favor da entrada manual.
-        const itemTotal = (item.quantidade || 0) * valor_unitario_total * meses;
-
-        totalProposta += itemTotal;
+        const itemTotalComDesconto = calculateItemTotal(item);
+        totalProposta += itemTotalComDesconto;
         const imageUrl = item.imagem_url || 'https://placehold.co/100x100/e2e8f0/64748b?text=Imagem';
         // --- FIM: Lógica de Cálculo de Valor ---
 
@@ -765,7 +755,10 @@ function renderProposalItemsSection() {
 
                  <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4 pt-4 border-t">
                     <div><label class="form-label">Quantidade*</label><input type="number" data-index="${index}" name="item_quantidade" required class="form-input" value="${item.quantidade || 1}" min="1"></div>
-                    <div><label class="form-label">Valor Unitário*</label><input type="text" inputmode="decimal" data-index="${index}" name="item_valor_unitario" required class="form-input" value="${formatCurrencyForInput(item.valor_unitario)}" placeholder="0,00"></div>
+                    <div>
+                        <label class="form-label">Valor Unitário*</label>
+                        <input type="text" inputmode="decimal" data-index="${index}" name="item_valor_unitario" required class="form-input" value="${formatCurrencyForInput(item.valor_unitario)}" placeholder="0,00" ${canEditUnitPrice() ? '' : 'disabled'}>
+                    </div>
                     
                     <!-- CAMPO MESES LOCAÇÃO: Condicional -->
                     <div class="${isLocacao ? '' : 'hidden'}">
@@ -774,7 +767,14 @@ function renderProposalItemsSection() {
                     </div>
                     
                     <div><label class="form-label">Unidade de Medida</label><input type="text" data-index="${index}" name="item_unidade_medida" class="form-input" value="${item.unidade_medida || 'Unidade'}"></div>
-                    <div><label class="form-label">Subtotal</label><input type="text" class="form-input bg-gray-100 font-bold" value="${formatCurrency(itemTotal)}" readonly></div>
+                    
+                     <!-- --- NOVO CAMPO: DESCONTO (%) --- -->
+                    <div>
+                        <label class="form-label">Desconto (%)</label>
+                        <input type="number" data-index="${index}" name="item_desconto_percent" class="form-input" value="${item.desconto_percent || 0}" min="0" max="30" step="0.1" placeholder="0">
+                    </div>
+                    
+                    <div><label class="form-label">Subtotal</label><input type="text" class="form-input bg-gray-100 font-bold item-subtotal-input" data-index="${index}" value="${formatCurrency(itemTotalComDesconto)}" readonly></div>
                 </div>
             </div>
         `;
@@ -969,6 +969,10 @@ function renderPropCatalogResults(searchTerm) {
             const productId = e.currentTarget.dataset.productId;
             const product = appState.products.find(p => p.id == productId);
             if (product) {
+
+                // Remove item vazio antes de adicionar um novo do catálogo
+                appState.proposal.items = appState.proposal.items.filter(item => item.descricao && item.descricao.trim() !== '');
+
                 appState.proposal.items.push({
                     id: `temp_prod_${product.id}_${Date.now()}`,
                     produto_id: product.id,
@@ -1009,12 +1013,16 @@ function handleItemInputChange(e) {
         renderProposalItemsSection();
     } else if (prop === 'meses_locacao') {
         appState.proposal.items[index][prop] = parseInt(value) || 1;
-        // Re-renderiza para atualizar o subtotal imediatamente
-        renderProposalItemsSection();
+        updateProposalTotalsInDOM();
     } else if (prop === 'quantidade') {
         appState.proposal.items[index][prop] = parseInt(value) || 0;
-        // Re-renderiza para atualizar o subtotal
-        renderProposalItemsSection();
+        updateProposalTotalsInDOM();
+    } else if (prop === 'desconto_percent') {
+        let val = parseFloat(value) || 0;
+        if (val > 30) val = 30;
+        if (val < 0) val = 0;
+        appState.proposal.items[index][prop] = val;
+        updateProposalTotalsInDOM();
     } else {
         appState.proposal.items[index][prop] = value;
     }
@@ -1029,16 +1037,58 @@ function handleValueBlur(e) {
         appState.proposal.items[index].valor_unitario = value;
         e.target.value = formatCurrencyForInput(value);
 
-        // Re-renderiza para atualizar subtotal e total
-        renderProposalItemsSection();
+        updateProposalTotalsInDOM();
     }
     // Formata o valor do parâmetro (apenas se for o input de parâmetro)
     else if (e.target.id.startsWith('proposal-param-valor-')) {
         const valorNumerico = parseCurrency(e.target.value);
         e.target.value = formatCurrencyForInput(valorNumerico); // Apenas formata o input
     }
+}
 
+// --- NOVAS FUNÇÕES DE CÁLCULO OTIMIZADO ---
 
+function calculateItemTotal(item) {
+    const valor_unitario_base = parseCurrency(item.valor_unitario);
+    let valor_parametros = 0;
+
+    if (item.parametros && Array.isArray(item.parametros)) {
+        item.parametros.forEach(param => {
+            valor_parametros += (param.valor || 0);
+        });
+    }
+
+    const valor_unitario_total = valor_unitario_base + valor_parametros;
+    const isLocacaoStatus = (item.status || '').toUpperCase() === 'LOCAÇÃO';
+    const meses = (isLocacaoStatus && item.meses_locacao) ? parseInt(item.meses_locacao) : 1;
+    const itemTotal = (item.quantidade || 0) * valor_unitario_total * meses;
+
+    const descontoPercent = parseFloat(item.desconto_percent) || 0;
+    const valorDesconto = itemTotal * (descontoPercent / 100);
+    return itemTotal - valorDesconto;
+}
+
+function updateProposalTotalsInDOM() {
+    const { items } = appState.proposal;
+    let totalProposta = 0;
+
+    (items || []).forEach((item, index) => {
+        const itemTotal = calculateItemTotal(item);
+        totalProposta += itemTotal;
+
+        // Atualiza subtotal do item no DOM
+        const subtotalInput = document.querySelector(`.item-subtotal-input[data-index="${index}"]`);
+        if (subtotalInput) {
+            subtotalInput.value = formatCurrency(itemTotal);
+        }
+    });
+
+    // Atualiza Total Geral no DOM
+    const totalSpan = document.getElementById('proposal-total');
+    if (totalSpan) {
+        const frete = parseFloat(appState.proposal.frete_valor) || 0;
+        totalSpan.textContent = formatCurrency(totalProposta + frete);
+    }
 }
 
 async function handleImageUpload(e) {
@@ -1197,7 +1247,8 @@ async function handleCreateProposalFromOpp(e) {
         // Garante que parâmetros sejam um array, mesmo se nulos
         parametros: (item.parametros && Array.isArray(item.parametros))
             ? item.parametros.map(p => ({ nome: p.nome, valor: parseCurrency(p.valor) }))
-            : []
+            : [],
+        desconto_percent: 0
     }));
 
     // Fallback se 'items' não veio da API
@@ -1213,7 +1264,8 @@ async function handleCreateProposalFromOpp(e) {
             valor_unitario: parseFloat(opp.valor_unitario) || 0,
             status: 'VENDA',
             unidade_medida: 'Unidade',
-            parametros: []
+            parametros: [],
+            desconto_percent: 0
         });
     }
     // --- FIM DA ALTERAÇÃO ---
@@ -1266,6 +1318,7 @@ async function handleProposalFormSubmit(e) {
         }
         // Garante que valor unitário seja número
         newItem.valor_unitario = parseCurrency(newItem.valor_unitario);
+        newItem.desconto_percent = parseFloat(newItem.desconto_percent) || 0;
         // --- ALTERAÇÃO: Garante que valor do parâmetro é NÚMERO ---
         if (newItem.parametros && Array.isArray(newItem.parametros)) {
             newItem.parametros = newItem.parametros.map(param => ({
@@ -1395,3 +1448,11 @@ function renderClientPfFormFieldsForModal(data) {
     `;
 }
 
+
+function canEditUnitPrice() {
+    const { role } = appState.currentUser;
+    // Permite: ANALISTA, COMERCIAL, GESTOR, DIRETOR, SUPER_ADMIN
+    // Bloqueia: VENDEDOR, ESPECIALISTA, MARKETING, REPRESENTANTE, FINANCEIRO, TECNICO
+    const allowedRoles = ['Analista', 'Comercial', 'Gestor', 'Diretor', 'Super Admin', 'Admin'];
+    return allowedRoles.includes(role);
+}

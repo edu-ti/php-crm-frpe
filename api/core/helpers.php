@@ -103,6 +103,3 @@ function send_email_notification(array $recipients, string $subject, string $htm
         return false;
     }
 }
-
-
-

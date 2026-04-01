@@ -64,15 +64,6 @@ try {
         echo "[MIGRATED] Dados de origem migrados de Leads para Oportunidades.\n";
     }
 
-    // 5. Motivo Perda (Oportunidades)
-    try {
-        $pdo->query("SELECT motivo_perda FROM oportunidades LIMIT 1");
-        echo "[OK] Coluna 'motivo_perda' já existe.\n";
-    } catch (Exception $e) {
-        $pdo->exec("ALTER TABLE oportunidades ADD COLUMN motivo_perda VARCHAR(255) DEFAULT NULL");
-        echo "[UPDATED] Coluna 'motivo_perda' criada.\n";
-    }
-
     echo "Migração concluída com sucesso.\n";
 
 } catch (Exception $e) {

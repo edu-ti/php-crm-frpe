@@ -294,7 +294,17 @@ function calculate_proposal_total($items, $frete_valor)
     foreach ($items as $item) {
         $meses = (int) ($item['meses_locacao'] ?? 12);
         $multiplicador = (strtoupper($item['status'] ?? 'VENDA') === 'LOCAÇÃO') ? $meses : 1;
-        $valor_total += (($item['quantidade'] ?? 1) * ($item['valor_unitario'] ?? 0) * $multiplicador);
+
+        $quantidade = ($item['quantidade'] ?? 1);
+        $valor_unitario = ($item['valor_unitario'] ?? 0);
+        $desconto_percent_val = ($item['desconto_percent'] ?? 0);
+
+        // Aplica desconto no valor total do item
+        $subtotal_sem_desconto = $quantidade * $valor_unitario * $multiplicador;
+        $valor_desconto = $subtotal_sem_desconto * ($desconto_percent_val / 100);
+        $subtotal_com_desconto = $subtotal_sem_desconto - $valor_desconto;
+
+        $valor_total += $subtotal_com_desconto;
     }
     return $valor_total + (float) $frete_valor;
 }
@@ -304,7 +314,7 @@ function calculate_proposal_total($items, $frete_valor)
  */
 function insert_proposal_items($pdo, $proposal_id, $items)
 {
-    $item_sql = "INSERT INTO proposta_itens (proposta_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, status, unidade_medida, parametros, meses_locacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $item_sql = "INSERT INTO proposta_itens (proposta_id, produto_id, descricao, descricao_detalhada, fabricante, modelo, imagem_url, quantidade, valor_unitario, desconto_percent, status, unidade_medida, parametros, meses_locacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $item_stmt = $pdo->prepare($item_sql);
 
     foreach ($items as $item) {
@@ -334,6 +344,7 @@ function insert_proposal_items($pdo, $proposal_id, $items)
             $item['imagem_url'] ?? null,
             $item['quantidade'] ?? 1,
             $item['valor_unitario'] ?? 0,
+            $item['desconto_percent'] ?? 0,
             $item['status'] ?? 'VENDA',
             $item['unidade_medida'] ?? null,
             $item_parametros_json,
@@ -618,12 +629,12 @@ function handle_get_proposal_details($pdo, $get_data)
 function handle_upload_image()
 {
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
-        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar'];
         $filename = $_FILES['image']['name'];
         $filetype = pathinfo($filename, PATHINFO_EXTENSION);
 
         if (!in_array(strtolower($filetype), $allowed)) {
-            json_response(['success' => false, 'error' => 'Tipo de arquivo inválido.'], 400);
+            json_response(['success' => false, 'error' => 'Tipo de arquivo inválido. Formatos permitidos: imagens, pdf, office e compactados.'], 400);
         }
 
         $upload_dir = 'uploads/proposal_items/'; // Diretório específico para itens de proposta

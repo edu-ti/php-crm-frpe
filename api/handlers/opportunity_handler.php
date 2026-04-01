@@ -28,6 +28,10 @@ function handle_create_opportunity($pdo, $data)
         $valor_parametros = 0;
         if (!empty($item['parametros']) && is_array($item['parametros'])) {
             foreach ($item['parametros'] as $param) {
+                // Ignorar parâmetros de metadados como Lote ou Item
+                if (in_array(strtolower($param['nome'] ?? ''), ['lote', 'item_num', 'item'])) {
+                    continue;
+                }
                 // O valor do parâmetro vem do JS como número (parseCurrency)
                 $valor_parametros += (float) ($param['valor'] ?? 0);
             }
@@ -45,8 +49,14 @@ function handle_create_opportunity($pdo, $data)
     }
     // --- FIM DA CORREÇÃO ---
 
+    // --- MIGRATION: Auto-add document columns if they don't exist ---
+    try {
+        $pdo->exec('ALTER TABLE oportunidades ADD COLUMN documento_url VARCHAR(512) DEFAULT NULL, ADD COLUMN documento_nome VARCHAR(255) DEFAULT NULL, ADD COLUMN documento_tipo VARCHAR(100) DEFAULT NULL');
+    } catch (Exception $e) {
+    }
+
     // --- CORREÇÃO: SQL include new fields ---
-    $sql = "INSERT INTO oportunidades (titulo, organizacao_id, contato_id, cliente_pf_id, etapa_id, usuario_id, comercial_user_id, pre_proposal_number, valor, notas, numero_edital, numero_processo, local_disputa, uasg, data_abertura, hora_disputa, modalidade, objeto) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO oportunidades (titulo, organizacao_id, contato_id, cliente_pf_id, etapa_id, usuario_id, comercial_user_id, pre_proposal_number, valor, notas, numero_edital, numero_processo, local_disputa, uasg, data_abertura, hora_disputa, modalidade, objeto, documento_url, documento_nome, documento_tipo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
 
     $pdo->beginTransaction();
@@ -94,7 +104,10 @@ function handle_create_opportunity($pdo, $data)
             $data['data_abertura'] ?? null,
             $data['hora_disputa'] ?? null,
             $data['modalidade'] ?? null,
-            $data['objeto'] ?? null
+            $data['objeto'] ?? null,
+            $data['documento_url'] ?? null,
+            $data['documento_nome'] ?? null,
+            $data['documento_tipo'] ?? null
         ]);
 
         if (!$success) {
@@ -198,6 +211,10 @@ function handle_update_opportunity($pdo, $data)
         $valor_parametros = 0;
         if (!empty($item['parametros']) && is_array($item['parametros'])) {
             foreach ($item['parametros'] as $param) {
+                // Ignorar metadados do form Novo Contrato
+                if (in_array(strtolower($param['nome'] ?? ''), ['lote', 'item_num', 'item'])) {
+                    continue;
+                }
                 // O valor do parâmetro vem do JS como número (parseCurrency)
                 $valor_parametros += (float) ($param['valor'] ?? 0);
             }
@@ -213,6 +230,12 @@ function handle_update_opportunity($pdo, $data)
         $valor_total += (($item['quantidade'] ?? 1) * $valor_unitario_total * $multiplicador);
     }
     // --- FIM DA CORREÇÃO ---
+
+    // --- MIGRATION: Auto-add document columns if they don't exist ---
+    try {
+        $pdo->exec('ALTER TABLE oportunidades ADD COLUMN documento_url VARCHAR(512) DEFAULT NULL, ADD COLUMN documento_nome VARCHAR(255) DEFAULT NULL, ADD COLUMN documento_tipo VARCHAR(100) DEFAULT NULL');
+    } catch (Exception $e) {
+    }
 
     // --- CORREÇÃO: SQL simplificado, include new fields ---
     $sql = "UPDATE oportunidades SET
@@ -232,7 +255,10 @@ function handle_update_opportunity($pdo, $data)
                 modalidade = ?,
                 objeto = ?,
                 etapa_id = ?,
-                motivo_perda = ?
+                motivo_perda = ?,
+                documento_url = COALESCE(?, documento_url),
+                documento_nome = COALESCE(?, documento_nome),
+                documento_tipo = COALESCE(?, documento_tipo)
             WHERE id = ?";
 
     $pdo->beginTransaction();
@@ -256,11 +282,15 @@ function handle_update_opportunity($pdo, $data)
             $data['objeto'] ?? null,
             $data['etapa_id'] ?? 1, // Ensure etapa_id is updated if sent
             $data['motivo_perda'] ?? null,
+            $data['documento_url'] ?? null,
+            $data['documento_nome'] ?? null,
+            $data['documento_tipo'] ?? null,
             $data['id']
         ]);
 
         if (!$success) {
-            throw new Exception("Falha ao atualizar a oportunidade principal.");
+            $err = $stmt->errorInfo();
+            throw new Exception("Falha ao atualizar a oportunidade principal. Info: " . json_encode($err));
         }
 
         // --- INÍCIO: Atualiza itens na tabela 'oportunidade_itens' (DELETE/INSERT) ---
@@ -316,7 +346,7 @@ function handle_update_opportunity($pdo, $data)
     } catch (Exception $e) {
         $pdo->rollBack();
         file_put_contents(__DIR__ . '/../../api_debug_log.txt', date('[Y-m-d H:i:s] ') . "Erro Update Opportunity: " . $e->getMessage() . "\n", FILE_APPEND);
-        json_response(['success' => false, 'error' => 'Falha ao atualizar oportunidade e seus itens.'], 500);
+        json_response(['success' => false, 'error' => 'Falha detalhada: ' . $e->getMessage()], 500);
     }
 }
 
@@ -398,6 +428,25 @@ function handle_move_opportunity($pdo, $data)
             json_response(['success' => false, 'error' => 'Acesso negado: Você só pode mover oportunidades que criou ou que estão atribuídas a você.'], 403);
             return;
         }
+    }
+
+    // Check if moving to or from a restricted stage
+    $restricted_stages = ['Controle de Entrega', 'Faturado'];
+    $allowed_restricted_roles = ['Comercial', 'Gestor', 'Analista'];
+
+    // get old stage
+    $stmt_old_stage = $pdo->prepare("SELECT ef.nome FROM oportunidades o JOIN etapas_funil ef ON o.etapa_id = ef.id WHERE o.id = ?");
+    $stmt_old_stage->execute([$data['opportunityId']]);
+    $oldStageName = $stmt_old_stage->fetchColumn();
+
+    // get new stage
+    $stmt_new_stage = $pdo->prepare("SELECT nome FROM etapas_funil WHERE id = ?");
+    $stmt_new_stage->execute([$data['newStageId']]);
+    $newStageName = $stmt_new_stage->fetchColumn();
+
+    if ((in_array($oldStageName, $restricted_stages) || in_array($newStageName, $restricted_stages)) && !in_array($currentRole, $allowed_restricted_roles)) {
+        json_response(['success' => false, 'error' => 'Acesso negado: Você não tem permissão para interagir com esta etapa do funil.'], 403);
+        return;
     }
     // ---------------------------------------
 
@@ -522,4 +571,65 @@ function handle_transfer_opportunity($pdo, $data)
     }
 }
 
+function handle_upload_document()
+{
+    if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
+        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar'];
+        $filename = $_FILES['image']['name'];
+        $filetype = pathinfo($filename, PATHINFO_EXTENSION);
+
+        if (!in_array(strtolower($filetype), $allowed)) {
+            json_response(['success' => false, 'error' => 'Tipo de arquivo inválido. Formatos permitidos: imagens, pdf, office e compactados.'], 400);
+        }
+
+        $upload_dir = 'uploads/contratos/'; // Diretório específico para contratos
+        $base_path = dirname(__DIR__, 2); // Raiz do projeto
+        $destination_dir = $base_path . '/' . $upload_dir;
+
+        if (!is_dir($destination_dir)) {
+            if (!mkdir($destination_dir, 0775, true)) {
+                json_response(['success' => false, 'error' => 'Falha ao criar diretório de uploads.'], 500);
+                return;
+            }
+        }
+
+        $new_filename = uniqid('contrato_') . '.' . strtolower($filetype);
+        $destination_path = $destination_dir . $new_filename;
+
+        if (move_uploaded_file($_FILES['image']['tmp_name'], $destination_path)) {
+            // Retorna apenas o caminho relativo
+            $url = $upload_dir . $new_filename;
+            json_response(['success' => true, 'url' => $url]);
+        } else {
+            json_response(['success' => false, 'error' => 'Falha ao mover o arquivo.'], 500);
+        }
+    } else {
+        $error_code = $_FILES['image']['error'] ?? ' desconhecido';
+        error_log("Erro no upload de documento: Código {$error_code}");
+        json_response(['success' => false, 'error' => 'Nenhum arquivo enviado ou erro no upload. Código: ' . $error_code], 400);
+    }
+}
+
+function handle_migrate_db_opps($pdo, $data)
+{
+    try {
+        $pdo->exec('ALTER TABLE oportunidades ADD COLUMN documento_url VARCHAR(512) DEFAULT NULL');
+        echo "Coluna documento_url adicionada com sucesso ou ja existente.<br>";
+    } catch (Exception $e) {
+        echo "Erro url: " . $e->getMessage() . "<br>";
+    }
+    try {
+        $pdo->exec('ALTER TABLE oportunidades ADD COLUMN documento_nome VARCHAR(255) DEFAULT NULL');
+        echo "Coluna documento_nome adicionada com sucesso ou ja existente.<br>";
+    } catch (Exception $e) {
+        echo "Erro nome: " . $e->getMessage() . "<br>";
+    }
+    try {
+        $pdo->exec('ALTER TABLE oportunidades ADD COLUMN documento_tipo VARCHAR(100) DEFAULT NULL');
+        echo "Coluna documento_tipo adicionada com sucesso ou ja existente.<br>";
+    } catch (Exception $e) {
+        echo "Erro tipo: " . $e->getMessage() . "<br>";
+    }
+    exit;
+}
 ?>

@@ -11,41 +11,15 @@ import { renderAgendaView } from './views/agenda.js';
 import { renderLeadsView } from './views/leads.js';
 import { renderCatalogView } from './views/catalog.js';
 import { renderEmailMarketingView } from './views/email_marketing.js?v=3';
-
+import { renderFinanceiroView } from './views/financeiro.js';
 
 // O estado da aplicação
 // Cache bust: 2026-01-26-2
-export let appState = {
-    currentUser: null,
-    users: [],
-    opportunities: [],
-    organizations: [],
-    contacts: [],
-    clients_pf: [],
-    proposals: [],
-    pre_proposals: [],
-    stages: [],
-    fornecedores: [],
-    vendasFornecedores: [],
-    agendamentos: [],
-    leads: [],
-    products: [],
-    charts: {},
-    proposal: null,
-    clientsView: { activeTab: 'organizations', searchTerm: '', isFormVisible: false, editingId: null },
-    proposalsView: { currentPage: 1 },
-    proposalSort: { column: 'data_criacao', direction: 'desc' },
-    funilView: { activeTab: 'vendas', year: new Date().getFullYear(), selectedFornecedorId: null },
-    activeView: 'dashboard',
-    // Estado para a nova view de Email Marketing
-    emailMarketingView: {
-        selectedInterests: [],
-        subject: '',
-        body: '',
-        recipientCount: 0,
-        recipientEmails: []
-    }
-};
+import { appState } from './state.js';
+
+// O estado da aplicação
+// Cache bust: 2026-01-26-2
+// appState is now imported from state.js
 
 document.addEventListener('DOMContentLoaded', initializeApp);
 
@@ -124,7 +98,8 @@ async function switchView(viewName) {
         'leads': renderLeadsView,
         'settings': renderSettingsView,
         'catalog': renderCatalogView,
-        'email-marketing': renderEmailMarketingView
+        'email-marketing': renderEmailMarketingView,
+        'financeiro': renderFinanceiroView
     }[viewName];
 
     if (renderFunction) {
@@ -305,6 +280,7 @@ function renderUI() {
         { id: 'proposals', icon: 'fa-file-invoice-dollar', text: 'Propostas', permission: true },
         { id: 'catalog', icon: 'fa-book-open', text: 'Catálogo', permission: permissions.canSeeCatalog }, // Usar permissão
         { id: 'email-marketing', icon: 'fa-bullhorn', text: 'Marketing', permission: permissions.canManageLeads && !['Vendedor', 'Especialista'].includes(currentUser.role) }, // Nova aba e permissão
+        { id: 'financeiro', icon: 'fa-money-bill-wave', text: 'Financeiro', permission: ['Gestor', 'Comercial', 'Analista'].includes(currentUser.role) }, // Aba Financeira
         { id: 'reports', icon: 'fa-chart-line', text: 'Relatórios', permission: permissions.canSeeReports }, // Nova aba Relatórios
         { id: 'settings', icon: 'fa-cog', text: 'Configurações', permission: permissions.canSeeSettings }
     ];
@@ -324,6 +300,7 @@ function renderUI() {
         <div id="proposals-view" class="view-container"></div>
         <div id="leads-view" class="view-container"></div>
         <div id="email-marketing-view" class="view-container hidden"></div>
+        <div id="financeiro-view" class="view-container hidden"></div>
         <div id="reports-view" class="view-container hidden"></div>
         <div id="settings-view" class="view-container"></div>
         <div id="catalog-view" class="view-container"></div>

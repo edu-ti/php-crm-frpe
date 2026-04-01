@@ -27,4 +27,3 @@ function handle_logout() {
     session_destroy();
     json_response(['success' => true]);
 }
-

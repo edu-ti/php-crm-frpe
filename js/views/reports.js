@@ -88,14 +88,15 @@ export async function renderReportsView(state) {
                 <!-- Removido md:flex para iniciar oculto também no desktop -->
                 <div id="reports-filters-container" class="hidden flex-wrap items-end gap-4 mb-4 md:mb-0 transition-all duration-300 ease-in-out">
                     <div class="w-full md:w-auto">
-                        <select id="report-type" class="form-select border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-full md:w-40">
+                        <select id="report-type" class="form-select border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 w-full md:w-50">
                             <option value="sales">Vendas Gerais</option>
+                            <option value="contratos">Contratos</option>
                             <option value="forecast">Forecast (Previsão)</option>
                             <option value="funnel">Funil de Vendas</option>
-                            <option value="lost_reasons">Motivos de Perda</option>
+                            <option value="lost_reasons">Propostas recusadas</option>
                             <option value="clients">Ranking de Clientes (Curva ABC)</option>
                             <option value="products">Vendas por Produto</option>
-                            <option value="licitacoes">Licitações</option>
+                            <option value="licitacoes_funnel">Licitações (Funil)</option>
                         </select>
                     </div>
 
@@ -124,6 +125,11 @@ export async function renderReportsView(state) {
                         </div>
                     </div>
 
+                    <div class="w-full md:w-auto">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Cliente</label>
+                        <div id="filter-client-container" class="w-full md:w-64 relative"></div>
+                    </div>
+
                     <!-- Novos Filtros (Fase 2) -->
                     <div class="w-full md:w-auto">
                         <label class="block text-xs font-bold text-gray-700 mb-1">Etapa</label>
@@ -135,11 +141,11 @@ export async function renderReportsView(state) {
                     </div>
                     <div class="w-full md:w-auto">
                         <label class="block text-xs font-bold text-gray-700 mb-1">UF</label>
-                        <div id="filter-uf-container" class="w-full md:w-32 relative"></div>
+                        <div id="filter-uf-container" class="w-full md:w-40 relative"></div>
                     </div>
                     <div class="w-full md:w-auto">
                         <label class="block text-xs font-bold text-gray-700 mb-1">Status</label>
-                        <div id="filter-status-container" class="w-full md:w-32 relative"></div>
+                        <div id="filter-status-container" class="w-full md:w-40 relative"></div>
                     </div>
 
                     <div class="flex flex-wrap gap-2 w-full md:w-auto ml-auto">
@@ -238,11 +244,11 @@ export async function renderReportsView(state) {
             }
             .multiselect-button:focus { outline: 2px solid #a5b4fc; border-color: #6366f1; }
             .multiselect-list {
-                display: none; position: absolute; z-index: 50; width: 100%; max-height: 15rem; overflow-y: auto;
+                display: none; position: absolute; z-index: 50; width: 100%;
                 background: white; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-top: 0.25rem;
                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             }
-            .multiselect-list.show { display: block; }
+            .multiselect-list.show { display: flex; flex-direction: column; }
             .multiselect-item {
                 display: flex; align-items: center; padding: 0.5rem; cursor: pointer; transition: background-color 0.15s;
             }
@@ -319,6 +325,7 @@ function restoreFilters() {
 
         if (f.suppliers) restoreMulti('supplier-select', f.suppliers);
         if (f.users) restoreMulti('user-select', f.users);
+        if (f.clients) restoreMulti('client-select', f.clients);
         if (f.etapas) restoreMulti('etapa-select', f.etapas);
         if (f.origens) restoreMulti('origem-select', f.origens);
         if (f.ufs) restoreMulti('uf-select', f.ufs);
@@ -358,6 +365,13 @@ function populateFilters() {
     const users = appState.users || [];
     const sellers = users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista'].includes(u.role));
     renderMultiSelect('filter-user-container', 'user-select', sellers.map(u => ({ value: u.id, label: u.nome })), 'Todos os Vendedores');
+
+    // Cliente (Organizations + PF)
+    const clients = [];
+    appState.organizations?.forEach(o => clients.push({ value: 'org-' + o.id, label: o.nome_fantasia || o.razao_social || 'Org ' + o.id }));
+    appState.clients_pf?.forEach(p => clients.push({ value: 'pf-' + p.id, label: p.nome || 'PF ' + p.id }));
+    clients.sort((a, b) => a.label.localeCompare(b.label));
+    renderMultiSelect('filter-client-container', 'client-select', clients, 'Todos os Clientes');
 
     // --- Novos Filtros ---
 
@@ -399,17 +413,22 @@ function renderMultiSelect(containerId, selectId, options, defaultText) {
                 <i class="fas fa-chevron-down text-gray-400 text-xs ml-2"></i>
             </button>
             <div class="multiselect-list" id="${selectId}-list">
-                <div class="p-2 border-b border-gray-100 flex justify-between">
-                     <button type="button" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium" onclick="toggleAllMultiSelect('${selectId}', true)">Marcar Todos</button>
-                     <button type="button" class="text-xs text-gray-500 hover:text-gray-700" onclick="toggleAllMultiSelect('${selectId}', false)">Limpar</button>
+                <div class="p-2 border-b border-gray-100 flex flex-col gap-2 shrink-0">
+                     <input type="text" placeholder="Pesquisar..." class="w-full text-xs p-1.5 border border-gray-300 rounded focus:outline-none focus:border-indigo-500" oninput="filterMultiSelect('${selectId}', this.value)" onclick="event.stopPropagation()">
+                     <div class="flex justify-between">
+                         <button type="button" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium" onclick="toggleAllMultiSelect('${selectId}', true)">Marcar Todos</button>
+                         <button type="button" class="text-xs text-gray-500 hover:text-gray-700" onclick="toggleAllMultiSelect('${selectId}', false)">Limpar</button>
+                     </div>
                 </div>
-                <!-- Options -->
-                ${options.map(opt => `
-                    <label class="multiselect-item">
-                        <input type="checkbox" value="${opt.value}" class="${selectId}-checkbox" onchange="updateMultiSelectText('${selectId}', '${defaultText}')">
-                        <span class="text-sm text-gray-700">${opt.label}</span>
-                    </label>
-                `).join('')}
+                <div class="overflow-y-auto max-h-48 flex-grow">
+                    <!-- Options -->
+                    ${options.map(opt => `
+                        <label class="multiselect-item" data-label="${opt.label.toLowerCase().replace(/"/g, '&quot;')}">
+                            <input type="checkbox" value="${opt.value}" class="${selectId}-checkbox" onchange="updateMultiSelectText('${selectId}', '${defaultText}')">
+                            <span class="text-sm text-gray-700">${opt.label}</span>
+                        </label>
+                    `).join('')}
+                </div>
             </div>
         </div>
     `;
@@ -417,6 +436,22 @@ function renderMultiSelect(containerId, selectId, options, defaultText) {
 }
 
 // Global scope helpers for onclick events (since module scope)
+window.filterMultiSelect = function (id, term) {
+    const list = document.getElementById(`${id}-list`);
+    if (!list) return;
+    const items = list.querySelectorAll('.multiselect-item');
+    const lowerTerm = term.toLowerCase();
+
+    items.forEach(el => {
+        const label = el.getAttribute('data-label') || '';
+        if (label.includes(lowerTerm)) {
+            el.style.display = 'flex';
+        } else {
+            el.style.display = 'none';
+        }
+    });
+};
+
 window.toggleMultiSelect = function (id) {
     const list = document.getElementById(`${id}-list`);
     // Close others
@@ -464,8 +499,12 @@ window.updateMultiSelectText = function (id, defaultText) {
 
 window.getMultiSelectValues = function (id) {
     const checkboxes = document.querySelectorAll(`.${id}-checkbox:checked`);
-    // If none selected, return empty (implies all in backend logic if we passed null, or restrict?)
-    // Based on backend change: empty sends null.
+    const total = document.querySelectorAll(`.${id}-checkbox`).length;
+    // If none are selected OR all are selected, we pass empty to bypass the SQL IN() filter entirely.
+    // This handles NULLs correctly (as filtering by all options explicitly often drops NULL DB values).
+    if (checkboxes.length === 0 || checkboxes.length === total) {
+        return [];
+    }
     return Array.from(checkboxes).map(cb => cb.value);
 };
 
@@ -480,6 +519,7 @@ async function loadReportData() {
     // Get Multi-select values
     const supplierIds = window.getMultiSelectValues('supplier-select');
     const userIds = window.getMultiSelectValues('user-select');
+    const clientIds = window.getMultiSelectValues('client-select');
     const etapaIds = window.getMultiSelectValues('etapa-select');
     const origemIds = window.getMultiSelectValues('origem-select');
     const ufIds = window.getMultiSelectValues('uf-select');
@@ -492,6 +532,7 @@ async function loadReportData() {
 
     const supplierPayload = supplierIds.length > 0 ? supplierIds.join(',') : '';
     const userPayload = userIds.length > 0 ? userIds.join(',') : '';
+    const clientPayload = clientIds.length > 0 ? clientIds.join(',') : '';
     const etapaPayload = etapaIds.length > 0 ? etapaIds.join(',') : '';
     const origemPayload = origemIds.length > 0 ? origemIds.join(',') : '';
     const ufPayload = ufIds.length > 0 ? ufIds.join(',') : '';
@@ -506,6 +547,7 @@ async function loadReportData() {
         end: end,
         suppliers: supplierIds,
         users: userIds,
+        clients: clientIds,
         etapas: etapaIds,
         origens: origemIds,
         ufs: ufIds,
@@ -535,6 +577,7 @@ async function loadReportData() {
             end_date: formattedEnd,
             supplier_id: supplierPayload,
             user_id: userPayload,
+            cliente_id: clientPayload,
             etapa_id: etapaPayload,
             origem: origemPayload, // API expects 'origem' (plural handled by explode) or 'origem_id'? Handler has 'origei' typo variable but gets 'origem'.
             uf: ufPayload,
@@ -565,6 +608,8 @@ function renderReports(data, container, type, startStr, endStr) {
 
     if (data.length === 0) {
         container.innerHTML = `<div class="bg-blue-50 p-8 border border-blue-200 text-blue-700 rounded text-center">Nenhum dado encontrado para o período.</div>`;
+        const chartContainer = document.getElementById('chart-container-wrapper');
+        if (chartContainer) chartContainer.classList.add('hidden');
         return;
     }
 
@@ -583,14 +628,21 @@ function renderReports(data, container, type, startStr, endStr) {
     }
 
     if (type === 'forecast') {
+        renderSalesChart(data, monthsRange, 'forecast');
         // For forecast, we might want a simple summary table below too.
         const html = renderForecastTable(data);
         container.innerHTML = html;
         return;
     }
 
-    if (type === 'funnel') {
-        const html = renderFunnelTable(data);
+    if (type === 'funnel' || type === 'licitacoes_funnel') {
+        const html = renderFunnelTable(data, type);
+        container.innerHTML = html;
+        return;
+    }
+
+    if (type === 'contratos') {
+        const html = renderContractsTable(data);
         container.innerHTML = html;
         return;
     }
@@ -606,7 +658,7 @@ function renderReports(data, container, type, startStr, endStr) {
         wrapper.className = "mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid";
 
         const header = document.createElement('div');
-        header.className = "px-6 py-4 bg-gray-50 border-b border-gray-200";
+        header.className = "px-6 py-4 bg-blue-50 border-b border-gray-200";
         header.innerHTML = `<h3 class="text-lg font-medium text-gray-900">${group.fornecedor_nome || 'Fornecedor'}</h3>`;
         wrapper.appendChild(header);
 
@@ -620,8 +672,6 @@ function renderReports(data, container, type, startStr, endStr) {
             }
         } else if (type === 'products') {
             tableHtml = renderProductsTable(group.rows);
-        } else if (type === 'licitacoes') {
-            tableHtml = renderLicitationsTable(group.rows);
         }
 
         const tableContainer = document.createElement('div');
@@ -638,8 +688,8 @@ function renderSalesChart(data, monthsRange, type) {
 
     if (!ctx || !container) return;
 
-    // Show chart for Sales, Clients, Funnel, Lost Reasons, Forecast
-    if (!['sales', 'clients', 'funnel', 'lost_reasons', 'forecast'].includes(type) || !data || data.length === 0) {
+    // Show chart for Sales, Contratos, Clients, Funnel, Lost Reasons, Forecast, Licitacoes Funnel
+    if (!['sales', 'contratos', 'clients', 'funnel', 'lost_reasons', 'forecast', 'licitacoes_funnel'].includes(type) || !data || data.length === 0) {
         container.classList.add('hidden');
         return;
     }
@@ -716,7 +766,7 @@ function renderSalesChart(data, monthsRange, type) {
         const values = data.map(r => parseInt(r.qtd));
 
         const titleEl = container.querySelector('h3');
-        if (titleEl) titleEl.innerText = "Distribuição de Motivos de Perda";
+        if (titleEl) titleEl.innerText = "Distribuição de Propostas Recusadas";
 
         const backgroundColors = [
             'rgb(255, 99, 132)',
@@ -752,13 +802,17 @@ function renderSalesChart(data, monthsRange, type) {
     }
 
     // --- FUNNEL CHART ---
-    if (type === 'funnel') {
+    if (type === 'funnel' || type === 'licitacoes_funnel' || type === 'contratos') {
         const labels = data.map(r => r.etapa_nome);
         const values = data.map(r => parseInt(r.qtd_oportunidades));
         // const valuesVal = data.map(r => parseFloat(r.valor_total)); // Maybe toggle between count/value?
 
         const titleEl = container.querySelector('h3');
-        if (titleEl) titleEl.innerText = "Funil de Vendas (Quantidade)";
+        if (titleEl) {
+            if (type === 'licitacoes_funnel') titleEl.innerText = "Funil de Licitações (Quantidade)";
+            else if (type === 'contratos') titleEl.innerText = "Funil Financeiro (Quantidade de Contratos)";
+            else titleEl.innerText = "Funil de Vendas (Quantidade)";
+        }
 
         chartInstance = new Chart(ctx, {
             type: 'bar',
@@ -869,7 +923,7 @@ function renderSalesChart(data, monthsRange, type) {
                         max: 100,
                         grid: { drawOnChartArea: false },
                         ticks: {
-                            callback: function(value) { return value + '%'; }
+                            callback: function (value) { return value + '%'; }
                         }
                     }
                 }
@@ -879,7 +933,9 @@ function renderSalesChart(data, monthsRange, type) {
     } else {
         // Reset Title for Sales
         const titleEl = container.querySelector('h3');
-        if (titleEl) titleEl.innerText = "Evolução de Vendas vs Metas";
+        if (titleEl) {
+            titleEl.innerText = "Evolução de Vendas vs Metas";
+        }
     }
 
     // --- SALES CHART (Existing Logic) ---
@@ -1003,12 +1059,14 @@ function renderSalesTable(group, monthsRange) {
 
     // Calculate Totals per Month (Sum of Users)
     const totals = monthKeys.reduce((acc, monthKey) => {
-        acc[monthKey] = { venda: 0, meta: 0, saldo: 0 };
+        acc[monthKey] = { venda: 0, faturado: 0, meta: 0, saldo: 0 };
         rows.forEach(row => {
-            const cellData = row.dados_mes[monthKey] || { venda: 0, meta: 0 };
+            const cellData = row.dados_mes[monthKey] || { venda: 0, faturado: 0, meta: 0 };
             const venda = parseFloat(cellData.venda) || 0;
+            const faturado = parseFloat(cellData.faturado) || 0;
             const meta = parseFloat(cellData.meta) || 0;
             acc[monthKey].venda += venda;
+            acc[monthKey].faturado += faturado;
             // If user targets enabled, sum them up. Else we'll handle meta differently in display (use global)
             acc[monthKey].meta += meta;
             acc[monthKey].saldo += (venda - meta);
@@ -1022,15 +1080,30 @@ function renderSalesTable(group, monthsRange) {
     ).join('');
 
     // Body
-    const tableBody = rows.map(row => {
-        let rowVenda = 0, rowMeta = 0;
+    const tableBody = rows.filter(row => {
+        // Hide rows with no sales/NF if filters like Client, UF, etc. are active
+        const filterActive = (document.getElementById('client-select-btn')?.innerText.trim() !== 'Todos os Clientes') ||
+            (document.getElementById('uf-select-btn')?.innerText.trim() !== 'Todos os Estados') ||
+            (document.getElementById('status-select-btn')?.innerText.trim() !== 'Todos os Status') ||
+            (document.getElementById('origem-select-btn')?.innerText.trim() !== 'Todas as Origens');
+
+        if (!filterActive) return true;
+
+        const hasActivity = monthKeys.some(key => {
+            const d = row.dados_mes[key] || {};
+            return (parseFloat(d.venda) || 0) > 0 || (parseFloat(d.faturado) || 0) > 0;
+        });
+        return hasActivity;
+    }).map(row => {
+        let rowVenda = 0, rowFaturado = 0, rowMeta = 0;
 
         const cells = monthKeys.map(key => {
-            const d = row.dados_mes[key] || { venda: 0, meta: 0 };
+            const d = row.dados_mes[key] || { venda: 0, faturado: 0, meta: 0 };
             const v = parseFloat(d.venda) || 0;
+            const f = parseFloat(d.faturado) || 0;
             const m = parseFloat(d.meta) || 0;
             const s = v - m;
-            rowVenda += v; rowMeta += m;
+            rowVenda += v; rowFaturado += f; rowMeta += m;
 
             const saldoClass = s >= 0 ? 'text-green-600' : 'text-red-600';
             const bgClass = (userTargetsEnabled && m > 0) ? (v >= m ? 'bg-green-50' : 'bg-red-50') : '';
@@ -1049,8 +1122,7 @@ function renderSalesTable(group, monthsRange) {
                 <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500 border-r border-gray-200 text-right ${bgClass}">
                     <div class="font-medium text-gray-900">${v > 0 ? format(v) : '-'}</div>
                     ${(userTargetsEnabled && m > 0) ? `<div class="text-gray-400 text-[10px]">M: ${format(m)}</div>` : ''}
-                    ${progressHtml}
-                    ${(userTargetsEnabled && m > 0) ? `<div class="${saldoClass} font-bold mt-1 pt-0 text-[10px]">S: ${format(s)}</div>` : ''}
+                    ${(userTargetsEnabled && m > 0) ? `<div class="${saldoClass} font-bold border-t border-gray-100 mt-1 pt-1 text-[10px]">S: ${format(s)}</div>` : ''}
                 </td>
             `;
         }).join('');
@@ -1076,8 +1148,7 @@ function renderSalesTable(group, monthsRange) {
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-right bg-gray-50 font-bold border-l border-gray-200">
                     <div>${format(rowVenda)}</div>
                     ${userTargetsEnabled ? `<div class="text-[10px] text-gray-500">M: ${format(rowMeta)}</div>` : ''}
-                    ${rowGrandProgressHtml}
-                    ${userTargetsEnabled ? `<div class="${rowSaldoClass} text-[10px] border-t border-gray-200 pt-1 mt-1">S: ${format(rowSaldo)}</div>` : ''}
+                    ${userTargetsEnabled ? `<div class="${rowSaldoClass} text-[10px] border-t border-gray-200 pt-1">S: ${format(rowSaldo)}</div>` : ''}
                 </td>
             </tr>
         `;
@@ -1089,12 +1160,14 @@ function renderSalesTable(group, monthsRange) {
         // If targets disabled, use supplier global meta monthly divided or just flat?
         // Usually global meta is monthly.
         const metaVal = userTargetsEnabled ? t.meta : supplierMetaMensal;
+        const faturadoVal = t.faturado;
         const saldoVal = t.venda - metaVal;
 
         const sClass = saldoVal >= 0 ? 'text-green-600' : 'text-red-600';
         return `
             <td class="px-2 py-3 whitespace-nowrap text-xs text-right font-bold bg-gray-100 border-r border-gray-200">
                 <div>${format(t.venda)}</div>
+                ${faturadoVal > 0 ? `<div class="text-indigo-600 text-[10px]">F: ${format(faturadoVal)}</div>` : ''}
                 <div class="text-gray-500 text-[10px]">${format(metaVal)}</div>
                 <div class="${sClass} text-[10px]">${format(saldoVal)}</div>
             </td>
@@ -1110,6 +1183,49 @@ function renderSalesTable(group, monthsRange) {
     const grandSaldo = grandVenda - grandMeta;
     const grandSaldoClass = grandSaldo >= 0 ? 'text-green-600' : 'text-red-600';
 
+    // Row: Factory Total (Global)
+    const factoryMetaMensal = parseFloat(group.meta_global_mensal) || 0;
+    const factoryTotalCells = monthKeys.map(key => {
+        const t = totals[key];
+        const v = t.venda || 0;
+        const f = t.faturado || 0;
+        const m = factoryMetaMensal;
+        const s = v - m;
+
+        const sClass = s >= 0 ? 'text-green-600' : 'text-red-600';
+        const bgClass = m > 0 ? (v >= m ? 'bg-green-50' : 'bg-red-50') : 'bg-blue-50';
+
+        return `
+            <td class="px-2 py-3 whitespace-nowrap text-xs text-right font-bold border-r border-gray-200 ${bgClass}">
+                <div class="text-blue-900 text-sm" title="Total Vendas">${format(v)}</div>
+                ${f > 0 ? `<div class="text-indigo-700 font-bold text-[10px]" title="Total Faturado">F: ${format(f)}</div>` : ''}
+                ${m > 0 ? `<div class="text-gray-500 text-[10px]" title="Meta Fábrica">M: ${format(m)}</div>` : ''}
+                ${m > 0 ? `<div class="${sClass} text-[10px] border-t border-gray-200 pt-1 mt-1" title="Saldo Vendas meta">S: ${format(s)}</div>` : ''}
+            </td>
+        `;
+    }).join('');
+
+    const factoryGrandVenda = Object.values(totals).reduce((a, b) => a + b.venda, 0);
+    const factoryGrandFaturado = Object.values(totals).reduce((a, b) => a + b.faturado, 0);
+    const factoryGrandMeta = factoryMetaMensal * numMonths;
+    const factoryGrandSaldo = factoryGrandVenda - factoryGrandMeta;
+    const factoryGrandSaldoClass = factoryGrandSaldo >= 0 ? 'text-green-600' : 'text-red-600';
+
+    const factoryTotalRow = `
+        <tr class="bg-blue-100 border-b-2 border-blue-200 shadow-sm">
+            <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-blue-900 border-r border-gray-200 sticky left-0 bg-blue-100 z-10">
+                TOTAL ${(group.fornecedor_nome || 'FÁBRICA').toUpperCase()}
+            </td>
+            ${factoryTotalCells}
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold bg-blue-200 border-l border-gray-200">
+                <div class="text-blue-900 text-sm">${format(factoryGrandVenda)}</div>
+                ${factoryGrandFaturado > 0 ? `<div class="text-indigo-700 text-[10px]">F: ${format(factoryGrandFaturado)}</div>` : ''}
+                ${factoryGrandMeta > 0 ? `<div class="text-gray-600 text-[10px]">M: ${format(factoryGrandMeta)}</div>` : ''}
+                ${factoryGrandMeta > 0 ? `<div class="${factoryGrandSaldoClass} text-[10px] border-t border-blue-300 pt-1 mt-1">S: ${format(factoryGrandSaldo)}</div>` : ''}
+            </td>
+        </tr>
+    `;
+
     return `
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 border border-gray-200">
@@ -1121,12 +1237,14 @@ function renderSalesTable(group, monthsRange) {
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
+                    ${factoryTotalRow}
                     ${tableBody}
                     <tr class="bg-gray-100 border-t-2 border-gray-300">
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 border-r border-gray-200 sticky left-0 bg-gray-100 z-10">TOTAIS</td>
                         ${totalsCells}
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold bg-gray-200 border-l border-gray-200">
                             <div>${format(grandVenda)}</div>
+                            ${factoryGrandFaturado > 0 ? `<div class="text-indigo-700 text-[10px]">F: ${format(factoryGrandFaturado)}</div>` : ''}
                             <div class="text-gray-500 text-[10px]">${format(grandMeta)}</div>
                             <div class="${grandSaldoClass} text-[10px]">${format(grandSaldo)}</div>
                         </td>
@@ -1141,8 +1259,8 @@ function renderStateReport(group) {
     const stateSales = group.state_sales || {};
     const stateGoals = group.state_goals || {};
 
-    // Get unique states from both sales and goals
-    const states = [...new Set([...Object.keys(stateSales), ...Object.keys(stateGoals)])].sort();
+    // Get only states that have defined goals for this supplier
+    const states = Object.keys(stateGoals).sort();
 
     if (states.length === 0) return ''; // No state data
 
@@ -1278,16 +1396,25 @@ function renderClientsTable(data) {
     `;
 }
 
-function renderFunnelTable(data) {
+function renderFunnelTable(data, type = 'funnel') {
     const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
     const totalRevenue = data.reduce((acc, row) => acc + (parseFloat(row.valor_total) || 0), 0);
     const totalCount = data.reduce((acc, row) => acc + parseInt(row.qtd_oportunidades), 0);
 
+    let title = 'Funil de Vendas (Conversão)';
+    let unit = 'Oportunidades';
+    if (type === 'licitacoes_funnel') {
+        title = 'Funil de Licitações (Conversão)';
+    } else if (type === 'contratos') {
+        title = 'Funil Financeiro (Contratos)';
+        unit = 'Contratos';
+    }
+
     return `
         <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
             <div class="px-6 py-4 bg-teal-50 border-b border-teal-100 flex justify-between items-center">
-                <h3 class="font-bold text-teal-700">Funil de Vendas (Conversão)</h3>
-                <span class="text-xs bg-teal-200 text-teal-800 px-2 py-1 rounded-full">${totalCount} Oportunidades</span>
+                <h3 class="font-bold text-teal-700">${title}</h3>
+                <span class="text-xs bg-teal-200 text-teal-800 px-2 py-1 rounded-full">${totalCount} ${unit}</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -1350,8 +1477,8 @@ function renderLostReasonsTable(data) {
     return `
         <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
             <div class="px-6 py-4 bg-red-50 border-b border-red-100 flex justify-between items-center">
-                <h3 class="font-bold text-red-700">Análise de Motivos de Perda</h3>
-                <span class="text-xs bg-red-200 text-red-800 px-2 py-1 rounded-full">${totalCount} Perdidas</span>
+                <h3 class="font-bold text-red-700">Análise de Propostas recusadas</h3>
+                <span class="text-xs bg-red-200 text-red-800 px-2 py-1 rounded-full">${totalCount} Recusadas</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
                 <!-- Tabela -->
@@ -1582,10 +1709,11 @@ function loadTargetsEditor(supplierId, year = null) {
     const container = document.getElementById('targets-grid-container');
     const allUsers = appState.users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista'].includes(u.role));
 
-    // Determine year: passed arg > current filter > current real year
+    // Determine year: passed arg > current real year > fallback
     if (!year) {
-        const startVal = document.getElementById('filter-start-date').value;
-        year = startVal ? startVal.split('-')[0] : new Date().getFullYear();
+        year = new Date().getFullYear();
+        // const startVal = document.getElementById('filter-start-date').value;
+        // year = startVal ? startVal.split('-')[0] : new Date().getFullYear();
     }
 
     // Show loading skeleton or similar? For now just keep old until fetch done.
@@ -1798,11 +1926,23 @@ function loadTargetsEditor(supplierId, year = null) {
                 });
 
                 tr.querySelector('.btn-remove-state').addEventListener('click', () => {
-                    if (confirm(`Remover estado ${uf}?`)) {
-                        div.remove();
-                        tr.remove();
-                        updateGrandTotal(container);
-                    }
+                    Swal.fire({
+                        title: 'Tem certeza?',
+                        text: 'Você tem certeza que deseja apagar esse registro!',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Apagar',
+                        cancelButtonText: 'Cancelar',
+                        backdrop: `rgba(0,0,0,0.8)`
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            div.remove();
+                            tr.remove();
+                            updateGrandTotal(container);
+                        }
+                    });
                 });
             };
 
@@ -2006,93 +2146,4 @@ async function saveTargets() {
     } finally {
         showLoading(false);
     }
-}
-
-function updateFilterPills(type, start, end, supplierIds, userIds, etapaIds, origemIds, ufIds, statusIds) {
-    const container = document.getElementById('active-filters-pills');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    let hasPills = false;
-
-    const createPill = (label, filterId, isMulti = true) => {
-        hasPills = true;
-        return `
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 animate-fade-in shadow-sm border border-indigo-200">
-                ${label}
-                <button type="button" class="flex-shrink-0 ml-1.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-indigo-400 hover:bg-indigo-200 hover:text-indigo-500 focus:outline-none focus:bg-indigo-500 focus:text-white" onclick="removeFilterPill('${filterId}', ${isMulti})">
-                    <span class="sr-only">Remover filtro</span>
-                    <i class="fas fa-times text-[10px]"></i>
-                </button>
-            </span>
-        `;
-    };
-
-    let innerHtml = '';
-
-    const resolveLabels = (idBase) => {
-        const checkboxes = document.querySelectorAll(`.${idBase}-checkbox:checked`);
-        return Array.from(checkboxes).map(c => c.nextElementSibling.innerText).join(', ');
-    };
-
-    if (start && end) {
-        innerHtml += `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 shadow-sm border border-gray-200">Período: ${start} a ${end}</span>`;
-        hasPills = true;
-    }
-
-    if (supplierIds.length > 0) innerHtml += createPill('Fornecedores: ' + resolveLabels('supplier-select'), 'supplier-select');
-    if (userIds.length > 0) innerHtml += createPill('Vendedores: ' + resolveLabels('user-select'), 'user-select');
-    if (etapaIds.length > 0) innerHtml += createPill('Etapas: ' + resolveLabels('etapa-select'), 'etapa-select');
-    if (origemIds.length > 0) innerHtml += createPill('Origens: ' + resolveLabels('origem-select'), 'origem-select');
-    if (ufIds.length > 0) innerHtml += createPill('UF: ' + resolveLabels('uf-select'), 'uf-select');
-    if (statusIds.length > 0) innerHtml += createPill('Status: ' + resolveLabels('status-select'), 'status-select');
-
-    if (hasPills) {
-        container.innerHTML = `<span class="text-xs font-bold text-gray-500 self-center mr-2"><i class="fas fa-tags mr-1"></i> Filtros Ativos:</span>` + innerHtml;
-        container.classList.remove('hidden');
-    } else {
-        container.classList.add('hidden');
-    }
-}
-
-window.removeFilterPill = function(idBase, isMulti) {
-    if (isMulti) {
-        window.toggleAllMultiSelect(idBase, false);
-    }
-    // Re-trigger search
-    document.getElementById('refresh-report-btn').click();
-};
-
-function exportToPDF() {
-    const type = document.getElementById('report-type').value;
-    const start = document.getElementById('filter-start-date').value;
-    const end = document.getElementById('filter-end-date').value;
-    
-    const supplierIds = window.getMultiSelectValues('supplier-select');
-    const userIds = window.getMultiSelectValues('user-select');
-    const etapaIds = window.getMultiSelectValues('etapa-select');
-    const origemIds = window.getMultiSelectValues('origem-select');
-    const ufIds = window.getMultiSelectValues('uf-select');
-    const statusIds = window.getMultiSelectValues('status-select');
-
-    let formattedEnd = '';
-    if (end) {
-        const [y, m] = end.split('-');
-        const lastDay = new Date(y, m, 0).getDate();
-        formattedEnd = `${end}-${lastDay}`;
-    }
-
-    const qs = new URLSearchParams({
-        report_type: type,
-        start_date: `${start}-01`,
-        end_date: formattedEnd,
-        supplier_id: supplierIds.join(','),
-        user_id: userIds.join(','),
-        etapa_id: etapaIds.join(','),
-        origem: origemIds.join(','),
-        uf: ufIds.join(','),
-        status: statusIds.join(',')
-    }).toString();
-
-    window.open(`/api/handlers/report_pdf_export.php?${qs}`, '_blank');
 }

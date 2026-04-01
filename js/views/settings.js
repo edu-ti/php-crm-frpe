@@ -1,5 +1,5 @@
 // js/views/settings.js
-import { appState } from '../script.js';
+import { appState } from '../state.js';
 import { apiCall } from '../api.js';
 import { showToast } from '../utils.js';
 import { renderModal, closeModal } from '../ui.js';
@@ -35,6 +35,7 @@ function renderUsersList() {
         <thead>
             <tr>
                 <th class="table-header">Nome</th>
+                <th class="table-header">Cargo/Função</th>
                 <th class="table-header">Email / Telefone</th>
                 <th class="table-header">Perfil</th>
                 <th class="table-header">Status</th>
@@ -47,6 +48,9 @@ function renderUsersList() {
         <tr>
             <td data-label="Nome" class="table-cell">
                 <div class="font-medium text-gray-900">${user.nome}</div>
+            </td>
+            <td data-label="Cargo" class="table-cell">
+                <div class="text-gray-600">${user.cargo || '-'}</div>
             </td>
             <td data-label="Contato" class="table-cell">
                 <div>${user.email}</div>
@@ -117,6 +121,10 @@ function openUserModal(user) {
                         <label class="form-label">Telefone</label>
                         <input type="tel" name="telefone" value="${isEditing && user.telefone ? user.telefone : ''}" class="form-input">
                     </div>
+                    <div>
+                        <label class="form-label">Cargo/Função</label>
+                        <input type="text" name="cargo" value="${isEditing && user.cargo ? user.cargo : ''}" class="form-input">
+                    </div>
                 </div>
                 <div>
                     <label class="form-label">Senha*</label>
@@ -155,7 +163,12 @@ function openUserModal(user) {
             }
             renderSettingsView();
             closeModal();
-        } catch (error) { }
+            renderSettingsView();
+            closeModal();
+        } catch (error) {
+            console.error(error);
+            showToast(error.message || 'Erro ao salvar usuário.', 'error');
+        }
     });
 }
 

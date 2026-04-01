@@ -1,6 +1,6 @@
 // js/views/leads.js
 
-import { appState } from '../script.js';
+import { appState } from '../state.js';
 import { apiCall } from '../api.js';
 import { showToast, formatDate, formatCurrency, parseCurrency, formatCurrencyForInput } from '../utils.js';
 import { renderModal, closeModal } from '../ui.js';
@@ -821,4 +821,3 @@ function openImportLeadsModal() {
 
     }, 'Importar', 'btn-primary');
 }
-

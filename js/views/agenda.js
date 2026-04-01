@@ -1,6 +1,7 @@
 // js/views/agenda.js
 
-import { appState, initializeApp } from '../script.js'; // Importa initializeApp
+import { appState } from '../state.js';
+import { initializeApp } from '../script.js'; // Importa initializeApp
 import { apiCall } from '../api.js';
 import { showToast, formatDate, showLoading } from '../utils.js';
 import { renderModal, closeModal } from '../ui.js';
@@ -194,7 +195,7 @@ export function openAgendamentoModal(agendamento) {
         `)
         .join('');
 
-    const tipoOptions = ['Reunião', 'Treinamento', 'Visita', 'Ligação', 'Outro']
+    const tipoOptions = ['Reunião', 'Treinamento', 'Visita', 'Ligação', 'Controle de Entrega', 'Outro']
         .map(tipo => `<option value="${tipo}" ${data.tipo === tipo ? 'selected' : ''}>${tipo}</option>`)
         .join('');
     const opportunityOptions = appState.opportunities
@@ -228,6 +229,8 @@ export function openAgendamentoModal(agendamento) {
         }
     }
 
+    let dataEntrega = data.data_entrega ? data.data_entrega : '';
+
     // --- ALTERAÇÃO: Substitui Select por Container de Checkboxes com Scroll ---
     const content = `
         <form id="modal-form" class="space-y-4">
@@ -238,7 +241,11 @@ export function openAgendamentoModal(agendamento) {
                 <div><label class="form-label">Hora*</label><input type="time" name="hora_agendamento" required class="form-input" value="${horaAgendamento}" ${isDisabled}></div>
             </div>
             <div class="grid grid-cols-1 gap-4"> <!-- Ajustado para 1 coluna -->
-                <div><label class="form-label">Tipo*</label><select name="tipo" required class="form-input" ${isDisabled}>${tipoOptions}</select></div>
+                <div><label class="form-label">Tipo*</label><select name="tipo" id="modal-tipo" required class="form-input" ${isDisabled}>${tipoOptions}</select></div>
+                <div id="data-entrega-container" class="${data.tipo === 'Controle de Entrega' ? '' : 'hidden'}">
+                    <label class="form-label">Data de Entrega*</label>
+                    <input type="date" name="data_entrega" id="modal-data-entrega" class="form-input" value="${dataEntrega}" ${isDisabled}>
+                </div>
                 <div>
                      <label class="form-label">Direcionar para*</label>
                      <!-- Container Scrollable para Checkboxes -->
@@ -270,6 +277,14 @@ export function openAgendamentoModal(agendamento) {
     renderModal(title, content, async (form) => {
         if (!form.reportValidity()) return; // Validação HTML5
 
+        // Validação adicional se for Controle de Entrega
+        const tipoInput = form.querySelector('[name="tipo"]').value;
+        const dataEntregaInput = form.querySelector('[name="data_entrega"]').value;
+        if (tipoInput === 'Controle de Entrega' && !dataEntregaInput) {
+            showToast("A Data de Entrega é obrigatória para o tipo Controle de Entrega.", "error");
+            return;
+        }
+
         const formData = new FormData(form);
         const dataToSend = Object.fromEntries(formData.entries());
 
@@ -299,9 +314,22 @@ export function openAgendamentoModal(agendamento) {
             // Não precisa mais mexer no 'saved' aqui
 
             // --- ALTERAÇÃO: Atualiza estado global e força recarregamento ---
-            showToast(`Agendamento ${isEditing ? 'atualizado' : 'criado'}! Recarregando dados...`, 'info');
-            closeModal(); // Fecha o modal antes de recarregar
-            await initializeApp(); // Recarrega todos os dados do app
+            if (dataToSend.tipo === 'Controle de Entrega' && !isEditing) {
+                // Pop-up específico quando for Controle de Entrega recém-criado
+                Swal.fire({
+                    title: 'Controle de Entrega Criado!',
+                    text: 'A oportunidade associada foi movida para a coluna "Controle de Entrega" no Funil de Vendas. Um alerta de entrega foi agendado.',
+                    icon: 'success',
+                    confirmButtonText: 'Entendi'
+                }).then(async () => {
+                    closeModal();
+                    await initializeApp();
+                });
+            } else {
+                showToast(`Agendamento ${isEditing ? 'atualizado' : 'criado'}! Recarregando dados...`, 'info');
+                closeModal(); // Fecha o modal antes de recarregar
+                await initializeApp(); // Recarrega todos os dados do app
+            }
             // A view da agenda será re-renderizada automaticamente pelo initializeApp se for a view ativa
 
         } catch (error) {
@@ -311,6 +339,24 @@ export function openAgendamentoModal(agendamento) {
             showLoading(false); // Esconde loading após a chamada (sucesso ou erro)
         }
     }, 'Salvar', `btn-primary ${!showSaveButton ? 'hidden' : ''}`);
+
+    // --- ALTERAÇÃO: Listener para show/hide Data de Entrega ---
+    const tipoSelect = document.getElementById('modal-tipo');
+    const dataEntregaContainer = document.getElementById('data-entrega-container');
+    const dataEntregaInput = document.getElementById('modal-data-entrega');
+
+    if (tipoSelect) {
+        tipoSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'Controle de Entrega') {
+                dataEntregaContainer.classList.remove('hidden');
+                dataEntregaInput.required = true;
+            } else {
+                dataEntregaContainer.classList.add('hidden');
+                dataEntregaInput.required = false;
+                dataEntregaInput.value = ''; // clears when hiding
+            }
+        });
+    }
 
     // --- ALTERAÇÃO: Pré-seleciona checkboxes ao editar ---
     // Verifica se 'usuarios_associados' existe e é um array

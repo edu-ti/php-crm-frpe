@@ -8,12 +8,10 @@
 // CORREÇÃO: O caminho para o config.php foi ajustado para apontar para a raiz do projeto.
 require_once dirname(__DIR__, 2) . '/config.php';
 
-class Database
-{
+class Database {
     private $pdo;
 
-    public function __construct()
-    {
+    public function __construct() {
         $this->connect();
     }
 
@@ -22,8 +20,7 @@ class Database
      * @return PDO
      * @throws PDOException
      */
-    private function connect()
-    {
+    private function connect() {
         if ($this->pdo === null) {
             $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
             $options = [
@@ -35,13 +32,12 @@ class Database
             $this->pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
         }
     }
-
+    
     /**
      * Retorna a conexão PDO estabelecida.
      * @return PDO
      */
-    public function getConnection()
-    {
+    public function getConnection() {
         return $this->pdo;
     }
 }
