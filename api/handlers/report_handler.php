@@ -439,8 +439,22 @@ function handle_get_report_data($pdo)
             $sql = "
             SELECT 
                 DATE_FORMAT(COALESCE(o.data_abertura, o.data_criacao), '%Y-%m') as mes,
-                SUM(o.valor * (COALESCE(ef.probabilidade, 0) / 100)) as forecast_ponderado,
-                SUM(o.valor) as pipeline_total
+                SUM(
+                    COALESCE(
+                        (SELECT SUM(p.valor_total) FROM propostas p WHERE p.oportunidade_id = o.id AND p.status = 'Aprovada'),
+                        (SELECT SUM(pi.quantidade * pi.valor_unitario) FROM proposta_itens pi JOIN propostas p ON p.id = pi.proposta_id WHERE p.oportunidade_id = o.id AND p.status = 'Aprovada'),
+                        o.valor,
+                        0
+                    ) * (COALESCE(ef.probabilidade, 0) / 100)
+                ) as forecast_ponderado,
+                SUM(
+                    COALESCE(
+                        (SELECT SUM(p.valor_total) FROM propostas p WHERE p.oportunidade_id = o.id AND p.status = 'Aprovada'),
+                        (SELECT SUM(pi.quantidade * pi.valor_unitario) FROM proposta_itens pi JOIN propostas p ON p.id = pi.proposta_id WHERE p.oportunidade_id = o.id AND p.status = 'Aprovada'),
+                        o.valor,
+                        0
+                    )
+                ) as pipeline_total
             FROM oportunidades o
             LEFT JOIN etapas_funil ef ON o.etapa_id = ef.id
             WHERE COALESCE(o.data_abertura, o.data_criacao) BETWEEN ? AND ?
@@ -499,8 +513,98 @@ function handle_get_report_data($pdo)
             $sql .= " GROUP BY ef.id, ef.nome, ef.ordem ORDER BY ef.ordem ASC";
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
-            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+            // Hardcode 8 fixed steps for funnel
+            $etapas_rigidas = ['Prospectando', 'Contato', 'Negociação', 'Proposta', 'Fechado', 'Controle de Entrega', 'Pós-venda', 'Recusado'];
+            
+            $structured_funnel = [];
+            foreach ($etapas_rigidas as $idx => $nome) {
+                $structured_funnel[$nome] = [
+                    'label' => $nome,
+                    'etapa_nome' => $nome,
+                    'etapa_ordem' => $idx + 1,
+                    'count' => 0,
+                    'value' => 0,
+                    'qtd_oportunidades' => 0,
+                    'valor_total' => 0
+                ];
+            }
+
+            foreach($results as $r) {
+                $matched = false;
+                foreach($etapas_rigidas as $nr) {
+                     if (strcasecmp(trim($r['etapa_nome']), $nr) === 0) {
+                         $structured_funnel[$nr]['count'] += $r['qtd_oportunidades'];
+                         $structured_funnel[$nr]['value'] += $r['valor_total'];
+                         $structured_funnel[$nr]['qtd_oportunidades'] += $r['qtd_oportunidades'];
+                         $structured_funnel[$nr]['valor_total'] += $r['valor_total'];
+                         $matched = true;
+                         break;
+                     }
+                }
+                if (!$matched) {
+                     $structured_funnel[$r['etapa_nome']] = [
+                          'label' => $r['etapa_nome'],
+                          'etapa_nome' => $r['etapa_nome'],
+                          'etapa_ordem' => $r['etapa_ordem'],
+                          'count' => $r['qtd_oportunidades'],
+                          'value' => $r['valor_total'],
+                          'qtd_oportunidades' => $r['qtd_oportunidades'],
+                          'valor_total' => $r['valor_total']
+                     ];
+                }
+            }
+            $data = array_values($structured_funnel);
+
+        } elseif ($type === 'supplier_funnel') {
+            $sql = "
+            SELECT 
+                COALESCE(org.nome_fantasia, org.razao_social, f.nome, 'Outros') as fornecedor_nome,
+                COUNT(DISTINCT o.id) as qtd_oportunidades, 
+                SUM(o.valor) as valor_total
+            FROM oportunidades o
+            LEFT JOIN organizacoes org ON o.fornecedor_id = org.id
+            LEFT JOIN fornecedores f ON o.fornecedor_id = f.id
+            WHERE o.data_criacao BETWEEN ? AND ?
+            ";
+            $params = [$start_date, $end_date];
+            apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
+            
+            $sql .= " GROUP BY fornecedor_nome ORDER BY valor_total DESC";
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Hardcode 9 fixed suppliers
+            $fornecedores_rigidos = ['BRASIL MEDICA', 'HEALTH', 'INSTRAMED', 'LIVANOVA', 'MASIMO', 'MERIL', 'MICROMED', 'NIPRO', 'SIGMAFIX'];
+            
+            $structured_funnel = [];
+            foreach ($fornecedores_rigidos as $nome) {
+                $structured_funnel[$nome] = [
+                    'fornecedor_nome' => $nome,
+                    'qtd_oportunidades' => 0,
+                    'valor_total' => 0
+                ];
+            }
+
+            foreach($results as $r) {
+                $matched = false;
+                foreach($fornecedores_rigidos as $nr) {
+                     // Check substring because DB names might be 'BRASIL MEDICA LTDA'
+                     if (stripos(trim($r['fornecedor_nome']), $nr) !== false) {
+                         $structured_funnel[$nr]['qtd_oportunidades'] += $r['qtd_oportunidades'];
+                         $structured_funnel[$nr]['valor_total'] += $r['valor_total'];
+                         $matched = true;
+                         break; // add to the rigid bucket
+                     }
+                }
+                // We ignore "Outros" or those not in the strict 9 list according to the prompt!
+                // "Funil de Fornecedores: Agrupado pelos fornecedores fixos listados acima."
+            }
+            $data = array_values($structured_funnel);
+            
         } elseif ($type === 'licitacoes_funnel') {
             $data = get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
         } elseif ($type === 'licitacoes') {
@@ -1327,6 +1431,8 @@ function get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_id
     // Funnel ID 2 = Licitações
     $sql = "
         SELECT 
+            COALESCE(org.nome_fantasia, org.razao_social, f.nome, 'Fornecedor Não Informado') as fornecedor_nome,
+            ef.id as etapa_id,
             ef.nome as etapa_nome, 
             ef.ordem as etapa_ordem,
             COUNT(DISTINCT o.id) as qtd_oportunidades,
@@ -1342,6 +1448,8 @@ function get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_id
             ) as valor_total
         FROM oportunidades o
         JOIN etapas_funil ef ON o.etapa_id = ef.id
+        LEFT JOIN organizacoes org ON o.fornecedor_id = org.id
+        LEFT JOIN fornecedores f ON o.fornecedor_id = f.id
         WHERE o.data_criacao BETWEEN ? AND ?
           AND (o.numero_edital IS NOT NULL AND o.numero_edital != '')
           AND ef.funil_id = 2
@@ -1349,12 +1457,66 @@ function get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_id
 
     $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
 
-    // Apply filters (using standardized helper, aliased to 'o')
     apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
 
-    $sql .= " GROUP BY ef.id, ef.nome, ef.ordem ORDER BY ef.ordem ASC";
+    $sql .= " GROUP BY fornecedor_nome, ef.id, ef.nome, ef.ordem ORDER BY fornecedor_nome, ef.ordem ASC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $etapas_rigidas = [
+        'Captação de Edital', 'Acolhimento de propostas', 'Em análise Técnica', 
+        'Homologado', 'Ata/Carona', 'Empenhado', 'Contrato', 'Desclassificado', 
+        'Fracassado', 'Revogado', 'Anulado', 'Suspenso'
+    ];
+    $fornecedores_rigidos = ['BRASIL MEDICA', 'HEALTH', 'INSTRAMED', 'LIVANOVA', 'MASIMO', 'MERIL', 'MICROMED', 'NIPRO', 'SIGMAFIX'];
+
+    $matrix = [];
+    foreach ($fornecedores_rigidos as $fj) {
+        $matrix[$fj] = [];
+        foreach ($etapas_rigidas as $idx => $nome_etapa) {
+            $matrix[$fj][$nome_etapa] = [
+                'fornecedor_nome' => $fj,
+                'etapa_nome' => $nome_etapa,
+                'etapa_ordem' => $idx + 1,
+                'qtd_oportunidades' => 0,
+                'valor_total' => 0
+            ];
+        }
+    }
+
+    foreach ($results as $row) {
+        $matched_ff = false;
+        foreach($fornecedores_rigidos as $fj) {
+            if (stripos(trim($row['fornecedor_nome']), $fj) !== false) {
+                $matched_ff = $fj;
+                break;
+            }
+        }
+        if (!$matched_ff) continue; 
+
+        $matched_et = false;
+        foreach ($etapas_rigidas as $nome_rigido) {
+            if (strcasecmp(trim($row['etapa_nome']), $nome_rigido) == 0) {
+                $matched_et = $nome_rigido;
+                break;
+            }
+        }
+        
+        $etapa_to_use = $matched_et;
+        if (!$etapa_to_use) continue;
+
+        $matrix[$matched_ff][$etapa_to_use]['qtd_oportunidades'] += $row['qtd_oportunidades'];
+        $matrix[$matched_ff][$etapa_to_use]['valor_total'] += $row['valor_total'];
+    }
+
+    $final_out = [];
+    foreach ($fornecedores_rigidos as $fj) {
+        foreach ($etapas_rigidas as $et) {
+            $final_out[] = $matrix[$fj][$et];
+        }
+    }
+
+    return $final_out;
 }

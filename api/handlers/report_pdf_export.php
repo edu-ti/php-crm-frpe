@@ -20,7 +20,7 @@ class PDFReport extends FPDF {
     }
     
     function BasicTable($header, $data) {
-        $this->SetFillColor(79, 70, 229); // Indigo 600
+        $this->SetFillColor(220, 38, 38); // Tailwind Red 600
         $this->SetTextColor(255);
         $this->SetDrawColor(209, 213, 219);
         $this->SetLineWidth(.3);
@@ -60,87 +60,180 @@ class PDFReport extends FPDF {
     }
 }
 
-$type = $_GET['report_type'] ?? ($_GET['type'] ?? 'sales');
-
-// Interceptamos o endpoint original do handler para pegar os mesmos JSON arrays e renderizar
-ob_start();
-$db = new Database();
-$pdo = $db->getConnection();
-handle_get_report_data($pdo); 
-$jsonResponse = ob_get_clean();
-
-$response = json_decode($jsonResponse, true);
-$data = [];
-if (isset($response['report_data'])) {
-    $data = $response['report_data'];
-} elseif (is_array($response)) {
-    // Para casos como by_vendor que retornavam um array simples
-    $data = $response; 
-}
-
-$pdf = new PDFReport();
-$pdf->AliasNbPages();
-$pdf->AddPage();
-$pdf->SetFont('Arial', '', 12);
-
-// Resumo Executivo
-$pdf->SetFillColor(243, 244, 246);
-$pdf->Rect(10, 30, 190, 25, 'F');
-
-$pdf->SetFont('Arial', 'B', 12);
-$pdf->SetY(32);
-$pdf->Cell(0, 8, utf8_decode('Parâmetros do Filtro'), 0, 1);
-$pdf->SetFont('Arial', '', 10);
-$pdf->Cell(0, 6, utf8_decode('Data: ' . ($_GET['start_date'] ?? 'N/D') . ' a ' . ($_GET['end_date'] ?? 'N/D') . '     |     Tipo: ' . strtoupper($type)), 0, 1);
-$pdf->Ln(15);
-
-if (empty($data)) {
-    $pdf->SetFont('Arial', 'I', 12);
-    $pdf->Cell(0, 10, utf8_decode('Nenhum registro correspondente ao filtro foi encontrado.'), 0, 1, 'C');
-} else {
-    // Dynamic Table Generation based on Type
-    if ($type === 'clients') {
-        $header = ['Cliente Classificado', 'Qtd Vendas', 'Faturamento Bruto', 'Curva ABC'];
-        $tableData = [];
-        foreach ($data as $r) {
-            $tableData[] = [
-                $r['cliente_nome'], 
-                $r['qtd_vendas'], 
-                'R$ ' . number_format($r['valor_total'], 2, ',', '.'),
-                $r['classe'] ?? '-'
-            ];
-        }
-        $pdf->BasicTable($header, $tableData);
-    } elseif ($type === 'funnel') {
-        $header = ['Nome da Etapa do Funil', 'Total de Oportunidades', 'Valor em Pipeline Estimado'];
-        $tableData = [];
-        foreach ($data as $r) {
-            $tableData[] = [
-                $r['label'], 
-                $r['count'], 
-                'R$ ' . number_format($r['value'], 2, ',', '.')
-            ];
-        }
-        $pdf->BasicTable($header, $tableData);
-    } elseif ($type === 'forecast') {
-        $header = ['Referência (Mês)', 'Pipeline Pleno (Sem Fator)', 'Forecast Projetado (Probabilidade Média)'];
-        $tableData = [];
-        $totalPipeline = 0;
-        $totalForecast = 0;
-        foreach ($data as $r) {
-            $tableData[] = [
-                $r['mes'], 
-                'R$ ' . number_format($r['pipeline_total'], 2, ',', '.'),
-                'R$ ' . number_format($r['forecast_ponderado'], 2, ',', '.')
-            ];
-            $totalPipeline += $r['pipeline_total'];
-            $totalForecast += $r['forecast_ponderado'];
-        }
-        $tableData[] = ['TOTALIZADO', 'R$ ' . number_format($totalPipeline, 2, ',', '.'), 'R$ ' . number_format($totalForecast, 2, ',', '.')];
-        $pdf->BasicTable($header, $tableData);
-    } else {
-        $pdf->Cell(0, 10, utf8_decode('Este formato de relatório ainda não possui template PDF detalhado. Verifique na plataforma.'), 0, 1);
+function handle_export_pdf($pdo, $request_data) {
+    if (ob_get_length()) {
+        ob_clean(); // Limpa saídas ou avisos anteriores
     }
-}
 
-$pdf->Output('I', 'Relatorio_BI_FRPE.pdf');
+    $type = $_GET['report_type'] ?? ($_GET['type'] ?? 'sales');
+
+    // Interceptamos o endpoint original do handler para pegar os mesmos JSON arrays e renderizar
+    ob_start();
+    handle_get_report_data($pdo); 
+    $jsonResponse = ob_get_clean();
+
+    $response = json_decode($jsonResponse, true);
+    $data = [];
+    if (isset($response['report_data'])) {
+        $data = $response['report_data'];
+    } elseif (is_array($response)) {
+        // Para casos como by_vendor que retornavam um array simples
+        $data = $response; 
+    }
+
+    $pdf = new PDFReport();
+    $pdf->AliasNbPages();
+    $pdf->AddPage();
+    $pdf->SetFont('Arial', '', 12);
+
+    // Resumo Executivo
+    $pdf->SetFillColor(243, 244, 246);
+    $pdf->Rect(10, 30, 190, 25, 'F');
+
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->SetY(32);
+    $pdf->Cell(0, 8, utf8_decode('Parâmetros do Filtro'), 0, 1);
+    $pdf->SetFont('Arial', '', 10);
+    $pdf->Cell(0, 6, utf8_decode('Data: ' . ($_GET['start_date'] ?? 'N/D') . ' a ' . ($_GET['end_date'] ?? 'N/D') . '     |     Tipo: ' . strtoupper($type)), 0, 1);
+    $pdf->Ln(15);
+
+    if (empty($data) && $type !== 'sales') {
+        $pdf->SetFont('Arial', 'I', 12);
+        $pdf->Cell(0, 10, utf8_decode('Nenhum registro correspondente ao filtro foi encontrado.'), 0, 1, 'C');
+    } else {
+        // Dynamic Table Generation based on Type
+        if ($type === 'clients') {
+            $header = ['Cliente/Orgao', 'Qtd Vendas', 'Faturamento Bruto'];
+            $tableData = [];
+            foreach ($data as $r) {
+                $tableData[] = [
+                    $r['cliente_nome'], 
+                    $r['qtd_vendas'], 
+                    'R$ ' . number_format($r['valor_total'], 2, ',', '.')
+                ];
+            }
+            $pdf->BasicTable($header, $tableData);
+        } elseif ($type === 'funnel') {
+            $header = ['Etapa do Funil', 'Qtd Oportunidades', 'Valor Estimado'];
+            $tableData = [];
+            foreach ($data as $r) {
+                $tableData[] = [
+                    $r['etapa_nome'], 
+                    $r['qtd_oportunidades'], 
+                    'R$ ' . number_format($r['valor_total'] ?? 0, 2, ',', '.')
+                ];
+            }
+            $pdf->BasicTable($header, $tableData);
+        } elseif ($type === 'licitacoes_funnel') {
+            $header = ['Fabrica (Fornecedor)', 'Etapa', 'Qtd Oport.', 'Valor Estimado'];
+            $tableData = [];
+            foreach ($data as $r) {
+                $tableData[] = [
+                    $r['fornecedor_nome'], 
+                    $r['etapa_nome'], 
+                    $r['qtd_oportunidades'], 
+                    'R$ ' . number_format($r['valor_total'] ?? 0, 2, ',', '.')
+                ];
+            }
+            $pdf->BasicTable($header, $tableData);
+        } elseif ($type === 'supplier_funnel') {
+            $header = ['Fabrica (Fornecedor)', 'Qtd Oportunidades', 'Valor Estimado'];
+            $tableData = [];
+            foreach ($data as $r) {
+                $tableData[] = [
+                    $r['fornecedor_nome'], 
+                    $r['qtd_oportunidades'], 
+                    'R$ ' . number_format($r['valor_total'] ?? 0, 2, ',', '.')
+                ];
+            }
+            $pdf->BasicTable($header, $tableData);
+        } elseif ($type === 'contratos') {
+            $header = ['Cliente', 'Etapa', 'Valor Contrato', 'Faturado', 'Saldo'];
+            $tableData = [];
+            foreach ($data as $r) {
+                if (isset($r['contratos']) && is_array($r['contratos'])) {
+                    foreach($r['contratos'] as $c) {
+                        $tableData[] = [
+                            $c['cliente_nome'], 
+                            $r['etapa_nome'], 
+                            'R$ ' . number_format($c['valor_contrato'] ?? 0, 2, ',', '.'),
+                            'R$ ' . number_format($c['valor_faturado'] ?? 0, 2, ',', '.'),
+                            'R$ ' . number_format($c['saldo'] ?? 0, 2, ',', '.')
+                        ];
+                    }
+                }
+            }
+            $pdf->BasicTable($header, $tableData);
+        } elseif ($type === 'products') {
+            $header = ['Fornecedor', 'Produto', 'Qtd', 'Total'];
+            $tableData = [];
+            foreach ($data as $r) {
+                $tableData[] = [
+                    $r['fornecedor_nome'] ?? '-', 
+                    $r['produto_nome'] ?? '-', 
+                    $r['quantidade'] ?? 0, 
+                    'R$ ' . number_format($r['valor_total'] ?? 0, 2, ',', '.')
+                ];
+            }
+            $pdf->BasicTable($header, $tableData);
+        } elseif ($type === 'sales') {
+            $start_date = $_GET['start_date'] ?? date('Y-m-01');
+            $end_date = $_GET['end_date'] ?? date('Y-m-t');
+            // Flat query for PDF grouping 'Vendedor, Fornecedor, UF'
+            $sql = "SELECT COALESCE(u.nome, 'N/A') as vendedor, COALESCE(f.nome_fantasia, f.razao_social, 'Outros') as fornecedor, COALESCE(e.estado, 'N/I') as uf, SUM(p.valor_total) as total
+                    FROM propostas p
+                    JOIN oportunidades o ON p.oportunidade_id = o.id
+                    LEFT JOIN usuarios u ON p.usuario_id = u.id
+                    LEFT JOIN organizacoes f ON o.fornecedor_id = f.id
+                    LEFT JOIN enderecos e ON o.organizacao_id = e.entidade_id AND e.tipo_entidade = 'organizacao'
+                    WHERE p.status = 'Aprovada' AND p.data_criacao BETWEEN ? AND ?
+                    GROUP BY vendedor, fornecedor, uf
+                    ORDER BY total DESC";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$start_date . ' 00:00:00', $end_date . ' 23:59:59']);
+            $salesFlat = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($salesFlat)) {
+                $pdf->SetFont('Arial', 'I', 12);
+                $pdf->Cell(0, 10, utf8_decode('Nenhum registro correspondente ao filtro foi encontrado.'), 0, 1, 'C');
+            } else {
+                $header = ['Vendedor', 'Fornecedor', 'Estado (UF)', 'Valor Bruto'];
+                $tableData = [];
+                foreach ($salesFlat as $r) {
+                    $tableData[] = [
+                        $r['vendedor'], 
+                        $r['fornecedor'], 
+                        $r['uf'], 
+                        'R$ ' . number_format($r['total'] ?? 0, 2, ',', '.')
+                    ];
+                }
+                $pdf->BasicTable($header, $tableData);
+            }
+        } elseif ($type === 'forecast') {
+            $header = ['Referencia (Mes)', 'Pipeline Pleno (Sem Fator)', 'Forecast Projetado'];
+            $tableData = [];
+            $totalPipeline = 0;
+            $totalForecast = 0;
+            foreach ($data as $r) {
+                $tableData[] = [
+                    $r['mes'], 
+                    'R$ ' . number_format($r['pipeline_total'], 2, ',', '.'),
+                    'R$ ' . number_format($r['forecast_ponderado'], 2, ',', '.')
+                ];
+                $totalPipeline += $r['pipeline_total'];
+                $totalForecast += $r['forecast_ponderado'];
+            }
+            $tableData[] = ['TOTALIZADO', 'R$ ' . number_format($totalPipeline, 2, ',', '.'), 'R$ ' . number_format($totalForecast, 2, ',', '.')];
+            $pdf->BasicTable($header, $tableData);
+        } else {
+            $pdf->Cell(0, 10, utf8_decode('Este formato de relatório ainda não possui template PDF detalhado.'), 0, 1);
+        }
+    }
+
+    // Force PDF Output Content Type
+    header('Content-Type: application/pdf');
+    header('Cache-Control: private, max-age=0, must-revalidate');
+    header('Pragma: public');
+    $pdf->Output('I', 'Relatorio_BI_FRPE.pdf');
+    exit;
+}

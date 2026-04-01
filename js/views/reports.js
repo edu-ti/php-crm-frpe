@@ -94,9 +94,10 @@ export async function renderReportsView(state) {
                             <option value="forecast">Forecast (Previsão)</option>
                             <option value="funnel">Funil de Vendas</option>
                             <option value="lost_reasons">Propostas recusadas</option>
-                            <option value="clients">Ranking de Clientes (Curva ABC)</option>
+                            <option value="clients">Relatório de Clientes</option>
                             <option value="products">Vendas por Produto</option>
                             <option value="licitacoes_funnel">Licitações (Funil)</option>
+                            <option value="supplier_funnel">Fábricas (Funil)</option>
                         </select>
                     </div>
 
@@ -359,8 +360,12 @@ async function loadKPIData() {
 let currentReportData = [];
 
 function populateFilters() {
-    const suppliers = appState.fornecedores || [];
-    renderMultiSelect('filter-supplier-container', 'supplier-select', suppliers.map(s => ({ value: s.id, label: s.nome })), 'Todos os Fornecedores');
+    const defaultSuppliers = ['BRASIL MEDICA', 'HEALTH', 'INSTRAMED', 'LIVANOVA', 'MASIMO', 'MERIL', 'MICROMED', 'NIPRO', 'SIGMAFIX'];
+    const suppliers = (appState.fornecedores || []).filter(s => {
+        const name = (s.nome_fantasia || s.nome || '').toUpperCase().trim();
+        return defaultSuppliers.some(d => name.includes(d));
+    });
+    renderMultiSelect('filter-supplier-container', 'supplier-select', suppliers.map(s => ({ value: s.id, label: s.nome_fantasia || s.nome })), 'Todos os Fornecedores');
 
     const users = appState.users || [];
     const sellers = users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista'].includes(u.role));
@@ -538,9 +543,9 @@ async function loadReportData() {
     const ufPayload = ufIds.length > 0 ? ufIds.join(',') : '';
     const statusPayload = statusIds.length > 0 ? statusIds.join(',') : '';
 
-    updateFilterPills(type, start, end, supplierIds, userIds, etapaIds, origemIds, ufIds, statusIds);
-
-    // Save Filters to LocalStorage
+    if (typeof updateFilterPills === 'function') {
+        updateFilterPills(type, start, end, supplierIds, userIds, clientIds, etapaIds, origemIds, ufIds, statusIds);
+    }    // Save Filters to LocalStorage
     localStorage.setItem('reports_filters', JSON.stringify({
         type: type,
         start: start,
@@ -1122,6 +1127,7 @@ function renderSalesTable(group, monthsRange) {
                 <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500 border-r border-gray-200 text-right ${bgClass}">
                     <div class="font-medium text-gray-900">${v > 0 ? format(v) : '-'}</div>
                     ${(userTargetsEnabled && m > 0) ? `<div class="text-gray-400 text-[10px]">M: ${format(m)}</div>` : ''}
+                    ${progressHtml}
                     ${(userTargetsEnabled && m > 0) ? `<div class="${saldoClass} font-bold border-t border-gray-100 mt-1 pt-1 text-[10px]">S: ${format(s)}</div>` : ''}
                 </td>
             `;
@@ -2146,4 +2152,95 @@ async function saveTargets() {
     } finally {
         showLoading(false);
     }
+}
+
+function updateFilterPills(type, start, end, supplierIds, userIds, clientIds, etapaIds, origemIds, ufIds, statusIds) {
+    const container = document.getElementById('active-filters-pills');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    let hasPills = false;
+
+    const createPill = (label, filterId, isMulti = true) => {
+        hasPills = true;
+        return `
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 animate-fade-in shadow-sm border border-indigo-200">
+                ${label}
+                <button type="button" class="flex-shrink-0 ml-1.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-indigo-400 hover:bg-indigo-200 hover:text-indigo-500 focus:outline-none focus:bg-indigo-500 focus:text-white" onclick="removeFilterPill('${filterId}', ${isMulti})">
+                    <span class="sr-only">Remover filtro</span>
+                    <i class="fas fa-times text-[10px]"></i>
+                </button>
+            </span>
+        `;
+    };
+
+    let innerHtml = '';
+
+    const resolveLabels = (idBase) => {
+        const checkboxes = document.querySelectorAll(`.${idBase}-checkbox:checked`);
+        return Array.from(checkboxes).map(c => c.nextElementSibling.innerText).join(', ');
+    };
+
+    if (start && end) {
+        innerHtml += `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 shadow-sm border border-gray-200">Período: ${start} a ${end}</span>`;
+        hasPills = true;
+    }
+
+    if (supplierIds.length > 0) innerHtml += createPill('Fornecedores: ' + resolveLabels('supplier-select'), 'supplier-select');
+    if (userIds.length > 0) innerHtml += createPill('Vendedores: ' + resolveLabels('user-select'), 'user-select');
+    if (clientIds.length > 0) innerHtml += createPill('Clientes: ' + resolveLabels('client-select'), 'client-select');
+    if (etapaIds.length > 0) innerHtml += createPill('Etapas: ' + resolveLabels('etapa-select'), 'etapa-select');
+    if (origemIds.length > 0) innerHtml += createPill('Origens: ' + resolveLabels('origem-select'), 'origem-select');
+    if (ufIds.length > 0) innerHtml += createPill('UF: ' + resolveLabels('uf-select'), 'uf-select');
+    if (statusIds.length > 0) innerHtml += createPill('Status: ' + resolveLabels('status-select'), 'status-select');
+
+    if (hasPills) {
+        container.innerHTML = `<span class="text-xs font-bold text-gray-500 self-center mr-2"><i class="fas fa-tags mr-1"></i> Filtros Ativos:</span>` + innerHtml;
+        container.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+    }
+}
+
+window.removeFilterPill = function(idBase, isMulti) {
+    if (isMulti) {
+        window.toggleAllMultiSelect(idBase, false);
+    }
+    document.getElementById('refresh-report-btn').click();
+};
+
+function exportToPDF() {
+    const type = document.getElementById('report-type').value;
+    const start = document.getElementById('filter-start-date').value;
+    const end = document.getElementById('filter-end-date').value;
+    
+    const supplierIds = window.getMultiSelectValues('supplier-select');
+    const userIds = window.getMultiSelectValues('user-select');
+    const clientIds = window.getMultiSelectValues('client-select');
+    const etapaIds = window.getMultiSelectValues('etapa-select');
+    const origemIds = window.getMultiSelectValues('origem-select');
+    const ufIds = window.getMultiSelectValues('uf-select');
+    const statusIds = window.getMultiSelectValues('status-select');
+
+    let formattedEnd = '';
+    if (end) {
+        const [y, m] = end.split('-');
+        const lastDay = new Date(y, m, 0).getDate();
+        formattedEnd = `${end}-${lastDay}`;
+    }
+
+    const qs = new URLSearchParams({
+        report_type: type,
+        start_date: `${start}-01`,
+        end_date: formattedEnd,
+        supplier_id: supplierIds.join(','),
+        user_id: userIds.join(','),
+        cliente_id: clientIds.join(','),
+        etapa_id: etapaIds.join(','),
+        origem: origemIds.join(','),
+        uf: ufIds.join(','),
+        status: statusIds.join(',')
+    }).toString();
+
+    window.open(`/api.php?action=export_pdf&${qs}`, '_blank');
 }
