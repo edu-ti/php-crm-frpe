@@ -150,7 +150,7 @@ export async function renderReportsView(state) {
                              <i class="fas fa-file-excel mr-1"></i>XLS
                         </button>
                         <button id="print-report-btn" class="btn btn-secondary text-sm py-2 px-4 shadow-sm hover:shadow-md transition-shadow flex-grow md:flex-grow-0" title="Imprimir/PDF">
-                             <i class="fas fa-print mr-1"></i>PDF
+                             <i class="fas fa-file-pdf mr-1"></i>PDF
                         </button>
                          <!-- Botão Metas no Mobile dentro do menu -->
                         <button id="set-targets-btn-mobile" class="md:hidden btn bg-purple-600 text-white hover:bg-purple-700 text-sm flex-grow w-full mt-2">
@@ -158,6 +158,9 @@ export async function renderReportsView(state) {
                         </button>
                     </div>
                 </div>
+                
+                <!-- Pills Row -->
+                <div id="active-filters-pills" class="flex flex-wrap gap-2 mt-4 hidden w-full"></div>
             </div>
 
             <!-- Área de Relatórios (Tabelas) -->
@@ -259,11 +262,8 @@ export async function renderReportsView(state) {
     document.getElementById('filter-end-date').value = `${currentYear}-12`;
 
     // Event Listeners
-    // document.getElementById('report-type').addEventListener('change', loadReportData); // Removido para evitar múltiplas chamadas
     document.getElementById('refresh-report-btn').addEventListener('click', loadReportData);
-    // document.getElementById('filter-start-date').addEventListener('change', loadReportData); // Removido
-    // document.getElementById('filter-end-date').addEventListener('change', loadReportData); // Removido
-    document.getElementById('print-report-btn').addEventListener('click', () => window.print());
+    document.getElementById('print-report-btn').addEventListener('click', exportToPDF);
     document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
 
     // Toggle Filters Mobile & Desktop
@@ -497,6 +497,8 @@ async function loadReportData() {
     const ufPayload = ufIds.length > 0 ? ufIds.join(',') : '';
     const statusPayload = statusIds.length > 0 ? statusIds.join(',') : '';
 
+    updateFilterPills(type, start, end, supplierIds, userIds, etapaIds, origemIds, ufIds, statusIds);
+
     // Save Filters to LocalStorage
     localStorage.setItem('reports_filters', JSON.stringify({
         type: type,
@@ -581,7 +583,6 @@ function renderReports(data, container, type, startStr, endStr) {
     }
 
     if (type === 'forecast') {
-        renderSalesChart(data, monthsRange, 'forecast'); 
         // For forecast, we might want a simple summary table below too.
         const html = renderForecastTable(data);
         container.innerHTML = html;
@@ -799,32 +800,48 @@ function renderSalesChart(data, monthsRange, type) {
         const topClients = data.slice(0, 10); // Top 10
         const labels = topClients.map(c => c.cliente_nome);
         const values = topClients.map(c => parseFloat(c.valor_total) || 0);
+        const acumulado = topClients.map(c => parseFloat(c.percentual_acumulado) || 0);
 
-        // Update Title (Hack: We might want to make title dynamic in HTML, but here we go)
         const titleEl = container.querySelector('h3');
-        if (titleEl) titleEl.innerText = "Top 10 Clientes (Valor Total)";
+        if (titleEl) titleEl.innerText = "Curva ABC (Top 10 Clientes)";
 
         chartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: 'Valor Comprado',
-                    data: values,
-                    backgroundColor: 'rgba(79, 70, 229, 0.6)', // Indigo-600
-                    borderColor: 'rgba(79, 70, 229, 1)',
-                    borderWidth: 1
-                }]
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: 'Faturamento Bruto',
+                        data: values,
+                        backgroundColor: 'rgba(79, 70, 229, 0.6)', // Indigo-600
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        type: 'line',
+                        label: '% Acumulado (Curva ABC)',
+                        data: acumulado,
+                        borderColor: 'rgba(239, 68, 68, 1)', // Red-500
+                        backgroundColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 2,
+                        fill: false,
+                        yAxisID: 'y1'
+                    }
+                ]
             },
             options: {
-                indexAxis: 'y', // Horizontal Bar
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
+                    legend: { position: 'top' },
                     tooltip: {
                         callbacks: {
                             label: function (context) {
+                                if (context.dataset.yAxisID === 'y1') {
+                                    return context.raw + '% Acumulado';
+                                }
                                 return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.raw);
                             }
                         }
@@ -832,11 +849,27 @@ function renderSalesChart(data, monthsRange, type) {
                 },
                 scales: {
                     x: {
-                        beginAtZero: true,
+                        beginAtZero: true
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
                         ticks: {
                             callback: function (value) {
                                 return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: "compact" }).format(value);
                             }
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        min: 0,
+                        max: 100,
+                        grid: { drawOnChartArea: false },
+                        ticks: {
+                            callback: function(value) { return value + '%'; }
                         }
                     }
                 }
@@ -1002,17 +1035,37 @@ function renderSalesTable(group, monthsRange) {
             const saldoClass = s >= 0 ? 'text-green-600' : 'text-red-600';
             const bgClass = (userTargetsEnabled && m > 0) ? (v >= m ? 'bg-green-50' : 'bg-red-50') : '';
 
+            let progressHtml = '';
+            if (userTargetsEnabled && m > 0) {
+                const pct = Math.min((v / m) * 100, 100).toFixed(0);
+                const pcolor = v >= m ? 'bg-green-500' : 'bg-yellow-500';
+                progressHtml = `
+                <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1 border border-gray-300">
+                    <div class="${pcolor} h-1.5 rounded-full" style="width: ${pct}%"></div>
+                </div>`;
+            }
+
             return `
                 <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500 border-r border-gray-200 text-right ${bgClass}">
                     <div class="font-medium text-gray-900">${v > 0 ? format(v) : '-'}</div>
                     ${(userTargetsEnabled && m > 0) ? `<div class="text-gray-400 text-[10px]">M: ${format(m)}</div>` : ''}
-                    ${(userTargetsEnabled && m > 0) ? `<div class="${saldoClass} font-bold border-t border-gray-100 mt-1 pt-1 text-[10px]">S: ${format(s)}</div>` : ''}
+                    ${progressHtml}
+                    ${(userTargetsEnabled && m > 0) ? `<div class="${saldoClass} font-bold mt-1 pt-0 text-[10px]">S: ${format(s)}</div>` : ''}
                 </td>
             `;
         }).join('');
 
         const rowSaldo = rowVenda - rowMeta;
         const rowSaldoClass = rowSaldo >= 0 ? 'text-green-600' : 'text-red-600';
+        let rowGrandProgressHtml = '';
+        if (userTargetsEnabled && rowMeta > 0) {
+            const pct = Math.min((rowVenda / rowMeta) * 100, 100).toFixed(0);
+            const pcolor = rowVenda >= rowMeta ? 'bg-green-500' : 'bg-indigo-500';
+            rowGrandProgressHtml = `
+            <div class="w-full bg-gray-300 rounded-full h-2 mt-1 shadow-inner">
+                <div class="${pcolor} h-2 rounded-full" style="width: ${pct}%"></div>
+            </div>`;
+        }
 
         return `
             <tr class="hover:bg-gray-50">
@@ -1023,7 +1076,8 @@ function renderSalesTable(group, monthsRange) {
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-right bg-gray-50 font-bold border-l border-gray-200">
                     <div>${format(rowVenda)}</div>
                     ${userTargetsEnabled ? `<div class="text-[10px] text-gray-500">M: ${format(rowMeta)}</div>` : ''}
-                    ${userTargetsEnabled ? `<div class="${rowSaldoClass} text-[10px] border-t border-gray-200 pt-1">S: ${format(rowSaldo)}</div>` : ''}
+                    ${rowGrandProgressHtml}
+                    ${userTargetsEnabled ? `<div class="${rowSaldoClass} text-[10px] border-t border-gray-200 pt-1 mt-1">S: ${format(rowSaldo)}</div>` : ''}
                 </td>
             </tr>
         `;
@@ -1108,12 +1162,25 @@ function renderStateReport(group) {
 
         const balClass = balance >= 0 ? 'text-green-600' : 'text-red-500';
 
+        const maxSales = Math.max(...states.map(s => parseFloat(stateSales[s]) || 0));
+        const heatPct = maxSales > 0 ? (sales / maxSales * 100) : 0;
+
         rowsHtml += `
-            <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${uf}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700">${format(sales)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">${format(goal)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold ${balClass}">${format(balance)}</td>
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-100 flex items-center justify-between">
+                    <span>${uf}</span>
+                    <i class="fas fa-map-marker-alt text-gray-300 ml-2"></i>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700">
+                    <div class="flex justify-end items-center space-x-3 w-full">
+                       <span class="font-mono">${format(sales)}</span>
+                       <div class="w-20 bg-gray-100 rounded-sm overflow-hidden border border-gray-200 flex h-3 mt-0.5">
+                           <div class="bg-indigo-500 h-full shadow-md" style="width:${heatPct}%"></div>
+                       </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500 border-l border-gray-100 font-mono">${format(goal)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold ${balClass} border-l border-gray-100 font-mono">${format(balance)}</td>
             </tr>
         `;
     });
@@ -1151,22 +1218,7 @@ function renderStateReport(group) {
 }
 
 function renderClientsTable(data) {
-    const container = document.getElementById('report-results'); // Main container, actually in renderReports we use 'tableContainer' inside wrapper. 
-    // But data for clients comes as a flat array in 'data', unlike sales which is grouped?
-    // Wait, backend returns 'data' as array of rows. 
-    // update renderReports to handle this structure difference.
-
-    // For clients report, 'data' is the array of clients.
-    // We shouldn't be using the 'group' loop if type is clients because it's not grouped by supplier in the same way?
-    // Actually the backend code for 'clients' returns `['data' => $rows, 'type' => 'clients']`.
-    // And `loadReportData` calls `renderReports(currentReportData, ...)`.
-    // If 'clients', `currentReportData` is the array of rows.
-
-    // In renderReports (line 482): `data.forEach(group => { ... })`
-    // This expects grouping.
-    // My backend implementation for 'clients' returned flat rows. 
-    // So `renderReports` will break iterate over rows thinking they are groups?
-    // I need to intercept inside renderReports BEFORE the forEach loop.
+    const container = document.getElementById('report-results');
 
     const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
@@ -1185,22 +1237,28 @@ function renderClientsTable(data) {
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">#</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd Vendas</th>
+                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">ABC</th>
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Total</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">% Part.</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">% Acumulado</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         ${data.map((row, index) => {
         const val = parseFloat(row.valor_total) || 0;
-        const percent = totalRevenue > 0 ? (val / totalRevenue) * 100 : 0;
+        const percent = parseFloat(row.percentual_acumulado) || 0;
+        let pColorClass = 'bg-gray-100 text-gray-800';
+        if (row.classe === 'A') pColorClass = 'bg-green-100 text-green-800';
+        else if (row.classe === 'B') pColorClass = 'bg-yellow-100 text-yellow-800';
+        else if (row.classe === 'C') pColorClass = 'bg-red-100 text-red-800';
         return `
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-3 text-center font-bold text-gray-500 border-r border-gray-100">${index + 1}</td>
                                     <td class="px-6 py-3 text-left font-medium text-gray-700">
                                         ${row.cliente_nome}
-                                        ${index < 3 ? '<i class="fas fa-trophy text-yellow-500 ml-2"></i>' : ''}
+                                        ${row.classe === 'A' ? '<i class="fas fa-star text-yellow-400 ml-2"></i>' : ''}
                                     </td>
                                     <td class="px-6 py-3 text-center text-gray-600">${row.qtd_vendas}</td>
+                                    <td class="px-6 py-3 text-center"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${pColorClass}">${row.classe || '-'}</span></td>
                                     <td class="px-6 py-3 text-right font-bold text-gray-800">${format(val)}</td>
                                     <td class="px-6 py-3 text-right text-gray-500">${percent.toFixed(1)}%</td>
                                 </tr>
@@ -1209,6 +1267,7 @@ function renderClientsTable(data) {
                         <tr class="bg-gray-100 font-bold border-t-2 border-gray-200">
                             <td colspan="2" class="px-6 py-3 text-right text-gray-900">TOTAL</td>
                             <td class="px-6 py-3 text-center text-gray-900">${data.reduce((acc, r) => acc + parseInt(r.qtd_vendas), 0)}</td>
+                            <td class="px-6 py-3 text-center"></td>
                             <td class="px-6 py-3 text-right text-gray-900">${format(totalRevenue)}</td>
                             <td class="px-6 py-3 text-right text-gray-900">100.0%</td>
                         </tr>
@@ -1947,4 +2006,93 @@ async function saveTargets() {
     } finally {
         showLoading(false);
     }
+}
+
+function updateFilterPills(type, start, end, supplierIds, userIds, etapaIds, origemIds, ufIds, statusIds) {
+    const container = document.getElementById('active-filters-pills');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    let hasPills = false;
+
+    const createPill = (label, filterId, isMulti = true) => {
+        hasPills = true;
+        return `
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 animate-fade-in shadow-sm border border-indigo-200">
+                ${label}
+                <button type="button" class="flex-shrink-0 ml-1.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-indigo-400 hover:bg-indigo-200 hover:text-indigo-500 focus:outline-none focus:bg-indigo-500 focus:text-white" onclick="removeFilterPill('${filterId}', ${isMulti})">
+                    <span class="sr-only">Remover filtro</span>
+                    <i class="fas fa-times text-[10px]"></i>
+                </button>
+            </span>
+        `;
+    };
+
+    let innerHtml = '';
+
+    const resolveLabels = (idBase) => {
+        const checkboxes = document.querySelectorAll(`.${idBase}-checkbox:checked`);
+        return Array.from(checkboxes).map(c => c.nextElementSibling.innerText).join(', ');
+    };
+
+    if (start && end) {
+        innerHtml += `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 shadow-sm border border-gray-200">Período: ${start} a ${end}</span>`;
+        hasPills = true;
+    }
+
+    if (supplierIds.length > 0) innerHtml += createPill('Fornecedores: ' + resolveLabels('supplier-select'), 'supplier-select');
+    if (userIds.length > 0) innerHtml += createPill('Vendedores: ' + resolveLabels('user-select'), 'user-select');
+    if (etapaIds.length > 0) innerHtml += createPill('Etapas: ' + resolveLabels('etapa-select'), 'etapa-select');
+    if (origemIds.length > 0) innerHtml += createPill('Origens: ' + resolveLabels('origem-select'), 'origem-select');
+    if (ufIds.length > 0) innerHtml += createPill('UF: ' + resolveLabels('uf-select'), 'uf-select');
+    if (statusIds.length > 0) innerHtml += createPill('Status: ' + resolveLabels('status-select'), 'status-select');
+
+    if (hasPills) {
+        container.innerHTML = `<span class="text-xs font-bold text-gray-500 self-center mr-2"><i class="fas fa-tags mr-1"></i> Filtros Ativos:</span>` + innerHtml;
+        container.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+    }
+}
+
+window.removeFilterPill = function(idBase, isMulti) {
+    if (isMulti) {
+        window.toggleAllMultiSelect(idBase, false);
+    }
+    // Re-trigger search
+    document.getElementById('refresh-report-btn').click();
+};
+
+function exportToPDF() {
+    const type = document.getElementById('report-type').value;
+    const start = document.getElementById('filter-start-date').value;
+    const end = document.getElementById('filter-end-date').value;
+    
+    const supplierIds = window.getMultiSelectValues('supplier-select');
+    const userIds = window.getMultiSelectValues('user-select');
+    const etapaIds = window.getMultiSelectValues('etapa-select');
+    const origemIds = window.getMultiSelectValues('origem-select');
+    const ufIds = window.getMultiSelectValues('uf-select');
+    const statusIds = window.getMultiSelectValues('status-select');
+
+    let formattedEnd = '';
+    if (end) {
+        const [y, m] = end.split('-');
+        const lastDay = new Date(y, m, 0).getDate();
+        formattedEnd = `${end}-${lastDay}`;
+    }
+
+    const qs = new URLSearchParams({
+        report_type: type,
+        start_date: `${start}-01`,
+        end_date: formattedEnd,
+        supplier_id: supplierIds.join(','),
+        user_id: userIds.join(','),
+        etapa_id: etapaIds.join(','),
+        origem: origemIds.join(','),
+        uf: ufIds.join(','),
+        status: statusIds.join(',')
+    }).toString();
+
+    window.open(`/api/handlers/report_pdf_export.php?${qs}`, '_blank');
 }

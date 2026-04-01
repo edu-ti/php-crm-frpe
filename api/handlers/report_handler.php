@@ -24,9 +24,6 @@ class ReportHandler
         $startDate = $_GET['start_date'] ?? date('Y-m-01');
         $endDate = $_GET['end_date'] ?? date('Y-m-t');
 
-
-        // DEBUG: Logging Removed
-
         switch ($action) {
             case 'dashboard_summary':
                 $this->getDashboardSummary($startDate, $endDate);
@@ -46,9 +43,50 @@ class ReportHandler
             case 'by_bidding_funnel':
                 $this->getBiddingFunnel($startDate, $endDate);
                 break;
+            case 'clients':
+                $this->getClientsReport($startDate, $endDate);
+                break;
+            case 'forecast':
+                $this->getForecastReport($startDate, $endDate);
+                break;
             default:
                 http_response_code(400);
                 echo json_encode(['error' => 'Invalid action']);
+        }
+    }
+
+    private function applyFilters(&$sql, &$params, $table_alias = 'o') {
+        $supplier_ids = isset($_GET['supplier_id']) && $_GET['supplier_id'] !== '' ? explode(',', $_GET['supplier_id']) : [];
+        $user_ids = isset($_GET['user_id']) && $_GET['user_id'] !== '' ? explode(',', $_GET['user_id']) : [];
+        $cliente_ids = isset($_GET['cliente_id']) && $_GET['cliente_id'] !== '' ? explode(',', $_GET['cliente_id']) : [];
+        $uf_ids = isset($_GET['uf']) && $_GET['uf'] !== '' ? explode(',', $_GET['uf']) : [];
+
+        $buildIn = function($ids) {
+            return implode(',', array_fill(0, count($ids), '?'));
+        };
+
+        if (!empty($supplier_ids)) {
+            $sql .= " AND $table_alias.fornecedor_id IN (" . $buildIn($supplier_ids) . ")";
+            $params = array_merge($params, $supplier_ids);
+        }
+        if (!empty($user_ids)) {
+            $sql .= " AND $table_alias.usuario_id IN (" . $buildIn($user_ids) . ")";
+            $params = array_merge($params, $user_ids);
+        }
+        if (!empty($cliente_ids)) {
+            $tablePrefix = $table_alias === 'p' ? 'p' : ($table_alias === 'vf' ? 'vf' : ($table_alias === 'o' ? 'o' : ''));
+            if ($tablePrefix === 'p' || $tablePrefix === 'vf') {
+                $sql .= " AND ($tablePrefix.organizacao_id IN (" . $buildIn($cliente_ids) . ") OR $tablePrefix.cliente_pf_id IN (" . $buildIn($cliente_ids) . "))";
+                $params = array_merge($params, $cliente_ids);
+                $params = array_merge($params, $cliente_ids); // twice for OR
+            }
+        }
+        if (!empty($uf_ids)) {
+            $prefixForOrg = ($table_alias === 'p' || $table_alias === 'vf') ? $table_alias : ($table_alias === 'o' ? 'p' : ''); // se for 'o', precisa join org, ignora para simplificar ou usa org id da prop.
+            if ($prefixForOrg === 'p' || $prefixForOrg === 'vf') {
+                $sql .= " AND ($prefixForOrg.organizacao_id IN (SELECT id FROM organizacoes WHERE estado IN (" . $buildIn($uf_ids) . ")))";
+                $params = array_merge($params, $uf_ids);
+            }
         }
     }
 
@@ -171,16 +209,139 @@ class ReportHandler
     private function getBiddingFunnel($start, $end)
     {
         try {
-            // Funnel usage for Licitacoes (ID 2 in 'funis' table)
-            $sql = "SELECT ef.nome as label, COUNT(o.id) as count, COALESCE(SUM(p.valor_total), 0) as value
+            $sql = "SELECT ef.nome as label, COUNT(o.id) as count, COALESCE(SUM(p.valor_total), SUM(o.valor), 0) as value
                     FROM oportunidades o
                     JOIN etapas_funil ef ON o.etapa_id = ef.id
                     LEFT JOIN propostas p ON o.id = p.oportunidade_id AND p.status = 'Aprovada'
-                    WHERE o.data_criacao BETWEEN :start AND :end
-                    AND ef.funil_id = 2
-                    GROUP BY ef.nome, ef.ordem
-                    ORDER BY ef.ordem ASC";
-            $this->executeQuery($sql, $start . ' 00:00:00', $end . ' 23:59:59');
+                    WHERE o.data_criacao BETWEEN ? AND ?
+                    AND ef.funil_id = 2";
+            
+            $params = [$start . ' 00:00:00', $end . ' 23:59:59'];
+            
+            if (empty($_GET['supplier_id'])) {
+                $fixedSuppliers = ['BRASIL MEDICA', 'HEALTH', 'INSTRAMED', 'LIVANOVA', 'MASIMO', 'MERIL', 'MICROMED', 'NIPRO', 'SIGMAFIX'];
+                $ph = implode(',', array_fill(0, count($fixedSuppliers), '?'));
+                $sql .= " AND o.fornecedor_id IN (SELECT id FROM fornecedores WHERE nome IN ($ph))";
+                $params = array_merge($params, $fixedSuppliers);
+            }
+
+            $this->applyFilters($sql, $params, 'o');
+
+            $sql .= " GROUP BY ef.nome, ef.ordem ORDER BY ef.ordem ASC";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            
+            $rawData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $steps = ['Captação','Análise de Edital','Montagem de Proposta','Aprovação Interna','Aprovação Fornecedor','Participação','Acompanhamento','Adjudicado','Homologado','Perdido','Fracassado','Suspenso'];
+            
+            $result = [];
+            foreach ($steps as $step) {
+                $found = array_filter($rawData, function($r) use ($step) { return stripos($r['label'], $step) !== false; });
+                if ($found) {
+                    $first = reset($found);
+                    $result[] = ['label' => $step, 'count' => $first['count'], 'value' => $first['value']];
+                } else {
+                    $result[] = ['label' => $step, 'count' => 0, 'value' => 0];
+                }
+            }
+
+            echo json_encode([
+                'success' => true,
+                'report_data' => $result,
+                'type' => 'funnel' // Return as funnel for frontend format compat
+            ]);
+
+        } catch (Exception $e) {
+            $this->sendError($e);
+        }
+    }
+
+    private function getClientsReport($start, $end)
+    {
+        try {
+            $params = [$start . ' 00:00:00', $end . ' 23:59:59'];
+            
+            $sqlInnerP = "SELECT p.id, p.organizacao_id, p.cliente_pf_id, p.valor_total FROM propostas p JOIN oportunidades o ON p.oportunidade_id = o.id WHERE p.data_criacao BETWEEN ? AND ? AND p.status = 'Aprovada'";
+            $paramsP = $params;
+            $this->applyFilters($sqlInnerP, $paramsP, 'p');
+            
+            $sqlInnerVF = "SELECT vf.id, vf.organizacao_id, vf.cliente_pf_id, vf.valor_total FROM vendas_fornecedores vf WHERE vf.data_venda BETWEEN ? AND ?";
+            $paramsVF = $params;
+            $this->applyFilters($sqlInnerVF, $paramsVF, 'vf');
+            
+            $sql = "
+                SELECT 
+                    COALESCE(org.nome_fantasia, cli.nome, 'Cliente Desconhecido') as cliente_nome,
+                    SUM(t.valor_total) as valor_total,
+                    COUNT(t.id) as qtd_vendas
+                FROM (
+                    $sqlInnerP
+                    UNION ALL
+                    $sqlInnerVF
+                ) t
+                LEFT JOIN organizacoes org ON t.organizacao_id = org.id
+                LEFT JOIN clientes_pf cli ON t.cliente_pf_id = cli.id
+                GROUP BY cliente_nome
+                ORDER BY valor_total DESC
+            ";
+
+            $stmt = $this->db->prepare($sql);
+            $finalParams = array_merge($paramsP, $paramsVF);
+            $stmt->execute($finalParams);
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Calcula Curva ABC
+            $totalGeral = array_sum(array_column($data, 'valor_total'));
+            $accum = 0;
+            foreach ($data as &$row) {
+                $accum += $row['valor_total'];
+                $percAcumulado = $totalGeral > 0 ? ($accum / $totalGeral) * 100 : 0;
+                $row['percentual_acumulado'] = round($percAcumulado, 2);
+                if ($percAcumulado <= 80) $row['classe'] = 'A';
+                elseif ($percAcumulado <= 95) $row['classe'] = 'B';
+                else $row['classe'] = 'C';
+            }
+
+            echo json_encode([
+                'success' => true,
+                'report_data' => $data,
+                'type' => 'clients'
+            ]);
+
+        } catch (Exception $e) {
+            $this->sendError($e);
+        }
+    }
+
+    private function getForecastReport($start, $end)
+    {
+        try {
+            $startMes = substr($start, 0, 7);
+            $endMes = substr($end, 0, 7);
+            $params = [$startMes . '-01', date('Y-m-t', strtotime($endMes . '-01'))];
+            
+            $sql = "
+            SELECT 
+                DATE_FORMAT(COALESCE(o.data_abertura, o.data_criacao), '%Y-%m') as mes,
+                SUM(o.valor * (COALESCE(ef.probabilidade, 0) / 100)) as forecast_ponderado,
+                SUM(o.valor) as pipeline_total
+            FROM oportunidades o
+            LEFT JOIN etapas_funil ef ON o.etapa_id = ef.id
+            WHERE COALESCE(o.data_abertura, o.data_criacao) BETWEEN ? AND ?
+            ";
+            
+            $this->applyFilters($sql, $params, 'o');
+            
+            $sql .= " GROUP BY mes ORDER BY mes ASC";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            
+            echo json_encode([
+                'success' => true,
+                'report_data' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+                'type' => 'forecast'
+            ]);
         } catch (Exception $e) {
             $this->sendError($e);
         }
@@ -210,7 +371,7 @@ function handle_get_report_data($pdo)
 
     // DEBUG: Logging Removed
 
-    $newActions = ['dashboard_summary', 'by_vendor', 'by_supplier', 'by_item', 'by_proposal_status', 'by_bidding_funnel'];
+    $newActions = ['dashboard_summary', 'by_vendor', 'by_supplier', 'by_item', 'by_proposal_status', 'by_bidding_funnel', 'clients', 'forecast'];
 
     if (in_array($type, $newActions)) {
         $handler = new ReportHandler();
