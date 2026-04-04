@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Tempo de geração: 01/04/2026 às 19:18
+-- Tempo de geração: 04/04/2026 às 16:20
 -- Versão do servidor: 11.8.6-MariaDB-log
 -- Versão do PHP: 7.2.34
 
@@ -353,7 +353,46 @@ INSERT INTO `clientes_pf` (`id`, `nome`, `cpf`, `data_nascimento`, `email`, `tel
 (282, 'teste', '09797941450', NULL, NULL, '', '53090520', 'Rua Setenta e Sete', NULL, NULL, 'Rio Doce', 'Olinda', 'PE', '2026-02-07 20:41:23'),
 (283, 'AUDES DIOGENES DE MAGALHÃES FEITOSA ', '59467770415', NULL, NULL, '', '50610000', 'Rua Real da Torre', NULL, NULL, 'Madalena', 'Recife', 'PE', '2026-02-12 20:51:37'),
 (290, 'Dr. Leonardo', '00000000000', NULL, 'frpe@frpe.com.br', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-09 18:34:46'),
-(291, 'FERNANDA VITORIA FRAGOSO SALES ', '13402921499', NULL, NULL, '8198067870', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-24 14:31:50');
+(291, 'FERNANDA VITORIA FRAGOSO SALES ', '13402921499', NULL, NULL, '8198067870', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-03-24 14:31:50'),
+(295, 'DR. Igor Costa ', '000000000000', NULL, NULL, '8788680115', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-01 20:53:40');
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `commissionconfig`
+--
+
+CREATE TABLE `commissionconfig` (
+  `id` int(11) NOT NULL,
+  `usuarioid` int(11) NOT NULL,
+  `metamensal` decimal(15,2) DEFAULT 0.00,
+  `salariofixo` decimal(15,2) DEFAULT 0.00,
+  `percentualcomissao` decimal(5,2) DEFAULT 1.00,
+  `ativo` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `commission_config`
+--
+
+CREATE TABLE `commission_config` (
+  `id` int(11) NOT NULL,
+  `usuario_id` int(11) NOT NULL,
+  `meta_mensal` decimal(15,2) DEFAULT 0.00,
+  `salario_fixo` decimal(15,2) DEFAULT 0.00,
+  `percentual_comissao` decimal(5,2) DEFAULT 1.00,
+  `ativo` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Despejando dados para a tabela `commission_config`
+--
+
+INSERT INTO `commission_config` (`id`, `usuario_id`, `meta_mensal`, `salario_fixo`, `percentual_comissao`, `ativo`) VALUES
+(20, 1, 200000.00, 2500.00, 15.00, 1),
+(21, 12, 0.00, 0.00, 1.00, 1);
 
 -- --------------------------------------------------------
 
@@ -408,7 +447,8 @@ INSERT INTO `contatos` (`id`, `organizacao_id`, `nome`, `cargo`, `setor`, `email
 (35, 363, 'Hugo Cavalcanti', 'Coordenador de Compras', 'Compras', 'hugo.cavalcanti@fghsaude.org.br', '81997311718', '2026-03-24 11:38:06'),
 (36, 28, 'Hélder Vasconcelos', 'Comprador', 'Administração', NULL, '81 97914-0403', '2026-03-27 17:07:35'),
 (37, 967, 'Sheyla', NULL, 'Administração', NULL, '(83) 3365-1001/ (83) 3365-1058 (83) 98124-3711', '2026-03-31 14:07:28'),
-(38, 53, 'Rodrigo', NULL, NULL, NULL, '11911402251', '2026-03-31 18:31:56');
+(38, 53, 'Rodrigo', NULL, NULL, NULL, '11911402251', '2026-03-31 18:31:56'),
+(39, 969, 'ANDREA SILVEIRA ', 'GERENTE ', NULL, 'gerencia_pe@apabb.org.br', '81 997930000', '2026-04-01 20:04:11');
 
 -- --------------------------------------------------------
 
@@ -1221,7 +1261,9 @@ INSERT INTO `oportunidades` (`id`, `titulo`, `numero_edital`, `numero_processo`,
 (255, 'Fechamento de Externo ', NULL, NULL, 156, NULL, NULL, NULL, 0.00, 1, 10, 10, '0014/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-04-01 12:24:50', '2026-04-01 12:24:50', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (256, 'HIPEC', NULL, NULL, 805, NULL, NULL, NULL, 0.00, 1, 10, 10, '0015/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-04-01 12:27:34', '2026-04-01 12:27:34', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (257, 'Monitorização ', NULL, NULL, 805, NULL, NULL, NULL, 0.00, 1, 10, 10, '0016/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-04-01 12:30:00', '2026-04-01 12:30:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(258, 'Monitorização ', NULL, NULL, 797, NULL, NULL, NULL, 0.00, 1, 10, 10, '0017/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-04-01 12:34:31', '2026-04-01 12:34:31', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+(258, 'Monitorização ', NULL, NULL, 797, NULL, NULL, NULL, 0.00, 1, 10, 10, '0017/2026', NULL, NULL, NULL, NULL, 1, 0.00, '2026-04-01 12:34:31', '2026-04-01 12:34:31', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(259, 'Oportunidade p/ Proposta: APABB - ASSOCIACAO DE PAIS, AMIGOS E PESSOAS COM DEFICIENCIA DE FUNCIONARIOS DO BANCO DO BRASIL E DA COMUNIDADE', NULL, NULL, 969, NULL, 39, NULL, 9604.00, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-04-01 20:05:56', '2026-04-01 20:05:56', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(260, 'Oportunidade p/ Proposta: DR. Igor Costa ', NULL, NULL, NULL, NULL, NULL, 295, 92449.85, 4, 2, NULL, NULL, NULL, NULL, NULL, NULL, 1, 0.00, '2026-04-01 20:55:20', '2026-04-01 20:56:53', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -2282,7 +2324,8 @@ INSERT INTO `organizacoes` (`id`, `nome_fantasia`, `razao_social`, `cnpj`, `cep`
 (965, 'VAL MED', 'VAL MED PRODUTOS E EQUIPAMENTOS MEDICOS HOSPITALAR LTDA', '05980425000128', '57301130', 'RUA DOM JONAS BATINGA', '414', NULL, 'OURO PRETO', 'ARAPIRACA', 'AL', '2026-03-25 18:11:51'),
 (966, 'POLICLINICA BEM ESTAR', 'BEM ESTAR SERVICOS MEDICOS ESPECIALIZADOS E ODONTOLOGICOS LTDA', '26.616.936/0001-35', '58100222', 'R PASTOR JOSE ALVES DE OLIVEIRA', '430', NULL, 'CENTRO', 'CABEDELO', 'PB', '2026-03-26 13:59:00'),
 (967, 'LAGOA NOVA GABINETE PREFEITO', 'MUNICIPIO DE ALAGOA NOVA', '08.700.684/0001-46', '58125000', 'PC SANTA ANA', 'SN', NULL, 'CENTRO', 'ALAGOA NOVA', 'PB', '2026-03-31 14:04:09'),
-(968, 'AMORSAUDE', 'CLINICA AMOR SAUDE JOAO PESSOA SUL LTDA', '30320494000152', '58057470', 'R ANA CAVALCANTI DE ALBUQUERQUE TEIXEIRA LIMA', '420', NULL, 'MANGABEIRA', 'JOAO PESSOA', 'PB', '2026-03-31 18:29:45');
+(968, 'AMORSAUDE', 'CLINICA AMOR SAUDE JOAO PESSOA SUL LTDA', '30320494000152', '58057470', 'R ANA CAVALCANTI DE ALBUQUERQUE TEIXEIRA LIMA', '420', NULL, 'MANGABEIRA', 'JOAO PESSOA', 'PB', '2026-03-31 18:29:45'),
+(969, 'APABB - ASSOCIACAO DE PAIS, AMIGOS E PESSOAS COM DEFICIENCIA DE FUNCIONARIOS DO BANCO DO BRASIL E DA COMUNIDADE', 'APABB - ASSOCIACAO DE PAIS, AMIGOS E PESSOAS COM DEFICIENCIA DE FUNCIONARIOS DO BANCO DO BRASIL E DA COMUNIDADE', '58.106.519/0007-24', '50030310', 'AVENIDA RIO BRANCO', '240', NULL, 'CENTRO', 'RECIFE', 'PE', '2026-04-01 20:03:08');
 
 -- --------------------------------------------------------
 
@@ -2517,7 +2560,9 @@ INSERT INTO `propostas` (`id`, `numero_proposta`, `oportunidade_id`, `cliente_pf
 (195, '070/2026', 249, NULL, 965, NULL, 2, 9818.00, 'Aprovada', 'CIF', 0.00, '', '2026-04-05', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-03-25 18:13:59', 2),
 (196, '071/2026', 251, NULL, 966, NULL, 2, 17169.85, 'Enviada', 'FOB', 300.00, '', '2026-04-06', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 15 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-03-26 14:23:37', 2),
 (197, '072/2026', 252, NULL, 967, 37, 8, 18165.00, 'Negociando', 'CIF', 0.00, '', '2026-04-10', 'Realizado diretamente pela FR', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 10 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-03-31 14:22:01', 8),
-(198, '073/2026', 253, NULL, 53, 38, 8, 75800.00, 'Aprovada', 'FOB', 3900.00, '', '2026-03-31', 'Realizado diretamente pela Micromed.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '12x no cartão', 'Até 60 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-03-31 18:41:36', NULL);
+(198, '073/2026', 253, NULL, 53, 38, 8, 75800.00, 'Aprovada', 'FOB', 3900.00, '', '2026-03-31', 'Realizado diretamente pela Micromed.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', '12x no cartão', 'Até 60 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-03-31 18:41:36', NULL),
+(199, '074/2026', 259, NULL, 969, 39, 2, 9604.00, 'Enviada', 'CIF', 0.00, '', '2026-04-11', 'Realizado diretamente pela FR.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'Nenhuma', NULL, '2026-04-01 20:05:56', NULL),
+(200, '075/2026', 260, 295, NULL, NULL, 2, 92449.85, 'Enviada', 'FOB', 0.00, '', '2026-04-11', 'Realizado diretamente pela fábrica.', 'Capacitação técnica por especialistas da FR Produtos Médicos.', 'A vista', 'Até 30 dias após a confirmação do pedido de compra.', '12 meses a partir da data de emissão da nota Fiscal.', '6 meses, conforme especificações do fabricante.', 'Realizada pela equipe técnica da FR Produtos Médicos, garantindo conformidade e segurança.', 'Disponível com suporte especializado para manutenção e pós garantia.', 'FRETE SERÁ INCLUSO APÓS INCLUSÃO DOS DADOS DO CLIENTE ', NULL, '2026-04-01 20:55:20', 2);
 
 -- --------------------------------------------------------
 
@@ -2729,7 +2774,156 @@ INSERT INTO `proposta_itens` (`id`, `proposta_id`, `produto_id`, `descricao`, `d
 (788, 197, 19, 'OXIMETRO ', 'Monitor portátil com SPO2, PR, PI, RRP', 'MASIMO ', 'RAD G SEM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911e01074fe3.png', 1, 8331.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
 (789, 197, 17, 'OXIMETRO', 'Monitor portátil com SPO2, PR, PI, RRP e módulo de temperatura integrado ', 'MASIMO', 'RAD G COM TEMPERATURA ', 'https://frpe.app.br/crm/uploads/products/prod_6911dd39c9342.png', 1, 9834.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
 (790, 198, 37, 'ESTEIRA ERGOMETRICA', 'Leve, resistente e moderna, feita em alumínio, ideal para uso médico em testes de esforço e cardiopulmonares. Suporta até 200 kg, com ampla área de caminhada, inclinação de 0 a 26% e velocidade máxima de 18 km/h. Possui saída USB nativa para controle automático digital, sistema de fricção reduzida que dispensa lubrificação e operação em 220V/60Hz. Compatível com Ergo PC, Ergo PC Air e Ergo PC Elite. Garantia de 1 ano para a esteira (já incluída a garantia legal) e 3 meses para acessórios (já incluída a garantia legal). Inclui cabo USB. Recomenda-se uso de Nobreak Onda Senoidal (5 KVA, 220V) e instalação em circuito elétrico isolado e aterrado', 'MICROMED', 'C300', 'uploads/products/prod_697ba85eb0a8e.jpeg', 1, 47500.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
-(791, 198, 86, 'ERGOPC USB ', 'ErgoPc é um sistema de eletrocardiografia de esforço desenvolvido para a realização de testes ergométricos com alta precisão e confiabilidade. O equipamento capta os sinais elétricos provenientes do coração, amplifica esses sinais e os converte em dados digitais, que são enviados para um computador por meio de conexão USB.', 'MICROMED', 'ERGOPC USB ', 'uploads/products/prod_69cc147f7b2a8.webp', 1, 24400.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00);
+(791, 198, 86, 'ERGOPC USB ', 'ErgoPc é um sistema de eletrocardiografia de esforço desenvolvido para a realização de testes ergométricos com alta precisão e confiabilidade. O equipamento capta os sinais elétricos provenientes do coração, amplifica esses sinais e os converte em dados digitais, que são enviados para um computador por meio de conexão USB.', 'MICROMED', 'ERGOPC USB ', 'uploads/products/prod_69cc147f7b2a8.webp', 1, 24400.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(792, 199, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9604.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(797, 200, 37, 'ESTEIRA ERGOMETRICA', 'Leve, resistente e moderna, feita em alumínio, ideal para uso médico em testes de esforço e cardiopulmonares. Suporta até 200 kg, com ampla área de caminhada, inclinação de 0 a 26% e velocidade máxima de 18 km/h. Possui saída USB nativa para controle automático digital, sistema de fricção reduzida que dispensa lubrificação e operação em 220V/60Hz. Compatível com Ergo PC, Ergo PC Air e Ergo PC Elite. Garantia de 1 ano para a esteira (já incluída a garantia legal) e 3 meses para acessórios (já incluída a garantia legal). Inclui cabo USB. Recomenda-se uso de Nobreak Onda Senoidal (5 KVA, 220V) e instalação em circuito elétrico isolado e aterrado', 'MICROMED', 'C300', 'uploads/products/prod_697ba85eb0a8e.jpeg', 1, 49990.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(798, 200, 86, 'ERGOPC USB ', 'ErgoPc é um sistema de eletrocardiografia de esforço desenvolvido para a realização de testes ergométricos com alta precisão e confiabilidade. O equipamento capta os sinais elétricos provenientes do coração, amplifica esses sinais e os converte em dados digitais, que são enviados para um computador por meio de conexão USB.', 'MICROMED', 'ERGOPC USB ', 'uploads/products/prod_69cc147f7b2a8.webp', 1, 25590.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(799, 200, 11, 'DESFIBRILADOR EXTERNO AUTOMATICO  ', 'Prático e eficiente, conta com leds indicativos e orientação por voz para acompanhamento das fases do tratamento.\nBATERIA NÃO RECARREGÁVEL\n', 'INSTRAMED', 'I.ON LED', 'https://frpe.app.br/crm/uploads/products/prod_69035d872b451.png', 1, 9604.00, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00),
+(800, 200, 28, 'CARRO DE PARADA ', 'ESTRUTURA INTERNA EM AÇO CARBONO, REVESTIDO EM POLÍMERO DE ALTO IMPACTO ABS COM NANO TECNOLOGIA ANTI-BACTERIANA.   ', 'HEALTH ', 'LT 103', 'https://frpe.app.br/crm/uploads/products/prod_69381c774ddf6.webp', 1, 7265.85, 'VENDA', 'Unidade', NULL, NULL, 1, 0.00);
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `suppliermonthlytargets`
+--
+
+CREATE TABLE `suppliermonthlytargets` (
+  `id` int(11) NOT NULL,
+  `fornecedornome` varchar(100) NOT NULL,
+  `year` int(11) NOT NULL,
+  `month` int(11) NOT NULL,
+  `uf` varchar(5) NOT NULL,
+  `metamensal` decimal(15,2) DEFAULT 0.00
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `supplier_monthly_targets`
+--
+
+CREATE TABLE `supplier_monthly_targets` (
+  `id` int(11) NOT NULL,
+  `fornecedor_nome` varchar(100) NOT NULL,
+  `year` year(4) NOT NULL,
+  `month` tinyint(4) NOT NULL,
+  `meta_mensal` decimal(15,2) DEFAULT 0.00,
+  `uf` varchar(5) DEFAULT 'GERAL'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Despejando dados para a tabela `supplier_monthly_targets`
+--
+
+INSERT INTO `supplier_monthly_targets` (`id`, `fornecedor_nome`, `year`, `month`, `meta_mensal`, `uf`) VALUES
+(1, 'BRASIL MEDICA', '2026', 1, 1.00, 'GERAL'),
+(2, 'BRASIL MEDICA', '2026', 2, 1.00, 'GERAL'),
+(3, 'BRASIL MEDICA', '2026', 3, 1.00, 'GERAL'),
+(4, 'BRASIL MEDICA', '2026', 4, 1.00, 'GERAL'),
+(5, 'BRASIL MEDICA', '2026', 5, 1.00, 'GERAL'),
+(6, 'BRASIL MEDICA', '2026', 6, 1.00, 'GERAL'),
+(7, 'BRASIL MEDICA', '2026', 7, 1.00, 'GERAL'),
+(8, 'BRASIL MEDICA', '2026', 8, 1.00, 'GERAL'),
+(9, 'BRASIL MEDICA', '2026', 9, 1.00, 'GERAL'),
+(10, 'BRASIL MEDICA', '2026', 10, 1.00, 'GERAL'),
+(11, 'BRASIL MEDICA', '2026', 11, 1.00, 'GERAL'),
+(12, 'BRASIL MEDICA', '2026', 12, 1.00, 'GERAL'),
+(13, 'HEALTH', '2026', 1, 1.00, 'GERAL'),
+(14, 'HEALTH', '2026', 2, 1.00, 'GERAL'),
+(15, 'HEALTH', '2026', 3, 1.00, 'GERAL'),
+(16, 'HEALTH', '2026', 4, 1.00, 'GERAL'),
+(17, 'HEALTH', '2026', 5, 1.00, 'GERAL'),
+(18, 'HEALTH', '2026', 6, 1.00, 'GERAL'),
+(19, 'HEALTH', '2026', 7, 1.00, 'GERAL'),
+(20, 'HEALTH', '2026', 8, 1.00, 'GERAL'),
+(21, 'HEALTH', '2026', 9, 1.00, 'GERAL'),
+(22, 'HEALTH', '2026', 10, 1.00, 'GERAL'),
+(23, 'HEALTH', '2026', 11, 1.00, 'GERAL'),
+(24, 'HEALTH', '2026', 12, 1.00, 'GERAL'),
+(25, 'INSTRAMED', '2026', 1, 1.00, 'GERAL'),
+(26, 'INSTRAMED', '2026', 2, 1.00, 'GERAL'),
+(27, 'INSTRAMED', '2026', 3, 1.00, 'GERAL'),
+(28, 'INSTRAMED', '2026', 4, 1.00, 'GERAL'),
+(29, 'INSTRAMED', '2026', 5, 1.00, 'GERAL'),
+(30, 'INSTRAMED', '2026', 6, 1.00, 'GERAL'),
+(31, 'INSTRAMED', '2026', 7, 1.00, 'GERAL'),
+(32, 'INSTRAMED', '2026', 8, 1.00, 'GERAL'),
+(33, 'INSTRAMED', '2026', 9, 1.00, 'GERAL'),
+(34, 'INSTRAMED', '2026', 10, 1.00, 'GERAL'),
+(35, 'INSTRAMED', '2026', 11, 1.00, 'GERAL'),
+(36, 'INSTRAMED', '2026', 12, 1.00, 'GERAL'),
+(37, 'LIVANOVA', '2026', 1, 1.00, 'GERAL'),
+(38, 'LIVANOVA', '2026', 2, 1.00, 'GERAL'),
+(39, 'LIVANOVA', '2026', 3, 1.00, 'GERAL'),
+(40, 'LIVANOVA', '2026', 4, 1.00, 'GERAL'),
+(41, 'LIVANOVA', '2026', 5, 1.00, 'GERAL'),
+(42, 'LIVANOVA', '2026', 6, 1.00, 'GERAL'),
+(43, 'LIVANOVA', '2026', 7, 1.00, 'GERAL'),
+(44, 'LIVANOVA', '2026', 8, 1.00, 'GERAL'),
+(45, 'LIVANOVA', '2026', 9, 1.00, 'GERAL'),
+(46, 'LIVANOVA', '2026', 10, 1.00, 'GERAL'),
+(47, 'LIVANOVA', '2026', 11, 1.00, 'GERAL'),
+(48, 'LIVANOVA', '2026', 12, 1.00, 'GERAL'),
+(49, 'MASIMO', '2026', 1, 1.00, 'GERAL'),
+(50, 'MASIMO', '2026', 2, 1.00, 'GERAL'),
+(51, 'MASIMO', '2026', 3, 1.00, 'GERAL'),
+(52, 'MASIMO', '2026', 4, 1.00, 'GERAL'),
+(53, 'MASIMO', '2026', 5, 1.00, 'GERAL'),
+(54, 'MASIMO', '2026', 6, 1.00, 'GERAL'),
+(55, 'MASIMO', '2026', 7, 1.00, 'GERAL'),
+(56, 'MASIMO', '2026', 8, 1.00, 'GERAL'),
+(57, 'MASIMO', '2026', 9, 1.00, 'GERAL'),
+(58, 'MASIMO', '2026', 10, 1.00, 'GERAL'),
+(59, 'MASIMO', '2026', 11, 1.00, 'GERAL'),
+(60, 'MASIMO', '2026', 12, 1.00, 'GERAL'),
+(61, 'MERIL', '2026', 1, 1.00, 'GERAL'),
+(62, 'MERIL', '2026', 2, 1.00, 'GERAL'),
+(63, 'MERIL', '2026', 3, 1.00, 'GERAL'),
+(64, 'MERIL', '2026', 4, 1.00, 'GERAL'),
+(65, 'MERIL', '2026', 5, 1.00, 'GERAL'),
+(66, 'MERIL', '2026', 6, 1.00, 'GERAL'),
+(67, 'MERIL', '2026', 7, 1.00, 'GERAL'),
+(68, 'MERIL', '2026', 8, 1.00, 'GERAL'),
+(69, 'MERIL', '2026', 9, 1.00, 'GERAL'),
+(70, 'MERIL', '2026', 10, 1.00, 'GERAL'),
+(71, 'MERIL', '2026', 11, 1.00, 'GERAL'),
+(72, 'MERIL', '2026', 12, 1.00, 'GERAL'),
+(73, 'MICROMED', '2026', 1, 1.00, 'GERAL'),
+(74, 'MICROMED', '2026', 2, 1.00, 'GERAL'),
+(75, 'MICROMED', '2026', 3, 1.00, 'GERAL'),
+(76, 'MICROMED', '2026', 4, 1.00, 'GERAL'),
+(77, 'MICROMED', '2026', 5, 1.00, 'GERAL'),
+(78, 'MICROMED', '2026', 6, 1.00, 'GERAL'),
+(79, 'MICROMED', '2026', 7, 1.00, 'GERAL'),
+(80, 'MICROMED', '2026', 8, 1.00, 'GERAL'),
+(81, 'MICROMED', '2026', 9, 1.00, 'GERAL'),
+(82, 'MICROMED', '2026', 10, 1.00, 'GERAL'),
+(83, 'MICROMED', '2026', 11, 1.00, 'GERAL'),
+(84, 'MICROMED', '2026', 12, 1.00, 'GERAL'),
+(85, 'NIPRO', '2026', 1, 1.00, 'GERAL'),
+(86, 'NIPRO', '2026', 2, 1.00, 'GERAL'),
+(87, 'NIPRO', '2026', 3, 1.00, 'GERAL'),
+(88, 'NIPRO', '2026', 4, 1.00, 'GERAL'),
+(89, 'NIPRO', '2026', 5, 1.00, 'GERAL'),
+(90, 'NIPRO', '2026', 6, 1.00, 'GERAL'),
+(91, 'NIPRO', '2026', 7, 1.00, 'GERAL'),
+(92, 'NIPRO', '2026', 8, 1.00, 'GERAL'),
+(93, 'NIPRO', '2026', 9, 1.00, 'GERAL'),
+(94, 'NIPRO', '2026', 10, 1.00, 'GERAL'),
+(95, 'NIPRO', '2026', 11, 1.00, 'GERAL'),
+(96, 'NIPRO', '2026', 12, 1.00, 'GERAL'),
+(97, 'SIGMAFIX', '2026', 1, 1.00, 'GERAL'),
+(98, 'SIGMAFIX', '2026', 2, 1.00, 'GERAL'),
+(99, 'SIGMAFIX', '2026', 3, 1.00, 'GERAL'),
+(100, 'SIGMAFIX', '2026', 4, 1.00, 'GERAL'),
+(101, 'SIGMAFIX', '2026', 5, 1.00, 'GERAL'),
+(102, 'SIGMAFIX', '2026', 6, 1.00, 'GERAL'),
+(103, 'SIGMAFIX', '2026', 7, 1.00, 'GERAL'),
+(104, 'SIGMAFIX', '2026', 8, 1.00, 'GERAL'),
+(105, 'SIGMAFIX', '2026', 9, 1.00, 'GERAL'),
+(106, 'SIGMAFIX', '2026', 10, 1.00, 'GERAL'),
+(107, 'SIGMAFIX', '2026', 11, 1.00, 'GERAL'),
+(108, 'SIGMAFIX', '2026', 12, 1.00, 'GERAL');
 
 -- --------------------------------------------------------
 
@@ -2855,6 +3049,35 @@ INSERT INTO `usuarios` (`id`, `nome`, `email`, `telefone`, `senha`, `role`, `car
 (9, 'Dyara ', 'dyara@frpe.com.br', '84 98730-3243', '$2y$10$IoSBau78YoB/QzX1vNbTm.b1I9TWFA7zlJxNVoWOFdPfh3HoNEXVG', 'Vendedor', 'Executivo de Vendas', 'Inativo', '2026-01-09 14:52:48'),
 (10, 'Betânia ', 'betania@frpe.com.br', '84 99407-3545', '$2y$10$Oc30.vk.MCYpNf0NJDZbnOGzmOT/BpCn5SlSXUHmo35riKbe607iu', 'Vendedor', 'Executivo de Vendas', 'Ativo', '2026-01-09 14:54:30'),
 (12, 'Eduardo', 'frpe@frpe.app.br', '8199221570', '$2y$10$HrxDNOOH0QhHefY8xR4MUuSRw8gxH5XAgPveCoOFvtPCnzSpUnrBq', 'Vendedor', 'Suporte', 'Inativo', '2026-02-04 20:37:04');
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `usuarios_financas`
+--
+
+CREATE TABLE `usuarios_financas` (
+  `id` int(11) NOT NULL,
+  `usuario_id` int(11) NOT NULL,
+  `valor_fixo` decimal(15,2) DEFAULT 0.00,
+  `percentual_comissao` decimal(5,2) DEFAULT 1.00,
+  `valor_trimestre` decimal(15,2) DEFAULT 0.00,
+  `data_atualizacao` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Despejando dados para a tabela `usuarios_financas`
+--
+
+INSERT INTO `usuarios_financas` (`id`, `usuario_id`, `valor_fixo`, `percentual_comissao`, `valor_trimestre`, `data_atualizacao`) VALUES
+(1, 1, 2000.00, 1.00, 5000.00, '2026-04-01 19:51:05'),
+(2, 2, 2000.00, 1.00, 5000.00, '2026-04-01 19:51:05'),
+(3, 3, 2000.00, 1.00, 5000.00, '2026-04-01 19:51:05'),
+(4, 4, 2000.00, 1.00, 5000.00, '2026-04-01 19:51:05'),
+(5, 6, 2000.00, 1.00, 5000.00, '2026-04-01 19:51:05'),
+(6, 7, 2000.00, 1.00, 5000.00, '2026-04-01 19:51:05'),
+(7, 8, 2000.00, 1.00, 5000.00, '2026-04-01 19:51:05'),
+(8, 10, 2000.00, 1.00, 5000.00, '2026-04-01 19:51:05');
 
 -- --------------------------------------------------------
 
@@ -3342,6 +3565,20 @@ ALTER TABLE `clientes_pf`
   ADD UNIQUE KEY `cpf` (`cpf`);
 
 --
+-- Índices de tabela `commissionconfig`
+--
+ALTER TABLE `commissionconfig`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_usuario` (`usuarioid`);
+
+--
+-- Índices de tabela `commission_config`
+--
+ALTER TABLE `commission_config`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_usuario` (`usuario_id`);
+
+--
 -- Índices de tabela `contatos`
 --
 ALTER TABLE `contatos`
@@ -3477,6 +3714,20 @@ ALTER TABLE `proposta_itens`
   ADD KEY `fk_item_produto` (`produto_id`);
 
 --
+-- Índices de tabela `suppliermonthlytargets`
+--
+ALTER TABLE `suppliermonthlytargets`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_forn_year_month_uf` (`fornecedornome`,`year`,`month`,`uf`);
+
+--
+-- Índices de tabela `supplier_monthly_targets`
+--
+ALTER TABLE `supplier_monthly_targets`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_forn_year_month_uf` (`fornecedor_nome`,`year`,`month`,`uf`);
+
+--
 -- Índices de tabela `tabela_preco`
 --
 ALTER TABLE `tabela_preco`
@@ -3495,6 +3746,13 @@ ALTER TABLE `tabela_preco_itens`
 ALTER TABLE `usuarios`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `email` (`email`);
+
+--
+-- Índices de tabela `usuarios_financas`
+--
+ALTER TABLE `usuarios_financas`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_usuario` (`usuario_id`);
 
 --
 -- Índices de tabela `vendas_fornecedores`
@@ -3528,13 +3786,25 @@ ALTER TABLE `agendamentos`
 -- AUTO_INCREMENT de tabela `clientes_pf`
 --
 ALTER TABLE `clientes_pf`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=292;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=296;
+
+--
+-- AUTO_INCREMENT de tabela `commissionconfig`
+--
+ALTER TABLE `commissionconfig`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de tabela `commission_config`
+--
+ALTER TABLE `commission_config`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT de tabela `contatos`
 --
 ALTER TABLE `contatos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT de tabela `empenhos`
@@ -3606,7 +3876,7 @@ ALTER TABLE `notas_fiscais`
 -- AUTO_INCREMENT de tabela `oportunidades`
 --
 ALTER TABLE `oportunidades`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=259;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=261;
 
 --
 -- AUTO_INCREMENT de tabela `oportunidade_itens`
@@ -3618,7 +3888,7 @@ ALTER TABLE `oportunidade_itens`
 -- AUTO_INCREMENT de tabela `organizacoes`
 --
 ALTER TABLE `organizacoes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=969;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=970;
 
 --
 -- AUTO_INCREMENT de tabela `produtos`
@@ -3630,13 +3900,25 @@ ALTER TABLE `produtos`
 -- AUTO_INCREMENT de tabela `propostas`
 --
 ALTER TABLE `propostas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=199;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=201;
 
 --
 -- AUTO_INCREMENT de tabela `proposta_itens`
 --
 ALTER TABLE `proposta_itens`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=792;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=801;
+
+--
+-- AUTO_INCREMENT de tabela `suppliermonthlytargets`
+--
+ALTER TABLE `suppliermonthlytargets`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de tabela `supplier_monthly_targets`
+--
+ALTER TABLE `supplier_monthly_targets`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=109;
 
 --
 -- AUTO_INCREMENT de tabela `tabela_preco`
@@ -3655,6 +3937,12 @@ ALTER TABLE `tabela_preco_itens`
 --
 ALTER TABLE `usuarios`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+
+--
+-- AUTO_INCREMENT de tabela `usuarios_financas`
+--
+ALTER TABLE `usuarios_financas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT de tabela `vendas_fornecedores`
@@ -3736,6 +4024,12 @@ ALTER TABLE `propostas`
 --
 ALTER TABLE `tabela_preco_itens`
   ADD CONSTRAINT `fk_tpi_tabela` FOREIGN KEY (`tabela_preco_id`) REFERENCES `tabela_preco` (`id`) ON DELETE CASCADE;
+
+--
+-- Restrições para tabelas `usuarios_financas`
+--
+ALTER TABLE `usuarios_financas`
+  ADD CONSTRAINT `fk_usuario_financas` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
 
 --
 -- Restrições para tabelas `vendas_objetivos`

@@ -4,6 +4,57 @@ import { formatCurrency as formatCurrencyUtil, showToast, showLoading } from '..
 let appState = {};
 let chartInstance = null;
 
+// ─── ETAPAS FIXAS POR TIPO DE RELATÓRIO ──────────────────────────────────────
+const ETAPAS_FUNIL_VENDAS = [
+    { value: 'Prospectando', label: 'Prospectando' },
+    { value: 'Contato', label: 'Contato' },
+    { value: 'Negociação', label: 'Negociação' },
+    { value: 'Proposta', label: 'Proposta' },
+    { value: 'Fechado', label: 'Fechado' },
+    { value: 'Controle de Entrega', label: 'Controle de Entrega' },
+    { value: 'Pós-venda', label: 'Pós-venda' },
+    { value: 'Recusado', label: 'Recusado' },
+];
+
+const ETAPAS_FUNIL_FORNECEDORES = [
+    { value: 'BRASIL MEDICA', label: 'BRASIL MEDICA' },
+    { value: 'HEALTH', label: 'HEALTH' },
+    { value: 'INSTRAMED', label: 'INSTRAMED' },
+    { value: 'LIVANOVA', label: 'LIVANOVA' },
+    { value: 'MASIMO', label: 'MASIMO' },
+    { value: 'MERIL', label: 'MERIL' },
+    { value: 'MICROMED', label: 'MICROMED' },
+    { value: 'NIPRO', label: 'NIPRO' },
+    { value: 'SIGMAFIX', label: 'SIGMAFIX' },
+];
+
+const ETAPAS_FUNIL_LICITACOES = [
+    { value: 'Captação de Edital', label: 'Captação de Edital' },
+    { value: 'Acolhimento de propostas', label: 'Acolhimento de propostas' },
+    { value: 'Em análise Técnica', label: 'Em análise Técnica' },
+    { value: 'Homologado', label: 'Homologado' },
+    { value: 'Ata/Carona', label: 'Ata/Carona' },
+    { value: 'Empenhado', label: 'Empenhado' },
+    { value: 'Contrato', label: 'Contrato' },
+    { value: 'Desclassificado', label: 'Desclassificado' },
+    { value: 'Fracassado', label: 'Fracassado' },
+    { value: 'Revogado', label: 'Revogado' },
+    { value: 'Anulado', label: 'Anulado' },
+    { value: 'Suspenso', label: 'Suspenso' },
+];
+
+const FORNECEDORES_FIXOS = [
+    { value: 'BRASIL MEDICA', label: 'BRASIL MEDICA' },
+    { value: 'HEALTH', label: 'HEALTH' },
+    { value: 'INSTRAMED', label: 'INSTRAMED' },
+    { value: 'LIVANOVA', label: 'LIVANOVA' },
+    { value: 'MASIMO', label: 'MASIMO' },
+    { value: 'MERIL', label: 'MERIL' },
+    { value: 'MICROMED', label: 'MICROMED' },
+    { value: 'NIPRO', label: 'NIPRO' },
+    { value: 'SIGMAFIX', label: 'SIGMAFIX' },
+];
+
 export async function renderReportsView(state) {
     if (state) appState = state;
     const currentYear = new Date().getFullYear();
@@ -42,7 +93,7 @@ export async function renderReportsView(state) {
                 <!-- Tab contents injected here -->
             </div>
 
-            <!-- Global Modals (Accessible from any tab) -->
+            <!-- Global Modals -->
             <div id="targets-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
                  <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-4/5 shadow-lg rounded-md bg-white">
                     <div class="flex justify-between items-center mb-4">
@@ -60,20 +111,16 @@ export async function renderReportsView(state) {
                     </div>
                 </div>
             </div>
-            <!-- Hidden trigger for legacy logic -->
             <button id="set-targets-btn" class="hidden"></button>
         </div>
 
         <style>
-            /* Glassmorphism & Premium UI Tokens */
             #reports-module-container { --glass: rgba(255, 255, 255, 0.7); --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
             
             #reports-module-container .report-tab {
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                font-weight: 600;
-                color: #94a3b8;
-                padding: 1rem 1.5rem;
-                position: relative;
+                font-weight: 600; color: #94a3b8;
+                padding: 1rem 1.5rem; position: relative;
             }
             #reports-module-container .report-tab:hover { color: #6366f1; }
             #reports-module-container .report-tab.active { color: #4f46e5; }
@@ -82,23 +129,17 @@ export async function renderReportsView(state) {
                 background: linear-gradient(90deg, #4f46e5, #818cf8); border-radius: 3px;
                 animation: slideIn 0.3s ease-out;
             }
-
             @keyframes slideIn { from { width: 0; left: 50%; } to { width: 100%; left: 0; } }
 
-            /* Bento Filters Style */
             #reports-module-container .filter-card {
-                background: white;
-                padding: 1rem;
-                border-radius: 1.25rem;
-                border: 1px solid #f1f5f9;
-                box-shadow: var(--shadow-sm);
+                background: white; padding: 1rem; border-radius: 1.25rem;
+                border: 1px solid #f1f5f9; box-shadow: var(--shadow-sm);
                 transition: transform 0.2s, box-shadow 0.2s;
             }
             #reports-module-container .filter-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
             #reports-module-container .filter-label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; margin-bottom: 0.5rem; }
             #reports-module-container .filter-label i { margin-right: 0.5rem; color: #4f46e5; opacity: 0.6; }
 
-            /* Custom Seller Card (Dashboard) */
             #reports-module-container .seller-card {
                 min-width: 220px; flex: 1; min-height: 100px;
                 background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
@@ -113,7 +154,6 @@ export async function renderReportsView(state) {
                 font-weight: 900; color: #4f46e5; font-size: 1.25rem; border: 2px solid #eef2ff;
             }
 
-            /* Custom Month Selectors */
             #reports-module-container .custom-date-row { display: flex; gap: 0.5rem; align-items: center; width: 100%; }
             #reports-module-container .custom-date-item {
                 flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem;
@@ -122,7 +162,6 @@ export async function renderReportsView(state) {
             }
             #reports-module-container .custom-date-item:hover { border-color: #818cf8; background: white; }
 
-            /* MultiSelect Dropdown Modern Style */
             #reports-module-container .multiselect-dropdown { width: 100%; position: relative; }
             #reports-module-container .multiselect-button {
                 width: 100%; display: flex; align-items: center; justify-content: space-between;
@@ -148,14 +187,12 @@ export async function renderReportsView(state) {
                 cursor: pointer; accent-color: #4f46e5;
             }
 
-            /* KPIs and Cards Refinement */
             #reports-module-container .kpi-card {
                 background: white; border: 1px solid #f1f5f9; border-radius: 1.5rem;
                 padding: 1.5rem; box-shadow: var(--shadow-sm); transition: all 0.3s;
             }
             #reports-module-container .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05); }
 
-            /* Grid Layouts */
             #reports-module-container .bento-grid { display: grid; gap: 1.5rem; }
             @media (min-width: 768px) {
                 #reports-module-container .bento-grid { grid-template-columns: repeat(3, 1fr); }
@@ -171,7 +208,6 @@ export async function renderReportsView(state) {
         </style>
     `;
 
-    // Add Tab Event Listeners
     document.querySelectorAll('.report-tab').forEach(tab => {
         tab.addEventListener('click', (e) => {
             const target = e.currentTarget.dataset.tab;
@@ -181,7 +217,6 @@ export async function renderReportsView(state) {
         });
     });
 
-    // Default View
     switchReportView('bi-dashboard');
 }
 
@@ -190,15 +225,9 @@ async function switchReportView(tab) {
     container.innerHTML = `<div class="flex justify-center p-20"><i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i></div>`;
 
     switch (tab) {
-        case 'bi-dashboard':
-            renderBIDashboard(container);
-            break;
-        case 'detailed-reports':
-            renderDetailedReports(container);
-            break;
-        case 'performance-mgmt':
-            renderPerformanceMgmt(container);
-            break;
+        case 'bi-dashboard':   renderBIDashboard(container);    break;
+        case 'detailed-reports': renderDetailedReports(container); break;
+        case 'performance-mgmt': renderPerformanceMgmt(container); break;
     }
 }
 
@@ -206,7 +235,6 @@ async function renderBIDashboard(container) {
     const currentYear = new Date().getFullYear();
     container.innerHTML = `
         <div class="bento-grid">
-            <!-- Row 1: Key Performance Metrics -->
             <div class="kpi-card bg-indigo-600 !text-black !p-7 shadow-indigo-200 shadow-xl border-none">
                 <div class="flex flex-col">
                     <p class="text-[10px] font-black uppercase text-green-900 tracking-widest opacity-70 mb-1">Total Vendido ${currentYear}</p>
@@ -235,7 +263,6 @@ async function renderBIDashboard(container) {
                 </div>
             </div>
 
-            <!-- Row 2: Secondary KPIs & Sellers -->
             <div class="kpi-card !bg-emerald-50 border-emerald-100 flex items-center justify-between">
                 <div>
                     <h3 id="bi-bids-count" class="text-4xl font-black text-emerald-700">0</h3>
@@ -260,7 +287,6 @@ async function renderBIDashboard(container) {
                 </div>
             </div>
 
-            <!-- Row 3: Charts -->
             <div class="col-span-2 bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
                 <div class="flex justify-between items-center mb-8">
                      <h4 class="font-black text-slate-800 uppercase tracking-wider">Evolução de Mercado</h4>
@@ -274,9 +300,7 @@ async function renderBIDashboard(container) {
 
             <div class="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm flex flex-col justify-center">
                  <h4 class="font-black text-slate-800 uppercase tracking-widest text-center mb-6">Mix de Fornecedores</h4>
-                 <div class="h-64 w-full relative">
-                    <canvas id="bi-supplier-chart"></canvas>
-                 </div>
+                 <div class="h-64 w-full relative"><canvas id="bi-supplier-chart"></canvas></div>
             </div>
         </div>
     `;
@@ -295,7 +319,7 @@ async function renderBIDashboard(container) {
 
             const sellerContainer = document.getElementById('bi-top-sellers');
             if (sellerContainer && kpiData.sales_by_vendedor) {
-                sellerContainer.innerHTML = kpiData.sales_by_vendedor.map((s, i) => {
+                sellerContainer.innerHTML = kpiData.sales_by_vendedor.map(s => {
                     const initials = s.vendedor.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
                     return `
                         <div class="seller-card">
@@ -318,36 +342,18 @@ async function renderBIDashboard(container) {
                 data: {
                     labels: chartData.labels,
                     datasets: [
-                        {
-                            label: 'Realizado',
-                            data: chartData.sales,
-                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                            borderColor: '#4f46e5',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4
-                        },
-                        {
-                            label: 'Meta',
-                            data: chartData.goals,
-                            borderColor: '#10b981',
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            fill: false,
-                            tension: 0.1
-                        }
+                        { label: 'Realizado', data: chartData.sales, backgroundColor: 'rgba(79, 70, 229, 0.1)', borderColor: '#4f46e5', borderWidth: 3, fill: true, tension: 0.4 },
+                        { label: 'Meta', data: chartData.goals, borderColor: '#10b981', borderWidth: 2, borderDash: [5, 5], fill: false, tension: 0.1 }
                     ]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { position: 'bottom' } },
                     scales: { y: { beginAtZero: true, ticks: { callback: v => 'R$ ' + v.toLocaleString() } } }
                 }
             });
         }
 
-        // Mini chart for variation or another metric
         const ctxSup = document.getElementById('bi-supplier-chart').getContext('2d');
         const salesBySup = await apiCall('get_report_data', { params: { report_type: 'by_supplier', start_date: `${currentYear}-01-01` } });
         if (Array.isArray(salesBySup)) {
@@ -355,15 +361,11 @@ async function renderBIDashboard(container) {
                 type: 'doughnut',
                 data: {
                     labels: salesBySup.slice(0, 5).map(s => s.label),
-                    datasets: [{
-                        data: salesBySup.slice(0, 5).map(s => s.value),
-                        backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#3b82f6']
-                    }]
+                    datasets: [{ data: salesBySup.slice(0, 5).map(s => s.value), backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#3b82f6'] }]
                 },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
             });
         }
-
     } catch (e) {
         console.error("Dashboard error:", e);
     }
@@ -371,93 +373,749 @@ async function renderBIDashboard(container) {
 
 async function renderPerformanceMgmt(container) {
     const currentYear = new Date().getFullYear();
-    const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
     container.innerHTML = `
         <div class="flex flex-col space-y-6">
-            <div class="bg-indigo-900 rounded-[2rem] p-6 text-white shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6 no-print overflow-hidden relative">
-                <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-                <div class="flex items-center gap-6 relative z-10">
-                    <div class="bg-indigo-600/50 p-4 rounded-2xl backdrop-blur-sm border border-indigo-500/30">
-                        <i class="fas fa-calculator text-2xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-bold tracking-tight">Performance Financeira</h3>
-                        <p class="text-indigo-200/80 text-[10px] font-black uppercase tracking-[0.2em]">Gestão de metas e comissões</p>
-                    </div>
-                </div>
 
-                <div class="flex flex-wrap items-center justify-center gap-4 bg-white/5 p-2 rounded-2xl backdrop-blur-xl border border-white/10 relative z-10">
-                    <div class="flex bg-white/10 rounded-xl p-1 gap-1 border border-white/5">
-                        <select id="perf-month-select" class="bg-transparent border-none text-white text-xs font-bold uppercase cursor-pointer outline-none focus:ring-0">
-                            ${months.map((m, i) => `<option value="${i + 1}" class="bg-indigo-900" ${i + 1 === new Date().getMonth() + 1 ? 'selected' : ''}>${m}</option>`).join('')}
-                        </select>
-                        <select id="perf-year-select" class="bg-transparent border-none text-white text-xs font-black cursor-pointer outline-none focus:ring-0">
-                            <option value="${currentYear}" class="bg-indigo-900" selected>${currentYear}</option>
-                            <option value="${currentYear - 1}" class="bg-indigo-900">${currentYear - 1}</option>
-                        </select>
+            <!-- HEADER BANNER: Título e Controles -->
+            <div class="bg-indigo-900 rounded-[2rem] p-8 text-white shadow-2xl no-print overflow-hidden relative">
+                <div class="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -mr-48 -mt-48 blur-3xl"></div>
+                <div class="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full -ml-32 -mb-32 blur-2xl"></div>
+                
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 relative z-10">
+                    <!-- Title Section -->
+                    <div class="flex items-center gap-6">
+                        <div class="bg-indigo-600/50 p-5 rounded-3xl backdrop-blur-md border border-indigo-400/30 shadow-inner">
+                            <i class="fas fa-calculator text-3xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-black tracking-tight">Performance Financeira</h3>
+                            <p class="text-indigo-200/80 text-xs font-bold uppercase tracking-[0.2em] mt-1">Gestão de metas e comissões por vendedor</p>
+                        </div>
                     </div>
-                    
-                    <div class="h-6 w-[1px] bg-white/20"></div>
 
-                    <div class="flex gap-2">
-                        <button id="load-performance-btn" class="bg-indigo-500 hover:bg-indigo-400 text-white w-10 h-10 rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-95 group">
-                            <i class="fas fa-play group-hover:scale-110 transition-transform"></i>
-                        </button>
-                        <button id="export-performance-btn" class="bg-emerald-500 hover:bg-emerald-400 text-white px-5 h-10 rounded-xl font-black uppercase text-[10px] transition-all shadow-lg shadow-emerald-500/20 flex items-center active:scale-95">
-                            <i class="fas fa-file-pdf mr-2"></i>Exportar
-                        </button>
-                        <button id="config-targets-btn" class="bg-amber-500 hover:bg-amber-400 text-white px-5 h-10 rounded-xl font-black uppercase text-[10px] transition-all shadow-lg shadow-amber-500/20 flex items-center active:scale-95">
-                            <i class="fas fa-bullseye mr-2"></i>Metas
-                        </button>
+                    <!-- Controls Section -->
+                    <div class="flex flex-wrap items-center gap-4 bg-white/10 p-3 rounded-[1.5rem] backdrop-blur-xl border border-white/10 shadow-2xl">
+                        
+                        <!-- Dates -->
+                        <div class="flex items-center gap-2 bg-indigo-950/40 rounded-xl px-4 py-2 border border-white/5">
+                            <div class="flex flex-col">
+                                <span class="text-indigo-300 text-[9px] font-black uppercase">Início</span>
+                                <input type="date" id="perf-start-date"
+                                    class="bg-transparent border-none text-white text-xs font-bold cursor-pointer outline-none focus:ring-0 w-28 p-0"
+                                    value="${new Date(currentYear, new Date().getMonth(), 1).toISOString().slice(0,10)}">
+                            </div>
+                            <div class="h-6 w-[1px] bg-white/10 mx-1"></div>
+                            <div class="flex flex-col">
+                                <span class="text-indigo-300 text-[9px] font-black uppercase">Fim</span>
+                                <input type="date" id="perf-end-date"
+                                    class="bg-transparent border-none text-white text-xs font-bold cursor-pointer outline-none focus:ring-0 w-28 p-0"
+                                    value="${new Date(currentYear, new Date().getMonth()+1, 0).toISOString().slice(0,10)}">
+                            </div>
+                        </div>
+
+                        <div class="h-10 w-[1px] bg-white/10 hidden md:block"></div>
+
+                        <!-- Buttons -->
+                        <div class="flex gap-2">
+                            <button id="load-performance-btn" class="bg-indigo-500 hover:bg-indigo-400 text-white px-6 h-11 rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-lg active:scale-95 flex items-center gap-2 group">
+                                <i class="fas fa-bolt group-hover:animate-pulse"></i> PROCESSAR
+                            </button>
+                            <button id="export-performance-btn" class="bg-emerald-500 hover:bg-emerald-400 text-white px-5 h-11 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all flex items-center active:scale-95 shadow-lg">
+                                <i class="fas fa-file-pdf mr-2"></i>Exportar
+                            </button>
+                            <button id="config-targets-btn" class="bg-amber-500 hover:bg-amber-400 text-white px-5 h-11 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all flex items-center active:scale-95 shadow-lg">
+                                <i class="fas fa-cog mr-2"></i>Config. Metas
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div id="performance-output" class="bg-white rounded-[2rem] shadow-xl shadow-indigo-100 border border-slate-50 overflow-hidden min-h-[500px]">
-                <div class="flex flex-col items-center justify-center p-40 text-slate-300">
-                    <div class="relative mb-6">
-                        <div class="absolute inset-0 bg-indigo-50 rounded-full animate-ping opacity-25"></div>
-                        <i class="fas fa-fingerprint text-6xl relative z-10"></i>
+            <!-- RESULTADOS: PLANILHA ABAIXO DOS BOTÕES -->
+            <div id="performance-output" class="min-h-[400px]">
+                <div class="bg-white rounded-[2rem] p-20 text-center text-gray-300 border border-dashed border-gray-200 shadow-sm">
+                    <i class="fas fa-chart-bar text-7xl mb-6 opacity-10"></i>
+                    <p class="font-bold text-gray-400 max-w-sm mx-auto">
+                        Clique no botão <strong class="text-indigo-600">⚡ PROCESSAR</strong> para carregar os dados de vendas e comissões do período selecionado.
+                    </p>
+                </div>
+            </div>
+
+            <!-- MODAL CONFIG -->
+            <div id="config-metas-panel" class="hidden fixed inset-0 z-50 flex items-start justify-center pt-10 px-4 pb-4">
+                <div id="config-panel-backdrop" class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+                <div class="relative bg-white rounded-[2rem] shadow-2xl w-full max-w-7xl max-h-[85vh] overflow-y-auto z-10 flex flex-col">
+                    <div class="sticky top-0 bg-white rounded-t-[2rem] z-10 border-b border-gray-100 px-8 py-5 flex justify-between items-center">
+                        <h4 class="font-black text-gray-800 text-lg flex items-center gap-2">
+                            <i class="fas fa-sliders-h text-indigo-500"></i> Configurar Metas e Comissões
+                        </h4>
+                        <button id="close-config-panel" class="text-gray-400 hover:text-gray-600 w-9 h-9 rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center text-lg"><i class="fas fa-times"></i></button>
                     </div>
-                    <p class="font-black uppercase tracking-widest text-sm">Pronto para processar dados</p>
-                    <p class="text-xs font-medium text-slate-400 mt-2">Selecione o período e clique no botão Play acima</p>
+                    <div class="px-8 py-6 space-y-8 flex-1">
+                        <div class="flex items-center gap-3">
+                            <label class="text-xs font-black text-gray-500 uppercase">Ano Base:</label>
+                            <input type="number" id="config-meta-year" class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-bold w-24 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500" value="${currentYear}">
+                            <button id="reload-forn-metas-btn" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-bold px-4 py-1.5 rounded-lg transition-colors"><i class="fas fa-sync-alt mr-1"></i> Recarregar</button>
+                        </div>
+                        <div>
+                            <h5 class="text-sm font-black text-indigo-700 uppercase tracking-wider mb-3 flex items-center gap-2"><i class="fas fa-users"></i> Metas e Comissões por Vendedor</h5>
+                            <div class="overflow-x-auto rounded-xl border border-gray-100 shadow-sm">
+                                <table class="w-full text-sm border-collapse">
+                                    <thead>
+                                        <tr class="bg-indigo-600 text-white text-xs uppercase font-black tracking-widest"><th class="px-5 py-3 text-left">Vendedor</th><th class="px-5 py-3 text-right">Meta (R$)</th><th class="px-5 py-3 text-right">Fixo (R$)</th><th class="px-5 py-3 text-right">% Com.</th><th class="px-5 py-3 text-center">Ativo</th><th class="px-5 py-3 text-center">Ações</th></tr>
+                                    </thead>
+                                    <tbody id="config-metas-body" class="divide-y divide-gray-100"></tbody>
+                                    <tfoot><tr><td colspan="6" class="p-4 bg-gray-50/50"><button id="add-vendedor-meta-btn" class="text-indigo-600 hover:text-indigo-800 text-xs font-black flex items-center gap-2 hover:bg-indigo-50 px-4 py-2 rounded-xl transition-all border border-indigo-100 bg-white shadow-sm"><i class="fas fa-plus-circle"></i> ADICIONAR VENDEDOR</button></td></tr></tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-4">
+                                <h5 class="text-sm font-black text-emerald-700 uppercase tracking-wider flex items-center gap-2"><i class="fas fa-building"></i> Metas por Fornecedor / Estados</h5>
+                                <button id="add-forn-btn" class="text-emerald-600 hover:text-emerald-800 text-xs font-black flex items-center gap-2 hover:bg-emerald-50 px-4 py-2 rounded-xl transition-all border border-emerald-100 bg-white shadow-sm"><i class="fas fa-plus-circle"></i> NOVO FORNECEDOR</button>
+                            </div>
+                            <div id="fornecedor-estados-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                        </div>
+                    </div>
+                    <div class="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 rounded-b-[2rem]">
+                        <button id="close-config-panel-2" class="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 text-sm font-bold transition-colors">Cancelar</button>
+                        <button id="save-config-metas-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-xl font-black text-sm shadow-lg active:scale-95 transition-all flex items-center gap-2"><i class="fas fa-save"></i> SALVAR CONFIGURAÇÕES</button>
+                    </div>
                 </div>
             </div>
         </div>
     `;
 
-    // Bind Performance listeners immediately
-    const btnLoad = document.getElementById('load-performance-btn');
-    if (btnLoad) {
-        btnLoad.onclick = async () => {
-            const m = document.getElementById('perf-month-select').value;
-            const y = document.getElementById('perf-year-select').value;
-            const selectedMonth = `${y}-${m.padStart(2, '0')}`;
-            await loadPerformanceData(container, selectedMonth);
-        };
+    // Event Listeners
+    document.getElementById('load-performance-btn').onclick = async () => {
+        const startDate = document.getElementById('perf-start-date').value;
+        const endDate   = document.getElementById('perf-end-date').value;
+        if (!startDate || !endDate) {
+            showInfoModal({ icon: 'fa-calendar-alt', iconColor: 'text-amber-500', iconBg: 'bg-amber-50', title: 'Período inválido', message: 'Selecione o período antes de processar.', btnText: 'OK', btnColor: 'bg-amber-500 hover:bg-amber-600' });
+            return;
+        }
+        await loadPerformanceData(null, startDate, endDate);
+    };
+
+    document.getElementById('export-performance-btn').onclick = () => {
+        const output = document.getElementById('performance-output');
+        if (!output || !output.querySelector('table')) {
+            showInfoModal({ icon: 'fa-file-pdf', iconColor: 'text-emerald-500', iconBg: 'bg-emerald-50', title: 'Sem dados', message: 'Processe os dados primeiro.', btnText: 'OK', btnColor: 'bg-emerald-500 hover:bg-emerald-600' });
+            return;
+        }
+        exportToPDF();
+    };
+
+    document.getElementById('config-targets-btn').onclick = function() {
+        const panel = document.getElementById('config-metas-panel');
+        panel.classList.toggle('hidden');
+        if (!panel.classList.contains('hidden')) {
+            loadUsuariosOptions().then(function() {
+                loadConfigMetasPanel();
+                loadFornecedorMetasPanel();
+            });
+        }
+    };
+
+    document.getElementById('close-config-panel').onclick   = () => document.getElementById('config-metas-panel').classList.add('hidden');
+    document.getElementById('close-config-panel-2').onclick = () => document.getElementById('config-metas-panel').classList.add('hidden');
+    document.getElementById('config-panel-backdrop').onclick = () => document.getElementById('config-metas-panel').classList.add('hidden');
+    document.getElementById('save-config-metas-btn').onclick = saveConfigMetas;
+    document.getElementById('add-vendedor-meta-btn').onclick  = () => addVendedorMetaRow();
+    document.getElementById('reload-forn-metas-btn')?.addEventListener('click', loadFornecedorMetasPanel);
+}
+
+// ─── CARREGA PAINEL CONFIG ────────────────────────────────────────────────────
+async function loadConfigMetasPanel() {
+    const tbody = document.getElementById('config-metas-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    // Garante que usuários estejam carregados
+    if (!window._usuariosOptions) {
+        await loadUsuariosOptions();
     }
 
-    const btnExport = document.getElementById('export-performance-btn');
-    if (btnExport) {
-        btnExport.onclick = () => {
-            const m = document.getElementById('perf-month-select').value;
-            const y = document.getElementById('perf-year-select').value;
-            const selectedMonth = `${y}-${m.padStart(2, '0')}`;
-            exportToPDF('performance', selectedMonth);
-        };
-    }
+    try {
+        const res = await apiCall('get_commission_config');
+        const configs = (res && res.success) ? (res.data || []) : [];
 
-    const btnConfig = document.getElementById('config-targets-btn');
-    if (btnConfig) {
-        btnConfig.onclick = () => {
-            // Dispatch event or click legacy hidden button if it exists
-            const targetBtn = document.getElementById('set-targets-btn');
-            if (targetBtn) targetBtn.click();
-        };
+        if (configs.length === 0) {
+            // Linha vazia para começar
+            addVendedorMetaRow();
+        } else {
+            configs.forEach(c => addVendedorMetaRow(c));
+        }
+    } catch(e) {
+        console.error('Erro ao carregar config metas:', e);
+        addVendedorMetaRow();
     }
 }
 
+async function loadFornecedorMetasPanel() {
+    const container = document.getElementById('fornecedor-estados-container');
+    if (!container) return;
+
+    const currentYear = document.getElementById('config-meta-year')?.value || new Date().getFullYear();
+    const storageKey  = 'crm_fornecedores_estados_v2';
+    const months      = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    container.innerHTML = `<div class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin text-2xl"></i></div>`;
+
+    // Estrutura salva: { "BRASIL MEDICA": { estados: ["PE","PB","AL"], metas: { 1: 100000, ... } } }
+    let savedData = {};
+    try {
+        const res = await apiCall('get_supplier_targets_all', { params: { year: currentYear } });
+        if (res && res.success) savedData = res.data || {};
+    } catch(e) {}
+
+    // Config local de fornecedores e seus estados
+    let fornConfig = JSON.parse(localStorage.getItem(storageKey) || 'null') || 
+        (FORNECEDORES_FIXOS || []).map(f => ({ nome: f.value || f.label || f, estados: ['PE','PB','AL'] }));
+
+    const renderAll = () => {
+        container.innerHTML = '';
+
+        if (fornConfig.length === 0) {
+            container.innerHTML = `<div class="text-center py-8 text-gray-300 border-2 border-dashed border-gray-200 rounded-2xl">
+                <i class="fas fa-building text-4xl mb-3"></i>
+                <p class="font-bold">Nenhum fornecedor cadastrado</p>
+                <p class="text-xs mt-1">Clique em "Adicionar Fornecedor" acima</p>
+            </div>`;
+            return;
+        }
+
+        fornConfig.forEach((forn, idx) => {
+            const fornKey  = forn.nome;
+            const estados  = forn.estados || [];
+            const metasForn = savedData[fornKey] || {};
+
+            // Calcula totais por mês
+            const totalAnual = Object.values(metasForn).reduce((a,b) => {
+                if (typeof b === 'object') return a + Object.values(b).reduce((x,y) => x+(parseFloat(y)||0), 0);
+                return a + (parseFloat(b)||0);
+            }, 0);
+
+            const card = document.createElement('div');
+            card.className = 'border border-emerald-100 rounded-2xl overflow-hidden shadow-sm';
+            card.dataset.idx = idx;
+
+            // Cabeçalho do card
+            const headerHtml = `
+                <div class="bg-emerald-50 border-b border-emerald-100 px-5 py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-emerald-600 text-white px-3 py-1 rounded-lg text-xs font-black uppercase">
+                            ${fornKey}
+                        </div>
+                        <div class="flex flex-wrap gap-1 items-center" id="estados-tags-${idx}">
+                            ${estados.map(uf => `
+                                <span class="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 estado-tag" data-forn-idx="${idx}" data-uf="${uf}">
+                                    ${uf}
+                                    <button type="button" class="btn-remove-estado-tag hover:text-red-500 transition-colors" data-forn-idx="${idx}" data-uf="${uf}">
+                                        <i class="fas fa-times text-[9px]"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
+                            <button type="button" class="btn-add-estado-tag text-blue-500 hover:text-blue-700 text-[10px] font-bold hover:bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 transition-colors" data-forn-idx="${idx}">
+                                <i class="fas fa-plus mr-1"></i>Estado
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs text-gray-500 font-mono">
+                            Total Anual: <strong class="text-emerald-700 forn-anual-total-${idx}">${totalAnual > 0 ? formatCurrency(totalAnual) : 'R$ 0,00'}</strong>
+                        </span>
+                        <button type="button" class="btn-remove-forn text-gray-300 hover:text-red-500 transition-colors text-sm" data-idx="${idx}" title="Remover fornecedor">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Tabela de metas mensais + distribuição por estado
+            let tableHtml = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-500 font-black uppercase text-[10px]">
+                                <th class="px-4 py-2 text-left min-w-[120px] border-r border-gray-100">Estado / Mês</th>
+                                ${months.map((m,i) => `<th class="px-2 py-2 text-right min-w-[80px]">${m}</th>`).join('')}
+                                <th class="px-3 py-2 text-right min-w-[100px] bg-gray-100 border-l border-gray-200">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+            `;
+
+            // Linha TOTAL do fornecedor (meta geral)
+            tableHtml += `
+                <tr class="bg-emerald-50/60 font-bold">
+                    <td class="px-4 py-2 text-emerald-700 font-black text-[11px] border-r border-gray-100">
+                        <i class="fas fa-chart-line mr-1 text-[9px]"></i> META GERAL
+                    </td>
+                    ${Array.from({length:12}, (_,i) => {
+                        const val = (typeof metasForn[i+1] === 'object') 
+                            ? Object.values(metasForn[i+1]).reduce((a,b) => a+(parseFloat(b)||0), 0) 
+                            : (parseFloat(metasForn[i+1]) || 0);
+                        return `<td class="px-2 py-2 text-right font-mono text-emerald-700 forn-meta-geral-${idx}-${i+1}">
+                            ${val > 0 ? formatCurrency(val) : '<span class="text-gray-300">-</span>'}
+                        </td>`;
+                    }).join('')}
+                    <td class="px-3 py-2 text-right font-black text-emerald-800 bg-emerald-100/50 border-l border-emerald-200 font-mono forn-total-geral-${idx}">
+                        ${totalAnual > 0 ? formatCurrency(totalAnual) : '-'}
+                    </td>
+                </tr>
+            `;
+
+            // Linhas por estado
+            estados.forEach(uf => {
+                const metasUF = (typeof metasForn[1] === 'object') 
+                    ? Object.fromEntries(Array.from({length:12}, (_,i) => [i+1, (metasForn[i+1] || {})[uf] || 0]))
+                    : {};
+                const totalUF = Object.values(metasUF).reduce((a,b) => a+(parseFloat(b)||0), 0);
+
+                tableHtml += `
+                    <tr class="hover:bg-blue-50/20 transition-colors group">
+                        <td class="px-4 py-2 border-r border-gray-100">
+                            <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-black text-[11px]">${uf}</span>
+                        </td>
+                        ${Array.from({length:12}, (_,i) => {
+                            const v = metasUF[i+1] || 0;
+                            return `<td class="px-1 py-1 text-right">
+                                <input type="text" class="estado-forn-input currency-input w-full text-right text-[11px] font-mono border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:ring-1 rounded px-1 py-0.5 outline-none transition-all"
+                                    data-forn="${fornKey}" data-uf="${uf}" data-month="${i+1}"
+                                    value="${v > 0 ? formatCurrency(v) : ''}" placeholder="-">
+                            </td>`;
+                        }).join('')}
+                        <td class="px-3 py-2 text-right font-black text-blue-700 bg-blue-50/30 border-l border-gray-100 font-mono uf-total-${idx}-${uf}">
+                            ${totalUF > 0 ? formatCurrency(totalUF) : '-'}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += `</tbody></table></div>`;
+
+            card.innerHTML = headerHtml + tableHtml;
+            container.appendChild(card);
+
+            // Eventos inputs
+            card.querySelectorAll('.estado-forn-input').forEach(inp => {
+                inp.addEventListener('focus', function(){ this.select(); });
+                inp.addEventListener('blur', function(){
+                    const v = parseCurrency(this.value);
+                    this.value = v > 0 ? formatCurrency(v) : '';
+                    recalcFornTotals(card, fornKey, idx, fornConfig[idx].estados);
+                });
+            });
+
+            // Botão remover fornecedor
+            card.querySelector('.btn-remove-forn').addEventListener('click', function(){
+                if (confirm(`Remover fornecedor "${fornKey}"?`)) {
+                    fornConfig.splice(idx, 1);
+                    localStorage.setItem(storageKey, JSON.stringify(fornConfig));
+                    renderAll();
+                }
+            });
+
+            // Botão adicionar estado
+            card.querySelector('.btn-add-estado-tag').addEventListener('click', function(){
+                const uf = prompt('Sigla do estado (ex: SP, RJ, MG):');
+                if (uf && uf.trim().length >= 2) {
+                    const key = uf.trim().toUpperCase().substring(0,2);
+                    if (fornConfig[idx].estados.includes(key)) { showToast('Estado já vinculado.','warning'); return; }
+                    fornConfig[idx].estados.push(key);
+                    localStorage.setItem(storageKey, JSON.stringify(fornConfig));
+                    renderAll();
+                }
+            });
+
+            // Botões remover estado da tag
+            card.querySelectorAll('.btn-remove-estado-tag').forEach(btn => {
+                btn.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    const uf = this.dataset.uf;
+                    if (confirm(`Desvincular estado "${uf}" do fornecedor "${fornKey}"?`)) {
+                        fornConfig[idx].estados = fornConfig[idx].estados.filter(x => x !== uf);
+                        localStorage.setItem(storageKey, JSON.stringify(fornConfig));
+                        renderAll();
+                    }
+                });
+            });
+        });
+    };
+
+    // Botão adicionar fornecedor
+    const addFornBtn = document.getElementById('add-forn-btn');
+    if (addFornBtn) {
+        addFornBtn._handler && addFornBtn.removeEventListener('click', addFornBtn._handler);
+        addFornBtn._handler = () => {
+            const nome = prompt('Nome do fornecedor (ex: NOVA EMPRESA):');
+            if (nome && nome.trim()) {
+                const key = nome.trim().toUpperCase();
+                if (fornConfig.find(f => f.nome === key)) { showToast('Fornecedor já existe.','warning'); return; }
+                fornConfig.push({ nome: key, estados: [] });
+                localStorage.setItem(storageKey, JSON.stringify(fornConfig));
+                renderAll();
+            }
+        };
+        addFornBtn.addEventListener('click', addFornBtn._handler);
+    }
+
+    renderAll();
+    document.getElementById('reload-forn-metas-btn')?.addEventListener('click', loadFornecedorMetasPanel);
+}
+
+// ─── RECALCULA TOTAIS DO CARD ─────────────────────────────────────────────────
+function recalcFornTotals(card, fornKey, idx, estados) {
+    let grandTotal = 0;
+
+    estados.forEach(uf => {
+        let ufTotal = 0;
+        card.querySelectorAll(`.estado-forn-input[data-uf="${uf}"]`).forEach(inp => {
+            ufTotal += parseCurrency(inp.value);
+        });
+        grandTotal += ufTotal;
+        const ufEl = card.querySelector(`.uf-total-${idx}-${uf}`);
+        if (ufEl) ufEl.textContent = ufTotal > 0 ? formatCurrency(ufTotal) : '-';
+    });
+
+    // Atualiza totais gerais por mês na linha META GERAL
+    for (let m = 1; m <= 12; m++) {
+        let mesTotal = 0;
+        card.querySelectorAll(`.estado-forn-input[data-month="${m}"]`).forEach(inp => {
+            mesTotal += parseCurrency(inp.value);
+        });
+        const mesEl = card.querySelector(`.forn-meta-geral-${idx}-${m}`);
+        if (mesEl) mesEl.innerHTML = mesTotal > 0 ? formatCurrency(mesTotal) : '<span class="text-gray-300">-</span>';
+    }
+
+    const totalEl = card.querySelector(`.forn-total-geral-${idx}`);
+    if (totalEl) totalEl.textContent = grandTotal > 0 ? formatCurrency(grandTotal) : '-';
+
+    const anuaEl = document.querySelector(`.forn-anual-total-${idx}`);
+    if (anuaEl) anuaEl.textContent = grandTotal > 0 ? formatCurrency(grandTotal) : 'R$ 0,00';
+}
+
+// ─── TABELA DE METAS POR ESTADO ───────────────────────────────────────────────
+async function renderEstadoMetasPanel(savedData = {}, year = null) {
+    const container = document.getElementById('estado-metas-body');
+    if (!container) return;
+
+    const storageKey = 'crm_estados_config';
+    let estados = JSON.parse(localStorage.getItem(storageKey) || 'null') || ['PE','PB','AL','RN'];
+
+    const savedEstados = savedData['__estados__'] || {};
+
+    const renderRows = () => {
+        container.innerHTML = '';
+        estados.forEach(uf => {
+            const saved = savedEstados[uf] || {};
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-blue-50/30 transition-colors group';
+
+            let cells = '';
+            for (let m = 1; m <= 12; m++) {
+                const val = saved[m] || 0;
+                cells += `<td class="border border-gray-100 p-1">
+                    <input type="text" class="estado-meta-input currency-input w-full text-right text-xs font-mono border-0 bg-transparent focus:bg-white focus:border focus:border-blue-300 focus:ring-1 rounded px-1 py-1 outline-none"
+                        data-uf="${uf}" data-month="${m}"
+                        value="${val > 0 ? formatCurrency(val) : ''}" placeholder="-">
+                </td>`;
+            }
+            const totalAnual = Object.values(saved).reduce((a,b) => a+(parseFloat(b)||0), 0);
+            tr.innerHTML = `
+                <td class="px-3 py-2 text-xs font-black text-gray-700 whitespace-nowrap sticky left-0 bg-white group-hover:bg-blue-50/30 border-r border-gray-100">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-black">${uf}</span>
+                        <button type="button" class="btn-remove-estado text-gray-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all" data-uf="${uf}">
+                            <i class="fas fa-trash-alt text-[10px]"></i>
+                        </button>
+                    </div>
+                </td>
+                ${cells}
+                <td class="px-3 py-2 text-right text-xs font-black text-blue-700 estado-total-anual whitespace-nowrap bg-blue-50/50 border-l border-blue-100">
+                    ${totalAnual > 0 ? formatCurrency(totalAnual) : '-'}
+                </td>
+            `;
+            container.appendChild(tr);
+
+            tr.querySelectorAll('.estado-meta-input').forEach(inp => {
+                inp.addEventListener('focus', function(){ this.select(); });
+                inp.addEventListener('blur', function(){
+                    const v = parseCurrency(this.value);
+                    this.value = v > 0 ? formatCurrency(v) : '';
+                    let sum = 0;
+                    tr.querySelectorAll('.estado-meta-input').forEach(i => sum += parseCurrency(i.value));
+                    tr.querySelector('.estado-total-anual').innerText = sum > 0 ? formatCurrency(sum) : '-';
+                });
+            });
+
+            tr.querySelector('.btn-remove-estado').addEventListener('click', function(){
+                const u = this.dataset.uf;
+                if (confirm(`Remover estado "${u}"?`)) {
+                    estados = estados.filter(x => x !== u);
+                    localStorage.setItem(storageKey, JSON.stringify(estados));
+                    tr.remove();
+                }
+            });
+        });
+    };
+
+    renderRows();
+
+    document.getElementById('add-estado-btn')?.addEventListener('click', () => {
+        const uf = prompt('Sigla do estado (ex: SP):');
+        if (uf && uf.trim().length >= 2) {
+            const key = uf.trim().toUpperCase().substring(0,2);
+            if (estados.includes(key)) { showToast('Estado já existe.', 'warning'); return; }
+            estados.push(key);
+            localStorage.setItem(storageKey, JSON.stringify(estados));
+            renderRows();
+        }
+    });
+}
+
+async function saveConfigMetas() {
+    const rows = document.querySelectorAll('#config-metas-body tr');
+    const vendedorData = [];
+
+    rows.forEach(tr => {
+        const uid = tr.querySelector('.config-meta-user')?.value;
+        if (!uid) return;
+        vendedorData.push({
+            usuario_id:          uid,
+            meta_mensal:         parseCurrency(tr.querySelector('.config-meta-mensal')?.value),
+            salario_fixo:        parseCurrency(tr.querySelector('.config-meta-fixo')?.value),
+            percentual_comissao: parseFloat(tr.querySelector('.config-meta-pct')?.value) || 1,
+            ativo:               tr.querySelector('.config-meta-ativo')?.checked ? 1 : 0,
+        });
+    });
+
+    // Coleta metas por fornecedor/estado
+    const fornecedorMetas = {};
+    document.querySelectorAll('.estado-forn-input').forEach(inp => {
+        const forn  = inp.dataset.forn;
+        const uf    = inp.dataset.uf;
+        const month = inp.dataset.month;
+        const val   = parseCurrency(inp.value);
+        if (!fornecedorMetas[forn])         fornecedorMetas[forn] = {};
+        if (!fornecedorMetas[forn][month])  fornecedorMetas[forn][month] = {};
+        fornecedorMetas[forn][month][uf] = val;
+    });
+
+    const year = document.getElementById('config-meta-year')?.value || new Date().getFullYear();
+
+    showLoading(true);
+    try {
+        const res = await apiCall('save_commission_config', {
+            method: 'POST',
+            body: JSON.stringify({
+                configs:          vendedorData,
+                fornecedor_metas: fornecedorMetas,
+                year:             year
+            })
+        });
+
+        if (res && res.success) {
+            showToast('Configurações salvas com sucesso!', 'success');
+            document.getElementById('config-metas-panel').classList.add('hidden');
+        } else {
+            showToast((res && res.error) || 'Erro ao salvar', 'error');
+        }
+    } catch(e) {
+        showToast('Erro de conexão: ' + e.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function loadUsuariosOptions() {
+    try {
+        // Usa appState local do módulo (populado em renderReportsView)
+        let users = [];
+
+        if (appState && appState.users && appState.users.length > 0) {
+            users = appState.users;
+        } else {
+            // Fallback: busca todos os usuários via get_data
+            try {
+                const data = await apiCall('get_data');
+                if (data && data.users && data.users.length > 0) {
+                    users = data.users;
+                }
+            } catch(fallbackErr) {
+                console.warn('Fallback get_data falhou:', fallbackErr);
+            }
+        }
+
+        window.usuariosList = users;
+        window._usuariosOptions = users.map(u =>
+            `<option value="${u.id}">${u.nome || u.name}</option>`
+        ).join('');
+
+        console.log('Usuários carregados:', users);
+        return users;
+
+    } catch (e) {
+        console.error('Erro ao carregar usuários', e);
+        window.usuariosList = [];
+        window._usuariosOptions = '';
+        return [];
+    }
+}
+
+function addVendedorMetaRow(data = {}) {
+    const idx   = Date.now();
+    const tbody = document.getElementById('config-metas-body');
+    if (!tbody) return;
+
+    // Garante opções atualizadas no momento da criação
+    const opts = window._usuariosOptions || '<option value="">Nenhum usuário</option>';
+
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-indigo-50 transition-colors group';
+    tr.innerHTML = `
+        <td class="px-4 py-3">
+            <select id="sel-${idx}" name="usuario_id_${idx}"
+                class="config-meta-user border border-gray-200 rounded-lg px-2 py-1.5 text-sm w-full
+                       text-gray-800 bg-white focus:ring-2 focus:ring-indigo-500">
+                <option value="">Selecione...</option>
+                ${opts}
+            </select>
+        </td>
+        <td class="px-4 py-3">
+            <input type="text" id="meta-${idx}" name="meta_mensal_${idx}"
+                class="config-meta-mensal currency-input border border-gray-200 rounded-lg px-2 py-1.5 text-sm w-full text-gray-800 bg-white"
+                placeholder="0,00" value="${data.meta_mensal > 0 ? formatCurrency(data.meta_mensal) : ''}">
+        </td>
+        <td class="px-4 py-3">
+            <input type="text" id="fixo-${idx}" name="salario_fixo_${idx}"
+                class="config-meta-fixo currency-input border border-gray-200 rounded-lg px-2 py-1.5 text-sm w-full text-gray-800 bg-white"
+                placeholder="0,00" value="${data.salario_fixo > 0 ? formatCurrency(data.salario_fixo) : ''}">
+        </td>
+        <td class="px-4 py-3">
+            <div class="flex items-center gap-1">
+                <input type="number" id="pct-${idx}" name="pct_${idx}"
+                    class="config-meta-pct border border-gray-200 rounded-lg px-2 py-1.5 text-sm w-16 text-gray-800 bg-white"
+                    placeholder="1" value="${data.percentual_comissao || 1}" min="0" max="100" step="0.1">
+                <span class="text-gray-400 text-xs font-bold">%</span>
+            </div>
+        </td>
+        <td class="px-4 py-3 text-center">
+            <div class="flex items-center justify-center gap-2">
+                <input type="checkbox" id="ativo-${idx}"
+                    class="config-meta-ativo w-4 h-4 rounded accent-indigo-600"
+                    ${(data.ativo == null || data.ativo == 1) ? 'checked' : ''}>
+                <button type="button"
+                    class="remove-meta-row opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all"
+                    onclick="this.closest('tr').remove()" title="Remover">
+                    <i class="fas fa-trash text-xs"></i>
+                </button>
+            </div>
+        </td>
+    `;
+
+    tbody.appendChild(tr);
+
+    // Eventos para formatação de moeda
+    tr.querySelectorAll('.currency-input').forEach(inp => {
+        inp.addEventListener('focus', function() { this.select(); });
+        inp.addEventListener('blur', function() {
+            const v = parseCurrency(this.value);
+            this.value = v > 0 ? formatCurrency(v) : '';
+        });
+    });
+
+    // Seleciona o usuário correto se vier de dados já salvos
+    if (data.usuario_id) {
+        const sel = tr.querySelector(`#sel-${idx}`);
+        if (sel) sel.value = String(data.usuario_id);
+    }
+}
+
+
+
+// ─── TABELA DE RESULTADO (BASEADA NO MODELO DA IMAGEM) ───────────────────────
+function renderPerformanceTable(container, data) {
+    const format = v => formatCurrencyUtil(v || 0);
+
+    let grandMeta=0, grandVendas=0, grandFixo=0, grandComissao=0, grandDif=0, grandTotal=0;
+
+    const rows = data.map((row, i) => {
+        const meta      = parseFloat(row.meta_mensal)        || 0;
+        const vendas    = parseFloat(row.total_vendas)       || 0;
+        const fixo      = parseFloat(row.salario_fixo)       || 0;
+        const pct       = parseFloat(row.percentual_comissao)|| 1;
+        const comissao  = vendas * (pct / 100);
+        const diferenca = vendas - meta;
+        const trimestre = parseFloat(row.total_trimestre)    || 0;
+        const total     = fixo + comissao;
+
+        grandMeta     += meta;
+        grandVendas   += vendas;
+        grandFixo     += fixo;
+        grandComissao += comissao;
+        grandDif      += diferenca;
+        grandTotal    += total;
+
+        const difClass   = diferenca >= 0 ? 'text-green-600' : 'text-red-600';
+        const comClass   = 'text-green-600';
+        const rowBg      = i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+
+        return `
+            <tr class="${rowBg} hover:bg-indigo-50/40 transition-colors">
+                <td class="px-5 py-3 text-sm font-bold text-gray-800">${row.nome}</td>
+                <td class="px-5 py-3 text-sm text-right text-gray-600 font-mono">${format(meta)}</td>
+                <td class="px-5 py-3 text-sm text-right font-black text-gray-900 font-mono">${format(vendas)}</td>
+                <td class="px-5 py-3 text-sm text-right text-gray-600 font-mono">${format(fixo)}</td>
+                <td class="px-5 py-3 text-sm text-right ${comClass} font-bold font-mono">${format(comissao)} <span class="text-[10px] text-gray-400">(${pct}%)</span></td>
+                <td class="px-5 py-3 text-sm text-right ${difClass} font-bold font-mono">${diferenca >= 0 ? '' : ''}${format(diferenca)}</td>
+                <td class="px-5 py-3 text-sm text-right text-indigo-600 font-mono">${trimestre > 0 ? format(trimestre) : '-'}</td>
+                <td class="px-5 py-3 text-sm text-right font-black text-gray-900 bg-indigo-50/60 font-mono">${format(total)}</td>
+            </tr>
+        `;
+    }).join('');
+
+    const grandDifClass = grandDif >= 0 ? 'text-green-600' : 'text-red-600';
+
+    container.innerHTML = `
+        <div class="overflow-x-auto rounded-[2rem] shadow-sm">
+            <table class="w-full border-collapse text-sm">
+                <thead>
+                    <tr class="bg-indigo-600 text-white text-[11px] font-black uppercase tracking-wider">
+                        <th class="px-5 py-4 text-left rounded-tl-2xl min-w-[180px]">Vendedor</th>
+                        <th class="px-5 py-4 text-right">Meta</th>
+                        <th class="px-5 py-4 text-right">Vendas</th>
+                        <th class="px-5 py-4 text-right">Fixo (R$)</th>
+                        <th class="px-5 py-4 text-right">Comissão</th>
+                        <th class="px-5 py-4 text-right">Diferença</th>
+                        <th class="px-5 py-4 text-right">Trimestre</th>
+                        <th class="px-5 py-4 text-right rounded-tr-2xl bg-indigo-700">Valor a Pagar</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    ${rows}
+                </tbody>
+                <tfoot>
+                    <tr class="bg-gray-100 border-t-2 border-indigo-200 font-black text-sm">
+                        <td class="px-5 py-4 text-gray-700 uppercase tracking-wider">TOTAIS</td>
+                        <td class="px-5 py-4 text-right text-gray-700 font-mono">${format(grandMeta)}</td>
+                        <td class="px-5 py-4 text-right text-gray-900 font-mono">${format(grandVendas)}</td>
+                        <td class="px-5 py-4 text-right text-gray-700 font-mono">${format(grandFixo)}</td>
+                        <td class="px-5 py-4 text-right text-green-700 font-mono">${format(grandComissao)}</td>
+                        <td class="px-5 py-4 text-right ${grandDifClass} font-mono">${format(grandDif)}</td>
+                        <td class="px-5 py-4 text-right text-indigo-600 font-mono">-</td>
+                        <td class="px-5 py-4 text-right text-indigo-800 bg-indigo-100 font-mono">${format(grandTotal)}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    `;
+}
+
+// ─── RENDER DETAILED REPORTS ─────────────────────────────────────────────────
 function renderDetailedReports(container) {
     container.innerHTML = `
         <div class="bg-white p-6 rounded-xl shadow-sm mb-6 no-print border border-gray-100">
@@ -466,83 +1124,99 @@ function renderDetailedReports(container) {
                     <h3 class="text-xl font-bold text-gray-800">Relatórios Analíticos</h3>
                     <p class="text-sm text-gray-500">Filtre dados por fornecedor, vendedor e geografia.</p>
                 </div>
-                
                 <div class="flex space-x-2 mt-2 md:mt-0 w-full md:w-auto">
                     <button id="toggle-filters-btn" class="btn btn-secondary text-sm px-4">
                         <i class="fas fa-filter mr-2"></i> Filtros
                     </button>
-                    <!-- Legacy buttons kept for internal logic if needed, but hidden -->
-                    <button id="set-targets-btn" class="hidden">Definir Objetivos</button>
                 </div>
             </div>
 
             <div id="reports-filters-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 transition-all">
+
+                <!-- TIPO DE RELATÓRIO -->
                 <div class="filter-card border-l-4 border-l-indigo-500">
                     <div class="filter-label"><i class="fas fa-file-invoice"></i>Tipo de Relatório</div>
                     <select id="report-type" class="w-full bg-slate-50 border-none text-sm font-bold focus:ring-0 cursor-pointer">
-                        <option value="sales">Vendas Gerais</option>
-                        <option value="contratos">Contratos</option>
-                        <option value="forecast">Forecast (Previsão)</option>
-                        <option value="funnel">Funil de Vendas</option>
-                        <option value="lost_reasons">Propostas recusadas</option>
-                        <option value="clients">Relatório de Clientes</option>
-                        <option value="products">Vendas por Produto</option>
-                        <option value="licitacoes_funnel">Licitações (Funil)</option>
-                        <option value="supplier_funnel">Fábricas (Funil)</option>
+                        <optgroup label="── Vendas ──">
+                            <option value="sales">Vendas Gerais</option>
+                            <option value="vendor_detail">Vendas por Vendedor</option>
+                            <option value="funnel">Funil de Vendas</option>
+                            <option value="forecast">Forecast (Previsão)</option>
+                            <option value="clients">Ranking de Clientes (Curva ABC)</option>
+                            <option value="products">Vendas por Produto</option>
+                            <option value="lost_reasons">Propostas Recusadas</option>
+                        </optgroup>
+                        <optgroup label="── Fornecedores ──">
+                            <option value="supplier_funnel">Funil de Fornecedores</option>
+                        </optgroup>
+                        <optgroup label="── Licitações ──">
+                            <option value="licitacoes_funnel">Funil de Licitações</option>
+                        </optgroup>
+                        <optgroup label="── Financeiro ──">
+                            <option value="contratos">Contratos</option>
+                            <option value="billing">Faturamento</option>
+                        </optgroup>
                     </select>
                 </div>
 
+                <!-- PERÍODO -->
                 <div class="filter-card border-l-4 border-l-blue-400">
                     <div class="filter-label"><i class="fas fa-calendar-alt"></i>Período de Análise</div>
-                    <div class="flex items-center gap-2">
-                        <div class="custom-date-row">
-                             <input type="month" id="filter-start-date" class="custom-date-item">
-                             <span class="text-slate-300">→</span>
-                             <input type="month" id="filter-end-date" class="custom-date-item">
-                        </div>
+                    <div class="custom-date-row">
+                        <input type="date" id="filter-start-date" class="custom-date-item">
+                        <span class="text-slate-300">→</span>
+                        <input type="date" id="filter-end-date" class="custom-date-item">
                     </div>
                 </div>
 
+                <!-- FORNECEDOR -->
                 <div class="filter-card border-l-4 border-l-emerald-400">
-                    <div class="filter-label"><i class="fas fa-building"></i>Fábrica / Sócio</div>
-                    <div class="flex gap-1 w-full">
-                         <div id="filter-supplier-container" class="flex-1"></div>
-                         <div id="filter-user-container" class="flex-1"></div>
-                    </div>
+                    <div class="filter-label"><i class="fas fa-building"></i>Fornecedor</div>
+                    <div id="filter-supplier-container"></div>
                 </div>
 
-                 <div class="filter-card border-l-4 border-l-amber-400">
-                    <div class="filter-label"><i class="fas fa-map-marker-alt"></i>Geografia & Cliente</div>
-                    <div class="flex gap-1 w-full">
-                        <div id="filter-uf-container" class="flex-1"></div>
-                        <div id="filter-client-container" class="flex-1"></div>
-                    </div>
+                <!-- VENDEDOR -->
+                <div class="filter-card border-l-4 border-l-violet-400">
+                    <div class="filter-label"><i class="fas fa-user-tie"></i>Vendedor</div>
+                    <div id="filter-user-container"></div>
                 </div>
-                
-                <div class="filter-card border-l-4 border-l-indigo-300 lg:col-span-2">
-                    <div class="filter-label"><i class="fas fa-tasks"></i>Etapa Processual</div>
+
+                <!-- CLIENTE -->
+                <div class="filter-card border-l-4 border-l-amber-400">
+                    <div class="filter-label"><i class="fas fa-hospital"></i>Cliente</div>
+                    <div id="filter-client-container"></div>
+                </div>
+
+                <!-- ESTADO (UF) -->
+                <div class="filter-card border-l-4 border-l-rose-400">
+                    <div class="filter-label"><i class="fas fa-map-marker-alt"></i>Estado (UF)</div>
+                    <div id="filter-uf-container"></div>
+                </div>
+
+                <!-- ETAPA (dinâmica por tipo) -->
+                <div class="filter-card border-l-4 border-l-indigo-300 lg:col-span-2" id="filter-etapa-card">
+                    <div class="filter-label"><i class="fas fa-tasks"></i><span id="filter-etapa-label">Etapa</span></div>
                     <div id="filter-etapa-container" class="w-full"></div>
                 </div>
 
-                <div class="lg:col-span-2 flex items-center justify-end">
+                <!-- BOTÕES -->
+                <div class="lg:col-span-4 flex items-center justify-end">
                     <div class="bg-indigo-600 p-1.5 rounded-2xl flex gap-2 w-full shadow-lg shadow-indigo-100">
                         <button id="refresh-report-btn" class="flex-1 bg-white text-indigo-700 py-3 rounded-xl font-black uppercase text-xs hover:bg-slate-50 transition-all">
-                             <i class="fas fa-rocket mr-2"></i>Sincronizar Dados
+                             <i class="fas fa-rocket mr-2"></i>Gerar Relatório
                         </button>
-                        <button id="export-excel-btn" class="aspect-square bg-emerald-500 text-white px-4 rounded-xl hover:bg-emerald-600 transition-all"><i class="fas fa-file-excel"></i></button>
-                        <button id="print-report-btn" class="aspect-square bg-rose-500 text-white px-4 rounded-xl hover:bg-rose-600 transition-all"><i class="fas fa-file-pdf"></i></button>
+                        <button id="export-excel-btn" class="aspect-square bg-emerald-500 text-white px-4 rounded-xl hover:bg-emerald-600 transition-all" title="Exportar Excel"><i class="fas fa-file-excel"></i></button>
+                        <button id="print-report-btn" class="aspect-square bg-rose-500 text-white px-4 rounded-xl hover:bg-rose-600 transition-all" title="Exportar PDF"><i class="fas fa-file-pdf"></i></button>
                     </div>
                 </div>
             </div>
-            
+
             <div id="active-filters-pills" class="flex flex-wrap gap-2 mt-4 hidden w-full"></div>
         </div>
 
         <div id="chart-container-wrapper" class="bg-white p-6 rounded-xl shadow-sm mb-6 hidden no-print border border-gray-100">
             <h4 class="font-bold text-gray-700 mb-4">Evolução de Vendas</h4>
-            <div class="h-80 w-full">
-                <canvas id="sales-chart"></canvas>
-            </div>
+            <div class="h-80 w-full"><canvas id="sales-chart"></canvas></div>
         </div>
 
         <div id="reports-output-area" class="print-container">
@@ -550,18 +1224,20 @@ function renderDetailedReports(container) {
                 <i class="fas fa-spinner fa-spin text-5xl text-indigo-600"></i>
             </div>
             <div id="report-content" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                 <div class="p-20 text-center text-gray-400">
+                <div class="p-20 text-center text-gray-400">
                     <i class="fas fa-chart-bar text-6xl mb-4 opacity-20"></i>
-                    <p>Selecione os parâmetros acima para realizar a análise detalhada.</p>
-                 </div>
+                    <p>Selecione os parâmetros acima e clique em <strong>Gerar Relatório</strong>.</p>
+                </div>
             </div>
         </div>
     `;
 
-    // Re-bind listeners for detailed reports
+    // Datas padrão: início e fim do ano corrente
     const currentYear = new Date().getFullYear();
-    document.getElementById('filter-start-date').value = `${currentYear}-01`;
-    document.getElementById('filter-end-date').value = `${currentYear}-12`;
+    document.getElementById('filter-start-date').value = `${currentYear}-01-01`;
+    document.getElementById('filter-end-date').value   = `${currentYear}-12-31`;
+
+    // Eventos
     document.getElementById('refresh-report-btn').addEventListener('click', loadReportData);
     document.getElementById('print-report-btn').addEventListener('click', () => exportToPDF());
     document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
@@ -569,9 +1245,62 @@ function renderDetailedReports(container) {
         document.getElementById('reports-filters-container').classList.toggle('hidden');
     });
 
+    // Atualiza etapas ao trocar tipo de relatório
+    document.getElementById('report-type').addEventListener('change', () => {
+        updateEtapaFilter();
+    });
+
     populateFilters();
+    updateEtapaFilter(); // Popula etapas conforme tipo padrão
     setupModalLinks();
     restoreFilters();
+}
+
+// ─── ATUALIZA FILTRO DE ETAPAS CONFORME TIPO DE RELATÓRIO ────────────────────
+function updateEtapaFilter() {
+    const type = document.getElementById('report-type')?.value;
+    const labelEl = document.getElementById('filter-etapa-label');
+    const cardEl  = document.getElementById('filter-etapa-card');
+
+    let etapas = [];
+    let labelText = 'Etapa';
+    let visible = true;
+
+    switch (type) {
+        case 'funnel':
+            etapas = ETAPAS_FUNIL_VENDAS;
+            labelText = 'Etapa do Funil de Vendas';
+            break;
+        case 'supplier_funnel':
+            etapas = ETAPAS_FUNIL_FORNECEDORES;
+            labelText = 'Fornecedor (Funil)';
+            break;
+        case 'licitacoes_funnel':
+            etapas = ETAPAS_FUNIL_LICITACOES;
+            labelText = 'Etapa da Licitação';
+            break;
+        case 'sales':
+        case 'contratos':
+        case 'forecast':
+        case 'clients':
+        case 'products':
+        case 'lost_reasons':
+        default:
+            // Para relatórios gerais, usa etapas do appState (dinâmico) ou oculta
+            const stages = appState.stages || [];
+            if (stages.length > 0) {
+                etapas = stages.map(s => ({ value: s.id, label: s.nome }));
+                labelText = 'Etapa';
+            } else {
+                visible = false;
+            }
+            break;
+    }
+
+    if (labelEl) labelEl.innerText = labelText;
+    if (cardEl) cardEl.classList.toggle('hidden', !visible);
+
+    renderMultiSelect('filter-etapa-container', 'etapa-select', etapas, 'Todas as Etapas');
 }
 
 function restoreFilters() {
@@ -580,32 +1309,30 @@ function restoreFilters() {
         if (!saved) return;
         const f = JSON.parse(saved);
 
-        if (f.type) document.getElementById('report-type').value = f.type;
+        if (f.type) {
+            document.getElementById('report-type').value = f.type;
+            updateEtapaFilter();
+        }
         if (f.start) document.getElementById('filter-start-date').value = f.start;
-        if (f.end) document.getElementById('filter-end-date').value = f.end;
+        if (f.end)   document.getElementById('filter-end-date').value   = f.end;
 
-        // Restore MultiSelects
         const restoreMulti = (id, values) => {
             if (!values || !Array.isArray(values)) return;
-            const checks = document.querySelectorAll(`.${id}-checkbox`);
-            checks.forEach(chk => {
+            document.querySelectorAll(`.${id}-checkbox`).forEach(chk => {
                 chk.checked = values.includes(chk.value);
             });
-            const defaultText = document.getElementById(`${id}-btn`).getAttribute('data-default-text') || 'Selecionar';
+            const btn = document.getElementById(`${id}-btn`);
+            const defaultText = btn?.getAttribute('data-default-text') || 'Selecionar';
             updateMultiSelectText(id, defaultText);
         };
 
         if (f.suppliers) restoreMulti('supplier-select', f.suppliers);
-        if (f.users) restoreMulti('user-select', f.users);
-        if (f.clients) restoreMulti('client-select', f.clients);
-        if (f.etapas) restoreMulti('etapa-select', f.etapas);
-        if (f.origens) restoreMulti('origem-select', f.origens);
-        if (f.ufs) restoreMulti('uf-select', f.ufs);
-        if (f.statuses) restoreMulti('status-select', f.statuses);
-
-    } catch (e) {
-        console.error("Erro ao restaurar filtros:", e);
-    }
+        if (f.users)     restoreMulti('user-select', f.users);
+        if (f.clients)   restoreMulti('client-select', f.clients);
+        if (f.etapas)    restoreMulti('etapa-select', f.etapas);
+        if (f.ufs)       restoreMulti('uf-select', f.ufs);
+        if (f.statuses)  restoreMulti('status-select', f.statuses);
+    } catch (e) { console.error("Erro ao restaurar filtros:", e); }
 }
 
 async function loadKPIData() {
@@ -613,64 +1340,40 @@ async function loadKPIData() {
         const response = await apiCall('get_report_kpis');
         if (response.success && response.kpis) {
             const { total_sales_year, lost_sales_year, active_bids } = response.kpis;
-
             const elTotal = document.getElementById('kpi-total-sales');
             if (elTotal) elTotal.innerText = formatCurrencyUtil(total_sales_year);
-
             const elLost = document.getElementById('kpi-lost-sales');
             if (elLost) elLost.innerText = formatCurrencyUtil(lost_sales_year);
-
             const elBids = document.getElementById('kpi-active-bids');
             if (elBids) elBids.innerText = active_bids;
         }
-    } catch (e) {
-        console.error("Erro ao carregar KPIs:", e);
-    }
+    } catch (e) { console.error("Erro ao carregar KPIs:", e); }
 }
 
 let currentReportData = [];
 
 function populateFilters() {
-    const defaultSuppliers = ['BRASIL MEDICA', 'HEALTH', 'INSTRAMED', 'LIVANOVA', 'MASIMO', 'MERIL', 'MICROMED', 'NIPRO', 'SIGMAFIX'];
-    const suppliers = (appState.fornecedores || []).filter(s => {
-        const name = (s.nome_fantasia || s.nome || '').toUpperCase().trim();
-        return defaultSuppliers.some(d => name.includes(d));
-    });
-    renderMultiSelect('filter-supplier-container', 'supplier-select', suppliers.map(s => ({ value: s.id, label: s.nome_fantasia || s.nome })), 'Todos os Fornecedores');
+    // Fornecedores fixos
+    renderMultiSelect('filter-supplier-container', 'supplier-select', FORNECEDORES_FIXOS, 'Todos os Fornecedores');
 
-    const users = appState.users || [];
+    // Vendedores (do appState)
+    const users   = appState.users || [];
     const sellers = users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista'].includes(u.role));
     renderMultiSelect('filter-user-container', 'user-select', sellers.map(u => ({ value: u.id, label: u.nome })), 'Todos os Vendedores');
 
-    // Cliente (Organizations + PF)
+    // Clientes (Org + PF)
     const clients = [];
     appState.organizations?.forEach(o => clients.push({ value: 'org-' + o.id, label: o.nome_fantasia || o.razao_social || 'Org ' + o.id }));
     appState.clients_pf?.forEach(p => clients.push({ value: 'pf-' + p.id, label: p.nome || 'PF ' + p.id }));
     clients.sort((a, b) => a.label.localeCompare(b.label));
     renderMultiSelect('filter-client-container', 'client-select', clients, 'Todos os Clientes');
 
-    // --- Novos Filtros ---
-
-    // Etapas
-    const stages = appState.stages || [];
-    // Flatten funnels if structured differently, but appState.stages usually is flat list or we extract from funnels
-    // If appState.stages is just list of objects with id/nome
-    renderMultiSelect('filter-etapa-container', 'etapa-select', stages.map(s => ({ value: s.id, label: s.nome })), 'Todas as Etapas');
-
-    // Origem
-    const origens = ['Indicação', 'Google', 'Site', 'Instagram', 'Facebook', 'Email Marketing', 'Feira/Evento', 'Importado', 'Outros'];
-    renderMultiSelect('filter-origem-container', 'origem-select', origens.map(o => ({ value: o, label: o })), 'Todas as Origens');
-
-    // UF (Extract from Organizations)
+    // Estados UF (extraídos das organizações)
     const orgs = appState.organizations || [];
-    const ufs = [...new Set(orgs.map(o => o.estado).filter(uf => uf))].sort(); // Unique non-empty UFs
+    const ufs  = [...new Set(orgs.map(o => o.estado).filter(Boolean))].sort();
     renderMultiSelect('filter-uf-container', 'uf-select', ufs.map(uf => ({ value: uf, label: uf })), 'Todos os Estados');
 
-    // Status
-    const statuses = ['Aberto', 'Ganho', 'Perdido'];
-    renderMultiSelect('filter-status-container', 'status-select', statuses.map(s => ({ value: s, label: s })), 'Todos os Status');
-
-    // Close dropdowns on outside click
+    // Fecha dropdowns ao clicar fora
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.multiselect-dropdown')) {
             document.querySelectorAll('.multiselect-list').forEach(el => el.classList.remove('show'));
@@ -682,7 +1385,7 @@ function renderMultiSelect(containerId, selectId, options, defaultText) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    let html = `
+    container.innerHTML = `
         <div class="multiselect-dropdown relative" id="${selectId}-wrapper">
             <button type="button" class="multiselect-button" onclick="toggleMultiSelect('${selectId}')" id="${selectId}-btn" data-default-text="${defaultText}">
                 <span class="truncate block" id="${selectId}-text">${defaultText}</span>
@@ -697,7 +1400,6 @@ function renderMultiSelect(containerId, selectId, options, defaultText) {
                      </div>
                 </div>
                 <div class="overflow-y-auto max-h-48 flex-grow">
-                    <!-- Options -->
                     ${options.map(opt => `
                         <label class="multiselect-item" data-label="${opt.label.toLowerCase().replace(/"/g, '&quot;')}">
                             <input type="checkbox" value="${opt.value}" class="${selectId}-checkbox" onchange="updateMultiSelectText('${selectId}', '${defaultText}')">
@@ -708,29 +1410,19 @@ function renderMultiSelect(containerId, selectId, options, defaultText) {
             </div>
         </div>
     `;
-    container.innerHTML = html;
 }
 
-// Global scope helpers for onclick events (since module scope)
 window.filterMultiSelect = function (id, term) {
     const list = document.getElementById(`${id}-list`);
     if (!list) return;
-    const items = list.querySelectorAll('.multiselect-item');
     const lowerTerm = term.toLowerCase();
-
-    items.forEach(el => {
-        const label = el.getAttribute('data-label') || '';
-        if (label.includes(lowerTerm)) {
-            el.style.display = 'flex';
-        } else {
-            el.style.display = 'none';
-        }
+    list.querySelectorAll('.multiselect-item').forEach(el => {
+        el.style.display = (el.getAttribute('data-label') || '').includes(lowerTerm) ? 'flex' : 'none';
     });
 };
 
 window.toggleMultiSelect = function (id) {
     const list = document.getElementById(`${id}-list`);
-    // Close others
     document.querySelectorAll('.multiselect-list').forEach(el => {
         if (el.id !== `${id}-list`) el.classList.remove('show');
     });
@@ -738,135 +1430,71 @@ window.toggleMultiSelect = function (id) {
 };
 
 window.toggleAllMultiSelect = function (id, selectAll) {
-    const checkboxes = document.querySelectorAll(`.${id}-checkbox`);
-    checkboxes.forEach(cb => cb.checked = selectAll);
+    document.querySelectorAll(`.${id}-checkbox`).forEach(cb => cb.checked = selectAll);
     const btn = document.getElementById(`${id}-btn`);
-    const defaultText = btn ? btn.getAttribute('data-default-text') : 'Selecionar';
-    updateMultiSelectText(id, defaultText);
+    updateMultiSelectText(id, btn?.getAttribute('data-default-text') || 'Selecionar');
 };
 
 window.updateMultiSelectText = function (id, defaultText) {
-    const checkboxes = document.querySelectorAll(`.${id}-checkbox:checked`);
+    const checked = document.querySelectorAll(`.${id}-checkbox:checked`);
+    const total   = document.querySelectorAll(`.${id}-checkbox`).length;
     const btnText = document.getElementById(`${id}-text`);
-    const total = document.querySelectorAll(`.${id}-checkbox`).length;
-
-    if (checkboxes.length === 0) {
-        btnText.innerText = defaultText; // Or 'Nenhum selecionado' but user wants default 'Todos' behavior if none explicit? Actually usually none means all in filters, or validation error. User screenshot implies 'Todos' is default.
-        // If 0 selected, let's treat as "All" for UI Text or "Nenhum"?
-        // Usually filters: empty means all. Let's keep "Todos" text if 0.
-        // But logic is: if 0 selected sends null -> backend treats as all.
-        btnText.innerText = defaultText;
-        return;
-    }
-
-    if (checkboxes.length === total) {
-        btnText.innerText = defaultText; // All selected
-        return;
-    }
-
-    if (checkboxes.length === 1) {
-        // Find label
-        const label = checkboxes[0].nextElementSibling.innerText;
-        btnText.innerText = label;
-    } else {
-        btnText.innerText = `${checkboxes.length} selecionados`;
-    }
+    if (!btnText) return;
+    if (checked.length === 0 || checked.length === total) { btnText.innerText = defaultText; return; }
+    if (checked.length === 1) { btnText.innerText = checked[0].nextElementSibling.innerText; return; }
+    btnText.innerText = `${checked.length} selecionados`;
 };
 
 window.getMultiSelectValues = function (id) {
-    const checkboxes = document.querySelectorAll(`.${id}-checkbox:checked`);
-    const total = document.querySelectorAll(`.${id}-checkbox`).length;
-    // If none are selected OR all are selected, we pass empty to bypass the SQL IN() filter entirely.
-    // This handles NULLs correctly (as filtering by all options explicitly often drops NULL DB values).
-    if (checkboxes.length === 0 || checkboxes.length === total) {
-        return [];
-    }
-    return Array.from(checkboxes).map(cb => cb.value);
+    const checked = document.querySelectorAll(`.${id}-checkbox:checked`);
+    const total   = document.querySelectorAll(`.${id}-checkbox`).length;
+    if (checked.length === 0 || checked.length === total) return [];
+    return Array.from(checked).map(cb => cb.value);
 };
 
 async function loadReportData() {
     const container = document.getElementById('report-content');
-    const loading = document.getElementById('report-loading');
+    const loading   = document.getElementById('report-loading');
 
-    const type = document.getElementById('report-type').value;
+    const type  = document.getElementById('report-type').value;
     const start = document.getElementById('filter-start-date').value;
-    const end = document.getElementById('filter-end-date').value;
+    const end   = document.getElementById('filter-end-date').value;
 
-    // Get Multi-select values
     const supplierIds = window.getMultiSelectValues('supplier-select');
-    const userIds = window.getMultiSelectValues('user-select');
-    const clientIds = window.getMultiSelectValues('client-select');
-    const etapaIds = window.getMultiSelectValues('etapa-select');
-    const origemIds = window.getMultiSelectValues('origem-select');
-    const ufIds = window.getMultiSelectValues('uf-select');
-    const statusIds = window.getMultiSelectValues('status-select');
+    const userIds     = window.getMultiSelectValues('user-select');
+    const clientIds   = window.getMultiSelectValues('client-select');
+    const etapaIds    = window.getMultiSelectValues('etapa-select');
+    const ufIds       = window.getMultiSelectValues('uf-select');
 
-    // If empty is "All", let's pass empty array/null.
-    // If user explicitly unchecks all, it implies "None"? Or "All"? 
-    // In most dashboard filters, clearing selection = All.
-    // My backend handles empty as All. Note UI says "Todos" when empty.
+    updateFilterPills(type, start, end, supplierIds, userIds, clientIds, etapaIds, [], ufIds, []);
 
-    const supplierPayload = supplierIds.length > 0 ? supplierIds.join(',') : '';
-    const userPayload = userIds.length > 0 ? userIds.join(',') : '';
-    const clientPayload = clientIds.length > 0 ? clientIds.join(',') : '';
-    const etapaPayload = etapaIds.length > 0 ? etapaIds.join(',') : '';
-    const origemPayload = origemIds.length > 0 ? origemIds.join(',') : '';
-    const ufPayload = ufIds.length > 0 ? ufIds.join(',') : '';
-    const statusPayload = statusIds.length > 0 ? statusIds.join(',') : '';
-
-    if (typeof updateFilterPills === 'function') {
-        updateFilterPills(type, start, end, supplierIds, userIds, clientIds, etapaIds, origemIds, ufIds, statusIds);
-    }    // Save Filters to LocalStorage
     localStorage.setItem('reports_filters', JSON.stringify({
-        type: type,
-        start: start,
-        end: end,
-        suppliers: supplierIds,
-        users: userIds,
-        clients: clientIds,
-        etapas: etapaIds,
-        origens: origemIds,
-        ufs: ufIds,
-        statuses: statusIds
+        type, start, end,
+        suppliers: supplierIds, users: userIds, clients: clientIds,
+        etapas: etapaIds, ufs: ufIds
     }));
 
-    if (!start || !end) {
-        showToast('Selecione o período.', 'warning');
-        return;
-    }
+    if (!start || !end) { showToast('Selecione o período.', 'warning'); return; }
 
     loading.classList.remove('hidden');
-    container.innerHTML = ''; // Limpa anterior
+    container.innerHTML = '';
 
     try {
-        // For end date, we need last day of month.
-        let formattedEnd = '';
-        if (end) {
-            const [y, m] = end.split('-');
-            const lastDay = new Date(y, m, 0).getDate();
-            formattedEnd = `${end}-${lastDay}`;
-        }
-
         const params = {
             report_type: type,
-            start_date: `${start}-01`,
-            end_date: formattedEnd,
-            supplier_id: supplierPayload,
-            user_id: userPayload,
-            cliente_id: clientPayload,
-            etapa_id: etapaPayload,
-            origem: origemPayload, // API expects 'origem' (plural handled by explode) or 'origem_id'? Handler has 'origei' typo variable but gets 'origem'.
-            uf: ufPayload,
-            status: statusPayload
+            start_date:  start,
+            end_date:    end,
+            supplier_id: supplierIds.join(','),
+            user_id:     userIds.join(','),
+            cliente_id:  clientIds.join(','),
+            etapa_id:    etapaIds.join(','),
+            uf:          ufIds.join(','),
         };
         const response = await apiCall('get_report_data', { params });
-
         if (!response.success) throw new Error(response.error);
 
-        // Standardized report_data
-        currentReportData = response.report_data || []; // Fallback empty array
+        currentReportData = response.report_data || [];
         renderReports(currentReportData, container, type, start, end);
-
     } catch (error) {
         console.error("Erro:", error);
         container.innerHTML = `<div class="bg-red-50 p-4 border border-red-200 text-red-700 rounded text-center">Erro ao carregar relatório: ${error.message}</div>`;
@@ -876,654 +1504,389 @@ async function loadReportData() {
 }
 
 function renderReports(data, container, type, startStr, endStr) {
-    if (!data) data = [];
-    if (!Array.isArray(data)) {
-        console.warn('Data is not an array, converting from object:', data);
-        data = Object.values(data);
+    // Relatórios com estrutura especial (não são arrays simples)
+    if (type === 'vendor_detail') {
+        document.getElementById('chart-container-wrapper')?.classList.add('hidden');
+        const items = data.items || [];
+        const activity = data.activity || [];
+        if (activity.length === 0 && items.length === 0) {
+            container.innerHTML = `<div class="bg-blue-50 p-8 border border-blue-200 text-blue-700 rounded text-center">Nenhum dado encontrado para o período.</div>`;
+            return;
+        }
+        container.innerHTML = renderVendorDetailReport(items, activity);
+        return;
     }
+    if (type === 'billing') {
+        document.getElementById('chart-container-wrapper')?.classList.add('hidden');
+        const proposals = data.proposals || [];
+        const kpis = data.kpis || {};
+        if (proposals.length === 0) {
+            container.innerHTML = `<div class="bg-blue-50 p-8 border border-blue-200 text-blue-700 rounded text-center">Nenhum dado encontrado para o período.</div>`;
+            return;
+        }
+        container.innerHTML = renderBillingReport(proposals, kpis);
+        return;
+    }
+
+    if (!data) data = [];
+    if (!Array.isArray(data)) data = Object.values(data);
 
     if (data.length === 0) {
         container.innerHTML = `<div class="bg-blue-50 p-8 border border-blue-200 text-blue-700 rounded text-center">Nenhum dado encontrado para o período.</div>`;
-        const chartContainer = document.getElementById('chart-container-wrapper');
-        if (chartContainer) chartContainer.classList.add('hidden');
+        document.getElementById('chart-container-wrapper')?.classList.add('hidden');
         return;
     }
 
     const monthsRange = getMonthsBetween(startStr, endStr);
+    renderSalesChart(data, monthsRange, type);
 
-    // Render Chart
-    if (typeof renderSalesChart === 'function') {
-        renderSalesChart(data, monthsRange, type);
+    switch (type) {
+        case 'clients':
+            container.innerHTML = renderClientsTable(data);
+            return;
+        case 'forecast':
+            renderSalesChart(data, monthsRange, 'forecast');
+            container.innerHTML = renderForecastTable(data);
+            return;
+        case 'funnel':
+        case 'supplier_funnel':
+        case 'licitacoes_funnel':
+            container.innerHTML = renderFunnelTable(data, type);
+            return;
+        case 'contratos':
+            container.innerHTML = renderContractsTable(data);
+            return;
+        case 'lost_reasons':
+            container.innerHTML = renderLostReasonsTable(data);
+            return;
+        case 'products':
+            data.forEach(group => {
+                const wrapper = document.createElement('div');
+                wrapper.className = "mb-8 bg-white shadow rounded-lg overflow-hidden";
+                wrapper.innerHTML = `<div class="px-6 py-4 bg-blue-50 border-b"><h3 class="text-lg font-medium text-gray-900">${group.fornecedor_nome || 'Fornecedor'}</h3></div>`;
+                const tableContainer = document.createElement('div');
+                tableContainer.innerHTML = renderProductsTable(group.rows);
+                wrapper.appendChild(tableContainer);
+                container.appendChild(wrapper);
+            });
+            return;
+        default: // sales + vendas gerais
+            data.forEach(group => {
+                const wrapper = document.createElement('div');
+                wrapper.className = "mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid";
+                const header = document.createElement('div');
+                header.className = "px-6 py-4 bg-blue-50 border-b border-gray-200";
+                header.innerHTML = `<h3 class="text-lg font-medium text-gray-900">${group.fornecedor_nome || 'Fornecedor'}</h3>`;
+                wrapper.appendChild(header);
+                const tableContainer = document.createElement('div');
+                tableContainer.innerHTML = renderSalesTable(group, monthsRange) + (renderStateReport(group) || '');
+                wrapper.appendChild(tableContainer);
+                container.appendChild(wrapper);
+            });
     }
+}
 
-    if (type === 'clients') {
-        // Clients report is flat, not grouped
-        const html = renderClientsTable(data);
-        container.innerHTML = html;
-        return;
-    }
+// ─── RENDER CONTRATOS (tabela simples) ───────────────────────────────────────
+function renderContractsTable(data) {
+    const format = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    if (!data || data.length === 0) return `<div class="p-8 text-center text-gray-400">Nenhum contrato encontrado.</div>`;
 
-    if (type === 'forecast') {
-        renderSalesChart(data, monthsRange, 'forecast');
-        // For forecast, we might want a simple summary table below too.
-        const html = renderForecastTable(data);
-        container.innerHTML = html;
-        return;
-    }
+    const rows = data.map(r => `
+        <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3 text-sm text-gray-900">${r.numero_contrato || r.numero_edital || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">${r.cliente_nome || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-500">${r.fornecedor_nome || '-'}</td>
+            <td class="px-4 py-3 text-sm text-gray-500">${r.vendedor_nome || '-'}</td>
+            <td class="px-4 py-3 text-sm text-right font-bold text-gray-900">${format(r.valor_total || 0)}</td>
+            <td class="px-4 py-3 text-sm text-center">
+                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">${r.status || 'Ativo'}</span>
+            </td>
+        </tr>
+    `).join('');
 
-    if (type === 'funnel' || type === 'licitacoes_funnel') {
-        const html = renderFunnelTable(data, type);
-        container.innerHTML = html;
-        return;
-    }
+    const total = data.reduce((acc, r) => acc + (parseFloat(r.valor_total) || 0), 0);
 
-    if (type === 'contratos') {
-        const html = renderContractsTable(data);
-        container.innerHTML = html;
-        return;
-    }
+    return `
+        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-6 py-4 bg-green-50 border-b border-green-100 flex justify-between items-center">
+                <h3 class="font-bold text-green-700">Relatório de Contratos</h3>
+                <span class="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full">${data.length} contrato(s)</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nº Contrato</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fornecedor</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendedor</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Valor</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">${rows}</tbody>
+                    <tfoot class="bg-gray-100">
+                        <tr>
+                            <td colspan="4" class="px-4 py-3 text-sm font-bold text-right text-gray-900">TOTAL</td>
+                            <td class="px-4 py-3 text-sm font-bold text-right text-gray-900">${format(total)}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    `;
+}
 
-    if (type === 'lost_reasons') {
-        const html = renderLostReasonsTable(data);
-        container.innerHTML = html;
-        return;
-    }
+// ─── RENDER FUNNEL (Vendas / Fornecedores / Licitações) ──────────────────────
+function renderFunnelTable(data, type = 'funnel') {
+    const format = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    const totalRevenue = data.reduce((acc, r) => acc + (parseFloat(r.valor_total) || 0), 0);
+    const totalCount   = data.reduce((acc, r) => acc + parseInt(r.qtd_oportunidades || 0), 0);
 
-    data.forEach(group => {
-        const wrapper = document.createElement('div');
-        wrapper.className = "mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid";
+    const titles = {
+        funnel:           { title: 'Funil de Vendas',        unit: 'Oportunidades', color: 'teal'   },
+        supplier_funnel:  { title: 'Funil de Fornecedores',  unit: 'Registros',     color: 'blue'   },
+        licitacoes_funnel:{ title: 'Funil de Licitações',    unit: 'Licitações',    color: 'indigo' },
+    };
+    const cfg = titles[type] || titles.funnel;
 
-        const header = document.createElement('div');
-        header.className = "px-6 py-4 bg-blue-50 border-b border-gray-200";
-        header.innerHTML = `<h3 class="text-lg font-medium text-gray-900">${group.fornecedor_nome || 'Fornecedor'}</h3>`;
-        wrapper.appendChild(header);
-
-        let tableHtml = '';
-        if (type === 'sales') {
-            tableHtml = renderSalesTable(group, monthsRange);
-            // Append State Report
-            const stateReportHtml = renderStateReport(group);
-            if (stateReportHtml) {
-                tableHtml += stateReportHtml;
-            }
-        } else if (type === 'products') {
-            tableHtml = renderProductsTable(group.rows);
-        }
-
-        const tableContainer = document.createElement('div');
-        tableContainer.innerHTML = tableHtml;
-        wrapper.appendChild(tableContainer);
-
-        container.appendChild(wrapper);
-    });
+    return `
+        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-6 py-4 bg-${cfg.color}-50 border-b border-${cfg.color}-100 flex justify-between items-center">
+                <h3 class="font-bold text-${cfg.color}-700">${cfg.title}</h3>
+                <span class="text-xs bg-${cfg.color}-200 text-${cfg.color}-800 px-2 py-1 rounded-full">${totalCount} ${cfg.unit}</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Etapa / Fornecedor</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Qtd</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Valor em Pipeline</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">% Volume</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${data.map((row, i) => {
+                            const val     = parseFloat(row.valor_total || 0);
+                            const count   = parseInt(row.qtd_oportunidades || 0);
+                            const percent = totalCount > 0 ? (count / totalCount) * 100 : 0;
+                            return `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 font-medium text-gray-700">
+                                        <div class="flex items-center">
+                                            <span class="w-6 h-6 rounded-full bg-${cfg.color}-100 text-${cfg.color}-600 flex items-center justify-center text-xs mr-3 font-bold">${i + 1}</span>
+                                            ${row.etapa_nome || row.fornecedor_nome || '-'}
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center font-bold text-gray-600">${count}</td>
+                                    <td class="px-6 py-4 text-right text-gray-800">${format(val)}</td>
+                                    <td class="px-6 py-4 text-right text-gray-500">
+                                        <div class="flex items-center justify-end">
+                                            <span class="mr-2">${percent.toFixed(1)}%</span>
+                                            <div class="w-16 bg-gray-200 rounded-full h-1.5">
+                                                <div class="bg-${cfg.color}-500 h-1.5 rounded-full" style="width:${percent}%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                    <tfoot class="bg-gray-100 font-bold border-t-2 border-gray-200">
+                        <tr>
+                            <td class="px-6 py-4 text-gray-900">TOTAL</td>
+                            <td class="px-6 py-4 text-center text-gray-900">${totalCount}</td>
+                            <td class="px-6 py-4 text-right text-gray-900">${format(totalRevenue)}</td>
+                            <td class="px-6 py-4 text-right text-gray-900">100%</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    `;
 }
 
 function renderSalesChart(data, monthsRange, type) {
     const ctx = document.getElementById('sales-chart');
     const container = document.getElementById('chart-container-wrapper');
-
     if (!ctx || !container) return;
 
-    // Show chart for Sales, Contratos, Clients, Funnel, Lost Reasons, Forecast, Licitacoes Funnel
-    if (!['sales', 'contratos', 'clients', 'funnel', 'lost_reasons', 'forecast', 'licitacoes_funnel'].includes(type) || !data || data.length === 0) {
+    if (!['sales', 'contratos', 'clients', 'funnel', 'supplier_funnel', 'lost_reasons', 'forecast', 'licitacoes_funnel'].includes(type) || !data || data.length === 0) {
         container.classList.add('hidden');
         return;
     }
-
     container.classList.remove('hidden');
+    if (chartInstance) { chartInstance.destroy(); }
 
-    // Destroy existing chart if any
-    if (chartInstance) {
-        chartInstance.destroy();
-    }
-
-    // --- FORECAST CHART ---
     if (type === 'forecast') {
-        const labels = data.map(r => r.mes);
-        const forecastValues = data.map(r => parseFloat(r.forecast_ponderado) || 0);
-        const pipelineValues = data.map(r => parseFloat(r.pipeline_total) || 0);
-
-        const titleEl = container.querySelector('h3');
-        if (titleEl) titleEl.innerText = "Forecast vs Pipeline Total";
-
         chartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: labels,
+                labels: data.map(r => r.mes),
                 datasets: [
-                    {
-                        label: 'Previsão Ponderada',
-                        data: forecastValues,
-                        backgroundColor: 'rgba(124, 58, 237, 0.6)', // Purple-600
-                        borderColor: 'rgba(124, 58, 237, 1)',
-                        borderWidth: 1,
-                        order: 2
-                    },
-                    {
-                        type: 'line',
-                        label: 'Pipeline Total',
-                        data: pipelineValues,
-                        borderColor: 'rgba(156, 163, 175, 1)', // Gray-400
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        fill: false,
-                        tension: 0.1,
-                        order: 1
-                    }
+                    { label: 'Previsão Ponderada', data: data.map(r => parseFloat(r.forecast_ponderado) || 0), backgroundColor: 'rgba(124,58,237,0.6)', borderColor: 'rgba(124,58,237,1)', borderWidth: 1, order: 2 },
+                    { type: 'line', label: 'Pipeline Total', data: data.map(r => parseFloat(r.pipeline_total) || 0), borderColor: 'rgba(156,163,175,1)', borderWidth: 2, borderDash: [5,5], fill: false, tension: 0.1, order: 1 }
                 ]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.y !== null) {
-                                    label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
-                                }
-                                return label;
-                            }
-                        }
-                    }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { tooltip: { callbacks: { label: ctx => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(ctx.parsed.y) } } } }
         });
         return;
     }
 
-    // --- LOST REASONS CHART ---
     if (type === 'lost_reasons') {
-        const labels = data.map(r => r.motivo);
-        const values = data.map(r => parseInt(r.qtd));
-
-        const titleEl = container.querySelector('h3');
-        if (titleEl) titleEl.innerText = "Distribuição de Propostas Recusadas";
-
-        const backgroundColors = [
-            'rgb(255, 99, 132)',
-            'rgb(54, 162, 235)',
-            'rgb(255, 205, 86)',
-            'rgb(201, 203, 207)',
-            'rgb(75, 192, 192)',
-            'rgb(153, 102, 255)',
-            'rgb(255, 159, 64)'
-        ];
-
         chartInstance = new Chart(ctx, {
             type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: values,
-                    backgroundColor: backgroundColors,
-                    hoverOffset: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false, // Important for fitting
-                plugins: {
-                    legend: {
-                        position: 'right',
-                    }
-                }
-            }
+            data: { labels: data.map(r => r.motivo), datasets: [{ data: data.map(r => parseInt(r.qtd)), backgroundColor: ['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF','#FF9F40','#C9CBCF'], hoverOffset: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
         });
         return;
     }
 
-    // --- FUNNEL CHART ---
-    if (type === 'funnel' || type === 'licitacoes_funnel' || type === 'contratos') {
-        const labels = data.map(r => r.etapa_nome);
-        const values = data.map(r => parseInt(r.qtd_oportunidades));
-        // const valuesVal = data.map(r => parseFloat(r.valor_total)); // Maybe toggle between count/value?
-
-        const titleEl = container.querySelector('h3');
-        if (titleEl) {
-            if (type === 'licitacoes_funnel') titleEl.innerText = "Funil de Licitações (Quantidade)";
-            else if (type === 'contratos') titleEl.innerText = "Funil Financeiro (Quantidade de Contratos)";
-            else titleEl.innerText = "Funil de Vendas (Quantidade)";
-        }
-
+    if (['funnel','supplier_funnel','licitacoes_funnel','contratos'].includes(type)) {
         chartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Oportunidades',
-                    data: values,
-                    backgroundColor: 'rgba(20, 184, 166, 0.6)', // Teal-500
-                    borderColor: 'rgba(20, 184, 166, 1)',
-                    borderWidth: 1,
-                    barPercentage: 0.8, // Make bars thicker
-                }]
+                labels: data.map(r => r.etapa_nome || r.fornecedor_nome),
+                datasets: [{ label: 'Qtd', data: data.map(r => parseInt(r.qtd_oportunidades || 0)), backgroundColor: 'rgba(20,184,166,0.6)', borderColor: 'rgba(20,184,166,1)', borderWidth: 1 }]
             },
-            options: {
-                indexAxis: 'y', // Horizontal
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                return context.raw + ' Oportunidades';
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: { beginAtZero: true }
-                }
-            }
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
         });
         return;
     }
 
-    // --- CLIENT CLASSIFICATION CHART ---
     if (type === 'clients') {
-        const topClients = data.slice(0, 10); // Top 10
-        const labels = topClients.map(c => c.cliente_nome);
-        const values = topClients.map(c => parseFloat(c.valor_total) || 0);
-        const acumulado = topClients.map(c => parseFloat(c.percentual_acumulado) || 0);
-
-        const titleEl = container.querySelector('h3');
-        if (titleEl) titleEl.innerText = "Curva ABC (Top 10 Clientes)";
-
+        const top = data.slice(0, 10);
         chartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: labels,
+                labels: top.map(c => c.cliente_nome),
                 datasets: [
-                    {
-                        type: 'bar',
-                        label: 'Faturamento Bruto',
-                        data: values,
-                        backgroundColor: 'rgba(79, 70, 229, 0.6)', // Indigo-600
-                        borderColor: 'rgba(79, 70, 229, 1)',
-                        borderWidth: 1,
-                        yAxisID: 'y'
-                    },
-                    {
-                        type: 'line',
-                        label: '% Acumulado (Curva ABC)',
-                        data: acumulado,
-                        borderColor: 'rgba(239, 68, 68, 1)', // Red-500
-                        backgroundColor: 'rgba(239, 68, 68, 1)',
-                        borderWidth: 2,
-                        fill: false,
-                        yAxisID: 'y1'
-                    }
+                    { type: 'bar',  label: 'Faturamento', data: top.map(c => parseFloat(c.valor_total)||0), backgroundColor: 'rgba(79,70,229,0.6)', yAxisID: 'y' },
+                    { type: 'line', label: '% Acumulado', data: top.map(c => parseFloat(c.percentual_acumulado)||0), borderColor: 'rgba(239,68,68,1)', borderWidth: 2, fill: false, yAxisID: 'y1' }
                 ]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top' },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                if (context.dataset.yAxisID === 'y1') {
-                                    return context.raw + '% Acumulado';
-                                }
-                                return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.raw);
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true
-                    },
-                    y: {
-                        type: 'linear',
-                        display: true,
-                        position: 'left',
-                        ticks: {
-                            callback: function (value) {
-                                return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: "compact" }).format(value);
-                            }
-                        }
-                    },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        min: 0,
-                        max: 100,
-                        grid: { drawOnChartArea: false },
-                        ticks: {
-                            callback: function (value) { return value + '%'; }
-                        }
-                    }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { position: 'left' }, y1: { position: 'right', min: 0, max: 100, grid: { drawOnChartArea: false } } } }
         });
         return;
-    } else {
-        // Reset Title for Sales
-        const titleEl = container.querySelector('h3');
-        if (titleEl) {
-            titleEl.innerText = "Evolução de Vendas vs Metas";
-        }
     }
 
-    // --- SALES CHART (Existing Logic) ---
-    // Process Data
-    const labels = monthsRange.map(m => m.label);
+    // Sales padrão
+    const labels    = monthsRange.map(m => m.label);
     const monthKeys = monthsRange.map(m => m.key);
+    const salesData = monthKeys.map(key => data.reduce((s, g) => s + (g.rows||[]).reduce((a, r) => a + (parseFloat(r.dados_mes?.[key]?.venda)||0), 0), 0));
+    const goalsData = monthKeys.map(key => data.reduce((s, g) => s + (g.rows||[]).reduce((a, r) => a + (parseFloat(r.dados_mes?.[key]?.meta)||0), 0), 0));
 
-    // Aggregating Totals
-    const salesData = monthKeys.map(key => {
-        let sum = 0;
-        data.forEach(group => {
-            (group.rows || []).forEach(row => {
-                const cell = row.dados_mes[key];
-                if (cell) sum += (parseFloat(cell.venda) || 0);
-            });
-        });
-        return sum;
-    });
-
-    const goalsData = monthKeys.map(key => {
-        let sum = 0;
-        data.forEach(group => {
-            // Check if user targets are enabled
-            const userTargetsEnabled = group.user_targets_enabled !== 0; // Default true
-
-            if (userTargetsEnabled) {
-                // Sum individual user targets
-                (group.rows || []).forEach(row => {
-                    const cell = row.dados_mes[key];
-                    if (cell) sum += (parseFloat(cell.meta) || 0);
-                });
-            } else {
-                // Use monthly meta from supplier (flat)
-                // Note: Logic in table uses 'meta_mensal' from supplier for total row if targets disabled
-                sum += (parseFloat(group.meta_mensal) || 0);
-            }
-        });
-        return sum;
-    });
-
-    // Chart Configuration
     chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels,
+            labels,
             datasets: [
-                {
-                    label: 'Vendas Realizadas',
-                    data: salesData,
-                    borderColor: '#059669', // Green-600
-                    backgroundColor: 'rgba(5, 150, 105, 0.1)',
-                    borderWidth: 2,
-                    tension: 0.1,
-                    fill: true
-                },
-                {
-                    label: 'Meta',
-                    data: goalsData,
-                    borderColor: '#DC2626', // Red-600
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    borderDash: [5, 5], // Dashed line
-                    tension: 0.1,
-                    pointRadius: 0
-                }
+                { label: 'Vendas Realizadas', data: salesData, borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.1)', borderWidth: 2, tension: 0.1, fill: true },
+                { label: 'Meta', data: goalsData, borderColor: '#DC2626', borderWidth: 2, borderDash: [5,5], tension: 0.1, pointRadius: 0 }
             ]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            if (context.parsed.y !== null) {
-                                label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
-                            }
-                            return label;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function (value) {
-                            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumSignificantDigits: 3 }).format(value);
-                        }
-                    }
-                }
-            }
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: ctx => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(ctx.parsed.y) } } },
+            scales: { y: { beginAtZero: true, ticks: { callback: v => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumSignificantDigits:3}).format(v) } } }
         }
     });
 }
 
 function renderSalesTable(group, monthsRange) {
-    const rows = group.rows;
-    const userTargetsEnabled = group.user_targets_enabled !== 0; // Default true if missing
+    const rows = group.rows || [];
+    const userTargetsEnabled = group.user_targets_enabled !== 0;
     const supplierMetaMensal = parseFloat(group.meta_mensal) || 0;
+    const numMonths  = monthsRange.length;
+    const monthKeys  = monthsRange.map(m => m.key);
+    const format = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 
-    // We'll calculate the periodic goal for the Total row based on selected months
-    // Ideally this comes from backend, but here we can approximate: meta_mensal * num_months
-    const numMonths = monthsRange.length;
-
-    const monthKeys = monthsRange.map(m => m.key);
-
-    // Helper format
-    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-
-    // Calculate Totals per Month (Sum of Users)
-    const totals = monthKeys.reduce((acc, monthKey) => {
-        acc[monthKey] = { venda: 0, faturado: 0, meta: 0, saldo: 0 };
+    const totals = monthKeys.reduce((acc, key) => {
+        acc[key] = { venda: 0, faturado: 0, meta: 0 };
         rows.forEach(row => {
-            const cellData = row.dados_mes[monthKey] || { venda: 0, faturado: 0, meta: 0 };
-            const venda = parseFloat(cellData.venda) || 0;
-            const faturado = parseFloat(cellData.faturado) || 0;
-            const meta = parseFloat(cellData.meta) || 0;
-            acc[monthKey].venda += venda;
-            acc[monthKey].faturado += faturado;
-            // If user targets enabled, sum them up. Else we'll handle meta differently in display (use global)
-            acc[monthKey].meta += meta;
-            acc[monthKey].saldo += (venda - meta);
+            const d = row.dados_mes?.[key] || {};
+            acc[key].venda    += parseFloat(d.venda)    || 0;
+            acc[key].faturado += parseFloat(d.faturado) || 0;
+            acc[key].meta     += parseFloat(d.meta)     || 0;
         });
         return acc;
     }, {});
 
-    // Headers
-    const monthHeaders = monthsRange.map(m =>
-        `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">${m.label}</th>`
-    ).join('');
+    const monthHeaders = monthsRange.map(m => `<th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase">${m.label}</th>`).join('');
 
-    // Body
-    const tableBody = rows.filter(row => {
-        // Hide rows with no sales/NF if filters like Client, UF, etc. are active
-        const filterActive = (document.getElementById('client-select-btn')?.innerText.trim() !== 'Todos os Clientes') ||
-            (document.getElementById('uf-select-btn')?.innerText.trim() !== 'Todos os Estados') ||
-            (document.getElementById('status-select-btn')?.innerText.trim() !== 'Todos os Status') ||
-            (document.getElementById('origem-select-btn')?.innerText.trim() !== 'Todas as Origens');
-
-        if (!filterActive) return true;
-
-        const hasActivity = monthKeys.some(key => {
-            const d = row.dados_mes[key] || {};
-            return (parseFloat(d.venda) || 0) > 0 || (parseFloat(d.faturado) || 0) > 0;
-        });
-        return hasActivity;
-    }).map(row => {
+    const tableBody = rows.map(row => {
         let rowVenda = 0, rowFaturado = 0, rowMeta = 0;
-
         const cells = monthKeys.map(key => {
-            const d = row.dados_mes[key] || { venda: 0, faturado: 0, meta: 0 };
-            const v = parseFloat(d.venda) || 0;
-            const f = parseFloat(d.faturado) || 0;
-            const m = parseFloat(d.meta) || 0;
-            const s = v - m;
+            const d = row.dados_mes?.[key] || {};
+            const v = parseFloat(d.venda)||0, f = parseFloat(d.faturado)||0, m = parseFloat(d.meta)||0;
             rowVenda += v; rowFaturado += f; rowMeta += m;
-
-            const saldoClass = s >= 0 ? 'text-green-600' : 'text-red-600';
+            const s = v - m;
+            const sClass = s >= 0 ? 'text-green-600' : 'text-red-600';
             const bgClass = (userTargetsEnabled && m > 0) ? (v >= m ? 'bg-green-50' : 'bg-red-50') : '';
-
             let progressHtml = '';
             if (userTargetsEnabled && m > 0) {
-                const pct = Math.min((v / m) * 100, 100).toFixed(0);
-                const pcolor = v >= m ? 'bg-green-500' : 'bg-yellow-500';
-                progressHtml = `
-                <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1 border border-gray-300">
-                    <div class="${pcolor} h-1.5 rounded-full" style="width: ${pct}%"></div>
-                </div>`;
+                const pct = Math.min((v/m)*100,100).toFixed(0);
+                progressHtml = `<div class="w-full bg-gray-200 rounded-full h-1.5 mt-1"><div class="${v>=m?'bg-green-500':'bg-yellow-500'} h-1.5 rounded-full" style="width:${pct}%"></div></div>`;
             }
-
-            return `
-                <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500 border-r border-gray-200 text-right ${bgClass}">
-                    <div class="font-medium text-gray-900">${v > 0 ? format(v) : '-'}</div>
-                    ${(userTargetsEnabled && m > 0) ? `<div class="text-gray-400 text-[10px]">M: ${format(m)}</div>` : ''}
-                    ${progressHtml}
-                    ${(userTargetsEnabled && m > 0) ? `<div class="${saldoClass} font-bold border-t border-gray-100 mt-1 pt-1 text-[10px]">S: ${format(s)}</div>` : ''}
-                </td>
-            `;
+            return `<td class="px-2 py-2 text-xs text-right border-r border-gray-200 ${bgClass}">
+                <div class="font-medium text-gray-900">${v>0?format(v):'-'}</div>
+                ${(userTargetsEnabled&&m>0)?`<div class="text-gray-400 text-[10px]">M: ${format(m)}</div>`:''}
+                ${progressHtml}
+                ${(userTargetsEnabled&&m>0)?`<div class="${sClass} font-bold text-[10px]">S: ${format(s)}</div>`:''}
+            </td>`;
         }).join('');
-
         const rowSaldo = rowVenda - rowMeta;
-        const rowSaldoClass = rowSaldo >= 0 ? 'text-green-600' : 'text-red-600';
-        let rowGrandProgressHtml = '';
-        if (userTargetsEnabled && rowMeta > 0) {
-            const pct = Math.min((rowVenda / rowMeta) * 100, 100).toFixed(0);
-            const pcolor = rowVenda >= rowMeta ? 'bg-green-500' : 'bg-indigo-500';
-            rowGrandProgressHtml = `
-            <div class="w-full bg-gray-300 rounded-full h-2 mt-1 shadow-inner">
-                <div class="${pcolor} h-2 rounded-full" style="width: ${pct}%"></div>
-            </div>`;
-        }
-
         return `
             <tr class="hover:bg-gray-50">
-                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200">
-                    ${row.vendedor_nome}
-                </td>
+                <td class="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200 sticky left-0 bg-white">${row.vendedor_nome}</td>
                 ${cells}
-                <td class="px-4 py-3 whitespace-nowrap text-sm text-right bg-gray-50 font-bold border-l border-gray-200">
+                <td class="px-4 py-3 text-sm text-right bg-gray-50 font-bold border-l border-gray-200">
                     <div>${format(rowVenda)}</div>
-                    ${userTargetsEnabled ? `<div class="text-[10px] text-gray-500">M: ${format(rowMeta)}</div>` : ''}
-                    ${userTargetsEnabled ? `<div class="${rowSaldoClass} text-[10px] border-t border-gray-200 pt-1">S: ${format(rowSaldo)}</div>` : ''}
+                    ${userTargetsEnabled?`<div class="text-[10px] text-gray-500">M: ${format(rowMeta)}</div>`:''}
+                    ${userTargetsEnabled?`<div class="${rowSaldo>=0?'text-green-600':'text-red-600'} text-[10px]">S: ${format(rowSaldo)}</div>`:''}
                 </td>
-            </tr>
-        `;
+            </tr>`;
     }).join('');
 
-    // Totals Row Construction
     const totalsCells = monthKeys.map(key => {
         const t = totals[key];
-        // If targets disabled, use supplier global meta monthly divided or just flat?
-        // Usually global meta is monthly.
         const metaVal = userTargetsEnabled ? t.meta : supplierMetaMensal;
-        const faturadoVal = t.faturado;
         const saldoVal = t.venda - metaVal;
-
-        const sClass = saldoVal >= 0 ? 'text-green-600' : 'text-red-600';
-        return `
-            <td class="px-2 py-3 whitespace-nowrap text-xs text-right font-bold bg-gray-100 border-r border-gray-200">
-                <div>${format(t.venda)}</div>
-                ${faturadoVal > 0 ? `<div class="text-indigo-600 text-[10px]">F: ${format(faturadoVal)}</div>` : ''}
-                <div class="text-gray-500 text-[10px]">${format(metaVal)}</div>
-                <div class="${sClass} text-[10px]">${format(saldoVal)}</div>
-            </td>
-        `;
+        return `<td class="px-2 py-3 text-xs text-right font-bold bg-gray-100 border-r border-gray-200">
+            <div>${format(t.venda)}</div>
+            ${t.faturado>0?`<div class="text-indigo-600 text-[10px]">F: ${format(t.faturado)}</div>`:''}
+            <div class="text-gray-500 text-[10px]">${format(metaVal)}</div>
+            <div class="${saldoVal>=0?'text-green-600':'text-red-600'} text-[10px]">${format(saldoVal)}</div>
+        </td>`;
     }).join('');
 
-    const grandVenda = Object.values(totals).reduce((a, b) => a + b.venda, 0);
-    // Grand Meta: If user targets enabled, sum of user metas. If disabled, Sum of Monthly Global Metas for the period.
-    const grandMeta = userTargetsEnabled
-        ? Object.values(totals).reduce((a, b) => a + b.meta, 0)
-        : (supplierMetaMensal * numMonths);
-
+    const grandVenda = Object.values(totals).reduce((a,b)=>a+b.venda,0);
+    const grandMeta  = userTargetsEnabled ? Object.values(totals).reduce((a,b)=>a+b.meta,0) : supplierMetaMensal*numMonths;
     const grandSaldo = grandVenda - grandMeta;
-    const grandSaldoClass = grandSaldo >= 0 ? 'text-green-600' : 'text-red-600';
-
-    // Row: Factory Total (Global)
-    const factoryMetaMensal = parseFloat(group.meta_global_mensal) || 0;
-    const factoryTotalCells = monthKeys.map(key => {
-        const t = totals[key];
-        const v = t.venda || 0;
-        const f = t.faturado || 0;
-        const m = factoryMetaMensal;
-        const s = v - m;
-
-        const sClass = s >= 0 ? 'text-green-600' : 'text-red-600';
-        const bgClass = m > 0 ? (v >= m ? 'bg-green-50' : 'bg-red-50') : 'bg-blue-50';
-
-        return `
-            <td class="px-2 py-3 whitespace-nowrap text-xs text-right font-bold border-r border-gray-200 ${bgClass}">
-                <div class="text-blue-900 text-sm" title="Total Vendas">${format(v)}</div>
-                ${f > 0 ? `<div class="text-indigo-700 font-bold text-[10px]" title="Total Faturado">F: ${format(f)}</div>` : ''}
-                ${m > 0 ? `<div class="text-gray-500 text-[10px]" title="Meta Fábrica">M: ${format(m)}</div>` : ''}
-                ${m > 0 ? `<div class="${sClass} text-[10px] border-t border-gray-200 pt-1 mt-1" title="Saldo Vendas meta">S: ${format(s)}</div>` : ''}
-            </td>
-        `;
-    }).join('');
-
-    const factoryGrandVenda = Object.values(totals).reduce((a, b) => a + b.venda, 0);
-    const factoryGrandFaturado = Object.values(totals).reduce((a, b) => a + b.faturado, 0);
-    const factoryGrandMeta = factoryMetaMensal * numMonths;
-    const factoryGrandSaldo = factoryGrandVenda - factoryGrandMeta;
-    const factoryGrandSaldoClass = factoryGrandSaldo >= 0 ? 'text-green-600' : 'text-red-600';
-
-    const factoryTotalRow = `
-        <tr class="bg-blue-100 border-b-2 border-blue-200 shadow-sm">
-            <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-blue-900 border-r border-gray-200 sticky left-0 bg-blue-100 z-10">
-                TOTAL ${(group.fornecedor_nome || 'FÁBRICA').toUpperCase()}
-            </td>
-            ${factoryTotalCells}
-            <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold bg-blue-200 border-l border-gray-200">
-                <div class="text-blue-900 text-sm">${format(factoryGrandVenda)}</div>
-                ${factoryGrandFaturado > 0 ? `<div class="text-indigo-700 text-[10px]">F: ${format(factoryGrandFaturado)}</div>` : ''}
-                ${factoryGrandMeta > 0 ? `<div class="text-gray-600 text-[10px]">M: ${format(factoryGrandMeta)}</div>` : ''}
-                ${factoryGrandMeta > 0 ? `<div class="${factoryGrandSaldoClass} text-[10px] border-t border-blue-300 pt-1 mt-1">S: ${format(factoryGrandSaldo)}</div>` : ''}
-            </td>
-        </tr>
-    `;
+    const grandFat   = Object.values(totals).reduce((a,b)=>a+b.faturado,0);
 
     return `
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 border border-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48 sticky left-0 bg-gray-50 z-10">Vendedor</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-48 sticky left-0 bg-gray-50">Vendedor</th>
                         ${monthHeaders}
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">TOTAL</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase w-32">TOTAL</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    ${factoryTotalRow}
                     ${tableBody}
                     <tr class="bg-gray-100 border-t-2 border-gray-300">
-                        <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 border-r border-gray-200 sticky left-0 bg-gray-100 z-10">TOTAIS</td>
+                        <td class="px-4 py-3 text-sm font-bold text-gray-900 border-r border-gray-200 sticky left-0 bg-gray-100">TOTAIS</td>
                         ${totalsCells}
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold bg-gray-200 border-l border-gray-200">
+                        <td class="px-4 py-3 text-sm text-right font-bold bg-gray-200 border-l border-gray-200">
                             <div>${format(grandVenda)}</div>
-                            ${factoryGrandFaturado > 0 ? `<div class="text-indigo-700 text-[10px]">F: ${format(factoryGrandFaturado)}</div>` : ''}
+                            ${grandFat>0?`<div class="text-indigo-700 text-[10px]">F: ${format(grandFat)}</div>`:''}
                             <div class="text-gray-500 text-[10px]">${format(grandMeta)}</div>
-                            <div class="${grandSaldoClass} text-[10px]">${format(grandSaldo)}</div>
+                            <div class="${grandSaldo>=0?'text-green-600':'text-red-600'} text-[10px]">${format(grandSaldo)}</div>
                         </td>
                     </tr>
                 </tbody>
@@ -1535,54 +1898,34 @@ function renderSalesTable(group, monthsRange) {
 function renderStateReport(group) {
     const stateSales = group.state_sales || {};
     const stateGoals = group.state_goals || {};
-
-    // Get only states that have defined goals for this supplier
     const states = Object.keys(stateGoals).sort();
+    if (states.length === 0) return '';
 
-    if (states.length === 0) return ''; // No state data
+    const format = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    let totalSales = 0, totalGoal = 0;
+    const maxSales = Math.max(...states.map(s => parseFloat(stateSales[s])||0));
 
-    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-
-    let rowsHtml = '';
-    let totalSales = 0;
-    let totalGoal = 0;
-
-    states.forEach(uf => {
-        const sales = parseFloat(stateSales[uf]) || 0;
-        const goal = parseFloat(stateGoals[uf]) || 0; // This is meta_anual usually
-        const balance = sales - goal;
-
-        totalSales += sales;
-        totalGoal += goal;
-
-        const balClass = balance >= 0 ? 'text-green-600' : 'text-red-500';
-
-        const maxSales = Math.max(...states.map(s => parseFloat(stateSales[s]) || 0));
-        const heatPct = maxSales > 0 ? (sales / maxSales * 100) : 0;
-
-        rowsHtml += `
-            <tr class="hover:bg-gray-50 transition-colors">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-100 flex items-center justify-between">
-                    <span>${uf}</span>
-                    <i class="fas fa-map-marker-alt text-gray-300 ml-2"></i>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700">
-                    <div class="flex justify-end items-center space-x-3 w-full">
-                       <span class="font-mono">${format(sales)}</span>
-                       <div class="w-20 bg-gray-100 rounded-sm overflow-hidden border border-gray-200 flex h-3 mt-0.5">
-                           <div class="bg-indigo-500 h-full shadow-md" style="width:${heatPct}%"></div>
-                       </div>
+    const rowsHtml = states.map(uf => {
+        const sales = parseFloat(stateSales[uf])||0;
+        const goal  = parseFloat(stateGoals[uf])||0;
+        const bal   = sales - goal;
+        totalSales += sales; totalGoal += goal;
+        const pct = maxSales > 0 ? (sales/maxSales*100) : 0;
+        return `
+            <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 text-sm font-medium text-gray-900 border-r border-gray-100">${uf}</td>
+                <td class="px-6 py-4 text-sm text-right text-gray-700">
+                    <div class="flex justify-end items-center space-x-3">
+                        <span class="font-mono">${format(sales)}</span>
+                        <div class="w-20 bg-gray-100 rounded-sm h-3 overflow-hidden border border-gray-200"><div class="bg-indigo-500 h-full" style="width:${pct}%"></div></div>
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500 border-l border-gray-100 font-mono">${format(goal)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-bold ${balClass} border-l border-gray-100 font-mono">${format(balance)}</td>
-            </tr>
-        `;
-    });
+                <td class="px-6 py-4 text-sm text-right font-mono text-gray-500">${format(goal)}</td>
+                <td class="px-6 py-4 text-sm text-right font-mono font-bold ${bal>=0?'text-green-600':'text-red-500'}">${format(bal)}</td>
+            </tr>`;
+    }).join('');
 
     const totalBal = totalSales - totalGoal;
-    const totalBalClass = totalBal >= 0 ? 'text-green-600' : 'text-red-500';
-
     return `
         <div class="mt-8">
             <h4 class="text-md font-bold text-gray-700 mb-3 px-1 border-l-4 border-blue-500 pl-2">Performance por Estado</h4>
@@ -1590,10 +1933,10 @@ function renderStateReport(group) {
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Vendas (Período)</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Meta Anual</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Saldo</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Vendas (Período)</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Meta Anual</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Saldo</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -1602,25 +1945,21 @@ function renderStateReport(group) {
                             <td class="px-6 py-4 text-sm text-gray-900">TOTAIS</td>
                             <td class="px-6 py-4 text-sm text-right text-gray-900">${format(totalSales)}</td>
                             <td class="px-6 py-4 text-sm text-right text-gray-700">${format(totalGoal)}</td>
-                            <td class="px-6 py-4 text-sm text-right ${totalBalClass}">${format(totalBal)}</td>
+                            <td class="px-6 py-4 text-sm text-right ${totalBal>=0?'text-green-600':'text-red-500'}">${format(totalBal)}</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
-
     `;
 }
 
 function renderClientsTable(data) {
-    const container = document.getElementById('report-results');
-
-    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-
-    const totalRevenue = data.reduce((acc, row) => acc + (parseFloat(row.valor_total) || 0), 0);
+    const format = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    const totalRevenue = data.reduce((acc, r) => acc + (parseFloat(r.valor_total)||0), 0);
 
     return `
-        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
+        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden">
             <div class="px-6 py-4 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center">
                 <h3 class="font-bold text-indigo-700">Ranking de Clientes (Curva ABC)</h3>
                 <span class="text-xs bg-indigo-200 text-indigo-800 px-2 py-1 rounded-full">Top ${data.length}</span>
@@ -1629,118 +1968,38 @@ function renderClientsTable(data) {
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">#</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd Vendas</th>
-                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">ABC</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Total</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">% Acumulado</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase w-16">#</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Qtd Vendas</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Classe</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Valor Total</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">% Acumulado</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        ${data.map((row, index) => {
-        const val = parseFloat(row.valor_total) || 0;
-        const percent = parseFloat(row.percentual_acumulado) || 0;
-        let pColorClass = 'bg-gray-100 text-gray-800';
-        if (row.classe === 'A') pColorClass = 'bg-green-100 text-green-800';
-        else if (row.classe === 'B') pColorClass = 'bg-yellow-100 text-yellow-800';
-        else if (row.classe === 'C') pColorClass = 'bg-red-100 text-red-800';
-        return `
+                        ${data.map((row, i) => {
+                            const val = parseFloat(row.valor_total)||0;
+                            const pColorClass = row.classe==='A'?'bg-green-100 text-green-800':row.classe==='B'?'bg-yellow-100 text-yellow-800':'bg-red-100 text-red-800';
+                            return `
                                 <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-3 text-center font-bold text-gray-500 border-r border-gray-100">${index + 1}</td>
-                                    <td class="px-6 py-3 text-left font-medium text-gray-700">
-                                        ${row.cliente_nome}
-                                        ${row.classe === 'A' ? '<i class="fas fa-star text-yellow-400 ml-2"></i>' : ''}
-                                    </td>
+                                    <td class="px-6 py-3 text-center font-bold text-gray-500 border-r">${i+1}</td>
+                                    <td class="px-6 py-3 font-medium text-gray-700">${row.cliente_nome}${row.classe==='A'?'<i class="fas fa-star text-yellow-400 ml-2"></i>':''}</td>
                                     <td class="px-6 py-3 text-center text-gray-600">${row.qtd_vendas}</td>
-                                    <td class="px-6 py-3 text-center"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${pColorClass}">${row.classe || '-'}</span></td>
+                                    <td class="px-6 py-3 text-center"><span class="px-2 text-xs font-semibold rounded-full ${pColorClass}">${row.classe||'-'}</span></td>
                                     <td class="px-6 py-3 text-right font-bold text-gray-800">${format(val)}</td>
-                                    <td class="px-6 py-3 text-right text-gray-500">${percent.toFixed(1)}%</td>
-                                </tr>
-                            `;
-    }).join('')}
-                        <tr class="bg-gray-100 font-bold border-t-2 border-gray-200">
-                            <td colspan="2" class="px-6 py-3 text-right text-gray-900">TOTAL</td>
-                            <td class="px-6 py-3 text-center text-gray-900">${data.reduce((acc, r) => acc + parseInt(r.qtd_vendas), 0)}</td>
-                            <td class="px-6 py-3 text-center"></td>
-                            <td class="px-6 py-3 text-right text-gray-900">${format(totalRevenue)}</td>
-                            <td class="px-6 py-3 text-right text-gray-900">100.0%</td>
-                        </tr>
+                                    <td class="px-6 py-3 text-right text-gray-500">${(parseFloat(row.percentual_acumulado)||0).toFixed(1)}%</td>
+                                </tr>`;
+                        }).join('')}
                     </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-}
-
-function renderFunnelTable(data, type = 'funnel') {
-    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-    const totalRevenue = data.reduce((acc, row) => acc + (parseFloat(row.valor_total) || 0), 0);
-    const totalCount = data.reduce((acc, row) => acc + parseInt(row.qtd_oportunidades), 0);
-
-    let title = 'Funil de Vendas (Conversão)';
-    let unit = 'Oportunidades';
-    if (type === 'licitacoes_funnel') {
-        title = 'Funil de Licitações (Conversão)';
-    } else if (type === 'contratos') {
-        title = 'Funil Financeiro (Contratos)';
-        unit = 'Contratos';
-    }
-
-    return `
-        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
-            <div class="px-6 py-4 bg-teal-50 border-b border-teal-100 flex justify-between items-center">
-                <h3 class="font-bold text-teal-700">${title}</h3>
-                <span class="text-xs bg-teal-200 text-teal-800 px-2 py-1 rounded-full">${totalCount} ${unit}</span>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+                    <tfoot class="bg-gray-100 font-bold border-t-2">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Etapa</th>
-                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor em Pipeline</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">% (Volume)</th>
+                            <td colspan="2" class="px-6 py-3 text-right text-gray-900">TOTAL</td>
+                            <td class="px-6 py-3 text-center">${data.reduce((a,r)=>a+parseInt(r.qtd_vendas),0)}</td>
+                            <td></td>
+                            <td class="px-6 py-3 text-right">${format(totalRevenue)}</td>
+                            <td class="px-6 py-3 text-right">100.0%</td>
                         </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        ${data.map((row, index) => {
-        const val = parseFloat(row.valor_total) || 0;
-        const count = parseInt(row.qtd_oportunidades) || 0;
-        const percent = totalCount > 0 ? (count / totalCount) * 100 : 0;
-
-        // Color Logic for Funnel visualization (Optional, creates a gradient effect)
-        // const opacity = 1 - (index * 0.1); 
-        // style="background-color: rgba(20, 184, 166, ${Math.max(0.1, opacity)})"
-
-        return `
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 text-left font-medium text-gray-700">
-                                        <div class="flex items-center">
-                                            <span class="w-6 h-6 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-xs mr-3 font-bold">${index + 1}</span>
-                                            ${row.etapa_nome}
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 text-center text-gray-600 font-bold">${count}</td>
-                                    <td class="px-6 py-4 text-right text-gray-800">${format(val)}</td>
-                                    <td class="px-6 py-4 text-right text-gray-500">
-                                        <div class="flex items-center justify-end">
-                                            <span class="mr-2">${percent.toFixed(1)}%</span>
-                                            <div class="w-16 bg-gray-200 rounded-full h-1.5">
-                                                <div class="bg-teal-500 h-1.5 rounded-full" style="width: ${percent}%"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            `;
-    }).join('')}
-                        <tr class="bg-gray-100 font-bold border-t-2 border-gray-200">
-                            <td class="px-6 py-4 text-right text-gray-900">TOTAL</td>
-                            <td class="px-6 py-4 text-center text-gray-900">${totalCount}</td>
-                            <td class="px-6 py-4 text-right text-gray-900">${format(totalRevenue)}</td>
-                            <td class="px-6 py-4 text-right text-gray-900">100%</td>
-                        </tr>
-                    </tbody>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -1748,75 +2007,52 @@ function renderFunnelTable(data, type = 'funnel') {
 }
 
 function renderLostReasonsTable(data) {
-    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-    const totalCount = data.reduce((acc, row) => acc + parseInt(row.qtd), 0);
-
+    const totalCount = data.reduce((acc, r) => acc + parseInt(r.qtd), 0);
     return `
-        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
+        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden">
             <div class="px-6 py-4 bg-red-50 border-b border-red-100 flex justify-between items-center">
-                <h3 class="font-bold text-red-700">Análise de Propostas recusadas</h3>
+                <h3 class="font-bold text-red-700">Análise de Propostas Recusadas</h3>
                 <span class="text-xs bg-red-200 text-red-800 px-2 py-1 rounded-full">${totalCount} Recusadas</span>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-                <!-- Tabela -->
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motivo</th>
-                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">%</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            ${data.map((row, index) => {
-        const count = parseInt(row.qtd) || 0;
-        const percent = totalCount > 0 ? (count / totalCount) * 100 : 0;
-        return `
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-4 py-3 text-sm font-medium text-gray-700">${row.motivo}</td>
-                                        <td class="px-4 py-3 text-sm text-center text-gray-600">${count}</td>
-                                        <td class="px-4 py-3 text-sm text-right text-gray-500">${percent.toFixed(1)}%</td>
-                                    </tr>
-                                `;
-    }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Chart Area (Managed by separate canvas in main container usually, but let's try embedding specific here or use the main one) -->
-                <!-- Note: The main chart logic uses #sales-chart which is outside this container. -->
-                <!-- For Pie chart, it's better to use the main chart area. -->
-                <div class="flex items-center justify-center text-gray-400 text-sm italic">
-                    (Visualize o gráfico acima)
-                </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Motivo</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Qtd</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">%</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${data.map(r => {
+                            const pct = totalCount>0?(parseInt(r.qtd)/totalCount*100):0;
+                            return `<tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 text-sm font-medium text-gray-700">${r.motivo}</td>
+                                <td class="px-4 py-3 text-sm text-center text-gray-600">${r.qtd}</td>
+                                <td class="px-4 py-3 text-sm text-right text-gray-500">${pct.toFixed(1)}%</td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
             </div>
         </div>
     `;
 }
 
-// Fallback logic to prevent "is not defined" errors during cache updates
-window.renderForecastChart = function (data) {
-    if (typeof renderSalesChart === 'function') {
-        renderSalesChart(data, [], 'forecast');
-    }
-}
-
 function renderForecastTable(data) {
-    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-    const totalForecast = data.reduce((acc, row) => acc + (parseFloat(row.forecast_ponderado) || 0), 0);
-    const totalPipeline = data.reduce((acc, row) => acc + (parseFloat(row.pipeline_total) || 0), 0);
+    const format = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    const totalForecast = data.reduce((acc,r)=>acc+(parseFloat(r.forecast_ponderado)||0),0);
+    const totalPipeline = data.reduce((acc,r)=>acc+(parseFloat(r.pipeline_total)||0),0);
 
     return `
-        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden break-inside-avoid">
+        <div class="mb-8 bg-white shadow rounded-lg overflow-hidden">
             <div class="px-6 py-4 bg-purple-50 border-b border-purple-100 flex justify-between items-center">
-                <h3 class="font-bold text-purple-700">Forecast (Previsão de Fechamento)</h3>
-                <span class="text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full">Total Ponderado: ${format(totalForecast)}</span>
+                <h3 class="font-bold text-purple-700">Forecast — Previsão de Fechamento</h3>
+                <span class="text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full">Ponderado: ${format(totalForecast)}</span>
             </div>
             <div class="p-6">
-                <!-- Forecast Summary -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                    <div class="bg-gray-50 p-4 rounded-lg border text-center">
                         <span class="block text-xs font-semibold text-gray-400 uppercase">Pipeline Total</span>
                         <span class="block text-xl font-bold text-gray-800">${format(totalPipeline)}</span>
                     </div>
@@ -1826,12 +2062,8 @@ function renderForecastTable(data) {
                     </div>
                     <div class="bg-green-50 p-4 rounded-lg border border-green-200 text-center">
                         <span class="block text-xs font-semibold text-green-400 uppercase">Confiança Geral</span>
-                        <span class="block text-xl font-bold text-green-700">${totalPipeline > 0 ? ((totalForecast / totalPipeline) * 100).toFixed(1) + '%' : '0%'}</span>
+                        <span class="block text-xl font-bold text-green-700">${totalPipeline>0?((totalForecast/totalPipeline)*100).toFixed(1)+'%':'0%'}</span>
                     </div>
-                </div>
-
-                <div class="flex items-center justify-center text-gray-400 text-sm italic">
-                    (Visualize a evolução temporal no gráfico acima)
                 </div>
             </div>
         </div>
@@ -1839,63 +2071,26 @@ function renderForecastTable(data) {
 }
 
 function renderProductsTable(rows) {
-    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-
+    const format = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
     return `
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produto</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Unit. (Médio/Max)</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor Total</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produto</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Qtd</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Valor Unit.</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Valor Total</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    ${rows.map(row => `
+                    ${(rows||[]).map(r=>`
                         <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 text-sm text-gray-900">${row.produto_nome || '-'}</td>
-                            <td class="px-6 py-4 text-sm text-gray-500 text-center">${row.quantidade}</td>
-                            <td class="px-6 py-4 text-sm text-gray-500 text-right">${format(row.valor_unitario)}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium text-right">${format(row.valor_total)}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
-    `;
-}
-
-function renderLicitationsTable(rows) {
-    const format = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-
-    return `
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edital</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">UASG</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Objeto</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                     ${rows.map(row => `
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">${row.numero_edital || '-'}</td>
-                            <td class="px-6 py-4 text-sm text-gray-500">${row.uasg || '-'}</td>
-                            <td class="px-6 py-4 text-sm text-gray-500 truncate max-w-xs" title="${row.objeto || ''}">${row.objeto || '-'}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900 text-right">${format(row.valor_total)}</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                    ${row.fase_id || 'Ativo'}
-                                </span>
-                            </td>
-                        </tr>
-                    `).join('')}
+                            <td class="px-6 py-4 text-sm text-gray-900">${r.produto_nome||'-'}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500 text-center">${r.quantidade}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500 text-right">${format(r.valor_unitario)}</td>
+                            <td class="px-6 py-4 text-sm font-medium text-right">${format(r.valor_total)}</td>
+                        </tr>`).join('')}
                 </tbody>
             </table>
         </div>
@@ -1903,20 +2098,20 @@ function renderLicitationsTable(rows) {
 }
 
 function getMonthsBetween(start, end) {
-    const s = new Date(start + '-01T00:00:00');
-    const e = new Date(end + '-01T00:00:00');
-    s.setMinutes(s.getMinutes() + s.getTimezoneOffset());
-    e.setMinutes(e.getMinutes() + e.getTimezoneOffset());
-
+    if (!start || !end) return [];
+    const s = new Date(start + 'T00:00:00');
+    const e = new Date(end   + 'T00:00:00');
     const result = [];
-    let curr = new Date(s);
+    let curr = new Date(s.getFullYear(), s.getMonth(), 1);
+    const endLimit = new Date(e.getFullYear(), e.getMonth(), 1);
 
-    while (curr <= e) {
+    while (curr <= endLimit) {
         const y = curr.getFullYear();
         const m = curr.getMonth() + 1;
-        const key = `${y}-${m}`;
-        const label = curr.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).toUpperCase().replace('.', '');
-        result.push({ key, label });
+        result.push({
+            key:   `${y}-${m}`,
+            label: curr.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).toUpperCase().replace('.','')
+        });
         curr.setMonth(curr.getMonth() + 1);
     }
     return result;
@@ -1924,249 +2119,160 @@ function getMonthsBetween(start, end) {
 
 function exportToExcel() {
     const content = document.getElementById('reports-output-area').cloneNode(true);
-    // Remove loading
-    const loading = content.querySelector('#report-loading');
-    if (loading) loading.remove();
-
-    const html = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                table { border-collapse: collapse; width: 100%; }
-                th, td { border: 1px solid #000; padding: 5px; }
-                h3 { font-size: 14px; font-weight: bold; background-color: #eee; }
-            </style>
-        </head>
-        <body>
-            ${content.innerHTML}
-        </body>
-        </html>
-    `;
-
+    content.querySelector('#report-loading')?.remove();
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head><meta charset="UTF-8"><style>table{border-collapse:collapse;width:100%}th,td{border:1px solid #000;padding:5px}</style></head>
+        <body>${content.innerHTML}</body></html>`;
     const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `Relatorio_${new Date().toISOString().slice(0, 10)}.xls`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = URL.createObjectURL(blob);
+    a.download = `Relatorio_${new Date().toISOString().slice(0,10)}.xls`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
 function setupModalLinks() {
     const modal = document.getElementById('targets-modal');
     if (!modal) return;
-    const close = modal.querySelector('.close-modal');
-    const closeBtn = modal.querySelector('.close-modal.btn'); // Cancel button
 
     const setTargetsBtn = document.getElementById('set-targets-btn');
     if (setTargetsBtn) {
         setTargetsBtn.addEventListener('click', () => {
             modal.classList.remove('hidden');
             const supSelect = document.getElementById('target-supplier-select');
-            const suppliers = appState.fornecedores || [];
             supSelect.innerHTML = '<option value="">Selecione...</option>' +
-                suppliers.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
-
-            document.getElementById('targets-grid-container').innerHTML = '<p class="text-gray-500 italic p-4">Selecione um fornecedor para editar (Necessário selecionar Data Inicial).</p>';
-            supSelect.onchange = (e) => loadTargetsEditor(e.target.value);
+                (appState.fornecedores||[]).map(s=>`<option value="${s.id}">${s.nome}</option>`).join('');
+            document.getElementById('targets-grid-container').innerHTML = '<p class="text-gray-500 italic p-4">Selecione um fornecedor.</p>';
+            supSelect.onchange = e => loadTargetsEditor(e.target.value);
         });
     }
-
     const hide = () => modal.classList.add('hidden');
-    if (close) close.addEventListener('click', hide);
-    if (closeBtn) closeBtn.addEventListener('click', hide);
-
+    modal.querySelectorAll('.close-modal').forEach(b => b.addEventListener('click', hide));
     document.getElementById('save-targets-btn').addEventListener('click', saveTargets);
 }
 
 function loadTargetsEditor(supplierId, year = null) {
     if (!supplierId) return;
     const container = document.getElementById('targets-grid-container');
-    const allUsers = appState.users.filter(u => ['Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista'].includes(u.role));
+    const allUsers  = (appState.users||[]).filter(u => ['Vendedor','Representante','Comercial','Gestor','Analista'].includes(u.role));
+    if (!year) year = new Date().getFullYear();
 
-    // Determine year: passed arg > current real year > fallback
-    if (!year) {
-        year = new Date().getFullYear();
-        // const startVal = document.getElementById('filter-start-date').value;
-        // year = startVal ? startVal.split('-')[0] : new Date().getFullYear();
-    }
-
-    // Show loading skeleton or similar? For now just keep old until fetch done.
-
-    // Fetch Data from Backend
-    apiCall('get_supplier_targets', { params: { supplier_id: supplierId, year: year } })
+    apiCall('get_supplier_targets', { params: { supplier_id: supplierId, year } })
         .then(response => {
-            if (!response.success) {
-                container.innerHTML = `<p class="text-red-500">Erro ao carregar metas: ${response.error}</p>`;
-                return;
-            }
+            if (!response.success) { container.innerHTML = `<p class="text-red-500">Erro: ${response.error}</p>`; return; }
 
             const data = response.data;
-            const metaAnualTotal = data.meta_anual || 0;
-            const stateTargets = data.state_targets || {};
-            const targets = data.targets || {};
-            const userTargetsEnabled = data.user_targets_enabled !== 0; // Default true
-
-            // Initialize states from DB or default
+            const metaAnualTotal   = data.meta_anual || 0;
+            const stateTargets     = data.state_targets || {};
+            const targets          = data.targets || {};
+            const userTargetsEnabled = data.user_targets_enabled !== 0;
             let states = Object.keys(stateTargets);
-            if (states.length === 0) states = ['PE', 'PB', 'RN'];
+            if (states.length === 0) states = ['PE','PB','RN'];
 
-            // Helper to format/parse (relying on global helpers added below)
-            const fmt = (v) => formatCurrency(v);
-
-            // Styles
-            // Styles
+            const fmt = v => formatCurrency(v);
             const inputClass = "form-input text-right text-xs border-gray-300 rounded w-full focus:ring-indigo-500 focus:border-indigo-500 font-mono p-1 h-8";
             const headerClass = "border bg-gray-100 text-center w-24 px-1 text-[10px] font-bold uppercase";
 
-            // --- HEADER ---
             let html = `
                 <div class="mb-6">
                     <div class="p-5 bg-white rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
                         <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
                         <div class="flex flex-wrap gap-6 items-center" id="header-state-inputs">
                             <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">Ano Base</label>
-                                <input type="number" id="target-year-input" class="form-input font-bold text-gray-900 w-24 text-center border-gray-300 rounded focus:ring-indigo-500 focus:border-indigo-500" value="${year}">
+                                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">Ano Base</label>
+                                <input type="number" id="target-year-input" class="form-input font-bold text-gray-900 w-24 text-center border-gray-300 rounded" value="${year}">
                             </div>
-                             
                             <div class="pl-6 border-l border-gray-200">
-                                 <label class="block text-xs font-bold text-gray-700 mb-1 text-indigo-900 uppercase tracking-wider">Meta Global (R$)</label>
-                                 <input type="text" id="sup-meta-annual-display" class="form-input text-right font-bold text-sm text-gray-900 w-48 bg-gray-50 border-gray-200" value="${fmt(metaAnualTotal)}" readonly>
-                                 <input type="hidden" id="sup-meta-annual" value="${metaAnualTotal}">
-                                 <p class="text-[10px] text-gray-400 mt-1 flex items-center"><i class="fas fa-calculator mr-1"></i> Soma automática</p>
+                                <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">Meta Global (R$)</label>
+                                <input type="text" id="sup-meta-annual-display" class="form-input text-right font-bold text-sm text-gray-900 w-48 bg-gray-50 border-gray-200" value="${fmt(metaAnualTotal)}" readonly>
+                                <input type="hidden" id="sup-meta-annual" value="${metaAnualTotal}">
                             </div>
                         </div>
-                        
                         <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
                             <div id="add-state-container" class="flex items-center gap-2">
-                                <button id="btn-show-add-state" class="bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 text-xs px-4 py-2 rounded-md flex items-center transition-colors shadow-sm font-medium">
+                                <button id="btn-show-add-state" class="bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-xs px-4 py-2 rounded-md flex items-center shadow-sm font-medium">
                                     <i class="fas fa-plus-circle mr-2"></i> Adicionar Estado
                                 </button>
-                                
-                                <div id="add-state-form" class="hidden flex items-center gap-2 animate-fade-in">
-                                     <input type="text" id="new-state-input" class="form-input text-sm border-gray-300 rounded w-20 uppercase font-bold text-center" placeholder="UF" maxlength="2">
-                                     <button id="btn-confirm-add-state" class="bg-green-600 hover:bg-green-700 text-white p-2 rounded shadow-sm hover:scale-105 transition-transform" title="Confirmar">
-                                        <i class="fas fa-check"></i>
-                                     </button>
-                                     <button id="btn-cancel-add-state" class="bg-gray-200 hover:bg-gray-300 text-gray-600 p-2 rounded shadow-sm hover:scale-105 transition-transform" title="Cancelar">
-                                        <i class="fas fa-times"></i>
-                                     </button>
+                                <div id="add-state-form" class="hidden flex items-center gap-2">
+                                    <input type="text" id="new-state-input" class="form-input text-sm border-gray-300 rounded w-20 uppercase font-bold text-center" placeholder="UF" maxlength="2">
+                                    <button id="btn-confirm-add-state" class="bg-green-600 text-white p-2 rounded"><i class="fas fa-check"></i></button>
+                                    <button id="btn-cancel-add-state" class="bg-gray-200 text-gray-600 p-2 rounded"><i class="fas fa-times"></i></button>
                                 </div>
-                            </div>
-                            
-                            <div class="flex items-center text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-                                <i class="fas fa-info-circle mr-2"></i>
-                                <span>Os valores são formatados automaticamente como moeda.</span>
                             </div>
                         </div>
                     </div>
                 </div>
             `;
 
-            // --- STATE GRID ---
             html += `<div class="mb-6 border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white">
-                <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 font-bold text-sm flex justify-between items-center text-gray-700">
-                    <div class="flex items-center">
-                        <i class="fas fa-map-marked-alt mr-2 text-indigo-500"></i>
-                        <span>Metas por Estado (Mensal)</span>
-                    </div>
-                </div>
+                <div class="bg-gray-50 px-4 py-3 border-b font-bold text-sm text-gray-700"><i class="fas fa-map-marked-alt mr-2 text-indigo-500"></i>Metas por Estado (Mensal)</div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm bg-white" id="state-grid-table">
-                        <thead class="bg-gray-50 text-gray-600">
-                            <tr>
-                                <th class="p-3 text-left border-b w-32 font-bold text-xs uppercase tracking-wider">Estado</th>`;
-            for (let i = 1; i <= 12; i++) html += `<th class="${headerClass}">${i}</th>`;
+                        <thead class="bg-gray-50 text-gray-600"><tr><th class="p-3 text-left border-b w-32 font-bold text-xs uppercase">Estado</th>`;
+            for (let i=1;i<=12;i++) html += `<th class="${headerClass}">${i}</th>`;
             html += `</tr></thead><tbody></tbody></table></div></div>`;
 
-            // --- USER GRID ---
             html += `<div class="mb-4 border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white">
-                <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 font-bold text-sm flex justify-between items-center text-gray-700">
-                    <div class="flex items-center">
-                        <i class="fas fa-users mr-2 text-indigo-500"></i>
-                        <span>Metas por Vendedor</span>
-                    </div>
-                    <div class="flex items-center">
-                        <label class="inline-flex items-center cursor-pointer group">
-                            <input type="checkbox" id="toggle-user-targets" class="form-checkbox h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" ${userTargetsEnabled ? 'checked' : ''}>
-                            <span class="ml-2 text-xs font-medium text-gray-600 group-hover:text-indigo-600 transition-colors">Habilitar metas por vendedor</span>
-                        </label>
-                    </div>
+                <div class="bg-gray-50 px-4 py-3 border-b font-bold text-sm text-gray-700 flex justify-between items-center">
+                    <span><i class="fas fa-users mr-2 text-indigo-500"></i>Metas por Vendedor</span>
+                    <label class="inline-flex items-center cursor-pointer group">
+                        <input type="checkbox" id="toggle-user-targets" class="form-checkbox h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" ${userTargetsEnabled ? 'checked' : ''}>
+                        <span class="ml-2 text-xs font-medium text-gray-600">Habilitar metas por vendedor</span>
+                    </label>
                 </div>
                 <div class="overflow-x-auto transition-opacity duration-300 ${userTargetsEnabled ? '' : 'opacity-50 pointer-events-none'}" id="user-grid-wrapper">
-                    <table class="w-full text-sm bg-white relative">
-                        <thead class="sticky top-0 z-10 bg-gray-50 text-gray-600">
+                    <table class="w-full text-sm bg-white">
+                        <thead class="bg-gray-50 text-gray-600">
                             <tr>
-                                <th class="p-3 text-left border-b min-w-[200px] font-bold text-xs uppercase tracking-wider">
-                                    Vendedor
-                                    <span class="text-[10px] font-normal text-gray-400 ml-1 block normal-case">(Marque para ativar)</span>
-                                </th>`;
+                                <th class="p-3 text-left border-b min-w-[200px] font-bold text-xs uppercase">Vendedor</th>`;
             for (let i = 1; i <= 12; i++) html += `<th class="${headerClass}">${i}</th>`;
             html += `</tr></thead><tbody>`;
 
             allUsers.forEach(u => {
                 let userTargets = targets[u.id] || {};
                 let hasTarget = Object.values(userTargets).some(v => v > 0);
-
                 let cells = '';
                 for (let i = 1; i <= 12; i++) {
                     let val = userTargets[i] || 0;
                     cells += `<td class="border p-1"><input type="text" class="${inputClass} user-month-input currency-input" data-user="${u.id}" data-month="${i}" value="${val > 0 ? fmt(val) : ''}" ${hasTarget ? '' : 'disabled'}></td>`;
                 }
-
                 html += `<tr class="hover:bg-indigo-50 transition-colors group">
-                    <td class="p-2 border text-gray-700 flex items-center bg-white sticky left-0 z-10 group-hover:bg-indigo-50 transition-colors">
-                        <input type="checkbox" class="form-checkbox h-4 w-4 text-indigo-600 rounded border-gray-300 mr-2 user-active-check focus:ring-indigo-500" data-user="${u.id}" ${hasTarget ? 'checked' : ''}>
+                    <td class="p-2 border text-gray-700 flex items-center bg-white sticky left-0 z-10 group-hover:bg-indigo-50">
+                        <input type="checkbox" class="form-checkbox h-4 w-4 text-indigo-600 rounded border-gray-300 mr-2 user-active-check" data-user="${u.id}" ${hasTarget ? 'checked' : ''}>
                         <span class="${hasTarget ? 'font-bold text-gray-900' : ''}">${u.nome}</span>
                     </td>
                     ${cells}
                 </tr>`;
             });
-            html += `</tbody></table></div></div>`;
 
+            html += `</tbody></table></div></div>`;
             container.innerHTML = html;
 
-            // --- CURRENCY BEHAVIOR ---
+            // ── CURRENCY HELPERS ──────────────────────────────────────────
             const attachCurrencyEvents = (input) => {
-                input.addEventListener('focus', function () {
-                    this.select();
-                });
-
+                input.addEventListener('focus', function () { this.select(); });
                 input.addEventListener('blur', function () {
                     const val = parseCurrency(this.value);
-                    if (val > 0) this.value = formatCurrency(val);
-                    else this.value = '';
+                    this.value = val > 0 ? formatCurrency(val) : '';
                 });
-
-                // Simple restriction (optional)
                 input.addEventListener('keypress', function (e) {
                     if (!/[\d,.]/.test(e.key) && e.key.length === 1 && e.key !== 'Enter') e.preventDefault();
                 });
             };
 
-            // --- DYNAMIC STATE FUNCTIONS ---
             const stateHeaderContainer = document.getElementById('header-state-inputs');
             const stateGridBody = document.querySelector('#state-grid-table tbody');
 
             const addStateToUI = (uf, annualVal = 0, monthlyData = {}) => {
-                // Check duplicate
                 if (container.querySelector(`.state-annual-input[data-state="${uf}"]`)) {
-                    showToast(`Estado ${uf} já adicionado.`, 'warning');
-                    return;
+                    showToast(`Estado ${uf} já adicionado.`, 'warning'); return;
                 }
-
-                // 1. Add Header Input
                 const div = document.createElement('div');
                 div.innerHTML = `
                     <label class="block text-xs font-bold text-gray-700 mb-1">Meta Anual ${uf} (R$)</label>
-                    <input type="text" class="form-input text-right text-gray-900 font-bold text-sm w-40 border-gray-300 rounded state-annual-input currency-input focus:ring-indigo-500 focus:border-indigo-500" data-state="${uf}" value="${annualVal > 0 ? fmt(annualVal) : ''}" placeholder="R$ 0,00">
+                    <input type="text" class="form-input text-right text-gray-900 font-bold text-sm w-40 border-gray-300 rounded state-annual-input currency-input" data-state="${uf}" value="${annualVal > 0 ? fmt(annualVal) : ''}" placeholder="R$ 0,00">
                 `;
                 stateHeaderContainer.appendChild(div);
 
-                // 2. Add Grid Row
                 const tr = document.createElement('tr');
                 let cells = '';
                 for (let i = 1; i <= 12; i++) {
@@ -2176,7 +2282,7 @@ function loadTargetsEditor(supplierId, year = null) {
                 tr.innerHTML = `
                     <td class="p-2 border font-bold text-gray-700 bg-gray-50 flex justify-between items-center group">
                         <span class="w-8 text-center bg-white border rounded px-1 text-xs shadow-sm">${uf}</span>
-                        <button class="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity btn-remove-state p-1 rounded hover:bg-red-50" data-state="${uf}" title="Remover Estado">
+                        <button class="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity btn-remove-state p-1 rounded hover:bg-red-50" data-state="${uf}" title="Remover">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </td>
@@ -2184,7 +2290,6 @@ function loadTargetsEditor(supplierId, year = null) {
                 `;
                 stateGridBody.appendChild(tr);
 
-                // 3. Attach Events
                 const annInput = div.querySelector('input');
                 attachCurrencyEvents(annInput);
                 annInput.addEventListener('blur', () => updateGrandTotal(container));
@@ -2193,10 +2298,7 @@ function loadTargetsEditor(supplierId, year = null) {
                     attachCurrencyEvents(inp);
                     inp.addEventListener('blur', () => {
                         let sum = 0;
-                        container.querySelectorAll(`.state-month-input[data-state="${uf}"]`).forEach(mInp => {
-                            sum += parseCurrency(mInp.value);
-                        });
-                        // Update Annual with formatted sum
+                        container.querySelectorAll(`.state-month-input[data-state="${uf}"]`).forEach(m => sum += parseCurrency(m.value));
                         annInput.value = sum > 0 ? formatCurrency(sum) : '';
                         updateGrandTotal(container);
                     });
@@ -2204,106 +2306,57 @@ function loadTargetsEditor(supplierId, year = null) {
 
                 tr.querySelector('.btn-remove-state').addEventListener('click', () => {
                     Swal.fire({
-                        title: 'Tem certeza?',
-                        text: 'Você tem certeza que deseja apagar esse registro!',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#3085d6',
-                        confirmButtonText: 'Apagar',
-                        cancelButtonText: 'Cancelar',
-                        backdrop: `rgba(0,0,0,0.8)`
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            div.remove();
-                            tr.remove();
-                            updateGrandTotal(container);
-                        }
-                    });
+                        title: 'Tem certeza?', text: 'Deseja remover este estado?', icon: 'warning',
+                        showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Remover', cancelButtonText: 'Cancelar'
+                    }).then(result => { if (result.isConfirmed) { div.remove(); tr.remove(); updateGrandTotal(container); } });
                 });
             };
 
-            // Initial Render of States
             states.forEach(uf => {
                 const sData = stateTargets[uf] || {};
                 addStateToUI(uf, sData.meta_anual || 0, sData.meta_mensal || {});
             });
 
-            // Attach to existing user inputs
             container.querySelectorAll('.currency-input').forEach(inp => attachCurrencyEvents(inp));
 
-            // Add State Logic (Custom UI)
-            const btnShow = document.getElementById('btn-show-add-state');
-            const formAdd = document.getElementById('add-state-form');
-            const inputAdd = document.getElementById('new-state-input');
+            // ── ADD STATE FORM ────────────────────────────────────────────
+            const btnShow    = document.getElementById('btn-show-add-state');
+            const formAdd    = document.getElementById('add-state-form');
+            const inputAdd   = document.getElementById('new-state-input');
             const btnConfirm = document.getElementById('btn-confirm-add-state');
-            const btnCancel = document.getElementById('btn-cancel-add-state');
+            const btnCancel  = document.getElementById('btn-cancel-add-state');
 
             if (btnShow && formAdd) {
-                btnShow.addEventListener('click', () => {
-                    btnShow.classList.add('hidden');
-                    formAdd.classList.remove('hidden');
-                    inputAdd.value = '';
-                    inputAdd.focus();
-                });
-
-                const hideAddForm = () => {
-                    formAdd.classList.add('hidden');
-                    btnShow.classList.remove('hidden');
-                };
-
+                btnShow.addEventListener('click', () => { btnShow.classList.add('hidden'); formAdd.classList.remove('hidden'); inputAdd.value = ''; inputAdd.focus(); });
+                const hideAddForm = () => { formAdd.classList.add('hidden'); btnShow.classList.remove('hidden'); };
                 btnCancel.addEventListener('click', hideAddForm);
-
                 const performAdd = () => {
                     const uf = inputAdd.value.trim().toUpperCase();
-                    if (uf && uf.length === 2) {
-                        addStateToUI(uf);
-                        updateGrandTotal(container);
-                        hideAddForm();
-                    } else {
-                        showToast("Sigla inválida (Use 2 letras, ex: SP)", "error");
-                        inputAdd.focus();
-                    }
+                    if (uf && uf.length === 2) { addStateToUI(uf); updateGrandTotal(container); hideAddForm(); }
+                    else { showToast("Sigla inválida (Use 2 letras, ex: SP)", "error"); inputAdd.focus(); }
                 };
-
                 btnConfirm.addEventListener('click', performAdd);
-
-                inputAdd.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') performAdd();
-                });
-
-                inputAdd.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape') hideAddForm();
-                });
+                inputAdd.addEventListener('keypress', e => { if (e.key === 'Enter') performAdd(); });
+                inputAdd.addEventListener('keydown',  e => { if (e.key === 'Escape') hideAddForm(); });
             }
 
-            // --- EVENT LISTENERS (Standard) ---
+            // ── OTHER LISTENERS ───────────────────────────────────────────
+            document.getElementById('target-year-input')?.addEventListener('change', e => loadTargetsEditor(supplierId, e.target.value));
 
-            // Year Change
-            const yearInput = document.getElementById('target-year-input');
-            if (yearInput) {
-                yearInput.addEventListener('change', (e) => loadTargetsEditor(supplierId, e.target.value));
-            }
-
-            // User Targets Toggle
             const toggleUsers = document.getElementById('toggle-user-targets');
             const userWrapper = document.getElementById('user-grid-wrapper');
             if (toggleUsers) {
-                toggleUsers.addEventListener('change', (e) => {
-                    if (e.target.checked) {
-                        userWrapper.classList.remove('opacity-50', 'pointer-events-none');
-                    } else {
-                        userWrapper.classList.add('opacity-50', 'pointer-events-none');
-                    }
+                toggleUsers.addEventListener('change', e => {
+                    userWrapper.classList.toggle('opacity-50', !e.target.checked);
+                    userWrapper.classList.toggle('pointer-events-none', !e.target.checked);
                 });
             }
 
-            // User Rows Checkbox
             container.querySelectorAll('.user-active-check').forEach(chk => {
-                chk.addEventListener('change', (e) => {
+                chk.addEventListener('change', e => {
                     const uid = e.target.dataset.user;
-                    const inputs = container.querySelectorAll(`.user-month-input[data-user="${uid}"]`);
-                    inputs.forEach(inp => {
+                    container.querySelectorAll(`.user-month-input[data-user="${uid}"]`).forEach(inp => {
                         inp.disabled = !e.target.checked;
                         if (!e.target.checked) inp.value = '';
                     });
@@ -2312,20 +2365,14 @@ function loadTargetsEditor(supplierId, year = null) {
                 });
             });
 
-        })
-        .catch(err => {
-            console.error(err);
-            container.innerHTML = `<p class="text-red-500">Erro de conexão ao buscar metas.</p>`;
-        });
+        }).catch(err => { console.error(err); container.innerHTML = `<p class="text-red-500">Erro de conexão.</p>`; });
 }
 
-// --- CURRENCY HELPERS ---
+// ─── CURRENCY HELPERS ─────────────────────────────────────────────────────────
 function parseCurrency(str) {
     if (!str || str === '') return 0;
     if (typeof str === 'number') return str;
-    // Remove "R$", trim, remove "." thousands sep, replace "," with "."
-    let s = str.toString().replace(/[^\d,-]/g, '').replace(/\./g, '').replace(',', '.');
-    return parseFloat(s) || 0;
+    return parseFloat(str.toString().replace(/[^\d,-]/g,'').replace(/\./g,'').replace(',','.')) || 0;
 }
 
 function formatCurrency(val) {
@@ -2335,309 +2382,546 @@ function formatCurrency(val) {
 
 function updateGrandTotal(container) {
     let grand = 0;
-    container.querySelectorAll('.state-annual-input').forEach(inp => {
-        grand += parseCurrency(inp.value);
-    });
+    container.querySelectorAll('.state-annual-input').forEach(inp => grand += parseCurrency(inp.value));
     const disp = document.getElementById('sup-meta-annual-display');
-    const val = document.getElementById('sup-meta-annual');
-    if (val) val.value = grand;
+    const val  = document.getElementById('sup-meta-annual');
+    if (val)  val.value  = grand;
     if (disp) disp.value = formatCurrency(grand);
 }
 
 async function saveTargets() {
-    const inputs = document.querySelectorAll('.target-edit-input');
-    // Re-query inputs? No, we use specific collectors below.
-
     const supplierId = document.getElementById('target-supplier-select').value;
-
-    // year
-    const yearInput = document.getElementById('target-year-input');
-    const year = yearInput ? yearInput.value : new Date().getFullYear();
-
-    // Supplier Goals
-    const supAnnualInput = document.getElementById('sup-meta-annual');
-    const supAnnual = parseFloat(supAnnualInput ? supAnnualInput.value : 0) || 0;
-
-    // User Enabled
-    const userTargetsToggle = document.getElementById('toggle-user-targets');
+    const year       = document.getElementById('target-year-input')?.value || new Date().getFullYear();
+    const supAnnual  = parseFloat(document.getElementById('sup-meta-annual')?.value || 0) || 0;
+    const userTargetsToggle  = document.getElementById('toggle-user-targets');
     const userTargetsEnabled = userTargetsToggle ? userTargetsToggle.checked : false;
 
-    // State Targets
     const stateTargets = {};
-    const stateInputs = document.querySelectorAll('.state-annual-input');
-    stateInputs.forEach(input => {
+    document.querySelectorAll('.state-annual-input').forEach(input => {
         const uf = input.dataset.state;
         const ann = parseCurrency(input.value);
         const monthly = {};
-        document.querySelectorAll(`.state-month-input[data-state="${uf}"]`).forEach(inp => {
-            const m = inp.dataset.month;
-            const val = parseCurrency(inp.value);
-            monthly[m] = val;
-        });
-        stateTargets[uf] = {
-            annual: ann,
-            monthly: monthly
-        };
+        document.querySelectorAll(`.state-month-input[data-state="${uf}"]`).forEach(inp => { monthly[inp.dataset.month] = parseCurrency(inp.value); });
+        stateTargets[uf] = { annual: ann, monthly };
     });
 
-    // User Targets
     const targets = [];
     if (userTargetsEnabled) {
-        const inputs = document.querySelectorAll('.user-month-input');
-        inputs.forEach(inp => {
+        document.querySelectorAll('.user-month-input').forEach(inp => {
             if (!inp.disabled) {
                 const val = parseCurrency(inp.value);
-                if (val > 0) {
-                    targets.push({
-                        usuario_id: inp.dataset.user,
-                        fornecedor_id: supplierId,
-                        mes: inp.dataset.month,
-                        valor: val
-                    });
-                }
+                if (val > 0) targets.push({ usuario_id: inp.dataset.user, fornecedor_id: supplierId, mes: inp.dataset.month, valor: val });
             }
         });
     }
 
     showLoading(true);
     try {
-        const payload = {
-            year,
-            supplier_id: supplierId,
+        const res = await apiCall('save_targets', { method: 'POST', body: JSON.stringify({
+            year, supplier_id: supplierId,
             supplier_goals: { annual: supAnnual, monthly: 0 },
-            state_targets: stateTargets,
-            targets,
-            user_targets_enabled: userTargetsEnabled
-        };
-        const res = await apiCall('save_targets', { method: 'POST', body: JSON.stringify(payload) });
+            state_targets: stateTargets, targets, user_targets_enabled: userTargetsEnabled
+        })});
         if (res.success) {
             showToast('Metas salvas com sucesso!', 'success');
             document.getElementById('targets-modal').classList.add('hidden');
             loadReportData();
-        } else {
-            showToast(res.error || 'Erro ao salvar', 'error');
-        }
-    } catch (e) {
-        console.error(e);
-        showToast('Erro de conexão', 'error');
-    } finally {
-        showLoading(false);
-    }
+        } else { showToast(res.error || 'Erro ao salvar', 'error'); }
+    } catch (e) { console.error(e); showToast('Erro de conexão', 'error'); }
+    finally { showLoading(false); }
 }
 
 function updateFilterPills(type, start, end, supplierIds, userIds, clientIds, etapaIds, origemIds, ufIds, statusIds) {
     const container = document.getElementById('active-filters-pills');
     if (!container) return;
     container.innerHTML = '';
-
     let hasPills = false;
 
-    const createPill = (label, filterId, isMulti = true) => {
+    const createPill = (label, filterId) => {
         hasPills = true;
-        return `
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 animate-fade-in shadow-sm border border-indigo-200">
-                ${label}
-                <button type="button" class="flex-shrink-0 ml-1.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-indigo-400 hover:bg-indigo-200 hover:text-indigo-500 focus:outline-none focus:bg-indigo-500 focus:text-white" onclick="removeFilterPill('${filterId}', ${isMulti})">
-                    <span class="sr-only">Remover filtro</span>
-                    <i class="fas fa-times text-[10px]"></i>
-                </button>
-            </span>
-        `;
+        return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 shadow-sm border border-indigo-200">
+            ${label}
+            <button type="button" class="flex-shrink-0 ml-1.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-indigo-400 hover:bg-indigo-200" onclick="removeFilterPill('${filterId}')">
+                <i class="fas fa-times text-[10px]"></i>
+            </button>
+        </span>`;
     };
+
+    const resolveLabels = id => Array.from(document.querySelectorAll(`.${id}-checkbox:checked`)).map(c => c.nextElementSibling.innerText).join(', ');
 
     let innerHtml = '';
-
-    const resolveLabels = (idBase) => {
-        const checkboxes = document.querySelectorAll(`.${idBase}-checkbox:checked`);
-        return Array.from(checkboxes).map(c => c.nextElementSibling.innerText).join(', ');
-    };
-
-    if (start && end) {
-        innerHtml += `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 shadow-sm border border-gray-200">Período: ${start} a ${end}</span>`;
-        hasPills = true;
-    }
-
+    if (start && end) { innerHtml += `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">Período: ${start} → ${end}</span>`; hasPills = true; }
     if (supplierIds.length > 0) innerHtml += createPill('Fornecedores: ' + resolveLabels('supplier-select'), 'supplier-select');
-    if (userIds.length > 0) innerHtml += createPill('Vendedores: ' + resolveLabels('user-select'), 'user-select');
-    if (clientIds.length > 0) innerHtml += createPill('Clientes: ' + resolveLabels('client-select'), 'client-select');
-    if (etapaIds.length > 0) innerHtml += createPill('Etapas: ' + resolveLabels('etapa-select'), 'etapa-select');
-    if (origemIds.length > 0) innerHtml += createPill('Origens: ' + resolveLabels('origem-select'), 'origem-select');
-    if (ufIds.length > 0) innerHtml += createPill('UF: ' + resolveLabels('uf-select'), 'uf-select');
-    if (statusIds.length > 0) innerHtml += createPill('Status: ' + resolveLabels('status-select'), 'status-select');
+    if (userIds.length > 0)     innerHtml += createPill('Vendedores: '   + resolveLabels('user-select'),     'user-select');
+    if (clientIds.length > 0)   innerHtml += createPill('Clientes: '     + resolveLabels('client-select'),   'client-select');
+    if (etapaIds.length > 0)    innerHtml += createPill('Etapas: '       + resolveLabels('etapa-select'),    'etapa-select');
+    if (ufIds.length > 0)       innerHtml += createPill('UF: '           + resolveLabels('uf-select'),       'uf-select');
 
     if (hasPills) {
-        container.innerHTML = `<span class="text-xs font-bold text-gray-500 self-center mr-2"><i class="fas fa-tags mr-1"></i> Filtros Ativos:</span>` + innerHtml;
+        container.innerHTML = `<span class="text-xs font-bold text-gray-500 self-center mr-2"><i class="fas fa-tags mr-1"></i>Filtros Ativos:</span>` + innerHtml;
         container.classList.remove('hidden');
-    } else {
-        container.classList.add('hidden');
-    }
+    } else { container.classList.add('hidden'); }
 }
 
-window.removeFilterPill = function (idBase, isMulti) {
-    if (isMulti) {
-        window.toggleAllMultiSelect(idBase, false);
-    }
+window.removeFilterPill = function (idBase) {
+    window.toggleAllMultiSelect(idBase, false);
     document.getElementById('refresh-report-btn').click();
 };
 
-function exportToPDF(forcedType = null) {
-    const type = forcedType || document.getElementById('report-type').value;
+function exportToPDF(forcedType = null, forcedMonth = null) {
+    const output = document.getElementById('performance-output');
 
-    let start = '';
-    let end = '';
-
-    if (type === 'performance') {
-        const m = document.getElementById('perf-month-select')?.value;
-        const y = document.getElementById('perf-year-select')?.value;
-        if (m && y) {
-            start = `${y}-${m.padStart(2, '0')}`;
-            const lastDay = new Date(y, m, 0).getDate();
-            end = `${start}-${lastDay}`;
-        }
-    } else {
-        const startInput = document.getElementById('filter-start-date');
-        const endInput = document.getElementById('filter-end-date');
-        start = startInput ? startInput.value : '';
-        const rawEnd = endInput ? endInput.value : '';
-
-        if (rawEnd && rawEnd.length === 7) { // YYYY-MM
-            const [y, m] = rawEnd.split('-');
-            const lastDay = new Date(y, m, 0).getDate();
-            end = `${rawEnd}-${lastDay}`;
-        } else {
-            end = rawEnd;
-        }
+    // Se não tem dados ainda, avisa
+    if (!output || output.querySelector('.fa-fingerprint') || output.querySelector('.fa-spinner')) {
+        showToast('Clique em Play primeiro para carregar os dados.', 'warning');
+        return;
     }
 
-    const supplierIds = window.getMultiSelectValues('supplier-select');
-    const userIds = window.getMultiSelectValues('user-select');
-    const clientIds = window.getMultiSelectValues('client-select');
-    const etapaIds = window.getMultiSelectValues('etapa-select');
-    const origemIds = window.getMultiSelectValues('origem-select');
-    const ufIds = window.getMultiSelectValues('uf-select');
-    const statusIds = window.getMultiSelectValues('status-select');
+    // Cria janela de impressão com os dados da tabela
+    const monthEl = document.getElementById('perf-month-select');
+    const yearEl  = document.getElementById('perf-year-select');
+    const months  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const monthName = monthEl ? months[parseInt(monthEl.value) - 1] : '';
+    const year      = yearEl  ? yearEl.value : new Date().getFullYear();
 
-    const qs = new URLSearchParams({
-        report_type: type,
-        start_date: type === 'performance' ? start + '-01' : (start ? start + '-01' : ''),
-        end_date: end,
-        supplier_id: supplierIds.join(','),
-        user_id: userIds.join(','),
-        cliente_id: clientIds.join(','),
-        etapa_id: etapaIds.join(','),
-        origem: origemIds.join(','),
-        uf: ufIds.join(','),
-        status: statusIds.join(',')
-    }).toString();
-
-    window.open(`/api.php?action=export_pdf&${qs}`, '_blank');
+    const printWin = window.open('', '_blank');
+    printWin.document.write(`
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="UTF-8">
+            <title>Performance Financeira - ${monthName} ${year}</title>
+            <style>
+                body { font-family: Arial, sans-serif; font-size: 12px; color: #111; margin: 20px; }
+                h2   { color: #3730a3; margin-bottom: 4px; }
+                p    { color: #666; margin-bottom: 16px; font-size: 11px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+                thead tr { background: #4f46e5; color: white; }
+                th { padding: 8px 10px; text-align: right; font-size: 10px; text-transform: uppercase; }
+                th:first-child { text-align: left; }
+                td { padding: 7px 10px; text-align: right; border-bottom: 1px solid #e5e7eb; font-size: 11px; }
+                td:first-child { text-align: left; font-weight: bold; }
+                tfoot tr { background: #f1f5f9; font-weight: bold; }
+                .green { color: #16a34a; }
+                .red   { color: #dc2626; }
+                @media print {
+                    @page { margin: 15mm; }
+                }
+            </style>
+        </head>
+        <body>
+            <h2>Performance Financeira — ${monthName} ${year}</h2>
+            <p>Relatório de metas e comissões por vendedor</p>
+            ${output.innerHTML}
+            <script>window.onload = function(){ window.print(); }<\/script>
+        </body>
+        </html>
+    `);
+    printWin.document.close();
 }
 
-/**
- * Performance & Commission Logic
- */
-async function loadPerformanceData(container, selectedMonth = null) {
+async function loadPerformanceData(container = null, startDate = null, endDate = null) {
     const output = document.getElementById('performance-output');
     if (!output) return;
 
-    let month = selectedMonth;
-    if (!month) {
-        const m = document.getElementById('perf-month-select')?.value;
-        const y = document.getElementById('perf-year-select')?.value;
-        month = (m && y) ? `${y}-${m.padStart(2, '0')}` : new Date().toISOString().slice(0, 7);
+    if (!startDate) startDate = document.getElementById('perf-start-date')?.value;
+    if (!endDate)   endDate   = document.getElementById('perf-end-date')?.value;
+
+    if (!startDate || !endDate) return;
+
+    const [year, mNum] = startDate.split('-');
+    const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const periodoLabel = `${startDate} até ${endDate}`;
+
+    output.innerHTML = `<div class="p-20 text-center text-gray-400">
+        <i class="fas fa-spinner fa-spin text-4xl mb-4 text-indigo-600"></i>
+        <p class="animate-pulse font-bold">Calculando metas e comissões...</p>
+    </div>`;
+
+    try {
+        // Busca vendas do período E config de comissões em paralelo
+        const [salesRes, configRes] = await Promise.all([
+            apiCall('get_report_data', { params: {
+                report_type: 'sales',
+                start_date:  startDate,
+                end_date:    endDate
+            }}),
+            apiCall('get_commission_config')
+        ]);
+
+        const configs   = (configRes && configRes.success) ? (configRes.data || []) : [];
+        const salesRaw  = (salesRes  && salesRes.success)  ? salesRes : null;
+
+        if (configs.length === 0) {
+            output.innerHTML = `<div class="p-16 text-center text-amber-500 bg-amber-50 m-6 rounded-2xl border border-amber-100">
+                <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                <h4 class="font-bold text-lg">Nenhuma configuração encontrada</h4>
+                <p class="text-sm mt-2">Clique em <strong>Config. Metas</strong> para cadastrar os vendedores e suas metas.</p>
+            </div>`;
+            return;
+        }
+
+        // LOG para debug — ver no console o que vem do backend
+        console.log('CONFIG:', configs);
+        console.log('SALES RAW:', salesRaw);
+
+        // Tenta extrair vendas de diferentes formatos de resposta
+        const extractVendas = (raw, usuarioId, nome) => {
+            if (!raw) return 0;
+            let total = 0;
+
+            // Formato 1: raw.report_data = array de groups com rows
+            if (raw.report_data && Array.isArray(raw.report_data)) {
+                raw.report_data.forEach(group => {
+                    (group.rows || []).forEach(row => {
+                        if (String(row.usuario_id) === String(usuarioId) || row.vendedor_nome === nome || row.nome === nome) {
+                            Object.values(row.dados_mes || {}).forEach(mes => total += parseFloat(mes.venda || mes.valor || 0));
+                        }
+                    });
+                });
+            }
+
+            // Formato 2: raw.data = array direto
+            if (raw.data && Array.isArray(raw.data)) {
+                raw.data.forEach(row => {
+                    if (String(row.usuario_id) === String(usuarioId) || row.vendedor_nome === nome || row.nome === nome) {
+                        total += parseFloat(row.total_vendas || row.valor_total || row.venda || 0);
+                    }
+                });
+            }
+
+            // Formato 3: raw.vendas = objeto indexado por usuario_id
+            if (raw.vendas && raw.vendas[usuarioId]) {
+                total = parseFloat(raw.vendas[usuarioId]) || 0;
+            }
+
+            return total;
+        };
+
+        const result = configs.filter(c => c.ativo != 0).map(c => {
+            const totalVendas = extractVendas(salesRaw, c.usuario_id, c.nome);
+            const meta     = parseFloat(c.meta_mensal)         || 0;
+            const fixo     = parseFloat(c.salario_fixo)        || 0;
+            const pct      = parseFloat(c.percentual_comissao) || 1;
+            const comissao = totalVendas * (pct / 100);
+
+            return {
+                nome:                c.nome,
+                meta_mensal:         meta,
+                total_vendas:        totalVendas,
+                salario_fixo:        fixo,
+                percentual_comissao: pct,
+                comissao_valor:      comissao,
+                total_trimestre:     0,
+                total_periodo:       fixo + comissao,
+                atingimento:         meta > 0 ? (totalVendas / meta * 100) : 0,
+            };
+        });
+
+        // Mesmo sem vendas mostra a tabela com zeros (metas cadastradas)
+        renderPerformanceTable(output, result);
+
+    } catch(e) {
+        console.error(e);
+        output.innerHTML = `<div class="p-20 text-center text-red-500 bg-red-50 m-6 rounded-2xl border border-red-100">
+            <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+            <h4 class="font-bold">Erro ao Carregar Dados</h4>
+            <p class="text-sm opacity-75">${e.message}</p>
+        </div>`;
     }
+}
+function showInfoModal({ icon = 'fa-info-circle', iconColor = 'text-indigo-500', iconBg = 'bg-indigo-50', title = 'Aviso', message = '', btnText = 'OK', btnColor = 'bg-indigo-600 hover:bg-indigo-700' } = {}) {
+    // Remove modal anterior se existir
+    document.getElementById('custom-info-modal')?.remove();
 
-    // Calculate start/end date for the selected month
-    const [year, mNum] = month.split('-');
-    const startDate = `${month}-01`;
-    const lastDay = new Date(year, mNum, 0).getDate();
-    const endDate = `${month}-${lastDay}`;
+    const overlay = document.createElement('div');
+    overlay.id = 'custom-info-modal';
+    overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center p-4';
+    overlay.innerHTML = `
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="modal-backdrop"></div>
 
-    output.innerHTML = `
-        <div class="p-20 text-center text-gray-400">
-            <i class="fas fa-spinner fa-spin text-4xl mb-4 text-indigo-600"></i>
-            <p class="animate-pulse">Calculando metas e comissões...</p>
+        <!-- Card -->
+        <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 flex flex-col items-center text-center animate-[fadeInScale_0.2s_ease-out]">
+            
+            <!-- Ícone -->
+            <div class="w-16 h-16 ${iconBg} rounded-2xl flex items-center justify-center mb-5 shadow-sm">
+                <i class="fas ${icon} text-2xl ${iconColor}"></i>
+            </div>
+
+            <!-- Título -->
+            <h3 class="text-lg font-black text-gray-800 mb-2">${title}</h3>
+
+            <!-- Mensagem -->
+            <p class="text-sm text-gray-500 leading-relaxed mb-7">${message}</p>
+
+            <!-- Botão -->
+            <button id="modal-ok-btn" class="${btnColor} text-white px-8 py-2.5 rounded-xl font-black text-sm shadow-md active:scale-95 transition-all w-full">
+                ${btnText}
+            </button>
         </div>
     `;
 
-    try {
-        const response = await apiCall('get_report_data', {
-            params: {
-                report_type: 'commission_analysis',
-                start_date: startDate,
-                end_date: endDate
-            }
-        });
+    document.body.appendChild(overlay);
 
-        if (response && response.success) {
-            if (!response.data || response.data.length === 0) {
-                output.innerHTML = `<div class="p-20 text-center text-gray-500">Nenhum dado financeiro encontrado para o período ${month}.</div>`;
-                return;
-            }
-            renderPerformanceTable(output, response.data);
-        } else {
-            throw new Error(response?.error || 'Falha na resposta do servidor');
-        }
-    } catch (e) {
-        output.innerHTML = `
-            <div class="p-20 text-center text-red-500 bg-red-50 m-6 rounded-2xl border border-red-100">
-                <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
-                <h4 class="font-bold">Erro ao Carregar Dados</h4>
-                <p class="text-sm opacity-75">${e.message}</p>
-                <button onclick="location.reload()" class="btn btn-primary mt-6">Tentar Novamente</button>
-            </div>
-        `;
-    }
+    // Fecha ao clicar no backdrop ou no botão OK
+    overlay.querySelector('#modal-ok-btn').onclick    = () => overlay.remove();
+    overlay.querySelector('#modal-backdrop').onclick  = () => overlay.remove();
 }
 
-function renderPerformanceTable(container, data) {
-    const format = (v) => formatCurrencyUtil(v || 0);
+// ─── RELATÓRIO: VENDAS POR VENDEDOR ─────────────────────────────────────────
+function renderVendorDetailReport(items, activity) {
+    const fmt = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+    const fmtPct = v => `${(v || 0).toFixed(1)}%`;
 
-    container.innerHTML = `
-        <div class="overflow-x-auto">
-            <table class="w-full border-collapse">
-                <thead>
-                    <tr class="bg-gray-50 text-left border-b border-gray-200">
-                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Colaborador</th>
-                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Fixo (R$)</th>
-                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Meta Mensal</th>
-                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Vendas Período</th>
-                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Atingimento (%)</th>
-                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Comissão (%)</th>
-                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Valor Comissão</th>
-                        <th class="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right bg-indigo-50">Total a Pagar</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    ${data.map(row => {
-        const atingimento = parseFloat(row.atingimento) || 0;
-        const barColor = atingimento >= 100 ? 'bg-green-500' : (atingimento >= 70 ? 'bg-indigo-500' : 'bg-orange-500');
-        const textClass = atingimento >= 100 ? 'text-green-600' : (atingimento >= 70 ? 'text-indigo-600' : 'text-orange-600');
+    // KPI Cards por vendedor
+    const activityCards = activity.map(a => {
+        const atingColor = a.atingimento >= 100 ? 'emerald' : a.atingimento >= 60 ? 'amber' : 'red';
+        const convColor = a.taxa_conversao >= 50 ? 'emerald' : a.taxa_conversao >= 25 ? 'amber' : 'red';
+        return `
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-user-tie text-white text-sm"></i>
+                    </div>
+                    <span class="text-white font-black text-sm">${a.vendedor_nome}</span>
+                </div>
+                <span class="bg-${atingColor}-400/90 text-white text-[10px] font-black px-2.5 py-1 rounded-full">${fmtPct(a.atingimento)} Meta</span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-0 divide-x divide-gray-100">
+                <div class="px-4 py-3 text-center">
+                    <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Oportunidades</div>
+                    <div class="text-lg font-black text-gray-800">${a.oportunidades_criadas || 0}</div>
+                </div>
+                <div class="px-4 py-3 text-center">
+                    <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Propostas</div>
+                    <div class="text-lg font-black text-gray-800">${a.propostas_total || 0}</div>
+                    <div class="text-[10px] text-gray-400">
+                        <span class="text-green-600">${a.propostas_aprovadas || 0} ✓</span> · 
+                        <span class="text-red-500">${a.propostas_recusadas || 0} ✗</span> · 
+                        <span class="text-blue-500">${a.propostas_enviadas || 0} ➜</span>
+                    </div>
+                </div>
+                <div class="px-4 py-3 text-center">
+                    <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Total Vendido</div>
+                    <div class="text-base font-black text-green-600">${fmt(a.total_vendido)}</div>
+                    <div class="text-[10px] text-gray-400">Meta: ${fmt(a.meta_anual)}</div>
+                </div>
+                <div class="px-4 py-3 text-center">
+                    <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Conversão</div>
+                    <div class="text-lg font-black text-${convColor}-600">${fmtPct(a.taxa_conversao)}</div>
+                    <div class="text-[10px] text-gray-400">${a.agendamentos_periodo || 0} agendamentos</div>
+                </div>
+            </div>
+            ${a.meta_anual > 0 ? `
+            <div class="px-4 pb-3">
+                <div class="w-full bg-gray-100 rounded-full h-2">
+                    <div class="bg-gradient-to-r from-indigo-500 to-violet-500 h-2 rounded-full transition-all" style="width:${Math.min(a.atingimento, 100)}%"></div>
+                </div>
+            </div>` : ''}
+        </div>`;
+    }).join('');
+
+    // Agrupar itens por vendedor
+    const grouped = {};
+    items.forEach(r => {
+        const vid = r.vendedor_id || 0;
+        if (!grouped[vid]) grouped[vid] = { nome: r.vendedor_nome || 'Não definido', rows: [] };
+        grouped[vid].rows.push(r);
+    });
+
+    const statusBadge = (s) => {
+        const map = {
+            'Aprovada': 'bg-green-100 text-green-800',
+            'Recusada': 'bg-red-100 text-red-800',
+            'Enviada': 'bg-blue-100 text-blue-800',
+            'Negociando': 'bg-amber-100 text-amber-800',
+            'Rascunho': 'bg-gray-100 text-gray-600',
+        };
+        return `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${map[s] || 'bg-gray-100 text-gray-600'}">${s}</span>`;
+    };
+
+    // Tabelas por vendedor
+    const tables = Object.values(grouped).map(g => {
+        // Deduplica por proposta (múltiplos itens na mesma proposta)
+        const seen = new Set();
+        let subtotalAprovado = 0;
+        
+        const trs = g.rows.map((r, i) => {
+            const propKey = r.proposta_id;
+            const isNewProp = !seen.has(propKey);
+            if (isNewProp) seen.add(propKey);
+            if (r.status === 'Aprovada' && isNewProp) subtotalAprovado += parseFloat(r.proposta_valor) || 0;
+
+            return `
+            <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-indigo-50/30 transition-colors">
+                <td class="px-4 py-2.5 text-xs text-gray-500 font-mono">${new Date(r.data_criacao).toLocaleDateString('pt-BR')}</td>
+                <td class="px-4 py-2.5 text-xs font-bold text-indigo-700">${r.numero_proposta || '-'}</td>
+                <td class="px-4 py-2.5 text-xs text-gray-800 font-medium">${r.cliente_nome}</td>
+                <td class="px-4 py-2.5 text-xs text-gray-700">${r.produto || '-'}</td>
+                <td class="px-4 py-2.5 text-xs text-gray-500">${r.fabricante || '-'}</td>
+                <td class="px-4 py-2.5 text-xs text-center text-gray-600">${r.quantidade || '-'}</td>
+                <td class="px-4 py-2.5 text-xs text-right font-mono text-gray-800">${fmt(r.item_total)}</td>
+                <td class="px-4 py-2.5 text-center">${statusBadge(r.status)}</td>
+            </tr>`;
+        }).join('');
 
         return `
-                            <tr class="hover:bg-gray-50 transition-colors">
-                                <td class="p-4">
-                                    <div class="font-bold text-gray-800">${row.nome}</div>
-                                </td>
-                                <td class="p-4 text-right text-gray-600 font-mono">${format(row.valor_fixo)}</td>
-                                <td class="p-4 text-right text-gray-600 font-mono">${format(row.meta_mensal)}</td>
-                                <td class="p-4 text-right font-black text-gray-800 font-mono">${format(row.total_vendas)}</td>
-                                <td class="p-4 text-right">
-                                    <div class="flex flex-col items-end">
-                                        <span class="font-bold ${textClass}">${atingimento.toFixed(1)}%</span>
-                                        <div class="w-16 h-1 bg-gray-100 rounded-full mt-1 overflow-hidden">
-                                            <div class="h-full ${barColor}" style="width: ${Math.min(atingimento, 100)}%"></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="p-4 text-right text-indigo-500 font-bold">${row.percentual_comissao}%</td>
-                                <td class="p-4 text-right text-gray-600 font-mono">${format(row.comissao_valor)}</td>
-                                <td class="p-4 text-right font-black text-indigo-900 bg-indigo-50/20 font-mono">${format(row.total_periodo)}</td>
-                            </tr>
-                        `;
-    }).join('')}
-                </tbody>
-            </table>
+        <div class="mb-6 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-5 py-3 bg-slate-50 border-b border-gray-100 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-user text-indigo-500 text-sm"></i>
+                    <span class="font-black text-gray-800 text-sm">${g.nome}</span>
+                    <span class="text-xs text-gray-400">(${g.rows.length} itens)</span>
+                </div>
+                <span class="text-xs font-bold text-green-600">Aprovado: ${fmt(subtotalAprovado)}</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 text-[10px] font-black text-gray-500 uppercase tracking-wider">
+                            <th class="px-4 py-3 text-left">Data</th>
+                            <th class="px-4 py-3 text-left">Proposta</th>
+                            <th class="px-4 py-3 text-left">Cliente</th>
+                            <th class="px-4 py-3 text-left">Produto</th>
+                            <th class="px-4 py-3 text-left">Fabricante</th>
+                            <th class="px-4 py-3 text-center">Qtd</th>
+                            <th class="px-4 py-3 text-right">Valor</th>
+                            <th class="px-4 py-3 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">${trs}</tbody>
+                </table>
+            </div>
+        </div>`;
+    }).join('');
+
+    return `
+        <div class="mb-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-chart-bar text-indigo-600"></i>
+                </div>
+                <div>
+                    <h3 class="font-black text-gray-800 text-lg">Vendas por Vendedor</h3>
+                    <p class="text-xs text-gray-400">Desempenho individual · Prospecção · Metas</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">${activityCards}</div>
+        </div>
+        ${tables}
+    `;
+}
+
+// ─── RELATÓRIO: FATURAMENTO (BILLING) ───────────────────────────────────────
+function renderBillingReport(proposals, kpis) {
+    const fmt = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+
+    // KPI Cards
+    const kpiHtml = `
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg shadow-green-100">
+            <div class="text-[10px] font-bold uppercase tracking-wider opacity-80">Total Aprovado</div>
+            <div class="text-xl font-black mt-1">${fmt(kpis.total_aprovado)}</div>
+            <div class="text-xs opacity-70 mt-0.5">${kpis.qtd_aprovado} proposta(s)</div>
+        </div>
+        <div class="bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl p-4 text-white shadow-lg shadow-red-100">
+            <div class="text-[10px] font-bold uppercase tracking-wider opacity-80">Total Recusado</div>
+            <div class="text-xl font-black mt-1">${fmt(kpis.total_recusado)}</div>
+            <div class="text-xs opacity-70 mt-0.5">${kpis.qtd_recusado} proposta(s)</div>
+        </div>
+        <div class="bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl p-4 text-white shadow-lg shadow-indigo-100">
+            <div class="text-[10px] font-bold uppercase tracking-wider opacity-80">Conversão</div>
+            <div class="text-xl font-black mt-1">${kpis.taxa_conversao}%</div>
+            <div class="text-xs opacity-70 mt-0.5">Aprovadas / Decididas</div>
+        </div>
+        <div class="bg-gradient-to-br from-slate-600 to-gray-700 rounded-2xl p-4 text-white shadow-lg shadow-gray-100">
+            <div class="text-[10px] font-bold uppercase tracking-wider opacity-80">Total Propostas</div>
+            <div class="text-xl font-black mt-1">${kpis.qtd_aprovado + kpis.qtd_recusado}</div>
+            <div class="text-xs opacity-70 mt-0.5">No período</div>
+        </div>
+        <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 text-white shadow-lg shadow-amber-100">
+            <div class="text-[10px] font-bold uppercase tracking-wider opacity-80">Ticket Médio</div>
+            <div class="text-xl font-black mt-1">${kpis.qtd_aprovado > 0 ? fmt(kpis.total_aprovado / kpis.qtd_aprovado) : 'R$ 0'}</div>
+            <div class="text-xs opacity-70 mt-0.5">Aprovadas</div>
+        </div>
+    </div>`;
+
+    // Tabela de propostas
+    const rows = proposals.map((p, i) => {
+        const isApproved = p.status === 'Aprovada';
+        const statusClass = isApproved ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+        const statusIcon = isApproved ? 'fa-check-circle' : 'fa-times-circle';
+        const rowBg = i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+
+        return `
+        <tr class="${rowBg} hover:bg-indigo-50/30 transition-colors">
+            <td class="px-4 py-3 text-xs font-mono text-gray-500">${new Date(p.data_criacao).toLocaleDateString('pt-BR')}</td>
+            <td class="px-4 py-3 text-xs font-bold text-indigo-700">${p.numero_proposta || '-'}</td>
+            <td class="px-4 py-3 text-xs text-gray-800 font-medium max-w-[200px] truncate" title="${p.cliente_nome}">${p.cliente_nome}</td>
+            <td class="px-4 py-3 text-xs font-medium text-gray-700">${p.vendedor_nome || '-'}</td>
+            <td class="px-4 py-3 text-xs text-gray-600 max-w-[250px] truncate" title="${p.produtos_resumo}">${p.produtos_resumo || '-'}</td>
+            <td class="px-4 py-3 text-xs text-gray-500 max-w-[120px] truncate" title="${p.fabricantes_resumo}">${p.fabricantes_resumo || '-'}</td>
+            <td class="px-4 py-3 text-xs text-right font-black font-mono ${isApproved ? 'text-green-700' : 'text-red-600'}">${fmt(p.valor_total)}</td>
+            <td class="px-4 py-3 text-center">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-full ${statusClass}">
+                    <i class="fas ${statusIcon} text-[8px]"></i> ${p.status}
+                </span>
+            </td>
+            <td class="px-4 py-3 text-xs text-gray-400 max-w-[150px] truncate" title="${p.motivo_status || ''}">${p.motivo_status || '-'}</td>
+        </tr>`;
+    }).join('');
+
+    // Totais
+    const totalAprovado = proposals.filter(p => p.status === 'Aprovada').reduce((a, p) => a + (parseFloat(p.valor_total) || 0), 0);
+    const totalRecusado = proposals.filter(p => p.status !== 'Aprovada').reduce((a, p) => a + (parseFloat(p.valor_total) || 0), 0);
+
+    return `
+        <div class="mb-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-file-invoice-dollar text-emerald-600"></i>
+                </div>
+                <div>
+                    <h3 class="font-black text-gray-800 text-lg">Relatório de Faturamento</h3>
+                    <p class="text-xs text-gray-400">Propostas aprovadas e recusadas · Produtos · Clientes</p>
+                </div>
+            </div>
+            ${kpiHtml}
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gradient-to-r from-slate-700 to-slate-800 text-[10px] font-black text-white uppercase tracking-wider">
+                            <th class="px-4 py-3.5 text-left rounded-tl-2xl">Data</th>
+                            <th class="px-4 py-3.5 text-left">Proposta</th>
+                            <th class="px-4 py-3.5 text-left">Cliente</th>
+                            <th class="px-4 py-3.5 text-left">Vendedor</th>
+                            <th class="px-4 py-3.5 text-left">Produto(s)</th>
+                            <th class="px-4 py-3.5 text-left">Fabricante</th>
+                            <th class="px-4 py-3.5 text-right">Valor</th>
+                            <th class="px-4 py-3.5 text-center">Status</th>
+                            <th class="px-4 py-3.5 text-left rounded-tr-2xl">Motivo</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">${rows}</tbody>
+                    <tfoot>
+                        <tr class="bg-gray-50 border-t-2 border-gray-200 font-black text-xs">
+                            <td colspan="6" class="px-4 py-3 text-right text-gray-600 uppercase tracking-wider">Totais</td>
+                            <td class="px-4 py-3 text-right font-mono">
+                                <div class="text-green-700">${fmt(totalAprovado)}</div>
+                                <div class="text-red-600 text-[10px]">${fmt(totalRecusado)}</div>
+                            </td>
+                            <td colspan="2" class="px-4 py-3 text-center text-gray-500">
+                                <span class="text-green-600 font-bold">${kpis.qtd_aprovado}</span> / 
+                                <span class="text-red-500 font-bold">${kpis.qtd_recusado}</span>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
         </div>
     `;
 }

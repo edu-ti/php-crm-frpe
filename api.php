@@ -195,11 +195,15 @@ try {
         'send_bulk_email_leads' => ['method' => 'POST', 'file' => '/api/handlers/email_handler.php', 'function' => 'handle_send_bulk_email_leads'],
 
         // Relatórios
-        'get_report_data' => ['method' => 'GET', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_report_data'],
-        'get_supplier_targets' => ['method' => 'GET', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_supplier_targets'],
-        'save_targets' => ['method' => 'POST', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_save_targets'],
-        'get_report_kpis' => ['method' => 'GET', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_report_kpis'],
-        'export_pdf' => ['method' => 'GET', 'file' => '/api/handlers/report_pdf_export.php', 'function' => 'handle_export_pdf'],
+        'get_report_data'          => ['method' => 'GET',  'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_report_data'],
+        'get_supplier_targets'     => ['method' => 'GET',  'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_supplier_targets'],
+        'save_targets'             => ['method' => 'POST', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_save_targets'],
+        'get_report_kpis'          => ['method' => 'GET',  'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_report_kpis'],
+        'export_pdf'               => ['method' => 'GET',  'file' => '/api/handlers/report_pdf_export.php', 'function' => 'handle_export_pdf'],
+        // ── NOVAS ROTAS - Metas e Comissões ──────────────────────────────────────────
+        'get_commission_config'    => ['method' => 'GET',  'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_commission_config'],
+        'save_commission_config'   => ['method' => 'POST', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_save_commission_config'],
+        'get_supplier_targets_all' => ['method' => 'GET',  'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_supplier_targets_all'],
 
         // Upload NF e Documentos
         'parse_invoice' => ['method' => 'POST', 'file' => '/api/handlers/invoice_parser_handler.php', 'function' => 'handle_parse_invoice'],
