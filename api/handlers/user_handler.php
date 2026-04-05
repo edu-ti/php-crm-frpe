@@ -97,20 +97,21 @@ function handle_delete_user($pdo, $data)
         // Erro 23000: Violação de restrição de integridade (possui vínculos)
         if ($e->getCode() == '23000') {
             try {
-                $stmt = $pdo->prepare("UPDATE usuarios SET status = 'Inativo' WHERE id = ?");
+                // Marcamos como deletado logicamente (soft delete)
+                $stmt = $pdo->prepare("UPDATE usuarios SET status = 'Inativo', deleted_at = NOW() WHERE id = ?");
                 $stmt->execute([$data['id']]);
 
-                // Retornar usuário atualizado para o frontend refletir a mudança
+                // Retornar usuário atualizado para o frontend refletir a mudança (embora agora ele deva sumir)
                 $stmt_updated = $pdo->prepare("SELECT id, nome, email, telefone, cargo, role, status FROM usuarios WHERE id = ?");
                 $stmt_updated->execute([$data['id']]);
                 
                 json_response([
                     'success' => true,
-                    'message' => 'O usuário possui registros vinculados e não pôde ser excluído permanentemente. Por segurança, ele foi DESATIVADO.',
+                    'message' => 'O usuário possui registros vinculados e não pôde ser excluído permanentemente. Por segurança, ele foi arquivado e desativado.',
                     'user' => $stmt_updated->fetch(PDO::FETCH_ASSOC)
                 ]);
             } catch (PDOException $ex) {
-                json_response(['success' => false, 'error' => 'Erro ao desativar usuário: ' . $ex->getMessage()], 500);
+                json_response(['success' => false, 'error' => 'Erro ao arquivar usuário: ' . $ex->getMessage()], 500);
             }
         } else {
             json_response(['success' => false, 'error' => 'Erro ao excluir usuário: ' . $e->getMessage()], 500);

@@ -467,7 +467,7 @@ class ReportHandler
                         (SELECT COALESCE(SUM(valor_meta), 0) FROM vendas_objetivos WHERE usuario_id = u.id AND (mes = MONTH(:start) OR mes = 0) AND ano = YEAR(:start)) as meta_mensal
                     FROM usuarios u
                     LEFT JOIN usuarios_financas uf ON u.id = uf.usuario_id
-                    WHERE u.perfil IN ('Vendedor', 'Analista', 'Gestor') AND u.status = 'Ativo'";
+                    WHERE u.perfil IN ('Vendedor', 'Analista', 'Gestor') AND u.deleted_at IS NULL";
             
             $stmt = $this->db->prepare($sql);
             // Garantir que as datas estao no formato correto para o PHP e MySQL
