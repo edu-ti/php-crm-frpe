@@ -794,53 +794,7 @@ function handle_get_report_data($pdo)
             $data = array_values($structured_funnel);
 
         } elseif ($type === 'supplier_funnel') {
-            $sql = "
-            SELECT 
-                COALESCE(org.nome_fantasia, org.razao_social, f.nome, 'Outros') as fornecedor_nome,
-                COUNT(DISTINCT o.id) as qtd_oportunidades, 
-                SUM(o.valor) as valor_total
-            FROM oportunidades o
-            LEFT JOIN organizacoes org ON o.fornecedor_id = org.id
-            LEFT JOIN fornecedores f ON o.fornecedor_id = f.id
-            WHERE o.data_criacao BETWEEN ? AND ?
-            ";
-            $params = [$start_date, $end_date];
-            apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
-            
-            $sql .= " GROUP BY fornecedor_nome ORDER BY valor_total DESC";
-            
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Hardcode 9 fixed suppliers
-            $fornecedores_rigidos = ['BRASIL MEDICA', 'HEALTH', 'INSTRAMED', 'LIVANOVA', 'MASIMO', 'MERIL', 'MICROMED', 'NIPRO', 'SIGMAFIX'];
-            
-            $structured_funnel = [];
-            foreach ($fornecedores_rigidos as $nome) {
-                $structured_funnel[$nome] = [
-                    'fornecedor_nome' => $nome,
-                    'qtd_oportunidades' => 0,
-                    'valor_total' => 0
-                ];
-            }
-
-            foreach($results as $r) {
-                $matched = false;
-                foreach($fornecedores_rigidos as $nr) {
-                     // Check substring because DB names might be 'BRASIL MEDICA LTDA'
-                     if (stripos(trim($r['fornecedor_nome']), $nr) !== false) {
-                         $structured_funnel[$nr]['qtd_oportunidades'] += $r['qtd_oportunidades'];
-                         $structured_funnel[$nr]['valor_total'] += $r['valor_total'];
-                         $matched = true;
-                         break; // add to the rigid bucket
-                     }
-                }
-                // We ignore "Outros" or those not in the strict 9 list according to the prompt!
-                // "Funil de Fornecedores: Agrupado pelos fornecedores fixos listados acima."
-            }
-            $data = array_values($structured_funnel);
-            
+            $data = get_supplier_meta_performance($pdo, $start_date, $end_date, $supplier_ids_raw);
         } elseif ($type === 'licitacoes_funnel') {
             $data = get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
         } elseif ($type === 'licitacoes') {
@@ -2376,4 +2330,149 @@ function get_sales_vs_goals($pdo, $start_date, $end_date, $supplier_ids = [], $u
         'sales'  => $sales,
         'goals'  => $goals
     ];
+}
+
+/**
+ * NOVO RELATÓRIO: Meta Fornecedores (Performance Real vs Metas)
+ */
+function get_supplier_meta_performance($pdo, $start_date, $end_date, $filter_supplier_names = []) {
+    $end_dt = date('Y-m-d', strtotime($end_date));
+    $year = date('Y', strtotime($end_dt));
+    $ytd_start = $year . '-01-01'; // Faturamento do ano inteiro até a data final
+    
+    // Período filtrado original (para comparação)
+    $p_start = date('Y-m-d', strtotime($start_date));
+    $p_end = $end_dt;
+
+    // 1. Carrega Mapa de Fornecedores
+    $suppliers_map = [];
+    $stmt_sup = $pdo->query("SELECT id, nome FROM fornecedores");
+    while ($s = $stmt_sup->fetch(PDO::FETCH_ASSOC)) {
+        $suppliers_map[strtoupper(trim($s['nome'] ?? ''))] = (int) $s['id'];
+    }
+
+    // 2. Carrega Metas do Ano Inteiro (Soma dos 12 meses)
+    $metas_anuais = [];
+    $stmt_st = $pdo->prepare("SELECT fornecedor_nome, SUM(meta_mensal) as meta_anual FROM supplier_monthly_targets WHERE year = ? GROUP BY fornecedor_nome");
+    $stmt_st->execute([$year]);
+    while($st = $stmt_st->fetch(PDO::FETCH_ASSOC)) {
+        $fname = strtoupper(trim($st['fornecedor_nome']));
+        $metas_anuais[$fname] = (float)$st['meta_anual'];
+    }
+
+    // 3. Fornecedores Fixos
+    $fornecedores_fixos = ['BRASIL MEDICA', 'HEALTH', 'INSTRAMED', 'LIVANOVA', 'MASIMO', 'MERIL', 'MICROMED', 'NIPRO', 'SIGMAFIX'];
+    $performance = [];
+    foreach ($fornecedores_fixos as $f) {
+        $performance[$f] = [
+            'name' => $f,
+            'annual_total' => 0,
+            'period_total' => 0,
+            'annual_goal' => $metas_anuais[$f] ?? 0
+        ];
+    }
+
+    // 4. Busca Vendas Diretas (Ano Inteiro)
+    $sql_v = "SELECT fabricante_marca, titulo, descricao_produto, data_venda, SUM(valor_total) as total 
+              FROM vendas_fornecedores 
+              WHERE data_venda BETWEEN ? AND ? 
+              GROUP BY fabricante_marca, titulo, descricao_produto, data_venda";
+    $stmt_v = $pdo->prepare($sql_v);
+    $stmt_v->execute([$ytd_start, $p_end]);
+    while($v = $stmt_v->fetch(PDO::FETCH_ASSOC)) {
+        $fname = 'OUTROS';
+        foreach($fornecedores_fixos as $target) {
+            if (stripos($v['fabricante_marca'] ?? '', $target) !== false || 
+                stripos($v['titulo'] ?? '', $target) !== false || 
+                stripos($v['descricao_produto'] ?? '', $target) !== false) {
+                $fname = $target; break;
+            }
+        }
+        if ($fname !== 'OUTROS') {
+            $performance[$fname]['annual_total'] += (float)$v['total'];
+            if ($v['data_venda'] >= $p_start) {
+                $performance[$fname]['period_total'] += (float)$v['total'];
+            }
+        }
+    }
+
+    // 5. Busca Propostas Aprovadas (Ano Inteiro)
+    $sql_p = "SELECT p.id, p.valor_total, p.data_criacao, f.nome as fornecedor_nome
+              FROM propostas p
+              JOIN oportunidades o ON p.oportunidade_id = o.id
+              LEFT JOIN fornecedores f ON o.fornecedor_id = f.id
+              WHERE p.status = 'Aprovada' AND p.data_criacao BETWEEN ? AND ?";
+    $stmt_p = $pdo->prepare($sql_p);
+    $stmt_p->execute([$ytd_start . ' 00:00:00', $p_end . ' 23:59:59']);
+    $props = $stmt_p->fetchAll(PDO::FETCH_ASSOC);
+
+    $prop_ids = array_column($props, 'id');
+    $items_by_prop = [];
+    if (!empty($prop_ids)) {
+        $placeholders = implode(',', array_fill(0, count($prop_ids), '?'));
+        $stmt_i = $pdo->prepare("SELECT proposta_id, fabricante FROM proposta_itens WHERE proposta_id IN ($placeholders)");
+        $stmt_i->execute($prop_ids);
+        while($i = $stmt_i->fetch(PDO::FETCH_ASSOC)) { $items_by_prop[$i['proposta_id']][] = $i['fabricante']; }
+    }
+
+    foreach ($props as $p) {
+        $fname = 'OUTROS';
+        foreach($fornecedores_fixos as $target) { if (stripos($p['fornecedor_nome'] ?? '', $target) !== false) { $fname = $target; break; } }
+        if ($fname === 'OUTROS' && isset($items_by_prop[$p['id']])) {
+            foreach($items_by_prop[$p['id']] as $mfr) {
+                foreach($fornecedores_fixos as $target) { if (stripos($mfr ?? '', $target) !== false) { $fname = $target; break 2; } }
+            }
+        }
+        if ($fname !== 'OUTROS') {
+            $performance[$fname]['annual_total'] += (float)$p['valor_total'];
+            $p_dt = date('Y-m-d', strtotime($p['data_criacao']));
+            if ($p_dt >= $p_start) { $performance[$fname]['period_total'] += (float)$p['valor_total']; }
+        }
+    }
+
+    // 6. Notas Fiscais (Ano Inteiro)
+    $sql_nf = "SELECT nf.itens, nf.valor as total_nf, nf.data_faturamento, f.nome as fornecedor_nome
+               FROM notas_fiscais nf
+               JOIN oportunidades o ON nf.oportunidade_id = o.id
+               LEFT JOIN fornecedores f ON o.fornecedor_id = f.id
+               WHERE nf.data_faturamento BETWEEN ? AND ?";
+    $stmt_nf = $pdo->prepare($sql_nf);
+    $stmt_nf->execute([$ytd_start, $p_end]);
+    while($nf = $stmt_nf->fetch(PDO::FETCH_ASSOC)) {
+        $items = !empty($nf['itens']) ? json_decode($nf['itens'], true) : [];
+        $nf_dt = date('Y-m-d', strtotime($nf['data_faturamento']));
+        if (is_array($items) && !empty($items)) {
+            foreach($items as $it) {
+                $mfr = strtoupper(trim($it['fornecedor'] ?? $it['fabricante'] ?? ''));
+                $fname = 'OUTROS';
+                foreach($fornecedores_fixos as $target) { if (stripos($mfr, $target) !== false) { $fname = $target; break; } }
+                if ($fname !== 'OUTROS') {
+                    $performance[$fname]['annual_total'] += (float)($it['valor_total'] ?? 0);
+                    if ($nf_dt >= $p_start) { $performance[$fname]['period_total'] += (float)($it['valor_total'] ?? 0); }
+                }
+            }
+        } else {
+            $fname = 'OUTROS';
+            foreach($fornecedores_fixos as $target) { if (stripos($nf['fornecedor_nome'] ?? '', $target) !== false) { $fname = $target; break; } }
+            if ($fname !== 'OUTROS') {
+                $performance[$fname]['annual_total'] += (float)$nf['total_nf'];
+                if ($nf_dt >= $p_start) { $performance[$fname]['period_total'] += (float)$nf['total_nf']; }
+            }
+        }
+    }
+
+    // 7. Formatação Final
+    $results = [];
+    foreach ($performance as $p) {
+        if (!empty($filter_supplier_names)) {
+             $match = false;
+             foreach($filter_supplier_names as $fsn) { if (stripos($p['name'], (string)$fsn) !== false) { $match = true; break; } }
+             if (!$match) continue;
+        }
+
+        $p['progress'] = $p['annual_goal'] > 0 ? round(($p['annual_total'] / $p['annual_goal']) * 100, 1) : ($p['annual_total'] > 0 ? 100 : 0);
+        $p['diff'] = $p['annual_total'] - $p['annual_goal'];
+        $results[] = $p;
+    }
+    return $results;
 }
