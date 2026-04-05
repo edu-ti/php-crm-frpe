@@ -1619,6 +1619,105 @@ function renderReports(data, container, type, startStr, endStr) {
     }
 }
 
+
+// ─── RENDER FUNNEL (Vendas/Licitações) ───────────────────────────────────────
+function renderFunnelTable(data, type) {
+    const format = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    const title = type === 'licitacoes_funnel' ? 'Funil de Licitações (Pipeline)' : 'Funil de Vendas';
+    
+    // Calcula totais para KPIs
+    const totalQty = data.reduce((acc, r) => acc + (parseInt(r.count) || 0), 0);
+    const totalValue = data.reduce((acc, r) => acc + (parseFloat(r.value) || 0), 0);
+    const maxQty = Math.max(...data.map(r => parseInt(r.count) || 1));
+
+    const rows = data.map((r, i) => {
+        const perc = maxQty > 0 ? (parseInt(r.count) / maxQty) * 100 : 0;
+        const colorClass = i < 4 ? 'bg-indigo-600' : (i < 7 ? 'bg-indigo-400' : 'bg-slate-300');
+        
+        return `
+        <div class="group relative bg-white p-4 rounded-xl border border-gray-100 hover:border-indigo-200 transition-all shadow-sm hover:shadow-md">
+            <div class="flex justify-between items-end mb-3">
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Passo ${i + 1}</span>
+                    <span class="text-sm font-black text-gray-800">${r.label}</span>
+                </div>
+                <div class="text-right">
+                    <div class="text-lg font-black text-indigo-700 leading-none">${r.count} <span class="text-[10px] text-gray-400 font-bold uppercase">Ops</span></div>
+                    <div class="text-[10px] font-bold text-gray-500 mt-1">${format(r.value)}</div>
+                </div>
+            </div>
+            <!-- Progress Bar (Funnel) -->
+            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                <div class="${colorClass} h-full transition-all duration-1000 ease-out delay-[${i * 100}ms]" style="width: ${perc}%"></div>
+            </div>
+        </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="space-y-8">
+            <!-- Header & KPIs -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight">${title}</h2>
+                    <p class="text-xs text-slate-500 font-medium">Distribuição de oportunidades por etapa estratégica.</p>
+                </div>
+                <div class="flex gap-4">
+                    <div class="bg-white px-5 py-3 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Pipeline Total</div>
+                        <div class="text-xl font-black text-indigo-700">${format(totalValue)}</div>
+                    </div>
+                    <div class="bg-white px-5 py-3 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Volume de Ops</div>
+                        <div class="text-xl font-black text-slate-800 text-center">${totalQty}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Funnel Content -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                ${rows}
+            </div>
+
+            <!-- Detailed Table (Optional display) -->
+            <div class="mt-8 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-100">
+                    <h4 class="text-xs font-black text-gray-500 uppercase flex items-center gap-2">
+                        <i class="fas fa-list-ul text-indigo-500"></i> Detalhamento por Etapa
+                    </h4>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50/50">
+                            <tr>
+                                <th class="px-6 py-3 text-[10px] font-black text-gray-500 uppercase">Etapa do Funil</th>
+                                <th class="px-6 py-3 text-[10px] font-black text-gray-500 uppercase text-center">Quantidade</th>
+                                <th class="px-6 py-3 text-[10px] font-black text-gray-500 uppercase text-right">Valor Total Estimado</th>
+                                <th class="px-6 py-3 text-[10px] font-black text-gray-500 uppercase text-center">Representação</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            ${data.map(r => {
+        const percValue = totalValue > 0 ? (r.value / totalValue) * 100 : 0;
+        return `
+                                <tr class="hover:bg-indigo-50/20 transition-colors">
+                                    <td class="px-6 py-4 text-xs font-bold text-gray-800">${r.label}</td>
+                                    <td class="px-6 py-4 text-xs text-center font-bold text-gray-600">${r.count}</td>
+                                    <td class="px-6 py-4 text-xs text-right font-bold text-indigo-600">${format(r.value)}</td>
+                                    <td class="px-6 py-4 text-xs text-center">
+                                        <span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[10px] font-bold">${percValue.toFixed(1)}%</span>
+                                    </td>
+                                </tr>
+                                `;
+    }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 // ─── RENDER CONTRATOS (tabela simples) ───────────────────────────────────────
 function renderContractsTable(data) {
     const format = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
