@@ -1,5 +1,6 @@
 import { apiCall } from '../api.js';
 import { formatCurrency as formatCurrencyUtil, showToast, showLoading } from '../utils.js';
+import { renderModal, closeModal } from '../ui.js';
 
 let appState = {};
 let chartInstance = null;
@@ -205,6 +206,18 @@ export async function renderReportsView(state) {
                 #reports-module-container { background: white !important; }
                 #main-content { padding: 0 !important; margin: 0 !important; }
             }
+
+            .clickable-proposal-link {
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .clickable-proposal-link:hover {
+                background-color: #eef2ff;
+                padding-left: 4px;
+                padding-right: 4px;
+                margin-left: -4px;
+                margin-right: -4px;
+                border-radius: 4px;
+            }
         </style>
     `;
 
@@ -215,6 +228,17 @@ export async function renderReportsView(state) {
             e.currentTarget.classList.add('active');
             switchReportView(target);
         });
+    });
+
+    // Delegated click event for proposal drill-down
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('.clickable-proposal-link');
+        if (link) {
+            const proposalId = link.dataset.proposalId;
+            if (proposalId) {
+                openProposalDetailsModal(proposalId);
+            }
+        }
     });
 
     switchReportView('bi-dashboard');
@@ -2790,7 +2814,11 @@ function renderVendorDetailReport(items, activity) {
             return `
             <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-indigo-50/30 transition-colors">
                 <td class="px-4 py-2.5 text-xs text-gray-500 font-mono">${new Date(r.data_criacao).toLocaleDateString('pt-BR')}</td>
-                <td class="px-4 py-2.5 text-xs font-bold text-indigo-700">${r.numero_proposta || '-'}</td>
+                <td class="px-4 py-2.5 text-xs font-bold">
+                    <span class="clickable-proposal-link text-indigo-600 hover:text-indigo-800 cursor-pointer underline decoration-indigo-200 hover:decoration-indigo-500 transition-all" data-proposal-id="${r.proposta_id}">
+                        ${r.numero_proposta || '-'}
+                    </span>
+                </td>
                 <td class="px-4 py-2.5 text-xs text-gray-800 font-medium">${r.cliente_nome}</td>
                 <td class="px-4 py-2.5 text-xs text-gray-700">${r.produto || '-'}</td>
                 <td class="px-4 py-2.5 text-xs text-gray-500">${r.fabricante || '-'}</td>
@@ -2891,7 +2919,11 @@ function renderBillingReport(proposals, kpis) {
         return `
         <tr class="${rowBg} hover:bg-indigo-50/30 transition-colors">
             <td class="px-4 py-3 text-xs font-mono text-gray-500">${new Date(p.data_criacao).toLocaleDateString('pt-BR')}</td>
-            <td class="px-4 py-3 text-xs font-bold text-indigo-700">${p.numero_proposta || '-'}</td>
+            <td class="px-4 py-3 text-xs font-bold">
+                <span class="clickable-proposal-link text-indigo-600 hover:text-indigo-800 cursor-pointer underline decoration-indigo-200 hover:decoration-indigo-500 transition-all" data-proposal-id="${p.proposta_id}">
+                    ${p.numero_proposta || '-'}
+                </span>
+            </td>
             <td class="px-4 py-3 text-xs text-gray-800 font-medium max-w-[200px] truncate" title="${p.cliente_nome}">${p.cliente_nome}</td>
             <td class="px-4 py-3 text-xs font-medium text-gray-700">${p.vendedor_nome || '-'}</td>
             <td class="px-4 py-3 text-xs text-gray-600 max-w-[250px] truncate" title="${p.produtos_resumo}">${p.produtos_resumo || '-'}</td>
@@ -2954,6 +2986,160 @@ function renderBillingReport(proposals, kpis) {
                         </tr>
                     </tfoot>
                 </table>
+            </div>
+        </div>
+    `;
+}
+
+// ─── DRILL-DOWN: DETALHES DA PROPOSTA ───────────────────────────────────────
+async function openProposalDetailsModal(proposalId) {
+    if (!proposalId) return;
+
+    try {
+        showLoading(true);
+        const response = await apiCall('get_proposal_details', { params: { id: proposalId } });
+        showLoading(false);
+
+        if (response.success) {
+            const content = renderProposalModalContent(response.proposal);
+            renderModal(`Proposta #${response.proposal.numero_proposta}`, content, () => closeModal(), 'Fechar', 'btn-secondary', 'xl');
+        } else {
+            showToast(response.error || 'Erro ao carregar detalhes da proposta', 'error');
+        }
+    } catch (error) {
+        showLoading(false);
+        console.error('Erro ao abrir drill-down:', error);
+        showToast('Erro de conexão ao buscar dados da proposta', 'error');
+    }
+}
+
+function renderProposalModalContent(p) {
+    const fmt = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+    const date = d => d ? new Date(d).toLocaleDateString('pt-BR') : '-';
+    
+    const statusMap = {
+        'Aprovada': 'bg-green-100 text-green-800 border-green-200',
+        'Recusada': 'bg-red-100 text-red-800 border-red-200',
+        'Enviada': 'bg-blue-100 text-blue-800 border-blue-200',
+        'Negociando': 'bg-amber-100 text-amber-800 border-amber-200',
+        'Rascunho': 'bg-gray-100 text-gray-600 border-gray-200',
+    };
+    const statusClass = statusMap[p.status] || 'bg-gray-100 text-gray-600 border-gray-200';
+
+    const itemsRows = (p.items || []).map((item, i) => `
+        <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}">
+            <td class="px-3 py-2 text-xs text-gray-800 font-medium">${item.descricao}</td>
+            <td class="px-3 py-2 text-xs text-gray-500">${item.fabricante || '-'}</td>
+            <td class="px-3 py-2 text-xs text-center text-gray-600">${item.quantidade}</td>
+            <td class="px-3 py-2 text-xs text-right text-gray-600">${fmt(item.valor_unitario)}</td>
+            <td class="px-3 py-2 text-xs text-right font-bold text-gray-800">${fmt(item.quantidade * item.valor_unitario)}</td>
+        </tr>
+    `).join('');
+
+    return `
+        <div class="space-y-6">
+            <!-- Header Info -->
+            <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600">
+                        <i class="fas fa-file-invoice fa-lg"></i>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-400 uppercase font-black tracking-widest leading-none mb-1">Número da Proposta</div>
+                        <div class="text-xl font-black text-gray-800 leading-none">${p.numero_proposta}</div>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-4">
+                    <div class="text-right">
+                        <div class="text-[10px] text-gray-400 font-bold uppercase">Data de Criação</div>
+                        <div class="text-sm font-bold text-gray-700">${date(p.data_criacao)}</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-400 font-bold uppercase mb-1">Status Atual</div>
+                        <span class="px-3 py-1 text-xs font-black rounded-full border ${statusClass}">${p.status}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client & Vendor Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm transition-all hover:border-indigo-100">
+                    <h4 class="text-xs font-black text-indigo-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <i class="fas fa-user-circle"></i> Dados do Cliente
+                    </h4>
+                    <div class="space-y-2">
+                        <div>
+                            <div class="text-[10px] text-gray-400 font-bold uppercase">Cliente / Organização</div>
+                            <div class="text-sm font-black text-gray-800">${p.organizacao_nome || p.cliente_pf_nome || 'N/D'}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-[10px] text-gray-400 font-bold uppercase">${p.cnpj ? 'CNPJ' : 'CPF'}</div>
+                                <div class="text-xs font-medium text-gray-600">${p.cnpj || p.cpf || 'N/A'}</div>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-gray-400 font-bold uppercase">Contato</div>
+                                <div class="text-xs font-medium text-gray-600">${p.contato_nome || 'N/A'}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-sm transition-all hover:border-emerald-100">
+                    <h4 class="text-xs font-black text-emerald-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <i class="fas fa-id-badge"></i> Responsável Comercial
+                    </h4>
+                    <div class="space-y-2">
+                        <div>
+                            <div class="text-[10px] text-gray-400 font-bold uppercase">Vendedor</div>
+                            <div class="text-sm font-black text-gray-800">${p.vendedor_nome || 'N/D'}</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-gray-400 font-bold uppercase">Funil / Etapa Atual</div>
+                            <div class="text-xs font-medium text-gray-600">${p.etapa_funil_nome || 'Proposta'}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items Table -->
+            <div>
+                <h4 class="text-xs font-black text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fas fa-box-open"></i> Itens da Proposta
+                </h4>
+                <div class="border border-gray-100 rounded-xl overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 border-b border-gray-100">
+                            <tr>
+                                <th class="px-3 py-2 text-[10px] font-black text-gray-500 uppercase">Produto/Serviço</th>
+                                <th class="px-3 py-2 text-[10px] font-black text-gray-500 uppercase">Fabricante</th>
+                                <th class="px-3 py-2 text-[10px] font-black text-gray-500 uppercase text-center">Qtd</th>
+                                <th class="px-3 py-2 text-[10px] font-black text-gray-500 uppercase text-right">Unitário</th>
+                                <th class="px-3 py-2 text-[10px] font-black text-gray-500 uppercase text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">${itemsRows}</tbody>
+                        <tfoot class="bg-slate-50 border-t border-gray-100">
+                            <tr>
+                                <td colspan="4" class="px-3 py-2 text-right text-xs font-bold text-gray-500 uppercase">Total da Proposta</td>
+                                <td class="px-3 py-2 text-right text-base font-black text-indigo-700">${fmt(p.valor_total)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            ${p.observacoes && p.observacoes !== 'Nenhuma' ? `
+            <div class="bg-amber-50 p-4 rounded-xl border border-amber-100">
+                <h4 class="text-[10px] font-black text-amber-600 uppercase tracking-wider mb-1">Observações Internas</h4>
+                <p class="text-xs text-amber-800 leading-relaxed">${p.observacoes}</p>
+            </div>
+            ` : ''}
+
+            <div class="flex justify-center mt-4">
+                <button onclick="window.open('imprimir_proposta.php?id=${p.id}', '_blank')" class="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 text-xs font-black rounded-lg hover:bg-indigo-100 transition-colors">
+                    <i class="fas fa-print"></i> VERSÃO PARA IMPRESSÃO (PDF)
+                </button>
             </div>
         </div>
     `;
