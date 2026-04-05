@@ -632,11 +632,13 @@ function handle_get_report_data($pdo)
 
     $parseIds = function ($input) {
         if (is_array($input))
-            return array_map('intval', $input);
+            return array_map(function($v) { return is_numeric($v) ? (int)$v : $v; }, $input);
         if (is_string($input) && strlen($input) > 0)
-            return array_map('intval', explode(',', $input));
+            return array_map(function($v) { return is_numeric($v) ? (int)$v : $v; }, explode(',', $input));
         if (is_numeric($input))
             return [(int) $input];
+        if (is_string($input) && strlen($input) > 0)
+            return [$input];
         return [];
     };
 
@@ -808,6 +810,9 @@ function handle_get_report_data($pdo)
         } elseif ($type === 'billing') {
             $data = get_billing_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
             
+        } elseif ($type === 'products') {
+            $data = get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
+
         } elseif ($type === 'bi_kpis') {
             $data = get_bi_kpis($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
             echo json_encode(array_merge(['success' => true, 'type' => $type], $data));
@@ -1455,63 +1460,134 @@ function get_contracts_report($pdo, $start_date, $end_date, $supplier_ids = [], 
     return $final_data;
 }
 
-function get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids = [])
+function get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids = [], $etapa_ids = [], $origem_ids = [], $uf_ids = [], $status_ids = [], $cliente_ids = [])
 {
-    $sql = "SELECT p.usuario_id as fornecedor_id, u.nome as fornecedor_nome, pi.produto_id, pr.nome_produto as produto_nome, SUM(pi.quantidade) as quantidade, AVG(pi.valor_unitario) as valor_unitario, MAX(pi.valor_unitario) as valor_max, SUM(pi.quantidade * pi.valor_unitario) as valor_total 
-            FROM proposta_itens pi 
-            JOIN propostas p ON pi.proposta_id = p.id 
-            LEFT JOIN produtos pr ON pi.produto_id = pr.id 
-            LEFT JOIN usuarios u ON p.usuario_id = u.id 
-            WHERE p.data_criacao BETWEEN ? AND ? 
-            AND p.status = 'Aprovada'";
+    $buildIn = function ($ids) {
+        if (empty($ids)) return [null, []];
+        return [implode(',', array_fill(0, count($ids), '?')), $ids];
+    };
 
+    // 1. Buscar nomes para filtro inteligente
+    $supplier_names = [];
+    $numeric_supplier_ids = [];
+    foreach ($supplier_ids as $sid) {
+        if (is_numeric($sid)) $numeric_supplier_ids[] = (int)$sid;
+        else $supplier_names[] = $sid;
+    }
+    if (!empty($numeric_supplier_ids)) {
+        list($ph, $vals) = $buildIn($numeric_supplier_ids);
+        $stmt_s = $pdo->prepare("SELECT nome FROM fornecedores WHERE id IN ($ph)");
+        $stmt_s->execute($vals);
+        $supplier_names = array_merge($supplier_names, $stmt_s->fetchAll(PDO::FETCH_COLUMN));
+    }
+    $supplier_names = array_unique(array_filter($supplier_names));
+
+    // 2. Buscar Propostas Aprovadas
+    $sql = "
+        SELECT 
+            p.id as proposta_id,
+            o.fornecedor_id,
+            f.nome as fornecedor_nome
+        FROM propostas p
+        JOIN oportunidades o ON p.oportunidade_id = o.id
+        LEFT JOIN fornecedores f ON o.fornecedor_id = f.id
+        WHERE p.status = 'Aprovada'
+        AND p.data_criacao BETWEEN ? AND ?
+    ";
     $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
 
-    if (!empty($supplier_ids)) {
-        // For legacy compatibility, supplier_ids (fornecedores) might not map directly to user_id. 
-        // But the previous query joined 'fornecedores f' on 'o.fornecedor_id'.
-        // Proposals have 'usuario_id' (Vendor) and linked to Opportunity which has 'fornecedor_id'?
-        // Let's check schema: Proposals -> Opportunity -> Fornecedor?
-        // Or Proposals -> User?
-        // Let's stick to simple Vendor (User) or try to join Opportunity if Supplier filter is needed.
-        // The original query returned 'fornecedor_id'. 
-        // Let's join Opportunity to get provider if needed.
+    if (!empty($user_ids)) {
+        list($ph, $vals) = $buildIn($user_ids);
+        $sql .= " AND p.usuario_id IN ($ph)";
+        $params = array_merge($params, $vals);
     }
-
-    // Re-writing the query to include Opportunity and Supplier for consistent filtering
-    $sql = "SELECT COALESCE(o.fornecedor_id, 0) as fornecedor_id, COALESCE(f.nome, pi.fabricante, 'Fornecedor Não Informado') as fornecedor_nome, pi.produto_id, COALESCE(pr.nome_produto, pi.descricao) as produto_nome, 
-            SUM(pi.quantidade) as quantidade, AVG(pi.valor_unitario) as valor_unitario, 
-            MAX(pi.valor_unitario) as valor_max, SUM(pi.quantidade * pi.valor_unitario) as valor_total 
-            FROM proposta_itens pi 
-            JOIN propostas p ON pi.proposta_id = p.id 
-            LEFT JOIN produtos pr ON pi.produto_id = pr.id 
-            LEFT JOIN oportunidades o ON p.oportunidade_id = o.id
-            LEFT JOIN fornecedores f ON o.fornecedor_id = f.id
-            WHERE p.data_criacao BETWEEN ? AND ? 
-            AND p.status = 'Aprovada'";
-
-    if (!empty($supplier_ids)) {
-        $in_params = trim(str_repeat('?,', count($supplier_ids)), ',');
-        $sql .= " AND o.fornecedor_id IN ($in_params)";
-        foreach ($supplier_ids as $id)
-            $params[] = $id;
-    }
-    apply_report_filters_helper($sql, $params, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids, 'fornecedor_id', 'p.usuario_id');
-    $sql .= " GROUP BY fornecedor_id, fornecedor_nome, pi.produto_id, produto_nome ORDER BY fornecedor_nome, valor_total DESC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $all_proposals = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $report_data = [];
-    foreach ($data as $row) {
-        $fid = strtoupper(trim($row['fornecedor_nome'])); // Use normalized name as key
-        if (!isset($report_data[$fid]))
-            $report_data[$fid] = ['fornecedor_id' => $row['fornecedor_id'], 'fornecedor_nome' => $row['fornecedor_nome'], 'rows' => []];
-        $report_data[$fid]['rows'][] = $row;
+    // 3. Buscar Itens e Filtrar
+    $proposal_ids = array_column($all_proposals, 'proposta_id');
+    $items = [];
+    if (!empty($proposal_ids)) {
+        $ph_ids = implode(',', array_fill(0, count($proposal_ids), '?'));
+        $sql_items = "SELECT pi.proposta_id, pi.descricao as produto_nome, pi.fabricante, pi.quantidade, pi.valor_unitario, (pi.quantidade * pi.valor_unitario) as valor_total 
+                      FROM proposta_itens pi WHERE pi.proposta_id IN ($ph_ids)";
+        $stmt_items = $pdo->prepare($sql_items);
+        $stmt_items->execute($proposal_ids);
+        $all_items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
+
+        $prop_meta = [];
+        foreach ($all_proposals as $p) $prop_meta[$p['proposta_id']] = $p;
+
+        foreach ($all_items as $it) {
+            $p = $prop_meta[$it['proposta_id']];
+            $match = false;
+            if (empty($supplier_names)) {
+                $match = true;
+            } else {
+                foreach ($supplier_names as $sn) {
+                    if (stripos($p['fornecedor_nome'] ?? '', $sn) !== false || stripos($it['fabricante'] ?? '', $sn) !== false) {
+                        $match = true; break;
+                    }
+                }
+            }
+            if ($match) {
+                $it['fornecedor_nome'] = $p['fornecedor_nome'] ?: ($it['fabricante'] ?: 'OUTROS');
+                $items[] = $it;
+            }
+        }
     }
-    return array_values($report_data); // Reset keys for frontend
+
+    // 4. Buscar Vendas Diretas (vendas_fornecedores)
+    $sql_vf = "
+        SELECT 
+            fabricante_marca as fornecedor_nome,
+            titulo as produto_nome,
+            1 as quantidade,
+            valor_total as valor_unitario,
+            valor_total
+        FROM vendas_fornecedores
+        WHERE data_venda BETWEEN ? AND ?
+    ";
+    $params_vf = [$start_date, $end_date];
+
+    if (!empty($user_ids)) {
+        list($ph, $vals) = $buildIn($user_ids);
+        $sql_vf .= " AND usuario_id IN ($ph)";
+        $params_vf = array_merge($params_vf, $vals);
+    }
+
+    if (!empty($supplier_names)) {
+        $sql_vf .= " AND (1=0 ";
+        foreach ($supplier_names as $sn) {
+            $sql_vf .= " OR fabricante_marca LIKE ? OR titulo LIKE ? ";
+            $params_vf[] = "%$sn%";
+            $params_vf[] = "%$sn%";
+        }
+        $sql_vf .= ")";
+    }
+
+    $stmt_vf = $pdo->prepare($sql_vf);
+    $stmt_vf->execute($params_vf);
+    $items = array_merge($items, $stmt_vf->fetchAll(PDO::FETCH_ASSOC));
+
+    // 5. Agrupar por Fornecedor (como o frontend espera)
+    $grouped = [];
+    foreach ($items as $it) {
+        $fn = $it['fornecedor_nome'] ?: 'OUTROS';
+        if (!empty($supplier_names)) {
+            foreach($supplier_names as $sn) {
+                if (stripos($fn, $sn) !== false) { $fn = strtoupper($sn); break; }
+            }
+        }
+        if (!isset($grouped[$fn])) $grouped[$fn] = ['fornecedor_nome' => $fn, 'rows' => []];
+        $grouped[$fn]['rows'][] = $it;
+    }
+
+    return array_values($grouped);
 }
+
 
 function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids = [])
 {
@@ -1752,10 +1828,30 @@ function get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_i
 
 function get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids = [])
 {
+    $buildIn = function ($ids) {
+        if (empty($ids)) return [null, []];
+        return [implode(',', array_fill(0, count($ids), '?')), $ids];
+    };
+
+    // 1. Buscar nomes para filtro inteligente
+    $supplier_names = [];
+    $numeric_supplier_ids = [];
+    foreach ($supplier_ids as $sid) {
+        if (is_numeric($sid)) $numeric_supplier_ids[] = (int)$sid;
+        else $supplier_names[] = $sid;
+    }
+    if (!empty($numeric_supplier_ids)) {
+        list($ph, $vals) = $buildIn($numeric_supplier_ids);
+        $stmt_s = $pdo->prepare("SELECT nome FROM fornecedores WHERE id IN ($ph)");
+        $stmt_s->execute($vals);
+        $supplier_names = array_merge($supplier_names, $stmt_s->fetchAll(PDO::FETCH_COLUMN));
+    }
+    $supplier_names = array_unique(array_filter($supplier_names));
+
     // Funnel ID 2 = Licitações
     $sql = "
         SELECT 
-            COALESCE(org.nome_fantasia, org.razao_social, f.nome, 'Fornecedor Não Informado') as fornecedor_nome,
+            COALESCE(org.nome_fantasia, org.razao_social, f.nome, 'Fornecedor Não Informado') as fornecedor_nome_full,
             ef.id as etapa_id,
             ef.nome as etapa_nome, 
             ef.ordem as etapa_ordem,
@@ -1781,9 +1877,13 @@ function get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_id
 
     $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
 
-    apply_report_filters_helper($sql, $params, 'o', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
+    // Para o Funil de Licitações, o apply_report_filters_helper já cuida de fornecedor_id se for INT.
+    // Mas se for brand name, precisamos de algo especial.
+    // Vamos filtrar manualmente depois se houver Brand Names.
+    
+    apply_report_filters_helper($sql, $params, 'o', array_filter($supplier_ids, 'is_numeric'), $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
 
-    $sql .= " GROUP BY fornecedor_nome, ef.id, ef.nome, ef.ordem ORDER BY fornecedor_nome, ef.ordem ASC";
+    $sql .= " GROUP BY fornecedor_nome_full, ef.id, ef.nome, ef.ordem ORDER BY fornecedor_nome_full, ef.ordem ASC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -1794,15 +1894,30 @@ function get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_id
         'Homologado', 'Ata/Carona', 'Empenhado', 'Contrato', 'Desclassificado', 
         'Fracassado', 'Revogado', 'Anulado', 'Suspenso'
     ];
+    // Fornecedores fixos para a matriz
     $fornecedores_rigidos = ['BRASIL MEDICA', 'HEALTH', 'INSTRAMED', 'LIVANOVA', 'MASIMO', 'MERIL', 'MICROMED', 'NIPRO', 'SIGMAFIX'];
+
+    // Se o usuário selecionou marcas específicas, filtramos a matriz para mostrar apenas elas
+    if (!empty($supplier_names)) {
+        $allowed = [];
+        foreach ($fornecedores_rigidos as $fr) {
+            foreach ($supplier_names as $sn) {
+                if (stripos($fr, $sn) !== false) { $allowed[] = $fr; break; }
+            }
+        }
+        if (!empty($allowed)) $fornecedores_rigidos = $allowed;
+    }
 
     $matrix = [];
     foreach ($fornecedores_rigidos as $fj) {
         $matrix[$fj] = [];
         foreach ($etapas_rigidas as $idx => $nome_etapa) {
             $matrix[$fj][$nome_etapa] = [
-                'fornecedor_nome' => $fj,
+                'label' => $nome_etapa, // Adicionado label para o frontend
                 'etapa_nome' => $nome_etapa,
+                'count' => 0,          // Adicionado count para o frontend
+                'value' => 0,          // Adicionado value para o frontend
+                'fornecedor_nome' => $fj,
                 'etapa_ordem' => $idx + 1,
                 'qtd_oportunidades' => 0,
                 'valor_total' => 0
@@ -1813,7 +1928,7 @@ function get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_id
     foreach ($results as $row) {
         $matched_ff = false;
         foreach($fornecedores_rigidos as $fj) {
-            if (stripos(trim($row['fornecedor_nome']), $fj) !== false) {
+            if (stripos(trim($row['fornecedor_nome_full']), $fj) !== false) {
                 $matched_ff = $fj;
                 break;
             }
@@ -1831,18 +1946,34 @@ function get_licitacoes_funnel_report($pdo, $start_date, $end_date, $supplier_id
         $etapa_to_use = $matched_et;
         if (!$etapa_to_use) continue;
 
+        $matrix[$matched_ff][$etapa_to_use]['count'] += $row['qtd_oportunidades'];
+        $matrix[$matched_ff][$etapa_to_use]['value'] += $row['valor_total'];
         $matrix[$matched_ff][$etapa_to_use]['qtd_oportunidades'] += $row['qtd_oportunidades'];
         $matrix[$matched_ff][$etapa_to_use]['valor_total'] += $row['valor_total'];
     }
 
-    $final_out = [];
-    foreach ($fornecedores_rigidos as $fj) {
-        foreach ($etapas_rigidas as $et) {
-            $final_out[] = $matrix[$fj][$et];
+    // Se houver filtro de marcas, retornamos apenas o funil somado?
+    // O frontend espera um array plano para renderFunnelTable.
+    // Se o usuário selecionou apenas 1 fornecedor (INSTRAMED), retornamos as etapas desse fornecedor.
+    // Se selecionou vários ou nenhum, talvez devêssemos consolidar?
+    
+    // Decisão: Se houver apenas 1 fornecedor selecionado, retorna o funil dele.
+    // Se houver mais, retorna a soma de todos para cada etapa.
+    
+    $consolidated = [];
+    foreach ($etapas_rigidas as $idx => $et) {
+        $consolidated[$et] = [
+            'label' => $et,
+            'count' => 0,
+            'value' => 0
+        ];
+        foreach ($fornecedores_rigidos as $fj) {
+            $consolidated[$et]['count'] += $matrix[$fj][$et]['count'];
+            $consolidated[$et]['value'] += $matrix[$fj][$et]['value'];
         }
     }
 
-    return $final_out;
+    return array_values($consolidated);
 }
 
 // ── GET COMMISSION CONFIG ─────────────────────────────────────────────────────
@@ -2115,6 +2246,16 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
         return [implode(',', array_fill(0, count($ids), '?')), $ids];
     };
 
+    // 1. Buscar nomes dos fornecedores para filtro inteligente
+    $supplier_names = [];
+    if (!empty($supplier_ids)) {
+        list($ph, $vals) = $buildIn($supplier_ids);
+        $stmt_s = $pdo->prepare("SELECT nome FROM fornecedores WHERE id IN ($ph)");
+        $stmt_s->execute($vals);
+        $supplier_names = $stmt_s->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    // 2. Query Principal: Propostas
     $sql = "
         SELECT 
             p.id as proposta_id,
@@ -2128,27 +2269,24 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
             u.nome as vendedor_nome,
             COALESCE(org.nome_fantasia, cpf.nome, 'N/D') as cliente_nome,
             org.estado as uf,
-            org.cidade
+            org.cidade,
+            p.oportunidade_id
         FROM propostas p
         LEFT JOIN usuarios u ON p.usuario_id = u.id
         LEFT JOIN organizacoes org ON p.organizacao_id = org.id
         LEFT JOIN clientes_pf cpf ON p.cliente_pf_id = cpf.id
-        WHERE p.data_criacao BETWEEN ? AND ?
+        WHERE (p.data_criacao BETWEEN ? AND ?)
         AND p.status IN ('Aprovada', 'Recusada')
     ";
     $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
 
-    // Filters
-    if (!empty($supplier_ids)) {
-        list($ph, $vals) = $buildIn($supplier_ids);
-        $sql .= " AND p.oportunidade_id IN (SELECT id FROM oportunidades WHERE fornecedor_id IN ($ph))";
-        $params = array_merge($params, $vals);
-    }
     if (!empty($user_ids)) {
         list($ph, $vals) = $buildIn($user_ids);
         $sql .= " AND p.usuario_id IN ($ph)";
         $params = array_merge($params, $vals);
     }
+    
+    // Filtro de cliente e UF (omitido aqui para brevidade, mas deve ser mantido)
     if (!empty($cliente_ids)) {
         $org_ids = []; $pf_ids = [];
         foreach ($cliente_ids as $cid) {
@@ -2175,14 +2313,12 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
         $params = array_merge($params, $vals);
     }
 
-    $sql .= " ORDER BY p.data_criacao DESC";
-
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    $proposals = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $all_proposals = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Buscar itens de cada proposta
-    $proposal_ids = array_column($proposals, 'proposta_id');
+    // 3. Buscar Itens e Filtrar por Fornecedor (Inteligente)
+    $proposal_ids = array_column($all_proposals, 'proposta_id');
     $items_map = [];
     if (!empty($proposal_ids)) {
         $ph_ids = implode(',', array_fill(0, count($proposal_ids), '?'));
@@ -2194,16 +2330,93 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
         }
     }
 
-    // Enriquecer propostas com itens
-    foreach ($proposals as &$p) {
-        $p['itens'] = $items_map[$p['proposta_id']] ?? [];
-        $p['produtos_resumo'] = implode(', ', array_unique(array_column($p['itens'], 'descricao')));
-        $p['fabricantes_resumo'] = implode(', ', array_unique(array_filter(array_column($p['itens'], 'fabricante'))));
+    $filtered_proposals = [];
+    foreach ($all_proposals as $p) {
+        $p_items = $items_map[$p['proposta_id']] ?? [];
+        $p['itens'] = $p_items;
+        $p['produtos_resumo'] = implode(', ', array_unique(array_column($p_items, 'descricao')));
+        $p['fabricantes_resumo'] = implode(', ', array_unique(array_filter(array_column($p_items, 'fabricante'))));
+        
+        // Lógica de filtro por fornecedor
+        if (!empty($supplier_ids)) {
+            $match = false;
+            // 1. Checa se a oportunidade tem o ID do fornecedor
+            $stmt_opp = $pdo->prepare("SELECT fornecedor_id FROM oportunidades WHERE id = ?");
+            $stmt_opp->execute([$p['oportunidade_id']]);
+            $o_fid = $stmt_opp->fetchColumn();
+            if ($o_fid && in_array($o_fid, $supplier_ids)) {
+                $match = true;
+            } else {
+                // 2. Checa se algum item tem o nome do fornecedor no fabricante
+                foreach ($p_items as $it) {
+                    foreach ($supplier_names as $sn) {
+                        if (stripos($it['fabricante'] ?? '', $sn) !== false) {
+                            $match = true; break 2;
+                        }
+                    }
+                }
+            }
+            if (!$match) continue;
+        }
+        $filtered_proposals[] = $p;
     }
 
-    // KPIs
+    // 4. Buscar Vendas Diretas (vendas_fornecedores)
+    $direct_sales = [];
+    $sql_vf = "
+        SELECT 
+            NULL as proposta_id,
+            titulo as numero_proposta,
+            valor_total,
+            'Aprovada' as status,
+            data_venda as data_criacao,
+            'Venda Direta / Importação' as motivo_status,
+            '' as condicoes_pagamento,
+            u.id as vendedor_id,
+            u.nome as vendedor_nome,
+            'DIRETO' as cliente_nome,
+            '' as uf,
+            '' as cidade,
+            fabricante_marca as fabricantes_resumo,
+            descricao_produto as produtos_resumo
+        FROM vendas_fornecedores vf
+        LEFT JOIN usuarios u ON vf.usuario_id = u.id
+        WHERE data_venda BETWEEN ? AND ?
+    ";
+    $params_vf = [$start_date, $end_date];
+
+    if (!empty($user_ids)) {
+        list($ph, $vals) = $buildIn($user_ids);
+        $sql_vf .= " AND vf.usuario_id IN ($ph)";
+        $params_vf = array_merge($params_vf, $vals);
+    }
+    
+    if (!empty($supplier_ids)) {
+        // Para vendas diretas, filtramos pelo nome (fabricante_marca) ou id se disponível
+        $sql_vf .= " AND (vf.fornecedor_id IN (" . implode(',', array_fill(0, count($supplier_ids), '?')) . ")";
+        $params_vf = array_merge($params_vf, $supplier_ids);
+        foreach ($supplier_names as $sn) {
+            $sql_vf .= " OR vf.fabricante_marca LIKE ? OR vf.titulo LIKE ?";
+            $params_vf[] = "%$sn%";
+            $params_vf[] = "%$sn%";
+        }
+        $sql_vf .= ")";
+    }
+
+    $stmt_vf = $pdo->prepare($sql_vf);
+    $stmt_vf->execute($params_vf);
+    $direct_sales = $stmt_vf->fetchAll(PDO::FETCH_ASSOC);
+    foreach($direct_sales as &$ds) { $ds['itens'] = []; }
+
+    // 5. Unificar e Ordenar por Data
+    $final_data = array_merge($filtered_proposals, $direct_sales);
+    usort($final_data, function($a, $b) {
+        return strtotime($b['data_criacao']) - strtotime($a['data_criacao']);
+    });
+
+    // 6. KPIs
     $total_aprovado = 0; $total_recusado = 0; $qtd_aprovado = 0; $qtd_recusado = 0;
-    foreach ($proposals as $p) {
+    foreach ($final_data as $p) {
         if ($p['status'] === 'Aprovada') {
             $total_aprovado += (float)$p['valor_total'];
             $qtd_aprovado++;
@@ -2216,7 +2429,7 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
     $taxa = $total_decididas > 0 ? round(($qtd_aprovado / $total_decididas) * 100, 1) : 0;
 
     return [
-        'proposals' => $proposals,
+        'proposals' => $final_data,
         'kpis' => [
             'total_aprovado' => $total_aprovado,
             'total_recusado' => $total_recusado,
