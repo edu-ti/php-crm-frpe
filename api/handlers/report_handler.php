@@ -41,6 +41,8 @@ class ReportHandler
                 $this->getProposalsByStatus($startDate, $endDate);
                 break;
             case 'by_bidding_funnel':
+            case 'licitacoes_funnel':
+            case 'licitacoes':
                 $this->getBiddingFunnel($startDate, $endDate);
                 break;
             case 'clients':
@@ -103,23 +105,32 @@ class ReportHandler
     {
         try {
             // Total Sales: Sum of 'valor_total' from 'propostas' with status 'Aprovada'
-            $sqlSales = "SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
-                         WHERE data_criacao BETWEEN :start AND :end AND status = 'Aprovada'";
+            $sqlSales = "SELECT SUM(total) as total FROM (
+                            SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
+                            WHERE data_criacao BETWEEN ? AND ? AND status = 'Aprovada'
+                            UNION ALL
+                            SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores 
+                            WHERE data_venda BETWEEN ? AND ?
+                         ) as total_sales";
+            $params = [
+                $start . ' 00:00:00', $end . ' 23:59:59',
+                $start . ' 00:00:00', $end . ' 23:59:59'
+            ];
             $stmtSales = $this->db->prepare($sqlSales);
-            $stmtSales->execute([':start' => $start . ' 00:00:00', ':end' => $end . ' 23:59:59']);
-            $totalSales = $stmtSales->fetch(PDO::FETCH_ASSOC)['total'];
+            $stmtSales->execute($params);
+            $totalSales = $stmtSales->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
             // Open Opportunities: Count of 'oportunidades' created in period
-            $sqlOpps = "SELECT COUNT(*) as total FROM oportunidades WHERE data_criacao BETWEEN :start AND :end";
+            $sqlOpps = "SELECT COUNT(*) as total FROM oportunidades WHERE data_criacao BETWEEN ? AND ?";
             $stmtOpps = $this->db->prepare($sqlOpps);
-            $stmtOpps->execute([':start' => $start . ' 00:00:00', ':end' => $end . ' 23:59:59']);
+            $stmtOpps->execute([$start . ' 00:00:00', $end . ' 23:59:59']);
             $openOpps = $stmtOpps->fetch(PDO::FETCH_ASSOC)['total'];
 
             // Active Proposals: Count of 'propostas' with status 'Enviada'
             $sqlProps = "SELECT COUNT(*) as total FROM propostas 
-                         WHERE data_criacao BETWEEN :start AND :end AND status = 'Enviada'";
+                         WHERE data_criacao BETWEEN ? AND ? AND status = 'Enviada'";
             $stmtProps = $this->db->prepare($sqlProps);
-            $stmtProps->execute([':start' => $start . ' 00:00:00', ':end' => $end . ' 23:59:59']);
+            $stmtProps->execute([$start . ' 00:00:00', $end . ' 23:59:59']);
             $activeProps = $stmtProps->fetch(PDO::FETCH_ASSOC)['total'];
 
             // Conversion Rate: (Aprovada / (Aprovada + Recusada)) * 100
@@ -127,9 +138,9 @@ class ReportHandler
                             SUM(CASE WHEN status = 'Aprovada' THEN 1 ELSE 0 END) as won,
                             SUM(CASE WHEN status IN ('Aprovada', 'Recusada') THEN 1 ELSE 0 END) as total_closed
                         FROM propostas 
-                        WHERE data_criacao BETWEEN :start AND :end";
+                        WHERE data_criacao BETWEEN ? AND ?";
             $stmtConv = $this->db->prepare($sqlConv);
-            $stmtConv->execute([':start' => $start . ' 00:00:00', ':end' => $end . ' 23:59:59']);
+            $stmtConv->execute([$start . ' 00:00:00', $end . ' 23:59:59']);
             $convData = $stmtConv->fetch(PDO::FETCH_ASSOC);
 
             $conversionRate = ($convData['total_closed'] > 0) ?
@@ -150,14 +161,22 @@ class ReportHandler
     {
         try {
             // Using 'propostas' LEFT JOIN 'usuarios'
-            $sql = "SELECT u.nome as label, COUNT(p.id) as count, COALESCE(SUM(p.valor_total), 0) as value
-                    FROM propostas p 
-                    LEFT JOIN usuarios u ON p.usuario_id = u.id
-                    WHERE p.data_criacao BETWEEN :start AND :end 
-                    AND p.status = 'Aprovada'
-                    GROUP BY u.nome 
-                    ORDER BY value DESC";
-            $this->executeQuery($sql, $start . ' 00:00:00', $end . ' 23:59:59');
+            $sql = "SELECT vendedor as label, COUNT(*) as count, SUM(total) as value FROM (
+                        SELECT u.nome as vendedor, p.id, p.valor_total as total 
+                        FROM propostas p 
+                        LEFT JOIN usuarios u ON p.usuario_id = u.id
+                        WHERE p.data_criacao BETWEEN ? AND ? AND p.status = 'Aprovada'
+                        UNION ALL
+                        SELECT u.nome as vendedor, vf.id, vf.valor_total as total 
+                        FROM vendas_fornecedores vf 
+                        LEFT JOIN usuarios u ON vf.usuario_id = u.id
+                        WHERE vf.data_venda BETWEEN ? AND ?
+                    ) as combined_sales
+                    GROUP BY vendedor ORDER BY value DESC";
+            $this->executeQuery($sql, [
+                $start . ' 00:00:00', $end . ' 23:59:59',
+                $start . ' 00:00:00', $end . ' 23:59:59'
+            ]);
         } catch (Exception $e) {
             $this->sendError($e);
         }
@@ -167,17 +186,24 @@ class ReportHandler
     {
         try {
             // Using 'propostas' -> 'oportunidades' -> 'fornecedores'
-            $sql = "SELECT f.nome as label, COUNT(p.id) as count, COALESCE(SUM(p.valor_total), 0) as value
-                    FROM propostas p 
-                    JOIN oportunidades o ON p.oportunidade_id = o.id 
-                    LEFT JOIN fornecedores f ON o.fornecedor_id = f.id 
-                    WHERE p.data_criacao BETWEEN :start AND :end 
-                    AND p.status = 'Aprovada'
-                    AND f.nome IS NOT NULL
-                    GROUP BY f.nome 
-                    ORDER BY value DESC 
-                    LIMIT 15";
-            $this->executeQuery($sql, $start . ' 00:00:00', $end . ' 23:59:59');
+            $sql = "SELECT fornecedor as label, COUNT(*) as count, SUM(total) as value FROM (
+                        SELECT f.nome as fornecedor, p.id, p.valor_total as total
+                        FROM propostas p 
+                        JOIN oportunidades o ON p.oportunidade_id = o.id 
+                        LEFT JOIN fornecedores f ON o.fornecedor_id = f.id 
+                        WHERE p.data_criacao BETWEEN ? AND ? AND p.status = 'Aprovada'
+                        UNION ALL
+                        SELECT f.nome as fornecedor, vf.id, vf.valor_total as total
+                        FROM vendas_fornecedores vf
+                        LEFT JOIN fornecedores f ON vf.fornecedor_id = f.id
+                        WHERE vf.data_venda BETWEEN ? AND ?
+                    ) as combined_suppliers
+                    WHERE fornecedor IS NOT NULL
+                    GROUP BY fornecedor ORDER BY value DESC LIMIT 15";
+            $this->executeQuery($sql, [
+                $start . ' 00:00:00', $end . ' 23:59:59',
+                $start . ' 00:00:00', $end . ' 23:59:59'
+            ]);
         } catch (Exception $e) {
             echo json_encode([]);
         }
@@ -191,12 +217,12 @@ class ReportHandler
                     FROM proposta_itens pi 
                     JOIN propostas p ON pi.proposta_id = p.id 
                     LEFT JOIN produtos pr ON pi.produto_id = pr.id
-                    WHERE p.data_criacao BETWEEN :start AND :end 
+                    WHERE p.data_criacao BETWEEN ? AND ? 
                     AND p.status = 'Aprovada'
                     GROUP BY pr.nome_produto 
                     ORDER BY count DESC 
                     LIMIT 20";
-            $this->executeQuery($sql, $start . ' 00:00:00', $end . ' 23:59:59');
+            $this->executeQuery($sql, [$start . ' 00:00:00', $end . ' 23:59:59']);
         } catch (Exception $e) {
             $this->sendError($e);
         }
@@ -207,9 +233,9 @@ class ReportHandler
         try {
             $sql = "SELECT status as label, COUNT(*) as count, COALESCE(SUM(valor_total), 0) as value
                     FROM propostas 
-                    WHERE data_criacao BETWEEN :start AND :end 
+                    WHERE data_criacao BETWEEN ? AND ? 
                     GROUP BY status";
-            $this->executeQuery($sql, $start . ' 00:00:00', $end . ' 23:59:59');
+            $this->executeQuery($sql, [$start . ' 00:00:00', $end . ' 23:59:59']);
         } catch (Exception $e) {
             $this->sendError($e);
         }
@@ -223,6 +249,7 @@ class ReportHandler
                     JOIN etapas_funil ef ON o.etapa_id = ef.id
                     LEFT JOIN propostas p ON o.id = p.oportunidade_id AND p.status = 'Aprovada'
                     WHERE o.data_criacao BETWEEN ? AND ?
+                    AND (o.numero_edital IS NOT NULL AND o.numero_edital != '')
                     AND ef.funil_id = 2";
             
             $params = [$start . ' 00:00:00', $end . ' 23:59:59'];
@@ -234,7 +261,10 @@ class ReportHandler
                 $params = array_merge($params, $fixedSuppliers);
             }
 
-            $this->applyFilters($sql, $params, 'o');
+            $currentType = $_GET['report_type'] ?? '';
+            if ($currentType === 'licitacoes_funnel' || $currentType === 'licitacoes') {
+                $this->applyFilters($sql, $params, 'o');
+            }
 
             $sql .= " GROUP BY ef.nome, ef.ordem ORDER BY ef.ordem ASC";
             
@@ -242,7 +272,11 @@ class ReportHandler
             $stmt->execute($params);
             
             $rawData = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $steps = ['Captação','Análise de Edital','Montagem de Proposta','Aprovação Interna','Aprovação Fornecedor','Participação','Acompanhamento','Adjudicado','Homologado','Perdido','Fracassado','Suspenso'];
+            $steps = [
+                'Captação de Edital', 'Acolhimento de propostas', 'Em análise Técnica', 
+                'Homologado', 'Ata/Carona', 'Empenhado', 'Contrato', 'Desclassificado', 
+                'Fracassado', 'Revogado', 'Anulado', 'Suspenso'
+            ];
             
             $result = [];
             foreach ($steps as $step) {
@@ -331,26 +365,26 @@ class ReportHandler
             // Total Vendido (Aprovado) - Propostas Aprovadas + Vendas Fornecedores
             $sqlSales = "SELECT SUM(total) as total FROM (
                             SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
-                            WHERE status = 'Aprovada' AND YEAR(data_criacao) = :year
+                            WHERE status = 'Aprovada' AND YEAR(data_criacao) = ?
                             UNION ALL
                             SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores 
-                            WHERE YEAR(data_venda) = :year
+                            WHERE YEAR(data_venda) = ?
                          ) as sales";
             $stmtSales = $this->db->prepare($sqlSales);
-            $stmtSales->execute([':year' => $year]);
+            $stmtSales->execute([$year, $year]);
             $totalSales = $stmtSales->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
             // Vendas Perdidas (Propostas Recusadas)
             $sqlLost = "SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
-                        WHERE status = 'Recusada' AND YEAR(data_criacao) = :year";
+                        WHERE status = 'Recusada' AND YEAR(data_criacao) = ?";
             $stmtLost = $this->db->prepare($sqlLost);
-            $stmtLost->execute([':year' => $year]);
+            $stmtLost->execute([$year]);
             $lostSales = $stmtLost->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
-            // Licitações Ativas (Funil ID 9 e status não final)
+            // Licitações Ativas (Funil ID 2 e status não final)
             $sqlBids = "SELECT COUNT(*) as total FROM oportunidades o
                         JOIN etapas_funil ef ON o.etapa_id = ef.id
-                        WHERE ef.funil_id = 9 AND ef.nome NOT IN ('Perdido', 'Fracassado', 'Concluído', 'Aprovado')";
+                        WHERE ef.funil_id = 2 AND ef.nome NOT IN ('Perdido', 'Fracassado', 'Concluído', 'Aprovado')";
             $stmtBids = $this->db->prepare($sqlBids);
             $stmtBids->execute();
             $activeBids = $stmtBids->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
@@ -359,27 +393,27 @@ class ReportHandler
             $month = date('m', strtotime($start));
             $sqlMonth = "SELECT SUM(total) as total FROM (
                             SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
-                            WHERE status = 'Aprovada' AND MONTH(data_criacao) = :month AND YEAR(data_criacao) = :year
+                            WHERE status = 'Aprovada' AND MONTH(data_criacao) = ? AND YEAR(data_criacao) = ?
                             UNION ALL
                             SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores 
-                            WHERE MONTH(data_venda) = :month AND YEAR(data_venda) = :year
+                            WHERE MONTH(data_venda) = ? AND YEAR(data_venda) = ?
                          ) as month_sales";
             $stmtMonth = $this->db->prepare($sqlMonth);
-            $stmtMonth->execute([':month' => $month, ':year' => $year]);
+            $stmtMonth->execute([$month, $year, $month, $year]);
             $monthSales = $stmtMonth->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
             // Vendas por Vendedor (Ano Atual - Top 5)
             $sqlByVendedor = "SELECT COALESCE(u.nome, 'Outros') as vendedor, SUM(total) as total FROM (
                                 SELECT usuario_id, SUM(valor_total) as total FROM propostas 
-                                WHERE status = 'Aprovada' AND YEAR(data_criacao) = :year GROUP BY usuario_id
+                                WHERE status = 'Aprovada' AND YEAR(data_criacao) = ? GROUP BY usuario_id
                                 UNION ALL
                                 SELECT usuario_id, SUM(valor_total) FROM vendas_fornecedores 
-                                WHERE YEAR(data_venda) = :year GROUP BY usuario_id
+                                WHERE YEAR(data_venda) = ? GROUP BY usuario_id
                              ) as vendedor_sales
                              LEFT JOIN usuarios u ON vendedor_sales.usuario_id = u.id
                              GROUP BY vendedor ORDER BY total DESC LIMIT 5";
             $stmtByVel = $this->db->prepare($sqlByVendedor);
-            $stmtByVel->execute([':year' => $year]);
+            $stmtByVel->execute([$year, $year]);
             $salesByVendedor = $stmtByVel->fetchAll(PDO::FETCH_ASSOC);
 
             echo json_encode([
@@ -403,19 +437,19 @@ class ReportHandler
             
             // Monthly Sales
             $sqlSales = "SELECT MONTH(dt) as mes, SUM(val) as total FROM (
-                            SELECT data_criacao as dt, valor_total as val FROM propostas WHERE status = 'Aprovada' AND YEAR(data_criacao) = :year
+                            SELECT data_criacao as dt, valor_total as val FROM propostas WHERE status = 'Aprovada' AND YEAR(data_criacao) = ?
                             UNION ALL
-                            SELECT data_venda as dt, valor_total as val FROM vendas_fornecedores WHERE YEAR(data_venda) = :year
+                            SELECT data_venda as dt, valor_total as val FROM vendas_fornecedores WHERE YEAR(data_venda) = ?
                          ) as combined GROUP BY mes";
             $stmtSales = $this->db->prepare($sqlSales);
-            $stmtSales->execute([':year' => $year]);
+            $stmtSales->execute([$year, $year]);
             $sales = $stmtSales->fetchAll(PDO::FETCH_KEY_PAIR);
 
             // Monthly Goals (Sum of all supplier goals for that year)
             // Note: Simplification here, we take meta_mensal_json if exists, or meta_mensal
-            $sqlGoals = "SELECT meta_mensal, meta_mensal_json FROM fornecedor_metas WHERE ano = :year";
+            $sqlGoals = "SELECT meta_mensal, meta_mensal_json FROM fornecedor_metas WHERE ano = ?";
             $stmtGoals = $this->db->prepare($sqlGoals);
-            $stmtGoals->execute([':year' => $year]);
+            $stmtGoals->execute([$year]);
             $goalsRaw = $stmtGoals->fetchAll(PDO::FETCH_ASSOC);
 
             $monthlyGoals = array_fill(1, 12, 0);
@@ -462,9 +496,9 @@ class ReportHandler
                         COALESCE(uf.valor_fixo, 0) as valor_fixo,
                         COALESCE(uf.percentual_comissao, 1.00) as percentual_comissao,
                         COALESCE(uf.valor_trimestre, 0) as valor_trimestre,
-                        (SELECT COALESCE(SUM(valor_total), 0) FROM propostas WHERE usuario_id = u.id AND status = 'Aprovada' AND data_criacao BETWEEN :start AND :end) +
-                        (SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores WHERE usuario_id = u.id AND data_venda BETWEEN :start AND :end) as total_vendas,
-                        (SELECT COALESCE(SUM(valor_meta), 0) FROM vendas_objetivos WHERE usuario_id = u.id AND (mes = MONTH(:start) OR mes = 0) AND ano = YEAR(:start)) as meta_mensal
+                        (SELECT COALESCE(SUM(valor_total), 0) FROM propostas WHERE usuario_id = u.id AND status = 'Aprovada' AND data_criacao BETWEEN ? AND ?) +
+                        (SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores WHERE usuario_id = u.id AND data_venda BETWEEN ? AND ?) as total_vendas,
+                        (SELECT COALESCE(SUM(valor_meta), 0) FROM vendas_objetivos WHERE usuario_id = u.id AND (mes = MONTH(?) OR mes = 0) AND ano = YEAR(?)) as meta_mensal
                     FROM usuarios u
                     LEFT JOIN usuarios_financas uf ON u.id = uf.usuario_id
                     WHERE u.perfil IN ('Vendedor', 'Analista', 'Gestor') AND u.deleted_at IS NULL";
@@ -473,12 +507,14 @@ class ReportHandler
             // Garantir que as datas estao no formato correto para o PHP e MySQL
             $dtStart = date('Y-m-d', strtotime($start)) . ' 00:00:00';
             $dtEnd = date('Y-m-d', strtotime($end)) . ' 23:59:59';
-            $yearVal = date('Y', strtotime($start));
-            $monthVal = date('n', strtotime($start)); // n = mes sem leading zero
 
             $stmt->execute([
-                ':start' => $dtStart, 
-                ':end' => $dtEnd
+                $dtStart, 
+                $dtEnd,
+                $dtStart,
+                $dtEnd,
+                $dtStart,
+                $dtStart
             ]);
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -535,10 +571,10 @@ class ReportHandler
         }
     }
 
-    private function executeQuery($sql, $start, $end)
+    private function executeQuery($sql, $params = [])
     {
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([':start' => $start, ':end' => $end]);
+        $stmt->execute(is_array($params) ? $params : [$params]);
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 
@@ -559,7 +595,11 @@ function handle_get_report_data($pdo)
 
     // DEBUG: Logging Removed
 
-    $newActions = ['dashboard_summary', 'by_vendor', 'by_supplier', 'by_item', 'by_proposal_status', 'by_bidding_funnel', 'clients', 'forecast'];
+    $newActions = [
+        'dashboard_summary', 'by_vendor', 'by_supplier', 'by_item', 
+        'by_proposal_status', 'by_bidding_funnel', 'clients', 'forecast', 
+        'bi_kpis', 'sales_vs_goals', 'licitacoes_funnel', 'licitacoes'
+    ];
 
     if (in_array($type, $newActions)) {
         $handler = new ReportHandler();
