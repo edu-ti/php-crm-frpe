@@ -103,3 +103,30 @@ function send_email_notification(array $recipients, string $subject, string $htm
         return false;
     }
 }
+
+/**
+ * Normaliza uma data para o formato Y-m-d (MySQL).
+ * Trata formatos DD/MM/YYYY (BR) e ISO.
+ */
+function crm_normalize_date($date, $endOfDay = false) {
+    if (!$date) return null;
+    
+    // Tratamento para formato DD/MM/YYYY
+    if (strpos($date, '/') !== false) {
+        $parts = explode('/', $date);
+        if (count($parts) === 3) {
+            // Se o primeiro item tem 4 dígitos, assume YYYY/MM/DD
+            if (strlen($parts[0]) === 4) {
+                $date = $parts[0] . '-' . $parts[1] . '-' . $parts[2];
+            } else {
+                // Caso contrário assume DD/MM/YYYY
+                $date = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
+            }
+        }
+    }
+    
+    $ts = strtotime($date);
+    if ($ts === false) return null;
+    
+    return date('Y-m-d', $ts) . ($endOfDay ? ' 23:59:59' : ' 00:00:00');
+}

@@ -13,6 +13,14 @@ class ReportHandler
         $this->db = $db->getConnection();
     }
 
+    private function getDates($start, $end)
+    {
+        return [
+            crm_normalize_date($start),
+            crm_normalize_date($end, true)
+        ];
+    }
+
     public function handleRequest($method, $action)
     {
         if ($method !== 'GET') {
@@ -58,7 +66,11 @@ class ReportHandler
                 $this->getSalesVsGoalsData($startDate, $endDate);
                 break;
             case 'commission_analysis':
-                $this->getCommissionAnalysis($startDate, $endDate);
+                $supplier_ids = isset($_GET['supplier_id']) && $_GET['supplier_id'] !== '' ? explode(',', $_GET['supplier_id']) : [];
+                $this->getCommissionAnalysis($startDate, $endDate, false, $supplier_ids);
+                break;
+            case 'vendor_evolution':
+                $this->getVendorEvolution($startDate, $endDate);
                 break;
             default:
                 http_response_code(400);
@@ -104,6 +116,8 @@ class ReportHandler
     private function getDashboardSummary($start, $end)
     {
         try {
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+
             // Total Sales: Sum of 'valor_total' from 'propostas' with status 'Aprovada'
             $sqlSales = "SELECT SUM(total) as total FROM (
                             SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
@@ -111,11 +125,10 @@ class ReportHandler
                             UNION ALL
                             SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores 
                             WHERE data_venda BETWEEN ? AND ?
+                            AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')
                          ) as total_sales";
-            $params = [
-                $start . ' 00:00:00', $end . ' 23:59:59',
-                $start . ' 00:00:00', $end . ' 23:59:59'
-            ];
+            $params = [$dtStart, $dtEnd, $dtStart, $dtEnd];
+
             $stmtSales = $this->db->prepare($sqlSales);
             $stmtSales->execute($params);
             $totalSales = $stmtSales->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
@@ -123,14 +136,14 @@ class ReportHandler
             // Open Opportunities: Count of 'oportunidades' created in period
             $sqlOpps = "SELECT COUNT(*) as total FROM oportunidades WHERE data_criacao BETWEEN ? AND ?";
             $stmtOpps = $this->db->prepare($sqlOpps);
-            $stmtOpps->execute([$start . ' 00:00:00', $end . ' 23:59:59']);
+            $stmtOpps->execute([$dtStart, $dtEnd]);
             $openOpps = $stmtOpps->fetch(PDO::FETCH_ASSOC)['total'];
 
             // Active Proposals: Count of 'propostas' with status 'Enviada'
             $sqlProps = "SELECT COUNT(*) as total FROM propostas 
                          WHERE data_criacao BETWEEN ? AND ? AND status = 'Enviada'";
             $stmtProps = $this->db->prepare($sqlProps);
-            $stmtProps->execute([$start . ' 00:00:00', $end . ' 23:59:59']);
+            $stmtProps->execute([$dtStart, $dtEnd]);
             $activeProps = $stmtProps->fetch(PDO::FETCH_ASSOC)['total'];
 
             // Conversion Rate: (Aprovada / (Aprovada + Recusada)) * 100
@@ -140,7 +153,7 @@ class ReportHandler
                         FROM propostas 
                         WHERE data_criacao BETWEEN ? AND ?";
             $stmtConv = $this->db->prepare($sqlConv);
-            $stmtConv->execute([$start . ' 00:00:00', $end . ' 23:59:59']);
+            $stmtConv->execute([$dtStart, $dtEnd]);
             $convData = $stmtConv->fetch(PDO::FETCH_ASSOC);
 
             $conversionRate = ($convData['total_closed'] > 0) ?
@@ -171,12 +184,12 @@ class ReportHandler
                         FROM vendas_fornecedores vf 
                         LEFT JOIN usuarios u ON vf.usuario_id = u.id
                         WHERE vf.data_venda BETWEEN ? AND ?
+                        AND (vf.proposta_ref_id IS NULL OR vf.titulo NOT LIKE 'Venda via Proposta #%')
                     ) as combined_sales
                     GROUP BY vendedor ORDER BY value DESC";
-            $this->executeQuery($sql, [
-                $start . ' 00:00:00', $end . ' 23:59:59',
-                $start . ' 00:00:00', $end . ' 23:59:59'
-            ]);
+            
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+            $this->executeQuery($sql, [$dtStart, $dtEnd, $dtStart, $dtEnd]);
         } catch (Exception $e) {
             $this->sendError($e);
         }
@@ -197,13 +210,13 @@ class ReportHandler
                         FROM vendas_fornecedores vf
                         LEFT JOIN fornecedores f ON vf.fornecedor_id = f.id
                         WHERE vf.data_venda BETWEEN ? AND ?
+                        AND (vf.proposta_ref_id IS NULL OR vf.titulo NOT LIKE 'Venda via Proposta #%')
                     ) as combined_suppliers
                     WHERE fornecedor IS NOT NULL
                     GROUP BY fornecedor ORDER BY value DESC LIMIT 15";
-            $this->executeQuery($sql, [
-                $start . ' 00:00:00', $end . ' 23:59:59',
-                $start . ' 00:00:00', $end . ' 23:59:59'
-            ]);
+            
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+            $this->executeQuery($sql, [$dtStart, $dtEnd, $dtStart, $dtEnd]);
         } catch (Exception $e) {
             echo json_encode([]);
         }
@@ -222,7 +235,9 @@ class ReportHandler
                     GROUP BY pr.nome_produto 
                     ORDER BY count DESC 
                     LIMIT 20";
-            $this->executeQuery($sql, [$start . ' 00:00:00', $end . ' 23:59:59']);
+            
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+            $this->executeQuery($sql, [$dtStart, $dtEnd]);
         } catch (Exception $e) {
             $this->sendError($e);
         }
@@ -303,13 +318,14 @@ class ReportHandler
     private function getClientsReport($start, $end)
     {
         try {
-            $params = [$start . ' 00:00:00', $end . ' 23:59:59'];
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+            $params = [$dtStart, $dtEnd];
             
             $sqlInnerP = "SELECT p.id, p.organizacao_id, p.cliente_pf_id, p.valor_total FROM propostas p JOIN oportunidades o ON p.oportunidade_id = o.id WHERE p.data_criacao BETWEEN ? AND ? AND p.status = 'Aprovada'";
             $paramsP = $params;
             $this->applyFilters($sqlInnerP, $paramsP, 'p');
             
-            $sqlInnerVF = "SELECT vf.id, vf.organizacao_id, vf.cliente_pf_id, vf.valor_total FROM vendas_fornecedores vf WHERE vf.data_venda BETWEEN ? AND ?";
+            $sqlInnerVF = "SELECT vf.id, vf.organizacao_id, vf.cliente_pf_id, vf.valor_total FROM vendas_fornecedores vf WHERE vf.data_venda BETWEEN ? AND ? AND (vf.proposta_ref_id IS NULL OR vf.titulo NOT LIKE 'Venda via Proposta #%')";
             $paramsVF = $params;
             $this->applyFilters($sqlInnerVF, $paramsVF, 'vf');
             
@@ -369,6 +385,7 @@ class ReportHandler
                             UNION ALL
                             SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores 
                             WHERE YEAR(data_venda) = ?
+                            AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')
                          ) as sales";
             $stmtSales = $this->db->prepare($sqlSales);
             $stmtSales->execute([$year, $year]);
@@ -390,13 +407,15 @@ class ReportHandler
             $activeBids = $stmtBids->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
             // Vendas do Mês Atual (Aprovadas)
-            $month = date('m', strtotime($start));
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+            $month = date('m', strtotime($dtStart));
             $sqlMonth = "SELECT SUM(total) as total FROM (
                             SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
                             WHERE status = 'Aprovada' AND MONTH(data_criacao) = ? AND YEAR(data_criacao) = ?
                             UNION ALL
                             SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores 
                             WHERE MONTH(data_venda) = ? AND YEAR(data_venda) = ?
+                            AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')
                          ) as month_sales";
             $stmtMonth = $this->db->prepare($sqlMonth);
             $stmtMonth->execute([$month, $year, $month, $year]);
@@ -408,7 +427,9 @@ class ReportHandler
                                 WHERE status = 'Aprovada' AND YEAR(data_criacao) = ? GROUP BY usuario_id
                                 UNION ALL
                                 SELECT usuario_id, SUM(valor_total) FROM vendas_fornecedores 
-                                WHERE YEAR(data_venda) = ? GROUP BY usuario_id
+                                WHERE YEAR(data_venda) = ? 
+                                AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')
+                                GROUP BY usuario_id
                              ) as vendedor_sales
                              LEFT JOIN usuarios u ON vendedor_sales.usuario_id = u.id
                              GROUP BY vendedor ORDER BY total DESC LIMIT 5";
@@ -433,13 +454,14 @@ class ReportHandler
     private function getSalesVsGoalsData($start, $end)
     {
         try {
-            $year = date('Y', strtotime($start));
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+            $year = date('Y', strtotime($dtStart));
             
             // Monthly Sales
             $sqlSales = "SELECT MONTH(dt) as mes, SUM(val) as total FROM (
                             SELECT data_criacao as dt, valor_total as val FROM propostas WHERE status = 'Aprovada' AND YEAR(data_criacao) = ?
                             UNION ALL
-                            SELECT data_venda as dt, valor_total as val FROM vendas_fornecedores WHERE YEAR(data_venda) = ?
+                            SELECT data_venda as dt, valor_total as val FROM vendas_fornecedores WHERE YEAR(data_venda) = ? AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')
                          ) as combined GROUP BY mes";
             $stmtSales = $this->db->prepare($sqlSales);
             $stmtSales->execute([$year, $year]);
@@ -486,9 +508,22 @@ class ReportHandler
         }
     }
 
-    public function getCommissionAnalysis($start, $end, $return = false)
+    private function getCommissionAnalysis($start, $end, $return = false, $suppliers = [])
     {
         try {
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+
+            $salesSupplierFilter = "";
+            $metaSupplierFilter = "";
+            $supplierParams = [];
+
+            if (!empty($suppliers)) {
+                $placeholders = implode(',', array_fill(0, count($suppliers), '?'));
+                $salesSupplierFilter = " AND fornecedor_id IN ($placeholders)";
+                $metaSupplierFilter = " AND fornecedor_id IN ($placeholders)";
+                $supplierParams = $suppliers;
+            }
+
             // Fetch users with their financial settings
             $sql = "SELECT 
                         u.id as usuario_id, 
@@ -496,26 +531,42 @@ class ReportHandler
                         COALESCE(uf.valor_fixo, 0) as valor_fixo,
                         COALESCE(uf.percentual_comissao, 1.00) as percentual_comissao,
                         COALESCE(uf.valor_trimestre, 0) as valor_trimestre,
-                        (SELECT COALESCE(SUM(valor_total), 0) FROM propostas WHERE usuario_id = u.id AND status = 'Aprovada' AND data_criacao BETWEEN ? AND ?) +
-                        (SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores WHERE usuario_id = u.id AND data_venda BETWEEN ? AND ?) as total_vendas,
-                        (SELECT COALESCE(SUM(valor_meta), 0) FROM vendas_objetivos WHERE usuario_id = u.id AND (mes = MONTH(?) OR mes = 0) AND ano = YEAR(?)) as meta_mensal
+                        -- Approved Sales (From Log source - includes items from proposals)
+                        (SELECT COALESCE(SUM(valor_total), 0) 
+                         FROM vendas_fornecedores 
+                         WHERE usuario_id = u.id 
+                           AND data_venda BETWEEN ? AND ? 
+                           $salesSupplierFilter
+                        ) as total_vendas,
+                        -- Goals: Sum of all monthly goals within the period (including month 0 as annual/default)
+                        (SELECT COALESCE(SUM(valor_meta), 0) 
+                         FROM vendas_objetivos 
+                         WHERE usuario_id = u.id 
+                           AND (
+                             ((ano * 100 + mes) >= (YEAR(?) * 100 + MONTH(?)) AND (ano * 100 + mes) <= (YEAR(?) * 100 + MONTH(?)))
+                             OR (mes = 0 AND ano BETWEEN YEAR(?) AND YEAR(?))
+                           )
+                           $metaSupplierFilter
+                        ) as meta_mensal
                     FROM usuarios u
                     LEFT JOIN usuarios_financas uf ON u.id = uf.usuario_id
-                    WHERE u.perfil IN ('Vendedor', 'Analista', 'Gestor') AND u.deleted_at IS NULL";
+                    WHERE u.role IN ('Vendedor', 'Analista', 'Gestor', 'Representante', 'Comercial', 'Especialista') 
+                      AND u.deleted_at IS NULL";
             
             $stmt = $this->db->prepare($sql);
-            // Garantir que as datas estao no formato correto para o PHP e MySQL
-            $dtStart = date('Y-m-d', strtotime($start)) . ' 00:00:00';
-            $dtEnd = date('Y-m-d', strtotime($end)) . ' 23:59:59';
+            
+            // Build parameters in order: 
+            // 2 (sales dates) + S (suppliers) + 4 (meta range) + 2 (meta years) + S (suppliers)
+            $params = array_merge(
+                [$dtStart, $dtEnd],         // Sales subquery dates
+                $supplierParams,            // Sales subquery suppliers
+                [$dtStart, $dtStart],       // Meta range start (YEAR, MONTH)
+                [$dtEnd, $dtEnd],           // Meta range end (YEAR, MONTH)
+                [$dtStart, $dtEnd],         // Meta years for mes=0
+                $supplierParams             // Meta subquery suppliers
+            );
 
-            $stmt->execute([
-                $dtStart, 
-                $dtEnd,
-                $dtStart,
-                $dtEnd,
-                $dtStart,
-                $dtStart
-            ]);
+            $stmt->execute($params);
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             foreach ($data as &$row) {
@@ -534,16 +585,65 @@ class ReportHandler
             echo json_encode($result);
         } catch (Exception $e) {
             if ($return) return ['success' => false, 'error' => $e->getMessage()];
-            $this->sendError($e);
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+    private function getVendorEvolution($start, $end)
+    {
+        try {
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+            $year = date('Y', strtotime($dtStart));
+
+            // Monthly sales per vendor for the full year
+            $sql = "SELECT 
+                        u.id as usuario_id,
+                        u.nome,
+                        MONTH(vf.data_venda) as mes,
+                        SUM(vf.valor_total) as total_vendas
+                    FROM vendas_fornecedores vf
+                    JOIN usuarios u ON vf.usuario_id = u.id
+                    WHERE YEAR(vf.data_venda) = ?
+                      AND u.role IN ('Vendedor','Analista','Gestor','Representante','Comercial','Especialista')
+                      AND u.deleted_at IS NULL
+                    GROUP BY u.id, u.nome, MONTH(vf.data_venda)
+                    ORDER BY u.nome, mes";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$year]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Group by user
+            $evolution = [];
+            foreach ($rows as $row) {
+                $uid = $row['usuario_id'];
+                if (!isset($evolution[$uid])) {
+                    $evolution[$uid] = [
+                        'usuario_id' => $uid,
+                        'nome' => $row['nome'],
+                        'meses' => array_fill(1, 12, 0)
+                    ];
+                }
+                $evolution[$uid]['meses'][(int)$row['mes']] = (float)$row['total_vendas'];
+            }
+
+            echo json_encode([
+                'success' => true,
+                'year' => $year,
+                'data' => array_values($evolution)
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
         }
     }
 
     private function getForecastReport($start, $end)
     {
         try {
-            $startMes = substr($start, 0, 7);
-            $endMes = substr($end, 0, 7);
-            $params = [$startMes . '-01', date('Y-m-t', strtotime($endMes . '-01'))];
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+            $params = [$dtStart, $dtEnd];
             
             $sql = "
             SELECT 
@@ -598,7 +698,8 @@ function handle_get_report_data($pdo)
     $newActions = [
         'dashboard_summary', 'by_vendor', 'by_supplier', 'by_item', 
         'by_proposal_status', 'by_bidding_funnel', 'clients', 'forecast', 
-        'bi_kpis', 'sales_vs_goals', 'licitacoes_funnel', 'licitacoes'
+        'bi_kpis', 'sales_vs_goals', 'licitacoes_funnel', 'licitacoes',
+        'commission_analysis', 'vendor_evolution'
     ];
 
     if (in_array($type, $newActions)) {
@@ -838,7 +939,7 @@ function handle_get_report_data($pdo)
 function handle_get_report_kpis($pdo)
 {
     try {
-        $stmt_sales = $pdo->query("SELECT SUM(valor_total) FROM vendas_fornecedores WHERE YEAR(data_venda) = YEAR(CURDATE())");
+        $stmt_sales = $pdo->query("SELECT SUM(valor_total) FROM vendas_fornecedores WHERE YEAR(data_venda) = YEAR(CURDATE()) AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')");
         $total_sales = $stmt_sales->fetchColumn() ?: 0;
 
         $stmt_lost = $pdo->query("SELECT SUM(valor_total) FROM propostas WHERE status LIKE 'Recusada%' AND YEAR(data_criacao) = YEAR(CURDATE())");
@@ -1006,7 +1107,8 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
             FROM vendas_fornecedores vf 
             LEFT JOIN fornecedores f ON vf.fornecedor_id = f.id 
             LEFT JOIN usuarios u ON vf.usuario_id = u.id 
-            WHERE vf.data_venda BETWEEN ? AND ?";
+            WHERE vf.data_venda BETWEEN ? AND ?
+            AND (vf.proposta_ref_id IS NULL OR vf.titulo NOT LIKE 'Venda via Proposta #%')";
     $params = [$start_date, $end_date];
     apply_report_filters_helper($sql, $params, 'vf', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
     $sql .= " GROUP BY vf.id, vf.fornecedor_id, vf.usuario_id, YEAR(vf.data_venda), MONTH(vf.data_venda)";
@@ -1272,7 +1374,8 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
             FROM vendas_fornecedores vf
             LEFT JOIN organizacoes o ON vf.organizacao_id = o.id
             WHERE vf.fornecedor_id = ? 
-            AND vf.data_venda BETWEEN ? AND ?";
+            AND vf.data_venda BETWEEN ? AND ?
+            AND (vf.proposta_ref_id IS NULL OR vf.titulo NOT LIKE 'Venda via Proposta #%')";
         $params_ss = [$fid, $start_date, $end_date];
         apply_report_filters_helper($sql_state_sales, $params_ss, 'vf', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
         $sql_state_sales .= " AND o.estado IS NOT NULL GROUP BY o.estado";
@@ -1494,7 +1597,10 @@ function get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_
         WHERE p.status = 'Aprovada'
         AND p.data_criacao BETWEEN ? AND ?
     ";
-    $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+    
+    $dtStart = crm_normalize_date($start_date);
+    $dtEnd = crm_normalize_date($end_date, true);
+    $params = [$dtStart, $dtEnd];
 
     if (!empty($user_ids)) {
         list($ph, $vals) = $buildIn($user_ids);
@@ -1549,8 +1655,9 @@ function get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_
             valor_total
         FROM vendas_fornecedores
         WHERE data_venda BETWEEN ? AND ?
+        AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')
     ";
-    $params_vf = [$start_date, $end_date];
+    $params_vf = [$dtStart, $dtEnd];
 
     if (!empty($user_ids)) {
         list($ph, $vals) = $buildIn($user_ids);
@@ -1611,7 +1718,9 @@ function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $use
             WHERE (o.numero_edital IS NOT NULL AND o.numero_edital != '') 
             AND o.data_criacao BETWEEN ? AND ?";
 
-    $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+    $dtStart = crm_normalize_date($start_date);
+    $dtEnd = crm_normalize_date($end_date, true);
+    $params = [$dtStart, $dtEnd];
 
     if (!empty($supplier_ids)) {
         $in_params = trim(str_repeat('?,', count($supplier_ids)), ',');
@@ -1735,6 +1844,9 @@ function apply_report_filters_helper(&$sql, &$params, $table_alias, $supplier_id
 
 function get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids = [])
 {
+    $dtStart = crm_normalize_date($start_date);
+    $dtEnd = crm_normalize_date($end_date, true);
+
     // Source A: Propostas Aprovadas
     $sql_prop = "SELECT 
                     p.organizacao_id, 
@@ -1749,7 +1861,7 @@ function get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_i
                  WHERE p.data_criacao BETWEEN ? AND ? 
                  AND p.status = 'Aprovada'";
 
-    $params_prop = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+    $params_prop = [$dtStart, $dtEnd];
 
     // Apply filters to Propostas
     apply_report_filters_helper($sql_prop, $params_prop, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids, 'fornecedor_id', 'p.usuario_id');
@@ -1770,9 +1882,10 @@ function get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_i
                    FROM vendas_fornecedores vf
                    LEFT JOIN organizacoes org ON vf.organizacao_id = org.id
                    LEFT JOIN clientes_pf pf ON vf.cliente_pf_id = pf.id
-                   WHERE vf.data_venda BETWEEN ? AND ?";
+                   WHERE vf.data_venda BETWEEN ? AND ?
+                   AND (vf.proposta_ref_id IS NULL OR vf.titulo NOT LIKE 'Venda via Proposta #%')";
 
-    $params_vendas = [$start_date, $end_date];
+    $params_vendas = [$dtStart, $dtEnd];
 
     apply_report_filters_helper($sql_vendas, $params_vendas, 'vf', $supplier_ids, $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
 
@@ -2111,7 +2224,10 @@ function get_vendor_detail_report($pdo, $start_date, $end_date, $supplier_ids = 
         LEFT JOIN proposta_itens pi ON pi.proposta_id = p.id
         WHERE p.data_criacao BETWEEN ? AND ?
     ";
-    $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+    
+    $dtStart = crm_normalize_date($start_date);
+    $dtEnd = crm_normalize_date($end_date, true);
+    $params = [$dtStart, $dtEnd];
 
     // Filters
     if (!empty($supplier_ids)) {
@@ -2206,7 +2322,7 @@ function get_vendor_detail_report($pdo, $start_date, $end_date, $supplier_ids = 
     }
 
     // Vendas diretas (vendas_fornecedores) para adicionar ao total do vendedor
-    $sql_vf = "SELECT usuario_id, SUM(valor_total) as total_vf FROM vendas_fornecedores WHERE data_venda BETWEEN ? AND ?";
+    $sql_vf = "SELECT usuario_id, SUM(valor_total) as total_vf FROM vendas_fornecedores WHERE data_venda BETWEEN ? AND ? AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')";
     $params_vf = [$start_date, $end_date];
     if (!empty($user_ids)) {
         list($ph, $vals) = $buildIn($user_ids);
@@ -2246,14 +2362,20 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
         return [implode(',', array_fill(0, count($ids), '?')), $ids];
     };
 
-    // 1. Buscar nomes dos fornecedores para filtro inteligente
+    // 1. Buscar nomes para filtro inteligente (Separa ID numérico de Nome da Marca)
     $supplier_names = [];
-    if (!empty($supplier_ids)) {
-        list($ph, $vals) = $buildIn($supplier_ids);
+    $numeric_supplier_ids = [];
+    foreach ($supplier_ids as $sid) {
+        if (is_numeric($sid)) $numeric_supplier_ids[] = (int)$sid;
+        else $supplier_names[] = $sid;
+    }
+    if (!empty($numeric_supplier_ids)) {
+        list($ph, $vals) = $buildIn($numeric_supplier_ids);
         $stmt_s = $pdo->prepare("SELECT nome FROM fornecedores WHERE id IN ($ph)");
         $stmt_s->execute($vals);
-        $supplier_names = $stmt_s->fetchAll(PDO::FETCH_COLUMN);
+        $supplier_names = array_merge($supplier_names, $stmt_s->fetchAll(PDO::FETCH_COLUMN));
     }
+    $supplier_names = array_unique(array_filter($supplier_names));
 
     // 2. Query Principal: Propostas
     $sql = "
@@ -2278,7 +2400,10 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
         WHERE (p.data_criacao BETWEEN ? AND ?)
         AND p.status IN ('Aprovada', 'Recusada')
     ";
-    $params = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
+    
+    $dtStart = crm_normalize_date($start_date);
+    $dtEnd = crm_normalize_date($end_date, true);
+    $params = [$dtStart, $dtEnd];
 
     if (!empty($user_ids)) {
         list($ph, $vals) = $buildIn($user_ids);
@@ -2286,7 +2411,6 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
         $params = array_merge($params, $vals);
     }
     
-    // Filtro de cliente e UF (omitido aqui para brevidade, mas deve ser mantido)
     if (!empty($cliente_ids)) {
         $org_ids = []; $pf_ids = [];
         foreach ($cliente_ids as $cid) {
@@ -2309,7 +2433,7 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
     }
     if (!empty($uf_ids)) {
         list($ph, $vals) = $buildIn($uf_ids);
-        $sql .= " AND p.organizacao_id IN (SELECT id FROM organizacoes WHERE estado IN ($ph))";
+        $sql .= " AND (org.estado IN ($ph))";
         $params = array_merge($params, $vals);
     }
 
@@ -2340,19 +2464,20 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
         // Lógica de filtro por fornecedor
         if (!empty($supplier_ids)) {
             $match = false;
-            // 1. Checa se a oportunidade tem o ID do fornecedor
-            $stmt_opp = $pdo->prepare("SELECT fornecedor_id FROM oportunidades WHERE id = ?");
+            // 1. Checa ID numérico se disponível na oportunidade
+            $stmt_opp = $pdo->prepare("SELECT fornecedor_id, (SELECT nome FROM fornecedores WHERE id = o.fornecedor_id) as forn_nome FROM oportunidades o WHERE o.id = ?");
             $stmt_opp->execute([$p['oportunidade_id']]);
-            $o_fid = $stmt_opp->fetchColumn();
-            if ($o_fid && in_array($o_fid, $supplier_ids)) {
+            $o_data = $stmt_opp->fetch(PDO::FETCH_ASSOC);
+            $o_fid = $o_data['fornecedor_id'] ?? null;
+            $o_fname = $o_data['forn_nome'] ?? '';
+
+            if ($o_fid && in_array($o_fid, $numeric_supplier_ids)) {
                 $match = true;
             } else {
-                // 2. Checa se algum item tem o nome do fornecedor no fabricante
-                foreach ($p_items as $it) {
-                    foreach ($supplier_names as $sn) {
-                        if (stripos($it['fabricante'] ?? '', $sn) !== false) {
-                            $match = true; break 2;
-                        }
+                // 2. Busca por Nome nos metadados ou nos itens
+                foreach ($supplier_names as $sn) {
+                    if (stripos($o_fname, $sn) !== false || stripos($p['fabricantes_resumo'], $sn) !== false) {
+                        $match = true; break;
                     }
                 }
             }
@@ -2382,6 +2507,7 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
         FROM vendas_fornecedores vf
         LEFT JOIN usuarios u ON vf.usuario_id = u.id
         WHERE data_venda BETWEEN ? AND ?
+        AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')
     ";
     $params_vf = [$start_date, $end_date];
 
@@ -2392,9 +2518,13 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
     }
     
     if (!empty($supplier_ids)) {
-        // Para vendas diretas, filtramos pelo nome (fabricante_marca) ou id se disponível
-        $sql_vf .= " AND (vf.fornecedor_id IN (" . implode(',', array_fill(0, count($supplier_ids), '?')) . ")";
-        $params_vf = array_merge($params_vf, $supplier_ids);
+        $sql_vf .= " AND (1=0 ";
+        // Filtro por IDs Numéricos
+        if (!empty($numeric_supplier_ids)) {
+            $sql_vf .= " OR vf.fornecedor_id IN (" . implode(',', array_fill(0, count($numeric_supplier_ids), '?')) . ")";
+            $params_vf = array_merge($params_vf, $numeric_supplier_ids);
+        }
+        // Filtro por Nomes de Marcas
         foreach ($supplier_names as $sn) {
             $sql_vf .= " OR vf.fabricante_marca LIKE ? OR vf.titulo LIKE ?";
             $params_vf[] = "%$sn%";
@@ -2406,36 +2536,42 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
     $stmt_vf = $pdo->prepare($sql_vf);
     $stmt_vf->execute($params_vf);
     $direct_sales = $stmt_vf->fetchAll(PDO::FETCH_ASSOC);
-    foreach($direct_sales as &$ds) { $ds['itens'] = []; }
 
-    // 5. Unificar e Ordenar por Data
-    $final_data = array_merge($filtered_proposals, $direct_sales);
-    usort($final_data, function($a, $b) {
-        return strtotime($b['data_criacao']) - strtotime($a['data_criacao']);
+    // Unifica tudo
+    $all_billing = array_merge($filtered_proposals, $direct_sales);
+    
+    // Sort por data decrescente
+    usort($all_billing, function($a, $b) {
+        return strtotime($b['data_criacao']) <=> strtotime($a['data_criacao']);
     });
 
-    // 6. KPIs
-    $total_aprovado = 0; $total_recusado = 0; $qtd_aprovado = 0; $qtd_recusado = 0;
-    foreach ($final_data as $p) {
-        if ($p['status'] === 'Aprovada') {
-            $total_aprovado += (float)$p['valor_total'];
+    // Calcula KPIs
+    $total_aprovado = 0;
+    $total_recusado = 0;
+    $qtd_aprovado = 0;
+    $qtd_recusado = 0;
+
+    foreach ($all_billing as $item) {
+        if ($item['status'] === 'Aprovada') {
+            $total_aprovado += (float)$item['valor_total'];
             $qtd_aprovado++;
         } else {
-            $total_recusado += (float)$p['valor_total'];
+            $total_recusado += (float)$item['valor_total'];
             $qtd_recusado++;
         }
     }
+
     $total_decididas = $qtd_aprovado + $qtd_recusado;
-    $taxa = $total_decididas > 0 ? round(($qtd_aprovado / $total_decididas) * 100, 1) : 0;
+    $taxa_conversao = $total_decididas > 0 ? round(($qtd_aprovado / $total_decididas) * 100, 1) : 0;
 
     return [
-        'proposals' => $final_data,
+        'proposals' => $all_billing,
         'kpis' => [
             'total_aprovado' => $total_aprovado,
             'total_recusado' => $total_recusado,
             'qtd_aprovado' => $qtd_aprovado,
             'qtd_recusado' => $qtd_recusado,
-            'taxa_conversao' => $taxa
+            'taxa_conversao' => $taxa_conversao
         ]
     ];
 }
@@ -2445,10 +2581,12 @@ function get_bi_kpis($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $et
 {
     // Filter helper
     $buildIn = function($ids) { return empty($ids) ? [null,[]] : [implode(',', array_fill(0, count($ids), '?')), $ids]; };
-    $year_start = date('Y-01-01', strtotime($start_date));
-    $year_end   = date('Y-12-31', strtotime($start_date));
-    $month_start = date('Y-m-01', strtotime($start_date));
-    $month_end   = date('Y-m-t', strtotime($start_date));
+    
+    $dtNormalized = crm_normalize_date($start_date);
+    $year_start = date('Y-01-01', strtotime($dtNormalized));
+    $year_end   = date('Y-12-31', strtotime($dtNormalized));
+    $month_start = date('Y-m-01', strtotime($dtNormalized));
+    $month_end   = date('Y-m-t', strtotime($dtNormalized));
 
     // 1. Total Vendido (Ano) - Aprovadas
     $sqlA = "SELECT SUM(valor_total) as total FROM propostas WHERE status = 'Aprovada' AND data_criacao BETWEEN ? AND ?";
@@ -2456,7 +2594,7 @@ function get_bi_kpis($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $et
     $stmtA->execute([$year_start . ' 00:00:00', $year_end . ' 23:59:59']);
     $total_pd = (float)($stmtA->fetchColumn());
 
-    $sqlAVF = "SELECT SUM(valor_total) as total FROM vendas_fornecedores WHERE data_venda BETWEEN ? AND ?";
+    $sqlAVF = "SELECT SUM(valor_total) as total FROM vendas_fornecedores WHERE data_venda BETWEEN ? AND ? AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')";
     $stmtAVF = $pdo->prepare($sqlAVF);
     $stmtAVF->execute([$year_start, $year_end]);
     $total_vf = (float)($stmtAVF->fetchColumn());
@@ -2523,7 +2661,7 @@ function get_sales_vs_goals($pdo, $start_date, $end_date, $supplier_ids = [], $u
         $sales[(int)$row['m'] - 1] += (float)$row['t'];
     }
 
-    $sqlVF = "SELECT MONTH(data_venda) as m, SUM(valor_total) as t FROM vendas_fornecedores WHERE YEAR(data_venda) = ? GROUP BY MONTH(data_venda)";
+    $sqlVF = "SELECT MONTH(data_venda) as m, SUM(valor_total) as t FROM vendas_fornecedores WHERE YEAR(data_venda) = ? AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%') GROUP BY MONTH(data_venda)";
     $stmtV = $pdo->prepare($sqlVF);
     $stmtV->execute([$year]);
     foreach ($stmtV->fetchAll(PDO::FETCH_ASSOC) as $row) {

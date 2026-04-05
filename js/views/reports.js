@@ -235,8 +235,11 @@ export async function renderReportsView(state) {
         const link = e.target.closest('.clickable-proposal-link');
         if (link) {
             const proposalId = link.dataset.proposalId;
-            if (proposalId) {
+            // Check if ID is valid (not null, undefined, or the string "null")
+            if (proposalId && proposalId !== 'null' && proposalId !== 'undefined' && proposalId !== '') {
                 openProposalDetailsModal(proposalId);
+            } else {
+                showToast('Esta é uma venda direta importada e não possui uma proposta detalhada no CRM.', 'info');
             }
         }
     });
@@ -2683,21 +2686,17 @@ async function loadPerformanceData(container = null, startDate = null, endDate =
 
     if (!startDate || !endDate) return;
 
-    const [year, mNum] = startDate.split('-');
-    const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    const periodoLabel = `${startDate} até ${endDate}`;
-
     output.innerHTML = `<div class="p-20 text-center text-gray-400">
         <i class="fas fa-spinner fa-spin text-4xl mb-4 text-indigo-600"></i>
         <p class="animate-pulse font-bold">Calculando metas e comissões...</p>
     </div>`;
 
     try {
-        // Busca vendas do período E config de comissões em paralelo
-        const [salesRes, configRes] = await Promise.all([
+        // Busca dados de comissão calculados no backend E config financeira em paralelo
+        const [commissionRes, configRes] = await Promise.all([
             apiCall('get_report_data', {
                 params: {
-                    report_type: 'sales',
+                    report_type: 'commission_analysis',
                     start_date: startDate,
                     end_date: endDate
                 }
@@ -2706,7 +2705,11 @@ async function loadPerformanceData(container = null, startDate = null, endDate =
         ]);
 
         const configs = (configRes && configRes.success) ? (configRes.data || []) : [];
-        const salesRaw = (salesRes && salesRes.success) ? salesRes : null;
+        const commissionData = (commissionRes && commissionRes.success && commissionRes.data) ? commissionRes.data : [];
+
+        // LOG para debug
+        console.log('COMMISSION DATA (backend):', commissionData);
+        console.log('CONFIG:', configs);
 
         if (configs.length === 0) {
             output.innerHTML = `<div class="p-16 text-center text-amber-500 bg-amber-50 m-6 rounded-2xl border border-amber-100">
@@ -2717,65 +2720,52 @@ async function loadPerformanceData(container = null, startDate = null, endDate =
             return;
         }
 
-        // LOG para debug — ver no console o que vem do backend
-        console.log('CONFIG:', configs);
-        console.log('SALES RAW:', salesRaw);
+        // Cria um mapa de vendas do backend indexado por usuario_id
+        const salesMap = {};
+        commissionData.forEach(row => {
+            salesMap[String(row.usuario_id)] = {
+                total_vendas: parseFloat(row.total_vendas) || 0,
+                meta_mensal: parseFloat(row.meta_mensal) || 0,
+                comissao_valor: parseFloat(row.comissao_valor) || 0,
+                valor_fixo: parseFloat(row.valor_fixo) || 0,
+                percentual_comissao: parseFloat(row.percentual_comissao) || 1,
+                valor_trimestre: parseFloat(row.valor_trimestre) || 0,
+            };
+        });
 
-        // Tenta extrair vendas de diferentes formatos de resposta
-        const extractVendas = (raw, usuarioId, nome) => {
-            if (!raw) return 0;
-            let total = 0;
-
-            // Formato 1: raw.report_data = array de groups com rows
-            if (raw.report_data && Array.isArray(raw.report_data)) {
-                raw.report_data.forEach(group => {
-                    (group.rows || []).forEach(row => {
-                        if (String(row.usuario_id) === String(usuarioId) || row.vendedor_nome === nome || row.nome === nome) {
-                            Object.values(row.dados_mes || {}).forEach(mes => total += parseFloat(mes.venda || mes.valor || 0));
-                        }
-                    });
-                });
-            }
-
-            // Formato 2: raw.data = array direto
-            if (raw.data && Array.isArray(raw.data)) {
-                raw.data.forEach(row => {
-                    if (String(row.usuario_id) === String(usuarioId) || row.vendedor_nome === nome || row.nome === nome) {
-                        total += parseFloat(row.total_vendas || row.valor_total || row.venda || 0);
-                    }
-                });
-            }
-
-            // Formato 3: raw.vendas = objeto indexado por usuario_id
-            if (raw.vendas && raw.vendas[usuarioId]) {
-                total = parseFloat(raw.vendas[usuarioId]) || 0;
-            }
-
-            return total;
-        };
-
+        // Monta o resultado usando a config (que define quem é "ativo") + dados reais do backend
         const result = configs.filter(c => c.ativo != 0).map(c => {
-            const totalVendas = extractVendas(salesRaw, c.usuario_id, c.nome);
+            const uid = String(c.usuario_id);
+            const backendData = salesMap[uid] || {};
+
+            // Usa o valor de vendas do backend (calculado via SQL)
+            const totalVendas = backendData.total_vendas || 0;
+            // Meta: sempre do commission_config (o que o usuário configurou em "Config. Metas")
             const meta = parseFloat(c.meta_mensal) || 0;
             const fixo = parseFloat(c.salario_fixo) || 0;
             const pct = parseFloat(c.percentual_comissao) || 1;
             const comissao = totalVendas * (pct / 100);
+            const trimestre = backendData.valor_trimestre || 0;
 
             return {
+                usuario_id: c.usuario_id,
                 nome: c.nome,
                 meta_mensal: meta,
                 total_vendas: totalVendas,
                 salario_fixo: fixo,
                 percentual_comissao: pct,
                 comissao_valor: comissao,
-                total_trimestre: 0,
+                total_trimestre: trimestre,
                 total_periodo: fixo + comissao,
                 atingimento: meta > 0 ? (totalVendas / meta * 100) : 0,
             };
         });
 
-        // Mesmo sem vendas mostra a tabela com zeros (metas cadastradas)
+        // Renderiza a tabela (funciona mesmo com vendas = 0)
         renderPerformanceTable(output, result);
+
+        // Carrega e renderiza os cards de evolução por vendedor
+        await renderVendorEvolutionCards(output, startDate, endDate, result);
 
     } catch (e) {
         console.error(e);
@@ -2784,6 +2774,192 @@ async function loadPerformanceData(container = null, startDate = null, endDate =
             <h4 class="font-bold">Erro ao Carregar Dados</h4>
             <p class="text-sm opacity-75">${e.message}</p>
         </div>`;
+    }
+}
+
+async function renderVendorEvolutionCards(output, startDate, endDate, performanceData) {
+    const fmt = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v || 0);
+    const monthLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const endMonth = parseInt(endDate.split('-')[1]) || 12;
+
+    try {
+        const evoRes = await apiCall('get_report_data', {
+            params: { report_type: 'vendor_evolution', start_date: startDate, end_date: endDate }
+        });
+
+        const evoData = (evoRes && evoRes.success && evoRes.data) ? evoRes.data : [];
+        const evoMap = {};
+        evoData.forEach(v => { evoMap[String(v.usuario_id)] = v.meses; });
+
+        // Container para os cards
+        const cardsContainer = document.createElement('div');
+        cardsContainer.className = 'mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6';
+        cardsContainer.id = 'vendor-evolution-cards';
+
+        performanceData.forEach((vendor, idx) => {
+            const uid = vendor.usuario_id ? String(vendor.usuario_id) : null;
+            const meses = (uid && evoMap[uid]) ? evoMap[uid] : {};
+            const chartLabels = monthLabels.slice(0, endMonth);
+            const chartData = [];
+            let totalYear = 0;
+            let bestMonth = 0;
+            let bestMonthVal = 0;
+            for (let m = 1; m <= endMonth; m++) {
+                const val = parseFloat(meses[m]) || 0;
+                chartData.push(val);
+                totalYear += val;
+                if (val > bestMonthVal) { bestMonthVal = val; bestMonth = m; }
+            }
+
+            const meta = vendor.meta_mensal || 0;
+            const atingPct = meta > 0 ? Math.min(Math.round((vendor.total_vendas / meta) * 100), 999) : 0;
+            const atingColor = atingPct >= 100 ? '#10b981' : atingPct >= 60 ? '#f59e0b' : '#ef4444';
+            const mediaMonth = endMonth > 0 ? totalYear / endMonth : 0;
+
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow duration-300';
+            card.innerHTML = `
+                <div class="bg-gradient-to-r from-slate-800 to-slate-700 px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10">
+                            <i class="fas fa-user-tie text-white"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-black text-sm tracking-wide">${vendor.nome}</h4>
+                            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Evolução de Vendas ${evoRes.year || ''}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase">Meta</div>
+                            <div class="text-white font-black text-sm">${fmt(meta)}</div>
+                        </div>
+                        <div class="relative w-14 h-14">
+                            <svg viewBox="0 0 36 36" class="w-14 h-14 transform -rotate-90">
+                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
+                                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="${atingColor}" stroke-width="3" stroke-dasharray="${Math.min(atingPct, 100)}, 100" stroke-linecap="round"/>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-white font-black text-[11px]">${atingPct}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4">
+                    <div class="grid grid-cols-3 gap-4 mb-5">
+                        <div class="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-3 border border-emerald-100">
+                            <div class="text-[9px] text-emerald-600 font-black uppercase tracking-wider">Acumulado</div>
+                            <div class="text-emerald-700 font-black text-base mt-0.5">${fmt(totalYear)}</div>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3 border border-blue-100">
+                            <div class="text-[9px] text-blue-600 font-black uppercase tracking-wider">Média/Mês</div>
+                            <div class="text-blue-700 font-black text-base mt-0.5">${fmt(mediaMonth)}</div>
+                        </div>
+                        <div class="bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl p-3 border border-violet-100">
+                            <div class="text-[9px] text-violet-600 font-black uppercase tracking-wider">Melhor Mês</div>
+                            <div class="text-violet-700 font-black text-base mt-0.5">${bestMonthVal > 0 ? monthLabels[bestMonth - 1] : '-'}</div>
+                            <div class="text-violet-400 text-[10px] font-mono">${bestMonthVal > 0 ? fmt(bestMonthVal) : ''}</div>
+                        </div>
+                    </div>
+                    <div class="relative h-48">
+                        <canvas id="evo-chart-${idx}"></canvas>
+                    </div>
+                </div>
+            `;
+            cardsContainer.appendChild(card);
+        });
+
+        output.appendChild(cardsContainer);
+
+        // Renderiza os gráficos (após inserir no DOM)
+        performanceData.forEach((vendor, idx) => {
+            const uid = vendor.usuario_id ? String(vendor.usuario_id) : null;
+            const meses = (uid && evoMap[uid]) ? evoMap[uid] : {};
+            const chartData = [];
+            for (let m = 1; m <= endMonth; m++) {
+                chartData.push(parseFloat(meses[m]) || 0);
+            }
+            const meta = vendor.meta_mensal || 0;
+            const metaLine = endMonth > 0 && meta > 0 ? Array(endMonth).fill(meta / endMonth) : null;
+
+            const canvas = document.getElementById(`evo-chart-${idx}`);
+            if (!canvas) return;
+
+            const datasets = [{
+                label: 'Vendas',
+                data: chartData,
+                backgroundColor: chartData.map((v, i) => {
+                    const isLast = i === endMonth - 1;
+                    return isLast ? 'rgba(79,70,229,0.85)' : 'rgba(79,70,229,0.45)';
+                }),
+                borderRadius: 8,
+                borderSkipped: false,
+                barPercentage: 0.7,
+                categoryPercentage: 0.8,
+            }];
+
+            if (metaLine) {
+                datasets.push({
+                    label: 'Meta Mensal',
+                    data: metaLine,
+                    type: 'line',
+                    borderColor: '#ef4444',
+                    borderDash: [6, 4],
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: false,
+                    order: 0,
+                });
+            }
+
+            new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: monthLabels.slice(0, endMonth),
+                    datasets: datasets,
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(15,23,42,0.95)',
+                            titleFont: { weight: 'bold', size: 11 },
+                            bodyFont: { size: 11 },
+                            padding: 10,
+                            cornerRadius: 10,
+                            callbacks: {
+                                label: ctx => `${ctx.dataset.label}: ${fmt(ctx.raw)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 10, weight: '700' }, color: '#94a3b8' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
+                            ticks: {
+                                font: { size: 9 },
+                                color: '#cbd5e1',
+                                callback: v => {
+                                    if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+                                    if (v >= 1e3) return (v / 1e3).toFixed(0) + 'k';
+                                    return v;
+                                }
+                            },
+                            beginAtZero: true,
+                        }
+                    }
+                }
+            });
+        });
+
+    } catch (e) {
+        console.error('Erro ao carregar evolução:', e);
     }
 }
 function showInfoModal({ icon = 'fa-info-circle', iconColor = 'text-indigo-500', iconBg = 'bg-indigo-50', title = 'Aviso', message = '', btnText = 'OK', btnColor = 'bg-indigo-600 hover:bg-indigo-700' } = {}) {
@@ -2914,9 +3090,14 @@ function renderVendorDetailReport(items, activity) {
             <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-indigo-50/30 transition-colors">
                 <td class="px-4 py-2.5 text-xs text-gray-500 font-mono">${new Date(r.data_criacao).toLocaleDateString('pt-BR')}</td>
                 <td class="px-4 py-2.5 text-xs font-bold">
-                    <span class="clickable-proposal-link text-indigo-600 hover:text-indigo-800 cursor-pointer underline decoration-indigo-200 hover:decoration-indigo-500 transition-all" data-proposal-id="${r.proposta_id}">
+                    ${r.proposta_id && r.proposta_id !== 'null' ? `
+                    <span class="clickable-proposal-link text-indigo-600 hover:text-indigo-800 cursor-pointer underline decoration-indigo-200 hover:decoration-indigo-500 transition-all font-black" data-proposal-id="${r.proposta_id}">
                         ${r.numero_proposta || '-'}
+                    </span>` : `
+                    <span class="text-slate-400 italic font-medium flex items-center gap-1" title="Venda Direta / Importação">
+                        <i class="fas fa-file-import opacity-50"></i> ${r.numero_proposta || 'Venda Direta'}
                     </span>
+                    `}
                 </td>
                 <td class="px-4 py-2.5 text-xs text-gray-800 font-medium">${r.cliente_nome}</td>
                 <td class="px-4 py-2.5 text-xs text-gray-700">${r.produto || '-'}</td>
@@ -3019,9 +3200,17 @@ function renderBillingReport(proposals, kpis) {
         <tr class="${rowBg} hover:bg-indigo-50/30 transition-colors">
             <td class="px-4 py-3 text-xs font-mono text-gray-500">${new Date(p.data_criacao).toLocaleDateString('pt-BR')}</td>
             <td class="px-4 py-3 text-xs font-bold">
-                <span class="clickable-proposal-link text-indigo-600 hover:text-indigo-800 cursor-pointer underline decoration-indigo-200 hover:decoration-indigo-500 transition-all" data-proposal-id="${p.proposta_id}">
+                ${p.proposta_id && p.proposta_id !== 'null' ? `
+                <span class="clickable-proposal-link text-indigo-600 hover:text-indigo-800 cursor-pointer underline decoration-indigo-200 hover:decoration-indigo-500 transition-all font-black" data-proposal-id="${p.proposta_id}">
                     ${p.numero_proposta || '-'}
-                </span>
+                </span>` : `
+                <div class="flex flex-col">
+                    <span class="text-slate-500 font-bold flex items-center gap-1 clickable-proposal-link cursor-help" data-proposal-id="null" title="Esta venda foi importada via planilha">
+                        <i class="fas fa-file-import text-slate-300 text-[10px]"></i> ${p.numero_proposta || 'Venda Direta'}
+                    </span>
+                    <span class="text-[9px] text-slate-400 uppercase tracking-tighter">Importação Direta</span>
+                </div>
+                `}
             </td>
             <td class="px-4 py-3 text-xs text-gray-800 font-medium max-w-[200px] truncate" title="${p.cliente_nome}">${p.cliente_nome}</td>
             <td class="px-4 py-3 text-xs font-medium text-gray-700">${p.vendedor_nome || '-'}</td>
