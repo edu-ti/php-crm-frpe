@@ -343,9 +343,11 @@ function handle_get_data($pdo)
 
 function handle_get_stats($pdo)
 {
-    $sql_kpis = "SELECT COUNT(*) as total_opps, SUM(valor) as total_value FROM oportunidades";
+    $currentYear = date('Y');
+
+    $sql_kpis = "SELECT COUNT(*) as total_opps, SUM(valor) as total_value FROM oportunidades WHERE YEAR(data_criacao) = ?";
     $stmt_kpis = $pdo->prepare($sql_kpis);
-    $stmt_kpis->execute();
+    $stmt_kpis->execute([$currentYear]);
     $kpis = $stmt_kpis->fetch(PDO::FETCH_ASSOC);
 
     $stmt_fechado_id = $pdo->query("SELECT id FROM etapas_funil WHERE nome = 'Fechado' LIMIT 1");
@@ -353,17 +355,16 @@ function handle_get_stats($pdo)
     $won_count = 0;
 
     if ($fechado_id) {
-        $won_sql = "SELECT COUNT(*) FROM oportunidades WHERE etapa_id = ?";
+        $won_sql = "SELECT COUNT(*) FROM oportunidades WHERE etapa_id = ? AND YEAR(data_criacao) = ?";
         $stmt_won = $pdo->prepare($won_sql);
-        $stmt_won->execute([$fechado_id]);
-        $stmt_won->execute([$fechado_id]);
+        $stmt_won->execute([$fechado_id, $currentYear]);
         $won_count = $stmt_won->fetchColumn();
     }
 
     // --- NOVO: Valor Aprovado (Propostas) ---
-    $sql_approved = "SELECT SUM(valor_total) FROM propostas WHERE status = 'Aprovada'";
+    $sql_approved = "SELECT SUM(valor_total) FROM propostas WHERE status = 'Aprovada' AND YEAR(data_criacao) = ?";
     $stmt_approved = $pdo->prepare($sql_approved);
-    $stmt_approved->execute();
+    $stmt_approved->execute([$currentYear]);
     $approved_value = $stmt_approved->fetchColumn();
     // ----------------------------------------
 
@@ -372,19 +373,18 @@ function handle_get_stats($pdo)
     $won_count = $won_count ?? 0;
 
     $kpis['conversion_rate'] = $kpis['total_opps'] > 0 ? ($won_count / $kpis['total_opps']) * 100 : 0;
-    $kpis['conversion_rate'] = $kpis['total_opps'] > 0 ? ($won_count / $kpis['total_opps']) * 100 : 0;
     $kpis['avg_deal_size'] = $kpis['total_opps'] > 0 ? $kpis['total_value'] / $kpis['total_opps'] : 0;
     $kpis['approved_proposals_value'] = $approved_value ?? 0; // Adiciona ao array de retorno
 
-    $sql_stages = "SELECT ef.nome, COUNT(o.id) as count FROM etapas_funil ef LEFT JOIN oportunidades o ON ef.id = o.etapa_id GROUP BY ef.id ORDER BY ef.ordem";
+    $sql_stages = "SELECT ef.nome, COUNT(o.id) as count FROM etapas_funil ef LEFT JOIN oportunidades o ON ef.id = o.etapa_id AND YEAR(o.data_criacao) = ? WHERE ef.funil_id = 1 AND ef.nome IN ('Prospectando', 'Proposta', 'Negociação', 'Fechado', 'Recusado') GROUP BY ef.id ORDER BY ef.ordem";
     $stmt_stages = $pdo->prepare($sql_stages);
-    $stmt_stages->execute();
+    $stmt_stages->execute([$currentYear]);
     $opps_by_stage = $stmt_stages->fetchAll(PDO::FETCH_ASSOC);
 
-    $stmt_users = $pdo->query("SELECT u.nome, COUNT(o.id) as count FROM usuarios u LEFT JOIN oportunidades o ON u.id = o.usuario_id GROUP BY u.id, u.nome");
+    $stmt_users = $pdo->query("SELECT u.nome, COUNT(o.id) as count FROM usuarios u LEFT JOIN oportunidades o ON u.id = o.usuario_id AND YEAR(o.data_criacao) = $currentYear GROUP BY u.id, u.nome");
     $opps_by_user = $stmt_users->fetchAll(PDO::FETCH_ASSOC);
 
-    $stmt_fornecedores = $pdo->query("SELECT f.nome, SUM(vf.valor_total) as total_vendido FROM fornecedores f LEFT JOIN vendas_fornecedores vf ON f.id = vf.fornecedor_id GROUP BY f.id, f.nome");
+    $stmt_fornecedores = $pdo->query("SELECT f.nome, SUM(vf.valor_total) as total_vendido FROM fornecedores f LEFT JOIN vendas_fornecedores vf ON f.id = vf.fornecedor_id AND YEAR(vf.data_venda) = $currentYear GROUP BY f.id, f.nome");
     $sales_by_fornecedor = $stmt_fornecedores->fetchAll(PDO::FETCH_ASSOC);
 
     json_response([
