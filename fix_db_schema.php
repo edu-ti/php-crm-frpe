@@ -25,6 +25,15 @@ try {
         echo "Column 'motivo_perda' CREATED SUCCESSFULLY!<br>";
     }
 
+    // Check/Add comercial_user_id em propostas
+    try {
+        $pdo->query("SELECT comercial_user_id FROM propostas LIMIT 1");
+        echo "Column 'comercial_user_id' (propostas) already exists.<br>";
+    } catch (Exception $e) {
+        $pdo->exec("ALTER TABLE propostas ADD COLUMN comercial_user_id INT(11) DEFAULT NULL");
+        echo "Column 'comercial_user_id' (propostas) CREATED SUCCESSFULLY!<br>";
+    }
+
     echo "<h1 style='color:green'>SUCESSO! Atualização de Banco de Dados Concluída.</h1>";
     echo "<p>Você pode fechar esta aba e tentar salvar a oportunidade novamente.</p>";
 

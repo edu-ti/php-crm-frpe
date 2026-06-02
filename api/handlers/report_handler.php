@@ -93,7 +93,12 @@ class ReportHandler
             $params = array_merge($params, $supplier_ids);
         }
         if (!empty($user_ids)) {
-            $sql .= " AND $table_alias.usuario_id IN (" . $buildIn($user_ids) . ")";
+            // Para propostas, considera comercial_user_id como vendedor responsável
+            if ($table_alias === 'p') {
+                $sql .= " AND COALESCE($table_alias.comercial_user_id, $table_alias.usuario_id) IN (" . $buildIn($user_ids) . ")";
+            } else {
+                $sql .= " AND $table_alias.usuario_id IN (" . $buildIn($user_ids) . ")";
+            }
             $params = array_merge($params, $user_ids);
         }
         if (!empty($cliente_ids)) {
@@ -173,11 +178,12 @@ class ReportHandler
     private function getSalesByVendor($start, $end)
     {
         try {
-            // Using 'propostas' LEFT JOIN 'usuarios'
+            // Using 'propostas' LEFT JOIN 'usuarios' — considera comercial_user_id como vendedor responsável
             $sql = "SELECT vendedor as label, COUNT(*) as count, SUM(total) as value FROM (
-                        SELECT u.nome as vendedor, p.id, p.valor_total as total 
+                        SELECT COALESCE(uc.nome, u.nome) as vendedor, p.id, p.valor_total as total 
                         FROM propostas p 
                         LEFT JOIN usuarios u ON p.usuario_id = u.id
+                        LEFT JOIN usuarios uc ON p.comercial_user_id = uc.id
                         WHERE p.data_criacao BETWEEN ? AND ? AND p.status = 'Aprovada'
                         UNION ALL
                         SELECT u.nome as vendedor, vf.id, vf.valor_total as total 
@@ -423,8 +429,8 @@ class ReportHandler
 
             // Vendas por Vendedor (Ano Atual - Top 5)
             $sqlByVendedor = "SELECT COALESCE(u.nome, 'Outros') as vendedor, SUM(total) as total FROM (
-                                SELECT usuario_id, SUM(valor_total) as total FROM propostas 
-                                WHERE status = 'Aprovada' AND YEAR(data_criacao) = ? GROUP BY usuario_id
+                                SELECT COALESCE(comercial_user_id, usuario_id) as usuario_id, SUM(valor_total) as total FROM propostas 
+                                WHERE status = 'Aprovada' AND YEAR(data_criacao) = ? GROUP BY COALESCE(comercial_user_id, usuario_id)
                                 UNION ALL
                                 SELECT usuario_id, SUM(valor_total) FROM vendas_fornecedores 
                                 WHERE YEAR(data_venda) = ? 
@@ -826,7 +832,7 @@ function handle_get_report_data($pdo)
             // Apply User Filter to Proposal (p) manually if needed
             if (!empty($user_ids)) {
                 $in_params = trim(str_repeat('?,', count($user_ids)), ',');
-                $sql .= " AND p.usuario_id IN ($in_params)";
+                $sql .= " AND COALESCE(p.comercial_user_id, p.usuario_id) IN ($in_params)";
                 foreach ($user_ids as $uid) {
                     $params[] = $uid;
                 }
@@ -1148,15 +1154,16 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
     }
 
     // ADICIONADO: Propostas Aprovadas como Venda
-    $sql_prop = "SELECT p.id, o.fornecedor_id, f.nome as fornecedor_nome, p.usuario_id, u.nome as vendedor_nome, YEAR(p.data_criacao) as ano, MONTH(p.data_criacao) as mes, SUM(p.valor_total) as total_vendido
+    $sql_prop = "SELECT p.id, o.fornecedor_id, f.nome as fornecedor_nome, COALESCE(p.comercial_user_id, p.usuario_id) as usuario_id, COALESCE(uc.nome, u.nome) as vendedor_nome, YEAR(p.data_criacao) as ano, MONTH(p.data_criacao) as mes, SUM(p.valor_total) as total_vendido
                  FROM propostas p
                  JOIN oportunidades o ON p.oportunidade_id = o.id
                  LEFT JOIN fornecedores f ON o.fornecedor_id = f.id
                  LEFT JOIN usuarios u ON p.usuario_id = u.id
+                 LEFT JOIN usuarios uc ON p.comercial_user_id = uc.id
                  WHERE p.status = 'Aprovada' AND p.data_criacao BETWEEN ? AND ?";
     $params_prop = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
-    apply_report_filters_helper($sql_prop, $params_prop, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids);
-    $sql_prop .= " GROUP BY p.id, o.fornecedor_id, p.usuario_id, YEAR(p.data_criacao), MONTH(p.data_criacao)";
+    apply_report_filters_helper($sql_prop, $params_prop, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids, 'fornecedor_id', 'COALESCE(p.comercial_user_id, p.usuario_id)');
+    $sql_prop .= " GROUP BY p.id, o.fornecedor_id, COALESCE(p.comercial_user_id, p.usuario_id), YEAR(p.data_criacao), MONTH(p.data_criacao)";
     $stmt_prop = $pdo->prepare($sql_prop);
     $stmt_prop->execute($params_prop);
     $propostas_raw = $stmt_prop->fetchAll(PDO::FETCH_ASSOC);
@@ -1604,7 +1611,7 @@ function get_products_report($pdo, $start_date, $end_date, $supplier_ids, $user_
 
     if (!empty($user_ids)) {
         list($ph, $vals) = $buildIn($user_ids);
-        $sql .= " AND p.usuario_id IN ($ph)";
+        $sql .= " AND COALESCE(p.comercial_user_id, p.usuario_id) IN ($ph)";
         $params = array_merge($params, $vals);
     }
 
@@ -1728,7 +1735,7 @@ function get_licitacoes_report($pdo, $start_date, $end_date, $supplier_ids, $use
         foreach ($supplier_ids as $id)
             $params[] = $id;
     }
-    apply_report_filters_helper($sql, $params, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids, 'fornecedor_id', 'p.usuario_id');
+    apply_report_filters_helper($sql, $params, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids, 'fornecedor_id', 'COALESCE(p.comercial_user_id, p.usuario_id)');
     $sql .= " GROUP BY o.id, o.fornecedor_id ORDER BY f.nome, o.data_criacao DESC";
 
     $stmt = $pdo->prepare($sql);
@@ -1864,7 +1871,7 @@ function get_clients_report($pdo, $start_date, $end_date, $supplier_ids, $user_i
     $params_prop = [$dtStart, $dtEnd];
 
     // Apply filters to Propostas
-    apply_report_filters_helper($sql_prop, $params_prop, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids, 'fornecedor_id', 'p.usuario_id');
+    apply_report_filters_helper($sql_prop, $params_prop, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids, 'fornecedor_id', 'COALESCE(p.comercial_user_id, p.usuario_id)');
 
     $sql_prop .= " GROUP BY p.organizacao_id, p.cliente_pf_id, cliente_nome";
 
@@ -2219,6 +2226,7 @@ function get_vendor_detail_report($pdo, $start_date, $end_date, $supplier_ids = 
             (pi.quantidade * pi.valor_unitario) as item_total
         FROM propostas p
         LEFT JOIN usuarios u ON p.usuario_id = u.id
+        LEFT JOIN usuarios uc ON p.comercial_user_id = uc.id
         LEFT JOIN organizacoes org ON p.organizacao_id = org.id
         LEFT JOIN clientes_pf cpf ON p.cliente_pf_id = cpf.id
         LEFT JOIN proposta_itens pi ON pi.proposta_id = p.id
@@ -2237,7 +2245,7 @@ function get_vendor_detail_report($pdo, $start_date, $end_date, $supplier_ids = 
     }
     if (!empty($user_ids)) {
         list($ph, $vals) = $buildIn($user_ids);
-        $sql .= " AND p.usuario_id IN ($ph)";
+        $sql .= " AND COALESCE(p.comercial_user_id, p.usuario_id) IN ($ph)";
         $params = array_merge($params, $vals);
     }
     if (!empty($cliente_ids)) {
@@ -2289,7 +2297,7 @@ function get_vendor_detail_report($pdo, $start_date, $end_date, $supplier_ids = 
              WHERE au.usuario_id = u.id AND a.data_inicio BETWEEN ? AND ?) as agendamentos_periodo
         FROM usuarios u
         LEFT JOIN oportunidades o ON o.usuario_id = u.id AND o.data_criacao BETWEEN ? AND ?
-        LEFT JOIN propostas p ON p.usuario_id = u.id AND p.data_criacao BETWEEN ? AND ?
+        LEFT JOIN propostas p ON COALESCE(p.comercial_user_id, p.usuario_id) = u.id AND p.data_criacao BETWEEN ? AND ?
         WHERE u.role IN ('Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista', 'Especialista')
         AND u.status = 'Ativo'
     ";
@@ -2387,14 +2395,15 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
             p.data_criacao,
             p.motivo_status,
             p.condicoes_pagamento,
-            u.id as vendedor_id,
-            u.nome as vendedor_nome,
+            COALESCE(uc.id, u.id) as vendedor_id,
+            COALESCE(uc.nome, u.nome) as vendedor_nome,
             COALESCE(org.nome_fantasia, cpf.nome, 'N/D') as cliente_nome,
             org.estado as uf,
             org.cidade,
             p.oportunidade_id
         FROM propostas p
         LEFT JOIN usuarios u ON p.usuario_id = u.id
+        LEFT JOIN usuarios uc ON p.comercial_user_id = uc.id
         LEFT JOIN organizacoes org ON p.organizacao_id = org.id
         LEFT JOIN clientes_pf cpf ON p.cliente_pf_id = cpf.id
         WHERE (p.data_criacao BETWEEN ? AND ?)
@@ -2407,7 +2416,7 @@ function get_billing_report($pdo, $start_date, $end_date, $supplier_ids = [], $u
 
     if (!empty($user_ids)) {
         list($ph, $vals) = $buildIn($user_ids);
-        $sql .= " AND p.usuario_id IN ($ph)";
+        $sql .= " AND COALESCE(p.comercial_user_id, p.usuario_id) IN ($ph)";
         $params = array_merge($params, $vals);
     }
     
@@ -2622,11 +2631,12 @@ function get_bi_kpis($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $et
 
     // 5. Vendas por Vendedor (performance)
     $sqlVS = "
-        SELECT u.nome as vendedor, SUM(p.valor_total) as total 
+        SELECT COALESCE(uc.nome, u.nome) as vendedor, SUM(p.valor_total) as total 
         FROM propostas p 
-        JOIN usuarios u ON p.usuario_id = u.id 
+        LEFT JOIN usuarios u ON p.usuario_id = u.id 
+        LEFT JOIN usuarios uc ON p.comercial_user_id = uc.id 
         WHERE p.status = 'Aprovada' AND p.data_criacao BETWEEN ? AND ?
-        GROUP BY u.nome ORDER BY total DESC LIMIT 5
+        GROUP BY COALESCE(uc.nome, u.nome) ORDER BY total DESC LIMIT 5
     ";
     $stmtVS = $pdo->prepare($sqlVS);
     $stmtVS->execute([$month_start . ' 00:00:00', $month_end . ' 23:59:59']);

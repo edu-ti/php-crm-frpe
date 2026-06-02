@@ -67,10 +67,13 @@ function handle_create_proposal($pdo, $data)
             }
         }
 
+        // Vendedor responsável pela venda (comercial_user_id)
+        $comercial_user_id = !empty($data['comercial_user_id']) ? (int)$data['comercial_user_id'] : $proposal_owner_id;
+
         // Insere a proposta principal
         // MODIFICADO: Usa $proposal_owner_id em vez de $_SESSION['user_id']
-        // Adicionado: frete_tipo, frete_valor
-        $sql = "INSERT INTO propostas (oportunidade_id, cliente_pf_id, organizacao_id, contato_id, usuario_id, valor_total, status, data_validade, faturamento, treinamento, condicoes_pagamento, prazo_entrega, garantia_equipamentos, garantia_acessorios, instalacao, assistencia_tecnica, observacoes, motivo_status, frete_tipo, frete_valor, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        // Adicionado: frete_tipo, frete_valor, comercial_user_id
+        $sql = "INSERT INTO propostas (oportunidade_id, cliente_pf_id, organizacao_id, contato_id, usuario_id, comercial_user_id, valor_total, status, data_validade, faturamento, treinamento, condicoes_pagamento, prazo_entrega, garantia_equipamentos, garantia_acessorios, instalacao, assistencia_tecnica, observacoes, motivo_status, frete_tipo, frete_valor, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         $stmt = $pdo->prepare($sql);
 
         $stmt->execute([
@@ -79,6 +82,7 @@ function handle_create_proposal($pdo, $data)
             $organizacao_id,
             $contato_id,
             $proposal_owner_id,
+            $comercial_user_id,
             $valor_total,
             $data['status'] ?? 'Rascunho',
             $data['data_validade'] ?: null,
@@ -130,12 +134,14 @@ function handle_create_proposal($pdo, $data)
                     c_pf.nome as cliente_pf_nome, c_pf.cpf,
                     cont.nome as contato_nome, cont.email as contato_email, cont.telefone as contato_telefone,
                     u.nome as vendedor_nome,
+                    uc.nome as comercial_vendedor_nome,
                     ef.nome as etapa_funil_nome
              FROM propostas p
              LEFT JOIN organizacoes o ON p.organizacao_id = o.id
              LEFT JOIN clientes_pf c_pf ON p.cliente_pf_id = c_pf.id
              LEFT JOIN contatos cont ON p.contato_id = cont.id
              LEFT JOIN usuarios u ON p.usuario_id = u.id
+             LEFT JOIN usuarios uc ON p.comercial_user_id = uc.id
              LEFT JOIN oportunidades opp ON p.oportunidade_id = opp.id
              LEFT JOIN etapas_funil ef ON opp.etapa_id = ef.id
              WHERE p.id = ?
@@ -200,8 +206,11 @@ function handle_update_proposal($pdo, $data)
         $organizacao_id = ($clientType === 'pj') ? $client['id'] : null;
         $contato_id = ($clientType === 'pj' && isset($client['contact'])) ? $client['contact']['id'] : null;
 
-        // Atualiza a proposta principal (Incluindo atualizado_por_id)
-        $sql = "UPDATE propostas SET cliente_pf_id = ?, organizacao_id = ?, contato_id = ?, valor_total = ?, status = ?, data_validade = ?, faturamento = ?, treinamento = ?, condicoes_pagamento = ?, prazo_entrega = ?, garantia_equipamentos = ?, garantia_acessorios = ?, instalacao = ?, assistencia_tecnica = ?, observacoes = ?, motivo_status = ?, frete_tipo = ?, frete_valor = ?, atualizado_por_id = ? WHERE id = ?";
+        // Vendedor responsável pela venda (comercial_user_id)
+        $comercial_user_id = !empty($data['comercial_user_id']) ? (int)$data['comercial_user_id'] : null;
+
+        // Atualiza a proposta principal (Incluindo atualizado_por_id e comercial_user_id)
+        $sql = "UPDATE propostas SET cliente_pf_id = ?, organizacao_id = ?, contato_id = ?, valor_total = ?, status = ?, data_validade = ?, faturamento = ?, treinamento = ?, condicoes_pagamento = ?, prazo_entrega = ?, garantia_equipamentos = ?, garantia_acessorios = ?, instalacao = ?, assistencia_tecnica = ?, observacoes = ?, motivo_status = ?, frete_tipo = ?, frete_valor = ?, atualizado_por_id = ?, comercial_user_id = ? WHERE id = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             $cliente_pf_id,
@@ -223,6 +232,7 @@ function handle_update_proposal($pdo, $data)
             $data['frete_tipo'] ?? 'CIF',
             $data['frete_valor'] ?? 0,
             $_SESSION['user_id'], // salva quem atualizou
+            $comercial_user_id,
             $proposalId
         ]);
 
@@ -262,12 +272,14 @@ function handle_update_proposal($pdo, $data)
                     c_pf.nome as cliente_pf_nome, c_pf.cpf,
                     cont.nome as contato_nome, cont.email as contato_email, cont.telefone as contato_telefone,
                     u.nome as vendedor_nome,
+                    uc.nome as comercial_vendedor_nome,
                     ef.nome as etapa_funil_nome
              FROM propostas p
              LEFT JOIN organizacoes o ON p.organizacao_id = o.id
              LEFT JOIN clientes_pf c_pf ON p.cliente_pf_id = c_pf.id
              LEFT JOIN contatos cont ON p.contato_id = cont.id
              LEFT JOIN usuarios u ON p.usuario_id = u.id
+             LEFT JOIN usuarios uc ON p.comercial_user_id = uc.id
              LEFT JOIN oportunidades opp ON p.oportunidade_id = opp.id
              LEFT JOIN etapas_funil ef ON opp.etapa_id = ef.id
              WHERE p.id = ?
@@ -383,12 +395,14 @@ function create_vendas_fornecedores_from_proposal($pdo, $proposta_id, $organizac
     $sql_insert_venda = "INSERT INTO vendas_fornecedores (fornecedor_id, organizacao_id, cliente_pf_id, usuario_id, titulo, data_venda, origem, descricao_produto, fabricante_marca, modelo, quantidade, valor_unitario, valor_total, notas, proposta_ref_id) VALUES (?, ?, ?, ?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt_insert_venda = $pdo->prepare($sql_insert_venda);
 
-    // Pega o usuário que criou a proposta
-    $stmt_prop_user = $pdo->prepare("SELECT usuario_id FROM propostas WHERE id = ?");
+    // Pega o vendedor responsável pela venda (comercial_user_id), fallback para usuario_id (quem criou)
+    $stmt_prop_user = $pdo->prepare("SELECT usuario_id, comercial_user_id FROM propostas WHERE id = ?");
     $stmt_prop_user->execute([$proposta_id]);
-    $proposal_user_id = $stmt_prop_user->fetchColumn();
-    // Usa o usuário da sessão como fallback se não encontrar o criador da proposta
-    $user_id_for_sale = $proposal_user_id ?: $_SESSION['user_id'];
+    $prop_data = $stmt_prop_user->fetch(PDO::FETCH_ASSOC);
+    $proposal_user_id = $prop_data['usuario_id'] ?? null;
+    $comercial_user_id = $prop_data['comercial_user_id'] ?? null;
+    // Prioriza comercial_user_id; se não existir, usa usuario_id; se não existir, usa sessão
+    $user_id_for_sale = $comercial_user_id ?: ($proposal_user_id ?: $_SESSION['user_id']);
 
     $vendas_criadas = 0;
     $fornecedores_nao_encontrados = [];
@@ -572,12 +586,14 @@ function handle_get_proposal_details($pdo, $get_data)
                 pf.nome as cliente_pf_nome, pf.cpf, pf.logradouro as pf_logradouro, pf.numero as pf_numero, pf.complemento as pf_complemento, pf.bairro as pf_bairro, pf.cidade as pf_cidade, pf.estado as pf_estado, pf.cep as pf_cep,
                 ct.nome as contato_nome, ct.email as contato_email, ct.telefone as contato_telefone,
                 u.nome as vendedor_nome, u.role as vendedor_role, u.email as vendedor_email, u.telefone as vendedor_telefone,
+                uc.nome as comercial_vendedor_nome, uc.role as comercial_vendedor_role, uc.email as comercial_vendedor_email, uc.telefone as comercial_vendedor_telefone,
                 ef.nome as etapa_funil_nome
          FROM propostas p
          LEFT JOIN organizacoes o ON p.organizacao_id = o.id
          LEFT JOIN clientes_pf pf ON p.cliente_pf_id = pf.id
          LEFT JOIN contatos ct ON p.contato_id = ct.id
          LEFT JOIN usuarios u ON p.usuario_id = u.id
+         LEFT JOIN usuarios uc ON p.comercial_user_id = uc.id
          LEFT JOIN oportunidades opp ON p.oportunidade_id = opp.id
          LEFT JOIN etapas_funil ef ON opp.etapa_id = ef.id
          WHERE p.id = ?");

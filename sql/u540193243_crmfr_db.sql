@@ -2438,6 +2438,7 @@ CREATE TABLE `propostas` (
   `organizacao_id` int(11) DEFAULT NULL,
   `contato_id` int(11) DEFAULT NULL,
   `usuario_id` int(11) DEFAULT NULL,
+  `comercial_user_id` int(11) DEFAULT NULL,
   `valor_total` decimal(20,2) NOT NULL DEFAULT 0.00,
   `status` varchar(50) NOT NULL DEFAULT 'Rascunho',
   `frete_tipo` enum('CIF','FOB') DEFAULT 'CIF',

@@ -28,7 +28,8 @@ export function resetProposalState() {
         observacoes: 'Nenhuma',
         motivo_status: '',
         frete_tipo: 'CIF',
-        frete_valor: 0
+        frete_valor: 0,
+        comercial_user_id: null
     };
     // Mantemos a paginação e a ordenação atuais
 }
@@ -104,6 +105,14 @@ export function renderProposalsView() {
     const statusOptions = ['Rascunho', 'Enviada', 'Aprovada', 'Recusada', 'Negociando']
         .map(s => `<option value="${s}" ${p.status === s ? 'selected' : ''}>${s}</option>`).join('');
 
+    const currentComercialUserId = p.comercial_user_id || appState.currentUser.id;
+
+    const comercialUserOptions = appState.users
+        .filter(u => ['Comercial', 'Gestor', 'Analista', 'Vendedor', 'Especialista'].includes(u.role))
+        .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
+        .map(u => `<option value="${u.id}" ${currentComercialUserId == u.id ? 'selected' : ''}>${u.nome}</option>`)
+        .join('');
+
     container.innerHTML = `
         <div id="pre-proposals-container"></div>
         <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
@@ -129,7 +138,7 @@ export function renderProposalsView() {
                     <button type="button" id="save-proposal-top-btn" class="btn btn-primary">${p.id ? 'Salvar Alterações' : 'Criar Proposta'}</button>
                 </div>
                 <form id="proposal-form" class="space-y-6">
-                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 border-b pb-4">
+                     <div class="grid grid-cols-1 md:grid-cols-5 gap-4 border-b pb-4">
                         <div>
                             <label class="form-label">Data de Criação</label>
                             <input type="date" name="created_at" value="${p.created_at.split(' ')[0]}" readonly class="form-input bg-gray-100">
@@ -145,6 +154,13 @@ export function renderProposalsView() {
                         <div>
                             <label class="form-label">Motivo</label>
                             <input type="text" name="motivo_status" class="form-input" value="${p.motivo_status || ''}" placeholder="Ex: Preço alto...">
+                        </div>
+                        <div>
+                            <label class="form-label">Vendedor Responsável pela Venda</label>
+                            <select name="comercial_user_id" class="form-input" id="comercial-user-select">
+                                <option value="">Selecione...</option>
+                                ${comercialUserOptions}
+                            </select>
                         </div>
                     </div>
                     <div id="proposal-client-selection" class="border-b pb-4"></div>
@@ -1226,6 +1242,7 @@ async function handleCreateProposalFromOpp(e) {
 
     resetProposalState();
     appState.proposal.oportunidade_id = opp.id;
+    appState.proposal.comercial_user_id = opp.comercial_user_id || appState.currentUser.id;
 
     if (opp.organizacao_id) {
         appState.proposal.clientType = 'pj';
@@ -1282,7 +1299,7 @@ async function handleProposalFormSubmit(e) {
     const data = { ...appState.proposal };
 
     ['data_validade', 'status', 'faturamento', 'treinamento', 'condicoes_pagamento', 'prazo_entrega',
-        'garantia_equipamentos', 'garantia_acessorios', 'instalacao', 'assistencia_tecnica', 'observacoes', 'motivo_status']
+        'garantia_equipamentos', 'garantia_acessorios', 'instalacao', 'assistencia_tecnica', 'observacoes', 'motivo_status', 'comercial_user_id']
         .forEach(key => data[key] = formData.get(key));
 
     // Adiciona campos de frete explicitamente (já estão no appState, mas por garantia)

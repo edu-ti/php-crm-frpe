@@ -97,17 +97,19 @@ function handle_get_data($pdo)
              cont.nome as contato_nome,
              cont.email as contato_email,
              cont.telefone as contato_telefone,
-             u.nome as vendedor_nome,
-             ef.nome as etapa_funil_nome,
-             (SELECT GROUP_CONCAT(DISTINCT descricao SEPARATOR ', ') FROM proposta_itens WHERE proposta_id = p.id) as itens_descricao,
-             (SELECT GROUP_CONCAT(DISTINCT fabricante SEPARATOR ', ') FROM proposta_itens WHERE proposta_id = p.id) as itens_fabricante
-         FROM propostas p
-         LEFT JOIN organizacoes o ON p.organizacao_id = o.id
-         LEFT JOIN clientes_pf c_pf ON p.cliente_pf_id = c_pf.id
-         LEFT JOIN contatos cont ON p.contato_id = cont.id 
-         LEFT JOIN usuarios u ON p.usuario_id = u.id
-         LEFT JOIN oportunidades opp ON p.oportunidade_id = opp.id
-         LEFT JOIN etapas_funil ef ON opp.etapa_id = ef.id
+              u.nome as vendedor_nome,
+              uc.nome as comercial_vendedor_nome,
+              ef.nome as etapa_funil_nome,
+              (SELECT GROUP_CONCAT(DISTINCT descricao SEPARATOR ', ') FROM proposta_itens WHERE proposta_id = p.id) as itens_descricao,
+              (SELECT GROUP_CONCAT(DISTINCT fabricante SEPARATOR ', ') FROM proposta_itens WHERE proposta_id = p.id) as itens_fabricante
+          FROM propostas p
+          LEFT JOIN organizacoes o ON p.organizacao_id = o.id
+          LEFT JOIN clientes_pf c_pf ON p.cliente_pf_id = c_pf.id
+          LEFT JOIN contatos cont ON p.contato_id = cont.id 
+          LEFT JOIN usuarios u ON p.usuario_id = u.id
+          LEFT JOIN usuarios uc ON p.comercial_user_id = uc.id
+          LEFT JOIN oportunidades opp ON p.oportunidade_id = opp.id
+          LEFT JOIN etapas_funil ef ON opp.etapa_id = ef.id
          " . $where_prop . "
          ORDER BY p.data_criacao DESC
      ";
