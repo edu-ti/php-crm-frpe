@@ -60,9 +60,10 @@ function handle_get_data($pdo)
                  c.nome as contato_nome, 
                  c.email as contato_email, 
                  c.telefone as contato_telefone, 
-                 u.nome as vendedor_nome,
-                 (SELECT GROUP_CONCAT(DISTINCT fabricante SEPARATOR ', ') FROM oportunidade_itens WHERE oportunidade_id = o.id) as fabricantes_itens
-                 FROM oportunidades o 
+                  u.nome as vendedor_nome,
+                  (SELECT GROUP_CONCAT(DISTINCT fabricante SEPARATOR ', ') FROM oportunidade_itens WHERE oportunidade_id = o.id) as fabricantes_itens,
+                  (SELECT GROUP_CONCAT(DISTINCT descricao SEPARATOR ', ') FROM oportunidade_itens WHERE oportunidade_id = o.id) as itens_descricao
+                  FROM oportunidades o
                  LEFT JOIN organizacoes org ON o.organizacao_id = org.id 
                  LEFT JOIN clientes_pf cpf ON o.cliente_pf_id = cpf.id 
                  LEFT JOIN contatos c ON o.contato_id = c.id 

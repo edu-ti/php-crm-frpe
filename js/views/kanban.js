@@ -49,6 +49,9 @@ export function renderFunilView() {
          <!-- Container para Cabeçalho de Licitações (Novo) -->
          <div id="licitacoes-header-container" class="bg-white p-2 rounded-lg shadow-sm border mb-3 flex-shrink-0 ${activeTab !== 'licitacoes' ? 'hidden' : ''}"></div>
 
+         <!-- Container para Filtros de Pesquisa do Funil de Vendas -->
+         <div id="vendas-search-header-container" class="bg-white p-2 rounded-lg shadow-sm border mb-3 flex-shrink-0 ${activeTab !== 'vendas' ? 'hidden' : ''}"></div>
+
          <!-- --- ALTERAÇÃO: Adicionado container para scroll --- -->
          <div id="funil-content-container" class="kanban-scroll-container">
               <div id="funil-inner-container" class="kanban-inner-container">
@@ -69,6 +72,7 @@ export function renderFunilView() {
 
     // Renderiza o conteúdo apropriado dentro do container interno
     if (activeTab === 'vendas') {
+        renderVendasSearchHeader();
         renderKanbanBoard();
     } else if (activeTab === 'licitacoes') {
         renderLicitacoesHeader(); // Renderiza o cabeçalho novo
@@ -163,6 +167,42 @@ function renderKanbanBoard() {
             });
         }
         // -----------------------------------------
+
+        // --- FILTROS ESPECÍFICOS DO FUNIL DE VENDAS ---
+        if (activeTab === 'vendas') {
+            const { searchVendedorId, searchClienteId, searchProdutoTerm } = appState.funilView;
+
+            if (searchVendedorId) {
+                opportunitiesInStage = opportunitiesInStage.filter(opp =>
+                    String(opp.usuario_id) === String(searchVendedorId)
+                );
+            }
+
+            if (searchClienteId) {
+                opportunitiesInStage = opportunitiesInStage.filter(opp => {
+                    if (searchClienteId.startsWith('pf-')) {
+                        const pfId = searchClienteId.substring(3);
+                        return String(opp.cliente_pf_id) === String(pfId);
+                    } else if (searchClienteId.startsWith('org-')) {
+                        const orgId = searchClienteId.substring(4);
+                        return String(opp.organizacao_id) === String(orgId);
+                    }
+                    return false;
+                });
+            }
+
+            if (searchProdutoTerm && searchProdutoTerm.trim() !== '') {
+                const term = searchProdutoTerm.toLowerCase();
+                opportunitiesInStage = opportunitiesInStage.filter(opp => {
+                    const matchFabricante = opp.fabricantes_itens && opp.fabricantes_itens.toLowerCase().includes(term);
+                    const matchDescricao = opp.itens_descricao && opp.itens_descricao.toLowerCase().includes(term);
+                    const matchTitulo = opp.titulo && opp.titulo.toLowerCase().includes(term);
+                    const matchNotas = opp.notas && opp.notas.toLowerCase().includes(term);
+                    return matchFabricante || matchDescricao || matchTitulo || matchNotas;
+                });
+            }
+        }
+        // ------------------------------------------------
 
         opportunitiesInStage.sort((a, b) => {
             // Ordena por data_criacao DESC (mais recente primeiro)
@@ -302,6 +342,89 @@ function renderLicitacoesHeader() {
     });
 }
 
+
+// --- NOVA FUNÇÃO: Renderiza cabeçalho de pesquisa para o Funil de Vendas ---
+function renderVendasSearchHeader() {
+    const headerContainer = document.getElementById('vendas-search-header-container');
+    if (!headerContainer) return;
+
+    const { searchVendedorId, searchClienteId, searchProdutoTerm } = appState.funilView;
+
+    // Opções de vendedores (usuários com roles comerciais)
+    const vendedorOptions = appState.users
+        .filter(u => ['Comercial', 'Gestor', 'Analista', 'Vendedor', 'Especialista'].includes(u.role))
+        .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
+        .map(u => `<option value="${u.id}" ${u.id == searchVendedorId ? 'selected' : ''}>${u.nome}</option>`)
+        .join('');
+
+    // Opções de clientes (organizações + PF)
+    const orgOptions = appState.organizations
+        .sort((a, b) => (a.nome_fantasia || '').localeCompare(b.nome_fantasia || ''))
+        .map(o => `<option value="org-${o.id}" ${searchClienteId === `org-${o.id}` ? 'selected' : ''}>${o.nome_fantasia}</option>`)
+        .join('');
+    const pfOptions = appState.clients_pf
+        .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
+        .map(pf => `<option value="pf-${pf.id}" ${searchClienteId === `pf-${pf.id}` ? 'selected' : ''}>${pf.nome} (PF)</option>`)
+        .join('');
+
+    headerContainer.classList.remove('hidden');
+
+    headerContainer.innerHTML = `
+         <div class="flex flex-col md:flex-row items-center gap-2 w-full">
+             <div class="flex-1 w-full">
+                 <select id="search-vendedor" class="form-input w-full text-sm py-1">
+                     <option value="">Todos os vendedores</option>
+                     ${vendedorOptions}
+                 </select>
+             </div>
+             <div class="flex-1 w-full">
+                 <select id="search-cliente" class="form-input w-full text-sm py-1">
+                     <option value="">Todos os clientes</option>
+                     <optgroup label="Organizações">
+                         ${orgOptions}
+                     </optgroup>
+                     <optgroup label="Clientes PF">
+                         ${pfOptions}
+                     </optgroup>
+                 </select>
+             </div>
+             <div class="flex-[2] w-full relative">
+                 <input type="text" id="search-produto" placeholder="Pesquisar por produto, fabricante..." 
+                        value="${searchProdutoTerm || ''}" class="form-input w-full text-sm py-1 pr-8">
+                 ${searchProdutoTerm ? `<button id="clear-produto-search" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>` : ''}
+             </div>
+         </div>
+     `;
+
+    document.getElementById('search-vendedor')?.addEventListener('change', (e) => {
+        appState.funilView.searchVendedorId = e.target.value || null;
+        renderKanbanBoard();
+    });
+
+    document.getElementById('search-cliente')?.addEventListener('change', (e) => {
+        appState.funilView.searchClienteId = e.target.value || null;
+        renderKanbanBoard();
+    });
+
+    const produtoInput = document.getElementById('search-produto');
+    if (produtoInput) {
+        let debounceTimer;
+        produtoInput.addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                appState.funilView.searchProdutoTerm = e.target.value.trim();
+                renderVendasSearchHeader(); // Re-renderiza para mostrar/esconder botão limpar
+                renderKanbanBoard();
+            }, 300);
+        });
+    }
+
+    document.getElementById('clear-produto-search')?.addEventListener('click', () => {
+        appState.funilView.searchProdutoTerm = '';
+        renderVendasSearchHeader();
+        renderKanbanBoard();
+    });
+}
 
 function createTrainingCard(treinamento) {
     let displayDate = 'N/A';

@@ -22,7 +22,7 @@ export let appState = {
     clientsView: { activeTab: 'organizations', searchTerm: '', isFormVisible: false, editingId: null },
     proposalsView: { currentPage: 1 },
     proposalSort: { column: 'data_criacao', direction: 'desc' },
-    funilView: { activeTab: 'vendas', year: new Date().getFullYear(), selectedFornecedorId: null },
+    funilView: { activeTab: 'vendas', year: new Date().getFullYear(), selectedFornecedorId: null, searchVendedorId: null, searchClienteId: null, searchProdutoTerm: '' },
     activeView: 'dashboard',
     // Estado para a nova view de Email Marketing
     emailMarketingView: {
