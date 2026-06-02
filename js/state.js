@@ -20,7 +20,7 @@ export let appState = {
     charts: {},
     proposal: null,
     clientsView: { activeTab: 'organizations', searchTerm: '', isFormVisible: false, editingId: null },
-    proposalsView: { currentPage: 1 },
+    proposalsView: { currentPage: 1, searchVendedorId: null },
     proposalSort: { column: 'data_criacao', direction: 'desc' },
     funilView: { activeTab: 'vendas', year: new Date().getFullYear(), selectedFornecedorId: null, searchVendedorId: null, searchClienteId: null, searchProdutoTerm: '' },
     activeView: 'dashboard',

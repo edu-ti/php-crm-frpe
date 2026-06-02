@@ -118,9 +118,19 @@ export function renderProposalsView() {
         <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
             <h1 class="text-2xl font-bold text-gray-800 self-start sm:self-center">Propostas</h1>
             <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-                <div class="relative w-full sm:w-64">
+                <div class="relative w-full sm:w-48">
                     <input type="text" id="proposal-search" placeholder="Pesquisar..." class="form-input w-full">
                     <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <div class="w-full sm:w-48">
+                    <select id="proposal-vendedor-search" class="form-input w-full text-sm py-1">
+                        <option value="">Todos os vendedores</option>
+                        ${appState.users
+                            .filter(u => ['Comercial', 'Gestor', 'Analista', 'Vendedor', 'Especialista'].includes(u.role))
+                            .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
+                            .map(u => `<option value="${u.id}" ${appState.proposalsView.searchVendedorId == u.id ? 'selected' : ''}>${u.nome}</option>`)
+                            .join('')}
+                    </select>
                 </div>
                 ${permissions.canCreate ? `
                 <button id="add-proposal-btn" class="btn btn-primary btn-sm w-full sm:w-auto text-center justify-center"><i class="fas fa-plus mr-2"></i>Criar Nova</button>
@@ -258,6 +268,7 @@ function renderProposalsList() {
     const container = document.getElementById('proposals-list-container');
     const { proposals, contacts } = appState;
     const searchTerm = document.getElementById('proposal-search')?.value.toLowerCase() || '';
+    const searchVendedorId = document.getElementById('proposal-vendedor-search')?.value || '';
     const { permissions } = appState.currentUser;
 
     const filteredProposals = (proposals || []).filter(p => {
@@ -272,7 +283,7 @@ function renderProposalsList() {
         const itensDesc = (p.itens_descricao || '').toLowerCase();
         const itensFab = (p.itens_fabricante || '').toLowerCase();
 
-        return clientName.toLowerCase().includes(searchTerm) ||
+        const matchText = clientName.toLowerCase().includes(searchTerm) ||
             proposalNumber.toLowerCase().includes(searchTerm) ||
             contactName.toLowerCase().includes(searchTerm) ||
             docNumber.toLowerCase().includes(searchTerm) ||
@@ -280,6 +291,11 @@ function renderProposalsList() {
             date.includes(searchTerm) ||
             itensDesc.includes(searchTerm) ||
             itensFab.includes(searchTerm);
+
+        const matchVendedor = !searchVendedorId ||
+            String(p.comercial_user_id || p.usuario_id) === String(searchVendedorId);
+
+        return matchText && matchVendedor;
     });
 
     const { column, direction } = appState.proposalSort;
@@ -1162,6 +1178,12 @@ function addProposalEventListeners() {
         scrollToProposalForm();
     });
     document.getElementById('proposal-search')?.addEventListener('input', () => {
+        appState.proposalsView.currentPage = 1;
+        renderProposalsList();
+    });
+
+    document.getElementById('proposal-vendedor-search')?.addEventListener('change', (e) => {
+        appState.proposalsView.searchVendedorId = e.target.value || null;
         appState.proposalsView.currentPage = 1;
         renderProposalsList();
     });
