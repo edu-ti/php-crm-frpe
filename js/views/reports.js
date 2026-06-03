@@ -77,7 +77,10 @@ export async function renderReportsView(state) {
                 </div>
                 
                 <div class="px-6 flex space-x-8 overflow-x-auto">
-                    <button class="report-tab active whitespace-nowrap py-4 border-b-2 border-transparent" data-tab="bi-dashboard">
+                    <button class="report-tab active whitespace-nowrap py-4 border-b-2 border-transparent" data-tab="executive-dashboard">
+                        <i class="fas fa-tachometer-alt mr-2"></i>Dashboard Executivo
+                    </button>
+                    <button class="report-tab whitespace-nowrap py-4 border-b-2 border-transparent" data-tab="bi-dashboard">
                         <i class="fas fa-th-large mr-2"></i>Dashboard BI
                     </button>
                     <button class="report-tab whitespace-nowrap py-4 border-b-2 border-transparent" data-tab="detailed-reports">
@@ -244,7 +247,7 @@ export async function renderReportsView(state) {
         }
     });
 
-    switchReportView('bi-dashboard');
+    switchReportView('executive-dashboard');
 }
 
 async function switchReportView(tab) {
@@ -252,17 +255,265 @@ async function switchReportView(tab) {
     container.innerHTML = `<div class="flex justify-center p-20"><i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i></div>`;
 
     switch (tab) {
+        case 'executive-dashboard': renderExecutiveDashboard(container); break;
         case 'bi-dashboard': renderBIDashboard(container); break;
         case 'detailed-reports': renderDetailedReports(container); break;
         case 'performance-mgmt': renderPerformanceMgmt(container); break;
     }
 }
 
+async function renderExecutiveDashboard(container) {
+    const currentYear = new Date().getFullYear();
+    const monthName = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date());
+
+    container.innerHTML = `
+        <div class="flex justify-end mb-3 no-print">
+            <button id="exec-export-btn" class="bg-emerald-500 hover:bg-emerald-400 text-white px-4 h-9 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-2 active:scale-95 shadow">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; margin-bottom:1.5rem;">
+            <div class="kpi-card bg-indigo-600 !text-black !p-7 shadow-indigo-200 shadow-xl border-none" style="flex:1; min-width:200px;">
+                <div class="flex flex-col">
+                    <p class="text-[10px] font-black uppercase text-green-900 tracking-widest opacity-70 mb-1">Total Vendido ${currentYear}</p>
+                    <h3 id="exec-sales-total" class="text-3xl font-black mb-3">R$ 0,00</h3>
+                    <div class="w-full bg-white/20 h-1.5 rounded-full overflow-hidden"><div class="bg-white h-full" id="exec-sales-bar" style="width:0%"></div></div>
+                </div>
+            </div>
+            <div class="kpi-card !p-7" style="flex:1; min-width:200px;">
+                <div class="flex flex-col">
+                    <p class="text-[10px] font-black uppercase text-blue-600 mb-1">Vendido em ${monthName}</p>
+                    <h3 id="exec-month-sales" class="text-3xl font-black text-slate-800">R$ 0,00</h3>
+                    <p class="text-xs text-slate-400 mt-2">Mês atual</p>
+                </div>
+            </div>
+            <div class="kpi-card !p-7 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100" style="flex:1; min-width:200px;">
+                <div class="flex flex-col">
+                    <p class="text-[10px] font-black uppercase text-amber-600 mb-1">Meta Anual</p>
+                    <h3 id="exec-goal" class="text-3xl font-black text-slate-800">R$ 0,00</h3>
+                    <p class="text-xs text-slate-400 mt-2">Fornecedores</p>
+                </div>
+            </div>
+            <div class="kpi-card !p-7" style="flex:1; min-width:200px;">
+                <div class="flex flex-col">
+                    <p class="text-[10px] font-black uppercase text-indigo-600 mb-1">Atingimento</p>
+                    <h3 id="exec-achievement" class="text-4xl font-black">0%</h3>
+                    <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden mt-2">
+                        <div id="exec-ach-bar" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; margin-bottom:1.5rem;">
+            <div class="kpi-card !p-6 bg-gradient-to-br from-violet-50 to-indigo-50 border-indigo-100" style="flex:1; min-width:180px;">
+                <p class="text-[10px] font-black uppercase text-indigo-600 mb-1">Ticket Médio</p>
+                <h3 id="exec-avg-ticket" class="text-2xl font-black text-slate-800">R$ 0,00</h3>
+            </div>
+            <div class="kpi-card !p-6 bg-gradient-to-br from-slate-50 to-slate-100" style="flex:1; min-width:180px;">
+                <p class="text-[10px] font-black uppercase text-slate-500 mb-1">Forecast 12m</p>
+                <h3 id="exec-forecast" class="text-2xl font-black text-slate-800">R$ 0,00</h3>
+            </div>
+            <div class="kpi-card !p-6" style="flex:1; min-width:180px;">
+                <p class="text-[10px] font-black uppercase text-slate-500 mb-1">Conversão Geral</p>
+                <h3 id="exec-conversion" class="text-2xl font-black">0%</h3>
+            </div>
+            <div class="kpi-card !p-6 !bg-emerald-50 border-emerald-100" style="flex:1; min-width:180px;">
+                <p class="text-[10px] font-black uppercase text-emerald-600 mb-1">Licitações Ativas</p>
+                <h3 id="exec-active-bids" class="text-2xl font-black text-emerald-700">0</h3>
+            </div>
+        </div>
+
+        <div class="bento-grid">
+            <div class="col-span-3 bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
+                <div class="flex justify-between items-center mb-6">
+                    <h4 class="font-black text-slate-800 text-sm uppercase tracking-wider">Evolução Mensal</h4>
+                    <div class="flex gap-2"><span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-600">Realizado</span><span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500">Meta</span></div>
+                </div>
+                <div class="h-72 w-full"><canvas id="exec-evolution-chart"></canvas></div>
+            </div>
+
+            <div class="col-span-2 bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
+                <h4 class="font-black text-slate-800 text-sm uppercase tracking-wider mb-6">Top Clientes</h4>
+                <div class="h-72 w-full"><canvas id="exec-clients-chart"></canvas></div>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm flex flex-col justify-center">
+                <h4 class="font-black text-slate-800 text-sm uppercase tracking-wider text-center mb-4">Licitações</h4>
+                <div class="h-52 w-full relative"><canvas id="exec-bids-chart"></canvas></div>
+                <p id="exec-bids-rate" class="text-center text-sm font-bold mt-3 text-slate-500"></p>
+            </div>
+
+            <div class="col-span-2 bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
+                <h4 class="font-black text-slate-800 text-sm uppercase tracking-wider mb-6">Top Vendedores</h4>
+                <div class="h-72 w-full"><canvas id="exec-vendors-chart"></canvas></div>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm flex flex-col justify-center">
+                <h4 class="font-black text-slate-800 text-sm uppercase tracking-wider text-center mb-4">Top Fornecedores</h4>
+                <div class="h-52 w-full relative"><canvas id="exec-supplier-chart"></canvas></div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('exec-export-btn').addEventListener('click', exportBiToExcel);
+
+    try {
+        const [kpi, forecast, conv, evolution, clients, supplier, bids] = await Promise.all([
+            apiCall('get_report_data', { params: { report_type: 'bi_kpis', start_date: `${currentYear}-01-01` } }),
+            apiCall('get_report_data', { params: { report_type: 'revenue_forecast', start_date: `${currentYear}-01-01` } }),
+            apiCall('get_report_data', { params: { report_type: 'conversion_by_vendor', start_date: `${currentYear}-01-01` } }),
+            apiCall('get_report_data', { params: { report_type: 'sales_vs_goals', start_date: `${currentYear}-01-01` } }),
+            apiCall('get_report_data', { params: { report_type: 'top_clients', start_date: `${currentYear}-01-01` } }),
+            apiCall('get_report_data', { params: { report_type: 'by_supplier', start_date: `${currentYear}-01-01` } }),
+            apiCall('get_report_data', { params: { report_type: 'bids_result', start_date: `${currentYear}-01-01` } })
+        ]);
+
+        if (kpi.success) {
+            document.getElementById('exec-sales-total').innerText = formatCurrencyUtil(kpi.total_sales || 0);
+            document.getElementById('exec-month-sales').innerText = formatCurrencyUtil(kpi.month_sales || 0);
+            document.getElementById('exec-avg-ticket').innerText = formatCurrencyUtil(kpi.avg_ticket || 0);
+            document.getElementById('exec-active-bids').innerText = kpi.active_bids || 0;
+        }
+
+        if (forecast.success && forecast.data) {
+            const f = forecast.data;
+            document.getElementById('exec-goal').innerText = formatCurrencyUtil(f.meta_anual);
+            document.getElementById('exec-forecast').innerText = formatCurrencyUtil(f.forecast);
+
+            const ach = f.achievement || 0;
+            const achEl = document.getElementById('exec-achievement');
+            const achBar = document.getElementById('exec-ach-bar');
+            achEl.innerText = ach + '%';
+            achBar.style.width = Math.min(ach, 100) + '%';
+
+            if (ach >= 100) {
+                achEl.className = 'text-4xl font-black text-emerald-500';
+                achBar.className = 'h-full rounded-full transition-all duration-700 bg-emerald-400';
+            } else if (ach >= 80) {
+                achEl.className = 'text-4xl font-black text-amber-500';
+                achBar.className = 'h-full rounded-full transition-all duration-700 bg-amber-400';
+            } else {
+                achEl.className = 'text-4xl font-black text-rose-500';
+                achBar.className = 'h-full rounded-full transition-all duration-700 bg-rose-400';
+            }
+
+            if (f.meta_anual > 0 && kpi.success) {
+                const salesBar = document.getElementById('exec-sales-bar');
+                const pct = Math.min((kpi.total_sales / f.meta_anual) * 100, 100);
+                salesBar.style.width = pct + '%';
+            }
+        }
+
+        if (conv.success && Array.isArray(conv.data)) {
+            const totalProps = conv.data.reduce((s, d) => s + parseInt(d.propostas || 0), 0);
+            const totalAprov = conv.data.reduce((s, d) => s + parseInt(d.aprovadas || 0), 0);
+            const geralConv = totalProps > 0 ? Math.round(totalAprov / totalProps * 100) : 0;
+            const cvEl = document.getElementById('exec-conversion');
+            cvEl.innerText = geralConv + '%';
+            cvEl.className = geralConv >= 50 ? 'text-2xl font-black text-emerald-600' : 'text-2xl font-black text-rose-500';
+        }
+
+        if (evolution.success) {
+            const ctxEvo = document.getElementById('exec-evolution-chart').getContext('2d');
+            new Chart(ctxEvo, {
+                type: 'line',
+                data: {
+                    labels: evolution.labels,
+                    datasets: [
+                        { label: 'Realizado', data: evolution.sales, backgroundColor: 'rgba(79,70,229,0.1)', borderColor: '#4f46e5', borderWidth: 3, fill: true, tension: 0.4 },
+                        { label: 'Meta', data: evolution.goals, borderColor: '#10b981', borderWidth: 2, borderDash: [5,5], fill: false, tension: 0.1 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } },
+                    scales: { y: { beginAtZero: true, ticks: { callback: v => 'R$ ' + v.toLocaleString() } } }
+                }
+            });
+        }
+
+        if (clients.success && Array.isArray(clients.data)) {
+            const cd = clients.data.slice(0, 8);
+            const ctxC = document.getElementById('exec-clients-chart').getContext('2d');
+            const maxC = Math.max(...cd.map(d => parseFloat(d.faturamento)), 1);
+            new Chart(ctxC, {
+                type: 'bar', indexAxis: 'y',
+                data: {
+                    labels: cd.map(d => d.cliente),
+                    datasets: [{
+                        label: 'Faturamento', data: cd.map(d => parseFloat(d.faturamento)),
+                        backgroundColor: cd.map(d => `rgba(79,70,229,${0.4 + (parseFloat(d.faturamento)/maxC)*0.6})`),
+                        borderColor: '#4f46e5', borderWidth: 1, borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true, ticks: { callback: v => v >= 1000000 ? 'R$ '+(v/1000000).toFixed(1)+'M' : v >= 1000 ? 'R$ '+(v/1000).toFixed(0)+'k' : 'R$ '+v } } }
+                }
+            });
+        }
+
+        if (bids.success && bids.data) {
+            const b = bids.data;
+            const ctxB = document.getElementById('exec-bids-chart').getContext('2d');
+            new Chart(ctxB, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ganhas', 'Perdidas', 'Fracassadas', 'Revogadas', 'Suspensas'],
+                    datasets: [{ data: [b.ganhas||0, b.perdidas||0, b.fracassadas||0, b.revogadas||0, b.suspensas||0], backgroundColor: ['#10b981','#ef4444','#6b7280','#f59e0b','#eab308'], borderColor: '#fff', borderWidth: 2 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }
+            });
+            document.getElementById('exec-bids-rate').innerText = 'Taxa de Sucesso: ' + (b.success_rate || 0) + '%';
+        }
+
+        if (kpi.success && kpi.sales_by_vendedor && Array.isArray(kpi.sales_by_vendedor)) {
+            const vd = kpi.sales_by_vendedor;
+            const ctxV = document.getElementById('exec-vendors-chart').getContext('2d');
+            new Chart(ctxV, {
+                type: 'bar', indexAxis: 'y',
+                data: {
+                    labels: vd.map(d => d.vendedor),
+                    datasets: [{
+                        label: 'Total', data: vd.map(d => parseFloat(d.total)),
+                        backgroundColor: vd.map((_, i) => ['#4f46e5','#7c3aed','#6366f1','#818cf8','#a5b4fc'][i] || '#4f46e5'),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true, ticks: { callback: v => formatCurrencyUtil(v).replace('R$ ','') } } }
+                }
+            });
+        }
+
+        if (Array.isArray(supplier)) {
+            const sd = supplier.slice(0, 5);
+            const ctxS = document.getElementById('exec-supplier-chart').getContext('2d');
+            new Chart(ctxS, {
+                type: 'doughnut',
+                data: {
+                    labels: sd.map(d => d.label),
+                    datasets: [{ data: sd.map(d => d.value), backgroundColor: ['#4f46e5','#10b981','#f59e0b','#ef4444','#3b82f6'], borderColor: '#fff', borderWidth: 2 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }
+            });
+        }
+    } catch (e) {
+        console.error("Executive dashboard error:", e);
+    }
+}
+
 async function renderBIDashboard(container) {
     const currentYear = new Date().getFullYear();
     container.innerHTML = `
-        <div class="bento-grid">
-            <div class="kpi-card bg-indigo-600 !text-black !p-7 shadow-indigo-200 shadow-xl border-none">
+        <div class="flex justify-end mb-3 no-print">
+            <button id="bi-export-btn" class="bg-emerald-500 hover:bg-emerald-400 text-white px-4 h-9 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-2 active:scale-95 shadow">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:1.5rem; margin-bottom:1.5rem;">
+            <div class="kpi-card bg-indigo-600 !text-black !p-7 shadow-indigo-200 shadow-xl border-none" style="flex:1; min-width:200px;">
                 <div class="flex flex-col">
                     <p class="text-[10px] font-black uppercase text-green-900 tracking-widest opacity-70 mb-1">Total Vendido ${currentYear}</p>
                     <h3 id="bi-sales-total" class="text-3xl font-black mb-4">R$ 0,00</h3>
@@ -272,7 +523,7 @@ async function renderBIDashboard(container) {
                 </div>
             </div>
 
-            <div class="kpi-card !p-7 group hover:bg-slate-50">
+            <div class="kpi-card !p-7 group hover:bg-slate-50" style="flex:1; min-width:200px;">
                 <div class="flex flex-col">
                     <p class="text-[10px] font-black uppercase text-blue-600 mb-1">Aprovado no Mês</p>
                     <h3 id="bi-month-sales" class="text-3xl font-black text-slate-800">R$ 0,00</h3>
@@ -282,11 +533,65 @@ async function renderBIDashboard(container) {
                 </div>
             </div>
 
-            <div class="kpi-card !p-7">
+            <div class="kpi-card !p-7" style="flex:1; min-width:200px;">
                 <div class="flex flex-col">
                     <p class="text-[10px] font-black uppercase text-rose-600 mb-1">Perdas de Oportunidades</p>
                     <h3 id="bi-lost-total" class="text-3xl font-black text-slate-800">R$ 0,00</h3>
                     <p class="text-[10px] text-slate-400 font-bold uppercase mt-2">Valor acumulado no ano</p>
+                </div>
+            </div>
+
+            <div class="kpi-card !p-7 bg-gradient-to-br from-violet-50 to-indigo-50 border-indigo-100" style="flex:1; min-width:200px;">
+                <div class="flex flex-col">
+                    <p class="text-[10px] font-black uppercase text-indigo-600 mb-1">Ticket Médio ${currentYear}</p>
+                    <h3 id="bi-avg-ticket" class="text-3xl font-black text-slate-800">R$ 0,00</h3>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-2">por venda</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bento-grid">
+            <div class="col-span-3 bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl border border-slate-700 p-8 shadow-xl overflow-hidden relative">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+                <div class="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/5 rounded-full -ml-16 -mb-16 blur-2xl"></div>
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h4 class="font-black text-white text-sm uppercase tracking-wider">Forecast de Receita</h4>
+                            <p class="text-[10px] text-slate-400 mt-1">Projeção ${currentYear} — base ${new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date())}</p>
+                        </div>
+                        <span id="bi-forecast-indicator" class="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-black uppercase">
+                            <span class="w-2 h-2 rounded-full mr-2"></span>
+                            <span></span>
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Realizado</p>
+                            <h3 id="bi-forecast-realized" class="text-xl font-black text-white">R$ 0,00</h3>
+                            <p class="text-[9px] text-slate-500 mt-1">Janeiro — atual</p>
+                        </div>
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Média Mensal</p>
+                            <h3 id="bi-forecast-monthly-avg" class="text-xl font-black text-white">R$ 0,00</h3>
+                            <p id="bi-forecast-months" class="text-[9px] text-slate-500 mt-1"></p>
+                        </div>
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Projetado 12m</p>
+                            <h3 id="bi-forecast-projected" class="text-xl font-black text-indigo-300">R$ 0,00</h3>
+                        </div>
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Meta Anual</p>
+                            <h3 id="bi-forecast-goal" class="text-xl font-black text-white">R$ 0,00</h3>
+                        </div>
+                        <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Atingimento</p>
+                            <h3 id="bi-forecast-achievement" class="text-2xl font-black"></h3>
+                            <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-2">
+                                <div id="bi-forecast-bar" class="h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -314,6 +619,95 @@ async function renderBIDashboard(container) {
                 </div>
             </div>
 
+            <div class="col-span-2 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-hidden relative">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h4 class="font-black text-slate-800 text-sm uppercase">Ticket Médio por Cliente</h4>
+                        <p class="text-[10px] text-slate-500">Mês de ${new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date())}</p>
+                    </div>
+                </div>
+                <div id="bi-top-clients" class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                    <div class="flex items-center justify-center p-10 w-full text-slate-300 font-bold">
+                        <i class="fas fa-spinner fa-spin mr-2"></i> Analisando resultados...
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-span-3 bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h4 class="font-black text-slate-800 text-sm uppercase">Performance Comercial</h4>
+                        <p class="text-[10px] text-slate-500">Conversão por Vendedor — encerradas no período</p>
+                    </div>
+                    <div class="flex gap-2 flex-wrap">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-600">Aprovadas</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600">Recusadas</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500">Conversão %</span>
+                    </div>
+                </div>
+                <div class="h-80 w-full"><canvas id="bi-conversion-chart"></canvas></div>
+            </div>
+
+            <div class="col-span-2 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm overflow-hidden relative">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h4 class="font-black text-slate-800 text-sm uppercase">Resumo de Licitações</h4>
+                        <p class="text-[10px] text-slate-500">Resultados encerrados no período</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Taxa de Sucesso</p>
+                        <span id="bi-bids-success-rate" class="text-3xl font-black text-emerald-600">0%</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="h-52 w-52 relative flex-shrink-0"><canvas id="bi-bids-chart"></canvas></div>
+                    <div class="flex flex-col gap-2 flex-1 text-[10px]">
+                        <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                            <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Ganhas</span>
+                            <span id="bi-bids-won" class="font-bold text-slate-700">0</span>
+                        </div>
+                        <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                            <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span> Perdidas</span>
+                            <span id="bi-bids-lost" class="font-bold text-slate-700">0</span>
+                        </div>
+                        <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                            <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-400 inline-block"></span> Fracassadas</span>
+                            <span id="bi-bids-failed" class="font-bold text-slate-700">0</span>
+                        </div>
+                        <div class="flex items-center justify-between py-1 border-b border-slate-100">
+                            <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span> Revogadas</span>
+                            <span id="bi-bids-revoked" class="font-bold text-slate-700">0</span>
+                        </div>
+                        <div class="flex items-center justify-between py-1">
+                            <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-yellow-500 inline-block"></span> Suspensas</span>
+                            <span id="bi-bids-suspended" class="font-bold text-slate-700">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-span-3 bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h4 class="font-black text-slate-800 text-sm uppercase">Top Estados por Receita</h4>
+                        <p class="text-[10px] text-slate-500">Distribuição geográfica do faturamento — ${currentYear}</p>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-600">Faturamento</span>
+                </div>
+                <div class="h-96 w-full"><canvas id="bi-states-chart"></canvas></div>
+            </div>
+
+            <div class="col-span-3 bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h4 class="font-black text-slate-800 text-sm uppercase">Top Clientes</h4>
+                        <p class="text-[10px] text-slate-500">Ranking de faturamento — ${new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date())} ${currentYear}</p>
+                    </div>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-600">Top 10</span>
+                </div>
+                <div class="h-96 w-full"><canvas id="bi-top-clients-chart"></canvas></div>
+            </div>
+
             <div class="col-span-2 bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
                 <div class="flex justify-between items-center mb-8">
                      <h4 class="font-black text-slate-800 uppercase tracking-wider">Evolução de Mercado</h4>
@@ -332,6 +726,8 @@ async function renderBIDashboard(container) {
         </div>
     `;
 
+    document.getElementById('bi-export-btn').addEventListener('click', exportBiToExcel);
+
     try {
         const [kpiData, chartData] = await Promise.all([
             apiCall('get_report_data', { params: { report_type: 'bi_kpis', start_date: `${currentYear}-01-01` } }),
@@ -342,19 +738,39 @@ async function renderBIDashboard(container) {
             document.getElementById('bi-sales-total').innerText = formatCurrencyUtil(kpiData.total_sales || 0);
             document.getElementById('bi-month-sales').innerText = formatCurrencyUtil(kpiData.month_sales || 0);
             document.getElementById('bi-lost-total').innerText = formatCurrencyUtil(kpiData.lost_sales || 0);
+            document.getElementById('bi-avg-ticket').innerText = formatCurrencyUtil(kpiData.avg_ticket || 0);
             document.getElementById('bi-bids-count').innerText = kpiData.active_bids || 0;
 
             const sellerContainer = document.getElementById('bi-top-sellers');
             if (sellerContainer && kpiData.sales_by_vendedor) {
                 sellerContainer.innerHTML = kpiData.sales_by_vendedor.map(s => {
                     const initials = s.vendedor.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    const avgTicket = s.qtd > 0 ? (parseFloat(s.total) / parseInt(s.qtd)) : 0;
                     return `
                         <div class="seller-card">
                             <div class="seller-avatar">${initials}</div>
                             <div class="flex flex-col">
                                 <span class="text-xs font-black text-slate-800 uppercase truncate w-32" title="${s.vendedor}">${s.vendedor}</span>
                                 <span class="text-sm font-bold text-indigo-600">${formatCurrencyUtil(s.total)}</span>
-                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Vendas Aprovadas</span>
+                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">${s.qtd || 0} vendas · Ticket Médio ${formatCurrencyUtil(avgTicket)}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            const clientContainer = document.getElementById('bi-top-clients');
+            if (clientContainer && kpiData.sales_by_cliente) {
+                clientContainer.innerHTML = kpiData.sales_by_cliente.map(c => {
+                    const initials = c.cliente.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    const avgTicket = c.qtd > 0 ? (parseFloat(c.total) / parseInt(c.qtd)) : 0;
+                    return `
+                        <div class="seller-card">
+                            <div class="seller-avatar">${initials}</div>
+                            <div class="flex flex-col">
+                                <span class="text-xs font-black text-slate-800 uppercase truncate w-32" title="${c.cliente}">${c.cliente}</span>
+                                <span class="text-sm font-bold text-emerald-600">${formatCurrencyUtil(c.total)}</span>
+                                <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">${c.qtd || 0} vendas · Ticket Médio ${formatCurrencyUtil(avgTicket)}</span>
                             </div>
                         </div>
                     `;
@@ -391,6 +807,252 @@ async function renderBIDashboard(container) {
                     datasets: [{ data: salesBySup.slice(0, 5).map(s => s.value), backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#3b82f6'] }]
                 },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+            });
+        }
+
+        const ctxConv = document.getElementById('bi-conversion-chart').getContext('2d');
+        const conversionData = await apiCall('get_report_data', { params: { report_type: 'conversion_by_vendor', start_date: `${currentYear}-01-01` } });
+        if (conversionData.success && Array.isArray(conversionData.data)) {
+            const data = conversionData.data;
+            new Chart(ctxConv, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.vendedor),
+                    datasets: [
+                        { label: 'Aprovadas', data: data.map(d => parseInt(d.aprovadas)), backgroundColor: '#10b981', borderRadius: 6, barPercentage: 0.5, categoryPercentage: 0.8 },
+                        { label: 'Recusadas', data: data.map(d => parseInt(d.recusadas)), backgroundColor: '#ef4444', borderRadius: 6, barPercentage: 0.5, categoryPercentage: 0.8 }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(ctx) {
+                                    const d = data[ctx.dataIndex];
+                                    return 'Conversão: ' + d.conversao + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { stacked: true, ticks: { stepSize: 1 } },
+                        y: { stacked: true }
+                    }
+                }
+            });
+        }
+
+        const ctxTopClients = document.getElementById('bi-top-clients-chart').getContext('2d');
+        const topClientsData = await apiCall('get_report_data', { params: { report_type: 'top_clients', start_date: `${currentYear}-01-01` } });
+        if (topClientsData.success && Array.isArray(topClientsData.data)) {
+            const data = topClientsData.data;
+            const maxFaturamento = Math.max(...data.map(d => parseFloat(d.faturamento)), 1);
+            const bgColors = data.map(d => {
+                const ratio = parseFloat(d.faturamento) / maxFaturamento;
+                return `rgba(79, 70, 229, ${0.4 + ratio * 0.6})`;
+            });
+            new Chart(ctxTopClients, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.cliente),
+                    datasets: [{
+                        label: 'Faturamento',
+                        data: data.map(d => parseFloat(d.faturamento)),
+                        backgroundColor: bgColors,
+                        borderColor: '#4f46e5',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const d = data[ctx.dataIndex];
+                                    return [
+                                        'Faturamento: ' + formatCurrencyUtil(d.faturamento),
+                                        'Vendas: ' + d.qtd_vendas,
+                                        'Ticket Médio: ' + formatCurrencyUtil(d.ticket_medio)
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: v => {
+                                    if (v >= 1000000) return 'R$ ' + (v / 1000000).toFixed(1) + 'M';
+                                    if (v >= 1000) return 'R$ ' + (v / 1000).toFixed(0) + 'k';
+                                    return 'R$ ' + v;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const forecastData = await apiCall('get_report_data', { params: { report_type: 'revenue_forecast', start_date: `${currentYear}-01-01` } });
+        if (forecastData.success && forecastData.data) {
+            const f = forecastData.data;
+            const achievement = f.achievement || 0;
+
+            document.getElementById('bi-forecast-realized').innerText = formatCurrencyUtil(f.realized);
+            document.getElementById('bi-forecast-monthly-avg').innerText = formatCurrencyUtil(f.monthly_avg);
+            document.getElementById('bi-forecast-months').innerText = f.current_month + ' meses';
+            document.getElementById('bi-forecast-projected').innerText = formatCurrencyUtil(f.forecast);
+            document.getElementById('bi-forecast-goal').innerText = formatCurrencyUtil(f.meta_anual);
+
+            const achEl = document.getElementById('bi-forecast-achievement');
+            if (achievement >= 100) {
+                achEl.className = 'text-2xl font-black text-emerald-400';
+                achEl.innerText = achievement + '%';
+            } else if (achievement >= 80) {
+                achEl.className = 'text-2xl font-black text-amber-400';
+                achEl.innerText = achievement + '%';
+            } else {
+                achEl.className = 'text-2xl font-black text-rose-400';
+                achEl.innerText = achievement + '%';
+            }
+
+            const bar = document.getElementById('bi-forecast-bar');
+            bar.style.width = Math.min(achievement, 100) + '%';
+            if (achievement >= 100) {
+                bar.className = 'h-full rounded-full transition-all duration-700 bg-emerald-400';
+            } else if (achievement >= 80) {
+                bar.className = 'h-full rounded-full transition-all duration-700 bg-amber-400';
+            } else {
+                bar.className = 'h-full rounded-full transition-all duration-700 bg-rose-400';
+            }
+
+            const indicator = document.getElementById('bi-forecast-indicator');
+            const dot = indicator.querySelector('span:first-child');
+            const txt = indicator.querySelector('span:last-child');
+            if (achievement >= 100) {
+                indicator.className = 'inline-flex items-center px-4 py-1.5 rounded-full text-xs font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                dot.className = 'w-2 h-2 rounded-full mr-2 bg-emerald-400';
+                txt.innerText = 'Acima da meta';
+            } else if (achievement >= 80) {
+                indicator.className = 'inline-flex items-center px-4 py-1.5 rounded-full text-xs font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30';
+                dot.className = 'w-2 h-2 rounded-full mr-2 bg-amber-400';
+                txt.innerText = 'Próximo da meta';
+            } else {
+                indicator.className = 'inline-flex items-center px-4 py-1.5 rounded-full text-xs font-black uppercase bg-rose-500/20 text-rose-300 border border-rose-500/30';
+                dot.className = 'w-2 h-2 rounded-full mr-2 bg-rose-400';
+                txt.innerText = 'Abaixo da meta';
+            }
+        }
+
+        const bidsData = await apiCall('get_report_data', { params: { report_type: 'bids_result', start_date: `${currentYear}-01-01` } });
+        if (bidsData.success && bidsData.data) {
+            const b = bidsData.data;
+            document.getElementById('bi-bids-won').innerText = b.ganhas || 0;
+            document.getElementById('bi-bids-lost').innerText = b.perdidas || 0;
+            document.getElementById('bi-bids-failed').innerText = b.fracassadas || 0;
+            document.getElementById('bi-bids-revoked').innerText = b.revogadas || 0;
+            document.getElementById('bi-bids-suspended').innerText = b.suspensas || 0;
+
+            const rate = b.success_rate || 0;
+            const rateEl = document.getElementById('bi-bids-success-rate');
+            rateEl.innerText = rate + '%';
+            rateEl.className = rate >= 50 ? 'text-3xl font-black text-emerald-600' : 'text-3xl font-black text-rose-500';
+
+            const ctxBids = document.getElementById('bi-bids-chart').getContext('2d');
+            new Chart(ctxBids, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ganhas', 'Perdidas', 'Fracassadas', 'Revogadas', 'Suspensas'],
+                    datasets: [{
+                        data: [b.ganhas || 0, b.perdidas || 0, b.fracassadas || 0, b.revogadas || 0, b.suspensas || 0],
+                        backgroundColor: ['#10b981', '#ef4444', '#6b7280', '#f59e0b', '#eab308'],
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                        hoverBorderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                    const pct = total > 0 ? Math.round(ctx.raw / total * 100) : 0;
+                                    return ctx.label + ': ' + ctx.raw + ' (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const statesData = await apiCall('get_report_data', { params: { report_type: 'sales_by_state', start_date: `${currentYear}-01-01` } });
+        if (statesData.success && Array.isArray(statesData.data)) {
+            const sd = statesData.data;
+            const maxVal = Math.max(...sd.map(d => parseFloat(d.faturamento)), 1);
+            const ctxStates = document.getElementById('bi-states-chart').getContext('2d');
+            new Chart(ctxStates, {
+                type: 'bar',
+                data: {
+                    labels: sd.map(d => d.uf),
+                    datasets: [{
+                        label: 'Faturamento',
+                        data: sd.map(d => parseFloat(d.faturamento)),
+                        backgroundColor: sd.map(d => {
+                            const ratio = parseFloat(d.faturamento) / maxVal;
+                            return `rgba(79, 70, 229, ${0.35 + ratio * 0.65})`;
+                        }),
+                        borderColor: '#4f46e5',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const d = sd[ctx.dataIndex];
+                                    return [
+                                        'Faturamento: ' + formatCurrencyUtil(d.faturamento),
+                                        'Vendas: ' + d.qtd_vendas
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: v => {
+                                    if (v >= 1000000) return 'R$ ' + (v / 1000000).toFixed(1) + 'M';
+                                    if (v >= 1000) return 'R$ ' + (v / 1000).toFixed(0) + 'k';
+                                    return 'R$ ' + v;
+                                }
+                            }
+                        }
+                    }
+                }
             });
         }
     } catch (e) {
@@ -2273,16 +2935,54 @@ function getMonthsBetween(start, end) {
 }
 
 function exportToExcel() {
-    const content = document.getElementById('reports-output-area').cloneNode(true);
-    content.querySelector('#report-loading')?.remove();
-    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head><meta charset="UTF-8"><style>table{border-collapse:collapse;width:100%}th,td{border:1px solid #000;padding:5px}</style></head>
-        <body>${content.innerHTML}</body></html>`;
-    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `Relatorio_${new Date().toISOString().slice(0, 10)}.xls`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    const params = new URLSearchParams();
+    const reportType = document.getElementById('report-type')?.value || 'sales';
+    const startDate = document.getElementById('filter-start-date')?.value || '';
+    const endDate = document.getElementById('filter-end-date')?.value || '';
+
+    params.set('action', 'export_excel');
+    params.set('report_type', reportType);
+    if (startDate) params.set('start_date', startDate);
+    if (endDate) params.set('end_date', endDate);
+
+    const supplierContainer = document.getElementById('filter-supplier-container');
+    if (supplierContainer) {
+        const el = supplierContainer.querySelector('input[type="hidden"]') || supplierContainer.querySelector('select');
+        if (el && el.value) params.set('supplier_id', el.value);
+    }
+
+    const userContainer = document.getElementById('filter-user-container');
+    if (userContainer) {
+        const el = userContainer.querySelector('input[type="hidden"]') || userContainer.querySelector('select');
+        if (el && el.value) params.set('user_id', el.value);
+    }
+
+    const ufContainer = document.getElementById('filter-uf-container');
+    if (ufContainer) {
+        const el = ufContainer.querySelector('input[type="hidden"]') || ufContainer.querySelector('select');
+        if (el && el.value) params.set('uf', el.value);
+    }
+
+    const clientContainer = document.getElementById('filter-client-container');
+    if (clientContainer) {
+        const el = clientContainer.querySelector('input[type="hidden"]') || clientContainer.querySelector('select');
+        if (el && el.value) params.set('cliente_id', el.value);
+    }
+
+    const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '/api.php');
+    window.open(baseUrl + '?' + params.toString(), '_blank');
+}
+
+async function exportBiToExcel() {
+    const currentYear = new Date().getFullYear();
+    const params = new URLSearchParams({
+        action: 'export_excel',
+        report_type: 'bi_kpis',
+        start_date: `${currentYear}-01-01`,
+        type: 'bi_kpis'
+    });
+    const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '/api.php');
+    window.open(baseUrl + '?' + params.toString(), '_blank');
 }
 
 function setupModalLinks() {

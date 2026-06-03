@@ -76,7 +76,7 @@ function handle_create_proposal($pdo, $data)
         $proposal_status = $data['status'] ?? 'Rascunho';
         $data_aprovacao = (strcasecmp($proposal_status, 'Aprovada') === 0) ? date('Y-m-d H:i:s') : null;
 
-        $sql = "INSERT INTO propostas (oportunidade_id, cliente_pf_id, organizacao_id, contato_id, usuario_id, comercial_user_id, valor_total, status, data_validade, data_aprovacao, faturamento, treinamento, condicoes_pagamento, prazo_entrega, garantia_equipamentos, garantia_acessorios, instalacao, assistencia_tecnica, observacoes, motivo_status, frete_tipo, frete_valor, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        $sql = "INSERT INTO propostas (oportunidade_id, cliente_pf_id, organizacao_id, contato_id, usuario_id, comercial_user_id, valor_total, status, data_validade, data_aprovacao, faturamento, treinamento, condicoes_pagamento, prazo_entrega, garantia_equipamentos, garantia_acessorios, instalacao, assistencia_tecnica, observacoes, motivo_status, frete_tipo, frete_valor, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         $stmt = $pdo->prepare($sql);
 
         $stmt->execute([

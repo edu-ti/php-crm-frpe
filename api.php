@@ -200,6 +200,7 @@ try {
         'save_targets'             => ['method' => 'POST', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_save_targets'],
         'get_report_kpis'          => ['method' => 'GET',  'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_report_kpis'],
         'export_pdf'               => ['method' => 'GET',  'file' => '/api/handlers/report_pdf_export.php', 'function' => 'handle_export_pdf'],
+        'export_excel'             => ['method' => 'GET',  'file' => '/api/handlers/report_excel_export.php', 'function' => 'handle_export_excel'],
         // ── NOVAS ROTAS - Metas e Comissões ──────────────────────────────────────────
         'get_commission_config'    => ['method' => 'GET',  'file' => '/api/handlers/report_handler.php', 'function' => 'handle_get_commission_config'],
         'save_commission_config'   => ['method' => 'POST', 'file' => '/api/handlers/report_handler.php', 'function' => 'handle_save_commission_config'],

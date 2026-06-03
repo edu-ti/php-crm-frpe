@@ -72,6 +72,21 @@ class ReportHandler
             case 'vendor_evolution':
                 $this->getVendorEvolution($startDate, $endDate);
                 break;
+            case 'conversion_by_vendor':
+                $this->getConversionByVendor($startDate, $endDate);
+                break;
+            case 'top_clients':
+                $this->getTopClients($startDate, $endDate);
+                break;
+            case 'revenue_forecast':
+                $this->getRevenueForecast($startDate, $endDate);
+                break;
+            case 'bids_result':
+                $this->getBidsResult($startDate, $endDate);
+                break;
+            case 'sales_by_state':
+                $this->getSalesByState($startDate, $endDate);
+                break;
             default:
                 http_response_code(400);
                 echo json_encode(['error' => 'Invalid action']);
@@ -426,12 +441,40 @@ class ReportHandler
             $stmtMonth->execute([$month, $year, $month, $year]);
             $monthSales = $stmtMonth->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
-            // Vendas por Vendedor (Mês Atual - Top 5)
-            $sqlByVendedor = "SELECT COALESCE(u.nome, 'Outros') as vendedor, SUM(total) as total FROM (
-                                SELECT COALESCE(comercial_user_id, usuario_id) as usuario_id, SUM(valor_total) as total FROM propostas 
+            // Ticket Médio (Anual) = Total Vendido / Quantidade de Vendas
+            $sqlTicketCnt = "SELECT SUM(cnt) as total FROM (
+                                SELECT COUNT(*) as cnt FROM propostas 
+                                WHERE status = 'Aprovada' AND YEAR(COALESCE(data_aprovacao, data_criacao)) = ?
+                                UNION ALL
+                                SELECT COUNT(*) as cnt FROM vendas_fornecedores 
+                                WHERE YEAR(data_venda) = ?
+                                AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')
+                             ) as cnt";
+            $stmtTicketCnt = $this->db->prepare($sqlTicketCnt);
+            $stmtTicketCnt->execute([$year, $year]);
+            $totalCount = (int)($stmtTicketCnt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+            $avgTicket = $totalCount > 0 ? ($totalSales / $totalCount) : 0;
+
+            // Ticket Médio do Mês
+            $sqlTicketMonthCnt = "SELECT SUM(cnt) as total FROM (
+                                     SELECT COUNT(*) as cnt FROM propostas 
+                                     WHERE status = 'Aprovada' AND MONTH(COALESCE(data_aprovacao, data_criacao)) = ? AND YEAR(COALESCE(data_aprovacao, data_criacao)) = ?
+                                     UNION ALL
+                                     SELECT COUNT(*) as cnt FROM vendas_fornecedores 
+                                     WHERE MONTH(data_venda) = ? AND YEAR(data_venda) = ?
+                                     AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')
+                                  ) as cnt";
+            $stmtTicketMonthCnt = $this->db->prepare($sqlTicketMonthCnt);
+            $stmtTicketMonthCnt->execute([$month, $year, $month, $year]);
+            $monthCount = (int)($stmtTicketMonthCnt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+            $avgTicketMonth = $monthCount > 0 ? ($monthSales / $monthCount) : 0;
+
+            // Vendas por Vendedor (Mês Atual - Top 5) com Ticket Médio
+            $sqlByVendedor = "SELECT COALESCE(u.nome, 'Outros') as vendedor, SUM(total) as total, SUM(cnt) as qtd FROM (
+                                SELECT COALESCE(comercial_user_id, usuario_id) as usuario_id, SUM(valor_total) as total, COUNT(*) as cnt FROM propostas 
                                 WHERE status = 'Aprovada' AND YEAR(COALESCE(data_aprovacao, data_criacao)) = ? AND MONTH(COALESCE(data_aprovacao, data_criacao)) = ? GROUP BY COALESCE(comercial_user_id, usuario_id)
                                 UNION ALL
-                                SELECT usuario_id, SUM(valor_total) FROM vendas_fornecedores 
+                                SELECT usuario_id, SUM(valor_total) as total, COUNT(*) as cnt FROM vendas_fornecedores 
                                 WHERE YEAR(data_venda) = ? AND MONTH(data_venda) = ?
                                 AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')
                                 GROUP BY usuario_id
@@ -442,14 +485,256 @@ class ReportHandler
             $stmtByVel->execute([$year, $month, $year, $month]);
             $salesByVendedor = $stmtByVel->fetchAll(PDO::FETCH_ASSOC);
 
+            // Ticket Médio por Cliente (Mês Atual - Top 5)
+            $sqlByCliente = "SELECT COALESCE(org.nome_fantasia, cli.nome, 'Cliente Desconhecido') as cliente, SUM(total) as total, SUM(cnt) as qtd FROM (
+                                SELECT organizacao_id, cliente_pf_id, SUM(valor_total) as total, COUNT(*) as cnt FROM propostas 
+                                WHERE status = 'Aprovada' AND YEAR(COALESCE(data_aprovacao, data_criacao)) = ? AND MONTH(COALESCE(data_aprovacao, data_criacao)) = ? GROUP BY organizacao_id, cliente_pf_id
+                                UNION ALL
+                                SELECT organizacao_id, cliente_pf_id, SUM(valor_total) as total, COUNT(*) as cnt FROM vendas_fornecedores 
+                                WHERE YEAR(data_venda) = ? AND MONTH(data_venda) = ?
+                                AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')
+                                GROUP BY organizacao_id, cliente_pf_id
+                             ) as cliente_sales
+                             LEFT JOIN organizacoes org ON cliente_sales.organizacao_id = org.id
+                             LEFT JOIN clientes_pf cli ON cliente_sales.cliente_pf_id = cli.id
+                             GROUP BY cliente ORDER BY total DESC LIMIT 5";
+            $stmtByCli = $this->db->prepare($sqlByCliente);
+            $stmtByCli->execute([$year, $month, $year, $month]);
+            $salesByCliente = $stmtByCli->fetchAll(PDO::FETCH_ASSOC);
+
             echo json_encode([
                 'success' => true,
                 'total_sales' => (float)$totalSales,
                 'lost_sales' => (float)$lostSales,
                 'active_bids' => (int)$activeBids,
                 'month_sales' => (float)$monthSales,
+                'avg_ticket' => round((float)$avgTicket, 2),
+                'avg_ticket_month' => round((float)$avgTicketMonth, 2),
+                'total_count' => $totalCount,
+                'month_count' => $monthCount,
                 'sales_by_vendedor' => $salesByVendedor,
+                'sales_by_cliente' => $salesByCliente,
                 'year' => $year
+            ]);
+        } catch (Exception $e) {
+            $this->sendError($e);
+        }
+    }
+
+    private function getConversionByVendor($start, $end)
+    {
+        try {
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+
+            $sql = "SELECT 
+                        COALESCE(u.nome, 'Outros') as vendedor,
+                        COUNT(*) as propostas,
+                        SUM(CASE WHEN p.status = 'Aprovada' THEN 1 ELSE 0 END) as aprovadas,
+                        SUM(CASE WHEN p.status = 'Recusada' THEN 1 ELSE 0 END) as recusadas,
+                        ROUND(SUM(CASE WHEN p.status = 'Aprovada' THEN 1 ELSE 0 END) / COUNT(*) * 100, 1) as conversao
+                    FROM propostas p
+                    LEFT JOIN usuarios u ON COALESCE(p.comercial_user_id, p.usuario_id) = u.id
+                    WHERE p.status IN ('Aprovada', 'Recusada')
+                      AND (
+                        (p.status = 'Aprovada' AND COALESCE(p.data_aprovacao, p.data_criacao) BETWEEN ? AND ?)
+                        OR
+                        (p.status = 'Recusada' AND p.data_criacao BETWEEN ? AND ?)
+                      )
+                    GROUP BY COALESCE(p.comercial_user_id, p.usuario_id)
+                    HAVING COUNT(*) > 0
+                    ORDER BY conversao DESC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$dtStart, $dtEnd, $dtStart, $dtEnd]);
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'success' => true,
+                'data' => $data
+            ]);
+        } catch (Exception $e) {
+            $this->sendError($e);
+        }
+    }
+
+    private function getTopClients($start, $end)
+    {
+        try {
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+            $params = [$dtStart, $dtEnd];
+
+            $sqlInnerP = "SELECT p.id, p.organizacao_id, p.cliente_pf_id, p.valor_total FROM propostas p JOIN oportunidades o ON p.oportunidade_id = o.id WHERE COALESCE(p.data_aprovacao, p.data_criacao) BETWEEN ? AND ? AND p.status = 'Aprovada'";
+            $paramsP = $params;
+            $this->applyFilters($sqlInnerP, $paramsP, 'p');
+
+            $sqlInnerVF = "SELECT vf.id, vf.organizacao_id, vf.cliente_pf_id, vf.valor_total FROM vendas_fornecedores vf WHERE vf.data_venda BETWEEN ? AND ? AND (vf.proposta_ref_id IS NULL OR vf.titulo NOT LIKE 'Venda via Proposta #%')";
+            $paramsVF = $params;
+            $this->applyFilters($sqlInnerVF, $paramsVF, 'vf');
+
+            $sql = "
+                SELECT 
+                    COALESCE(org.nome_fantasia, cli.nome, 'Cliente Desconhecido') as cliente,
+                    SUM(t.valor_total) as faturamento,
+                    COUNT(t.id) as qtd_vendas,
+                    ROUND(SUM(t.valor_total) / COUNT(t.id), 2) as ticket_medio
+                FROM (
+                    $sqlInnerP
+                    UNION ALL
+                    $sqlInnerVF
+                ) t
+                LEFT JOIN organizacoes org ON t.organizacao_id = org.id
+                LEFT JOIN clientes_pf cli ON t.cliente_pf_id = cli.id
+                GROUP BY cliente
+                ORDER BY faturamento DESC
+                LIMIT 10
+            ";
+
+            $stmt = $this->db->prepare($sql);
+            $finalParams = array_merge($paramsP, $paramsVF);
+            $stmt->execute($finalParams);
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'success' => true,
+                'data' => $data
+            ]);
+        } catch (Exception $e) {
+            $this->sendError($e);
+        }
+    }
+
+    private function getRevenueForecast($start, $end)
+    {
+        try {
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+            $year = date('Y', strtotime($dtStart));
+            $currentMonth = (int)date('n');
+            $yearStart = $year . '-01-01 00:00:00';
+            $currentDate = date('Y-m-d') . ' 23:59:59';
+
+            $sqlRealized = "SELECT SUM(total) as total FROM (
+                                SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
+                                WHERE status = 'Aprovada' AND COALESCE(data_aprovacao, data_criacao) BETWEEN ? AND ?
+                                UNION ALL
+                                SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores 
+                                WHERE data_venda BETWEEN ? AND ?
+                                AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')
+                             ) as sales";
+            $stmtReal = $this->db->prepare($sqlRealized);
+            $stmtReal->execute([$yearStart, $currentDate, $yearStart, $currentDate]);
+            $realized = (float)($stmtReal->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
+            $sqlGoal = "SELECT COALESCE(SUM(meta_anual), 0) as total FROM fornecedor_metas WHERE ano = ?";
+            $stmtGoal = $this->db->prepare($sqlGoal);
+            $stmtGoal->execute([$year]);
+            $annualGoal = (float)($stmtGoal->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
+            $monthlyAvg = $currentMonth > 0 ? ($realized / $currentMonth) : 0;
+            $forecast = $monthlyAvg * 12;
+            $difference = $forecast - $annualGoal;
+            $achievement = $annualGoal > 0 ? round(($forecast / $annualGoal) * 100, 1) : 0;
+
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'realized' => round($realized, 2),
+                    'monthly_avg' => round($monthlyAvg, 2),
+                    'forecast' => round($forecast, 2),
+                    'meta_anual' => round($annualGoal, 2),
+                    'difference' => round($difference, 2),
+                    'achievement' => $achievement,
+                    'current_month' => $currentMonth,
+                    'year' => $year
+                ]
+            ]);
+        } catch (Exception $e) {
+            $this->sendError($e);
+        }
+    }
+
+    private function getBidsResult($start, $end)
+    {
+        try {
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+            $params = [$dtStart, $dtEnd];
+
+            $sql = "SELECT 
+                        SUM(CASE WHEN ef.nome IN ('Homologado','Ata/Carona','Empenhado','Contrato') THEN 1 ELSE 0 END) as ganhas,
+                        SUM(CASE WHEN ef.nome IN ('Desclassificado','Anulado') THEN 1 ELSE 0 END) as perdidas,
+                        SUM(CASE WHEN ef.nome = 'Fracassado' THEN 1 ELSE 0 END) as fracassadas,
+                        SUM(CASE WHEN ef.nome = 'Revogado' THEN 1 ELSE 0 END) as revogadas,
+                        SUM(CASE WHEN ef.nome = 'Suspenso' THEN 1 ELSE 0 END) as suspensas
+                    FROM oportunidades o
+                    JOIN etapas_funil ef ON o.etapa_id = ef.id
+                    WHERE ef.funil_id = 2
+                      AND o.data_criacao BETWEEN ? AND ?
+                      AND ef.nome IN ('Homologado','Ata/Carona','Empenhado','Contrato','Desclassificado','Anulado','Fracassado','Revogado','Suspenso')";
+            
+            $this->applyFilters($sql, $params, 'o');
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $ganhas = (int)($row['ganhas'] ?? 0);
+            $perdidas = (int)($row['perdidas'] ?? 0);
+            $totalDecisivas = $ganhas + $perdidas;
+            $successRate = $totalDecisivas > 0 ? round(($ganhas / $totalDecisivas) * 100, 1) : 0;
+
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'ganhas' => $ganhas,
+                    'perdidas' => $perdidas,
+                    'fracassadas' => (int)($row['fracassadas'] ?? 0),
+                    'revogadas' => (int)($row['revogadas'] ?? 0),
+                    'suspensas' => (int)($row['suspensas'] ?? 0),
+                    'success_rate' => $successRate
+                ]
+            ]);
+        } catch (Exception $e) {
+            $this->sendError($e);
+        }
+    }
+
+    private function getSalesByState($start, $end)
+    {
+        try {
+            list($dtStart, $dtEnd) = $this->getDates($start, $end);
+            $params = [$dtStart, $dtEnd];
+
+            $sqlInnerP = "SELECT p.id, p.organizacao_id, p.valor_total FROM propostas p JOIN oportunidades o ON p.oportunidade_id = o.id WHERE COALESCE(p.data_aprovacao, p.data_criacao) BETWEEN ? AND ? AND p.status = 'Aprovada'";
+            $paramsP = $params;
+            $this->applyFilters($sqlInnerP, $paramsP, 'p');
+
+            $sqlInnerVF = "SELECT vf.id, vf.organizacao_id, vf.valor_total FROM vendas_fornecedores vf WHERE vf.data_venda BETWEEN ? AND ? AND (vf.proposta_ref_id IS NULL OR vf.titulo NOT LIKE 'Venda via Proposta #%')";
+            $paramsVF = $params;
+            $this->applyFilters($sqlInnerVF, $paramsVF, 'vf');
+
+            $sql = "
+                SELECT 
+                    org.estado as uf,
+                    SUM(t.valor_total) as faturamento,
+                    COUNT(t.id) as qtd_vendas
+                FROM (
+                    $sqlInnerP
+                    UNION ALL
+                    $sqlInnerVF
+                ) t
+                INNER JOIN organizacoes org ON t.organizacao_id = org.id
+                WHERE org.estado IS NOT NULL AND org.estado != ''
+                GROUP BY org.estado
+                ORDER BY faturamento DESC
+            ";
+
+            $stmt = $this->db->prepare($sql);
+            $finalParams = array_merge($paramsP, $paramsVF);
+            $stmt->execute($finalParams);
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'success' => true,
+                'data' => $data
             ]);
         } catch (Exception $e) {
             $this->sendError($e);
@@ -704,7 +989,7 @@ function handle_get_report_data($pdo)
         'dashboard_summary', 'by_vendor', 'by_supplier', 'by_item', 
         'by_proposal_status', 'by_bidding_funnel', 'clients', 'forecast', 
         'bi_kpis', 'sales_vs_goals', 'licitacoes_funnel', 'licitacoes',
-        'commission_analysis', 'vendor_evolution'
+        'commission_analysis', 'vendor_evolution', 'conversion_by_vendor', 'top_clients', 'revenue_forecast', 'bids_result', 'sales_by_state'
     ];
 
     if (in_array($type, $newActions)) {
