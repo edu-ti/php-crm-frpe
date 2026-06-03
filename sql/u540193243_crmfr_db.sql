@@ -2443,6 +2443,7 @@ CREATE TABLE `propostas` (
   `status` varchar(50) NOT NULL DEFAULT 'Rascunho',
   `frete_tipo` enum('CIF','FOB') DEFAULT 'CIF',
   `frete_valor` decimal(10,2) DEFAULT 0.00,
+  `data_aprovacao` timestamp NULL DEFAULT NULL,
   `motivo_status` text DEFAULT NULL,
   `data_validade` date DEFAULT NULL,
   `faturamento` text DEFAULT NULL,

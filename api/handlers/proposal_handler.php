@@ -73,7 +73,10 @@ function handle_create_proposal($pdo, $data)
         // Insere a proposta principal
         // MODIFICADO: Usa $proposal_owner_id em vez de $_SESSION['user_id']
         // Adicionado: frete_tipo, frete_valor, comercial_user_id
-        $sql = "INSERT INTO propostas (oportunidade_id, cliente_pf_id, organizacao_id, contato_id, usuario_id, comercial_user_id, valor_total, status, data_validade, faturamento, treinamento, condicoes_pagamento, prazo_entrega, garantia_equipamentos, garantia_acessorios, instalacao, assistencia_tecnica, observacoes, motivo_status, frete_tipo, frete_valor, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        $proposal_status = $data['status'] ?? 'Rascunho';
+        $data_aprovacao = (strcasecmp($proposal_status, 'Aprovada') === 0) ? date('Y-m-d H:i:s') : null;
+
+        $sql = "INSERT INTO propostas (oportunidade_id, cliente_pf_id, organizacao_id, contato_id, usuario_id, comercial_user_id, valor_total, status, data_validade, data_aprovacao, faturamento, treinamento, condicoes_pagamento, prazo_entrega, garantia_equipamentos, garantia_acessorios, instalacao, assistencia_tecnica, observacoes, motivo_status, frete_tipo, frete_valor, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         $stmt = $pdo->prepare($sql);
 
         $stmt->execute([
@@ -84,8 +87,9 @@ function handle_create_proposal($pdo, $data)
             $proposal_owner_id,
             $comercial_user_id,
             $valor_total,
-            $data['status'] ?? 'Rascunho',
+            $proposal_status,
             $data['data_validade'] ?: null,
+            $data_aprovacao,
             $data['faturamento'] ?? null,
             $data['treinamento'] ?? null,
             $data['condicoes_pagamento'] ?? null,
@@ -209,8 +213,9 @@ function handle_update_proposal($pdo, $data)
         // Vendedor responsável pela venda (comercial_user_id)
         $comercial_user_id = !empty($data['comercial_user_id']) ? (int)$data['comercial_user_id'] : null;
 
-        // Atualiza a proposta principal (Incluindo atualizado_por_id e comercial_user_id)
-        $sql = "UPDATE propostas SET cliente_pf_id = ?, organizacao_id = ?, contato_id = ?, valor_total = ?, status = ?, data_validade = ?, faturamento = ?, treinamento = ?, condicoes_pagamento = ?, prazo_entrega = ?, garantia_equipamentos = ?, garantia_acessorios = ?, instalacao = ?, assistencia_tecnica = ?, observacoes = ?, motivo_status = ?, frete_tipo = ?, frete_valor = ?, atualizado_por_id = ?, comercial_user_id = ? WHERE id = ?";
+        // Atualiza a proposta principal (Incluindo atualizado_por_id, comercial_user_id e data_aprovacao)
+        $data_aprovacao = (strcasecmp($new_status, 'Aprovada') === 0) ? date('Y-m-d H:i:s') : null;
+        $sql = "UPDATE propostas SET cliente_pf_id = ?, organizacao_id = ?, contato_id = ?, valor_total = ?, status = ?, data_validade = ?, data_aprovacao = ?, faturamento = ?, treinamento = ?, condicoes_pagamento = ?, prazo_entrega = ?, garantia_equipamentos = ?, garantia_acessorios = ?, instalacao = ?, assistencia_tecnica = ?, observacoes = ?, motivo_status = ?, frete_tipo = ?, frete_valor = ?, atualizado_por_id = ?, comercial_user_id = ? WHERE id = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             $cliente_pf_id,
@@ -219,6 +224,7 @@ function handle_update_proposal($pdo, $data)
             $valor_total,
             $new_status, // Usa o novo status
             $data['data_validade'] ?: null,
+            $data_aprovacao,
             $data['faturamento'] ?? null,
             $data['treinamento'] ?? null,
             $data['condicoes_pagamento'] ?? null,
@@ -706,9 +712,10 @@ function handle_update_proposal_status($pdo, $data)
             throw new Exception("Proposta não encontrada.");
         }
 
-        // Atualiza o status
-        $stmt_update = $pdo->prepare("UPDATE propostas SET status = ? WHERE id = ?");
-        $stmt_update->execute([$new_status, $proposalId]);
+        // Atualiza o status e data_aprovacao
+        $data_aprovacao = (strcasecmp($new_status, 'Aprovada') === 0) ? date('Y-m-d H:i:s') : null;
+        $stmt_update = $pdo->prepare("UPDATE propostas SET status = ?, data_aprovacao = ? WHERE id = ?");
+        $stmt_update->execute([$new_status, $data_aprovacao, $proposalId]);
 
         // Sincroniza o status da oportunidade
         // Precisamos buscar o oportunidade_id desta proposta

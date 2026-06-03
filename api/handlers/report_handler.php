@@ -126,7 +126,7 @@ class ReportHandler
             // Total Sales: Sum of 'valor_total' from 'propostas' with status 'Aprovada'
             $sqlSales = "SELECT SUM(total) as total FROM (
                             SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
-                            WHERE data_criacao BETWEEN ? AND ? AND status = 'Aprovada'
+                            WHERE COALESCE(data_aprovacao, data_criacao) BETWEEN ? AND ? AND status = 'Aprovada'
                             UNION ALL
                             SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores 
                             WHERE data_venda BETWEEN ? AND ?
@@ -184,7 +184,7 @@ class ReportHandler
                         FROM propostas p 
                         LEFT JOIN usuarios u ON p.usuario_id = u.id
                         LEFT JOIN usuarios uc ON p.comercial_user_id = uc.id
-                        WHERE p.data_criacao BETWEEN ? AND ? AND p.status = 'Aprovada'
+                        WHERE COALESCE(p.data_aprovacao, p.data_criacao) BETWEEN ? AND ? AND p.status = 'Aprovada'
                         UNION ALL
                         SELECT u.nome as vendedor, vf.id, vf.valor_total as total 
                         FROM vendas_fornecedores vf 
@@ -210,7 +210,7 @@ class ReportHandler
                         FROM propostas p 
                         JOIN oportunidades o ON p.oportunidade_id = o.id 
                         LEFT JOIN fornecedores f ON o.fornecedor_id = f.id 
-                        WHERE p.data_criacao BETWEEN ? AND ? AND p.status = 'Aprovada'
+                        WHERE COALESCE(p.data_aprovacao, p.data_criacao) BETWEEN ? AND ? AND p.status = 'Aprovada'
                         UNION ALL
                         SELECT f.nome as fornecedor, vf.id, vf.valor_total as total
                         FROM vendas_fornecedores vf
@@ -327,7 +327,7 @@ class ReportHandler
             list($dtStart, $dtEnd) = $this->getDates($start, $end);
             $params = [$dtStart, $dtEnd];
             
-            $sqlInnerP = "SELECT p.id, p.organizacao_id, p.cliente_pf_id, p.valor_total FROM propostas p JOIN oportunidades o ON p.oportunidade_id = o.id WHERE p.data_criacao BETWEEN ? AND ? AND p.status = 'Aprovada'";
+            $sqlInnerP = "SELECT p.id, p.organizacao_id, p.cliente_pf_id, p.valor_total FROM propostas p JOIN oportunidades o ON p.oportunidade_id = o.id WHERE COALESCE(p.data_aprovacao, p.data_criacao) BETWEEN ? AND ? AND p.status = 'Aprovada'";
             $paramsP = $params;
             $this->applyFilters($sqlInnerP, $paramsP, 'p');
             
@@ -387,7 +387,7 @@ class ReportHandler
             // Total Vendido (Aprovado) - Propostas Aprovadas + Vendas Fornecedores
             $sqlSales = "SELECT SUM(total) as total FROM (
                             SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
-                            WHERE status = 'Aprovada' AND YEAR(data_criacao) = ?
+                            WHERE status = 'Aprovada' AND YEAR(COALESCE(data_aprovacao, data_criacao)) = ?
                             UNION ALL
                             SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores 
                             WHERE YEAR(data_venda) = ?
@@ -416,7 +416,7 @@ class ReportHandler
             $month = date('m');
             $sqlMonth = "SELECT SUM(total) as total FROM (
                             SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
-                            WHERE status = 'Aprovada' AND MONTH(data_criacao) = ? AND YEAR(data_criacao) = ?
+                            WHERE status = 'Aprovada' AND MONTH(COALESCE(data_aprovacao, data_criacao)) = ? AND YEAR(COALESCE(data_aprovacao, data_criacao)) = ?
                             UNION ALL
                             SELECT COALESCE(SUM(valor_total), 0) FROM vendas_fornecedores 
                             WHERE MONTH(data_venda) = ? AND YEAR(data_venda) = ?
@@ -429,7 +429,7 @@ class ReportHandler
             // Vendas por Vendedor (Mês Atual - Top 5)
             $sqlByVendedor = "SELECT COALESCE(u.nome, 'Outros') as vendedor, SUM(total) as total FROM (
                                 SELECT COALESCE(comercial_user_id, usuario_id) as usuario_id, SUM(valor_total) as total FROM propostas 
-                                WHERE status = 'Aprovada' AND YEAR(data_criacao) = ? AND MONTH(data_criacao) = ? GROUP BY COALESCE(comercial_user_id, usuario_id)
+                                WHERE status = 'Aprovada' AND YEAR(COALESCE(data_aprovacao, data_criacao)) = ? AND MONTH(COALESCE(data_aprovacao, data_criacao)) = ? GROUP BY COALESCE(comercial_user_id, usuario_id)
                                 UNION ALL
                                 SELECT usuario_id, SUM(valor_total) FROM vendas_fornecedores 
                                 WHERE YEAR(data_venda) = ? AND MONTH(data_venda) = ?
@@ -464,7 +464,7 @@ class ReportHandler
             
             // Monthly Sales
             $sqlSales = "SELECT MONTH(dt) as mes, SUM(val) as total FROM (
-                            SELECT data_criacao as dt, valor_total as val FROM propostas WHERE status = 'Aprovada' AND YEAR(data_criacao) = ?
+                            SELECT COALESCE(data_aprovacao, data_criacao) as dt, valor_total as val FROM propostas WHERE status = 'Aprovada' AND YEAR(COALESCE(data_aprovacao, data_criacao)) = ?
                             UNION ALL
                             SELECT data_venda as dt, valor_total as val FROM vendas_fornecedores WHERE YEAR(data_venda) = ? AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')
                          ) as combined GROUP BY mes";
@@ -1159,7 +1159,7 @@ function get_sales_report($pdo, $start_date, $end_date, $supplier_ids = [], $use
                  LEFT JOIN fornecedores f ON o.fornecedor_id = f.id
                  LEFT JOIN usuarios u ON p.usuario_id = u.id
                  LEFT JOIN usuarios uc ON p.comercial_user_id = uc.id
-                 WHERE p.status = 'Aprovada' AND p.data_criacao BETWEEN ? AND ?";
+                  WHERE p.status = 'Aprovada' AND COALESCE(p.data_aprovacao, p.data_criacao) BETWEEN ? AND ?";
     $params_prop = [$start_date . ' 00:00:00', $end_date . ' 23:59:59'];
     apply_report_filters_helper($sql_prop, $params_prop, 'o', [], $user_ids, $etapa_ids, $origem_ids, $uf_ids, $status_ids, $cliente_ids, 'fornecedor_id', 'COALESCE(p.comercial_user_id, p.usuario_id)');
     $sql_prop .= " GROUP BY p.id, o.fornecedor_id, COALESCE(p.comercial_user_id, p.usuario_id), YEAR(p.data_criacao), MONTH(p.data_criacao)";
@@ -2597,7 +2597,7 @@ function get_bi_kpis($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $et
     $month_end   = date('Y-m-t', strtotime($dtNormalized));
 
     // 1. Total Vendido (Ano) - Aprovadas
-    $sqlA = "SELECT SUM(valor_total) as total FROM propostas WHERE status = 'Aprovada' AND data_criacao BETWEEN ? AND ?";
+    $sqlA = "SELECT SUM(valor_total) as total FROM propostas WHERE status = 'Aprovada' AND COALESCE(data_aprovacao, data_criacao) BETWEEN ? AND ?";
     $stmtA = $pdo->prepare($sqlA);
     $stmtA->execute([$year_start . ' 00:00:00', $year_end . ' 23:59:59']);
     $total_pd = (float)($stmtA->fetchColumn());
@@ -2609,7 +2609,7 @@ function get_bi_kpis($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $et
     $total_sales = $total_pd + $total_vf;
 
     // 2. Vendido no Mês - Aprovadas
-    $stmtM = $pdo->prepare("SELECT SUM(valor_total) as total FROM propostas WHERE status = 'Aprovada' AND data_criacao BETWEEN ? AND ?");
+    $stmtM = $pdo->prepare("SELECT SUM(valor_total) as total FROM propostas WHERE status = 'Aprovada' AND COALESCE(data_aprovacao, data_criacao) BETWEEN ? AND ?");
     $stmtM->execute([$month_start . ' 00:00:00', $month_end . ' 23:59:59']);
     $month_pd = (float)($stmtM->fetchColumn());
 
@@ -2634,7 +2634,7 @@ function get_bi_kpis($pdo, $start_date, $end_date, $supplier_ids, $user_ids, $et
         FROM propostas p 
         LEFT JOIN usuarios u ON p.usuario_id = u.id 
         LEFT JOIN usuarios uc ON p.comercial_user_id = uc.id 
-        WHERE p.status = 'Aprovada' AND p.data_criacao BETWEEN ? AND ?
+        WHERE p.status = 'Aprovada' AND COALESCE(p.data_aprovacao, p.data_criacao) BETWEEN ? AND ?
         GROUP BY COALESCE(uc.nome, u.nome) ORDER BY total DESC LIMIT 5
     ";
     $stmtVS = $pdo->prepare($sqlVS);
@@ -2660,9 +2660,10 @@ function get_sales_vs_goals($pdo, $start_date, $end_date, $supplier_ids = [], $u
 
     // Vendas Reais Mes a Mes
     $sqlSales = "
-        SELECT MONTH(data_criacao) as m, SUM(valor_total) as t 
-        FROM propostas WHERE status = 'Aprovada' AND YEAR(data_criacao) = ?
-        GROUP BY MONTH(data_criacao)
+        SELECT MONTH(dt) as m, SUM(t) as t FROM (
+            SELECT COALESCE(data_aprovacao, data_criacao) as dt, valor_total as t FROM propostas WHERE status = 'Aprovada' AND YEAR(COALESCE(data_aprovacao, data_criacao)) = ?
+        ) as sub
+        GROUP BY MONTH(dt)
     ";
     $stmtS = $pdo->prepare($sqlSales);
     $stmtS->execute([$year]);
@@ -2761,7 +2762,7 @@ function get_supplier_meta_performance($pdo, $start_date, $end_date, $filter_sup
               FROM propostas p
               JOIN oportunidades o ON p.oportunidade_id = o.id
               LEFT JOIN fornecedores f ON o.fornecedor_id = f.id
-              WHERE p.status = 'Aprovada' AND p.data_criacao BETWEEN ? AND ?";
+              WHERE p.status = 'Aprovada' AND COALESCE(p.data_aprovacao, p.data_criacao) BETWEEN ? AND ?";
     $stmt_p = $pdo->prepare($sql_p);
     $stmt_p->execute([$ytd_start . ' 00:00:00', $p_end . ' 23:59:59']);
     $props = $stmt_p->fetchAll(PDO::FETCH_ASSOC);
