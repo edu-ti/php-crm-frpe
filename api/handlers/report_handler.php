@@ -413,8 +413,7 @@ class ReportHandler
             $activeBids = $stmtBids->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
             // Vendas do Mês Atual (Aprovadas)
-            list($dtStart, $dtEnd) = $this->getDates($start, $end);
-            $month = date('m', strtotime($dtStart));
+            $month = date('m');
             $sqlMonth = "SELECT SUM(total) as total FROM (
                             SELECT COALESCE(SUM(valor_total), 0) as total FROM propostas 
                             WHERE status = 'Aprovada' AND MONTH(data_criacao) = ? AND YEAR(data_criacao) = ?
@@ -427,20 +426,20 @@ class ReportHandler
             $stmtMonth->execute([$month, $year, $month, $year]);
             $monthSales = $stmtMonth->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
-            // Vendas por Vendedor (Ano Atual - Top 5)
+            // Vendas por Vendedor (Mês Atual - Top 5)
             $sqlByVendedor = "SELECT COALESCE(u.nome, 'Outros') as vendedor, SUM(total) as total FROM (
                                 SELECT COALESCE(comercial_user_id, usuario_id) as usuario_id, SUM(valor_total) as total FROM propostas 
-                                WHERE status = 'Aprovada' AND YEAR(data_criacao) = ? GROUP BY COALESCE(comercial_user_id, usuario_id)
+                                WHERE status = 'Aprovada' AND YEAR(data_criacao) = ? AND MONTH(data_criacao) = ? GROUP BY COALESCE(comercial_user_id, usuario_id)
                                 UNION ALL
                                 SELECT usuario_id, SUM(valor_total) FROM vendas_fornecedores 
-                                WHERE YEAR(data_venda) = ? 
+                                WHERE YEAR(data_venda) = ? AND MONTH(data_venda) = ?
                                 AND (proposta_ref_id IS NULL OR titulo NOT LIKE 'Venda via Proposta #%')
                                 GROUP BY usuario_id
                              ) as vendedor_sales
                              LEFT JOIN usuarios u ON vendedor_sales.usuario_id = u.id
                              GROUP BY vendedor ORDER BY total DESC LIMIT 5";
             $stmtByVel = $this->db->prepare($sqlByVendedor);
-            $stmtByVel->execute([$year, $year]);
+            $stmtByVel->execute([$year, $month, $year, $month]);
             $salesByVendedor = $stmtByVel->fetchAll(PDO::FETCH_ASSOC);
 
             echo json_encode([
