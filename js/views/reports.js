@@ -2969,8 +2969,7 @@ function exportToExcel() {
         if (el && el.value) params.set('cliente_id', el.value);
     }
 
-    const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '/api.php');
-    window.open(baseUrl + '?' + params.toString(), '_blank');
+    window.open('api.php?' + params.toString(), '_blank');
 }
 
 async function exportBiToExcel() {
@@ -2978,11 +2977,9 @@ async function exportBiToExcel() {
     const params = new URLSearchParams({
         action: 'export_excel',
         report_type: 'bi_kpis',
-        start_date: `${currentYear}-01-01`,
-        type: 'bi_kpis'
+        start_date: `${currentYear}-01-01`
     });
-    const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '/api.php');
-    window.open(baseUrl + '?' + params.toString(), '_blank');
+    window.open('api.php?' + params.toString(), '_blank');
 }
 
 function setupModalLinks() {

@@ -36,14 +36,7 @@ function handle_export_excel($pdo, $request_data)
 
 function exportWithPhpSpreadsheet($type, $data, $response, $title, $fileName, $start, $end, $pdo)
 {
-    use PhpOffice\PhpSpreadsheet\Spreadsheet;
-    use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-    use PhpOffice\PhpSpreadsheet\Style\Fill;
-    use PhpOffice\PhpSpreadsheet\Style\Border;
-    use PhpOffice\PhpSpreadsheet\Style\Alignment;
-    use PhpOffice\PhpSpreadsheet\Style\Font;
-
-    $spreadsheet = new Spreadsheet();
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
     $sheet->setTitle(substr($title, 0, 31));
 
@@ -67,23 +60,23 @@ function exportWithPhpSpreadsheet($type, $data, $response, $title, $fileName, $s
     $headerRange = 'A' . $headerRow . ':' . chr(64 + count($headers)) . $headerRow;
     $headerStyle = $sheet->getStyle($headerRange);
     $headerStyle->getFont()->setBold(true)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('ffffff'));
-    $headerStyle->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('4f46e5');
-    $headerStyle->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-    $headerStyle->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+    $headerStyle->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('4f46e5');
+    $headerStyle->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+    $headerStyle->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
     $rowNum = $headerRow + 1;
     foreach ($rows as $row) {
         $col = 'A';
         foreach ($row as $value) {
             $cell = $sheet->setCellValue($col . $rowNum, $value);
-            $sheet->getStyle($col . $rowNum)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+            $sheet->getStyle($col . $rowNum)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
             $col++;
         }
         $rowNum++;
     }
 
     $dataRange = 'A' . ($headerRow + 1) . ':' . chr(64 + count($headers)) . ($rowNum - 1);
-    $sheet->getStyle($dataRange)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+    $sheet->getStyle($dataRange)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
     foreach (range('A', chr(64 + count($headers) - 1)) as $col) {
         $sheet->getColumnDimension($col)->setAutoSize(true);
@@ -95,7 +88,7 @@ function exportWithPhpSpreadsheet($type, $data, $response, $title, $fileName, $s
     header('Content-Disposition: attachment;filename="' . $fileName . '.xlsx"');
     header('Cache-Control: max-age=0');
 
-    $writer = new Xlsx($spreadsheet);
+    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
     $writer->save('php://output');
     exit;
 }
