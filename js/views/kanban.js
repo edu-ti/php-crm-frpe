@@ -1517,6 +1517,9 @@ function renderOppCatalogResults(searchTerm) {
             const productId = e.currentTarget.dataset.productId;
             const product = appState.products.find(p => p.id == productId);
             if (product) {
+                // Remove item vazio antes de adicionar um novo do catálogo
+                currentOpportunityItems = currentOpportunityItems.filter(item => item.descricao && item.descricao.trim() !== '');
+
                 // Adiciona o item do catálogo à lista
                 currentOpportunityItems.push({
                     id: `temp_prod_${product.id}_${Date.now()}`,

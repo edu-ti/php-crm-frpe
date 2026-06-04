@@ -142,7 +142,7 @@ function renderUI() {
                     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                     z-index: 50;
                 }
-                #sidebar:hover {
+                #sidebar.expanded {
                     width: 17rem; /* w-64 (expandido um pouco mais para conforto) */
                 }
                 
@@ -161,7 +161,7 @@ function renderUI() {
                 }
                 
                 /* Comportamento no Hover da Sidebar */
-                #sidebar:hover .nav-link {
+                #sidebar.expanded .nav-link {
                     justify-content: flex-start; /* Alinha a esquerda expandido */
                     padding-left: 1rem;
                 }
@@ -174,7 +174,7 @@ function renderUI() {
                     margin-right: 0;
                     transition: margin 0.2s;
                 }
-                #sidebar:hover .nav-link i {
+                #sidebar.expanded .nav-link i {
                     margin-right: 0.75rem; /* Espaço entre ícone e texto */
                 }
                 
@@ -184,7 +184,7 @@ function renderUI() {
                     display: none;
                     transition: opacity 0.3s ease-in-out;
                 }
-                #sidebar:hover .nav-text {
+                #sidebar.expanded .nav-text {
                     display: inline-block;
                     opacity: 1;
                 }
@@ -221,8 +221,13 @@ function renderUI() {
                     object-fit: contain;
                     transition: all 0.3s;
                 }
-                #sidebar:hover .logo-img {
+                #sidebar.expanded .logo-img {
                     height: 3rem; /* Um pouco maior expandido */
+                }
+
+                /* Rotação do ícone de expandir/recolher */
+                #sidebar.expanded #desktop-sidebar-icon {
+                    transform: rotate(180deg);
                 }
             }
 
@@ -241,7 +246,11 @@ function renderUI() {
         </style>
         <div id="app-container" class="flex h-screen bg-gray-100">
             <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
-            <aside id="sidebar" class="sidebar bg-white shadow-xl flex flex-col flex-shrink-0">
+            <aside id="sidebar" class="sidebar bg-white shadow-xl flex flex-col flex-shrink-0 md:relative">
+                <!-- Botão de Toggle para Desktop -->
+                <button id="desktop-sidebar-toggle" class="hidden md:flex absolute -right-3 top-6 w-6 h-6 bg-white border border-gray-200 rounded-full items-center justify-center text-gray-500 hover:text-indigo-600 shadow-sm z-50 transition-colors">
+                    <i id="desktop-sidebar-icon" class="fas fa-chevron-right text-xs transition-transform duration-300"></i>
+                </button>
                 <div class="logo-container p-4 border-b">
                     <img src="imagens/LOGO-FR.webp" alt="Logo" class="logo-img">
                 </div>
@@ -354,14 +363,24 @@ function addGlobalEventListeners() {
 
     // Lógica do menu responsivo
     const menuToggleBtn = document.getElementById('menu-toggle-btn');
+    const desktopToggleBtn = document.getElementById('desktop-sidebar-toggle');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
 
-    if (menuToggleBtn && sidebar && overlay) {
-        menuToggleBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('hidden');
-        });
+    if (sidebar && overlay) {
+        if (menuToggleBtn) {
+            menuToggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('hidden');
+            });
+        }
+        
+        if (desktopToggleBtn) {
+            desktopToggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('expanded');
+            });
+        }
+
         overlay.addEventListener('click', () => {
             sidebar.classList.remove('open');
             overlay.classList.add('hidden');

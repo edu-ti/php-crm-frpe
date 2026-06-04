@@ -463,8 +463,13 @@ function handle_move_opportunity($pdo, $data)
         elseif (in_array($lower_stage, ['recusado', 'desclassificado', 'perdida', 'perdido', 'cancelado', 'cancelada', 'fracassado', 'revogado', 'anulado', 'suspenso'])) $status_proposta = 'Recusada';
 
         if ($status_proposta) {
-            $update_prop_stmt = $pdo->prepare("UPDATE propostas SET status = ?, data_aprovacao = CASE WHEN ? = 'Aprovada' AND status != 'Aprovada' THEN NOW() ELSE data_aprovacao END WHERE oportunidade_id = ?");
-            $update_prop_stmt->execute([$status_proposta, $status_proposta, $data['opportunityId']]);
+            if ($status_proposta === 'Aprovada') {
+                $update_prop_stmt = $pdo->prepare("UPDATE propostas SET status = ?, data_aprovacao = CASE WHEN status != 'Aprovada' THEN NOW() ELSE data_aprovacao END WHERE oportunidade_id = ?");
+                $update_prop_stmt->execute([$status_proposta, $data['opportunityId']]);
+            } else {
+                $update_prop_stmt = $pdo->prepare("UPDATE propostas SET status = ? WHERE oportunidade_id = ?");
+                $update_prop_stmt->execute([$status_proposta, $data['opportunityId']]);
+            }
         }
         // --- FIM DA SINCRONIZAÇÃO DE VOLTA PARA A PROPOSTA ---
 
