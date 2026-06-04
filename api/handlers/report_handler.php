@@ -2514,12 +2514,16 @@ function get_vendor_detail_report($pdo, $start_date, $end_date, $supplier_ids = 
         LEFT JOIN organizacoes org ON p.organizacao_id = org.id
         LEFT JOIN clientes_pf cpf ON p.cliente_pf_id = cpf.id
         LEFT JOIN proposta_itens pi ON pi.proposta_id = p.id
-        WHERE p.data_criacao BETWEEN ? AND ?
+        WHERE (
+            (p.status = 'Aprovada' AND COALESCE(p.data_aprovacao, p.data_criacao) BETWEEN ? AND ?)
+            OR
+            (p.status != 'Aprovada' AND p.data_criacao BETWEEN ? AND ?)
+        )
     ";
     
     $dtStart = crm_normalize_date($start_date);
     $dtEnd = crm_normalize_date($end_date, true);
-    $params = [$dtStart, $dtEnd];
+    $params = [$dtStart, $dtEnd, $dtStart, $dtEnd];
 
     // Filters
     if (!empty($supplier_ids)) {
@@ -2558,11 +2562,56 @@ function get_vendor_detail_report($pdo, $start_date, $end_date, $supplier_ids = 
         $params = array_merge($params, $vals);
     }
 
-    $sql .= " ORDER BY u.nome, p.data_criacao DESC";
+    $sql .= " ORDER BY u.nome, data_criacao ASC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Vendas Diretas na Lista
+    $sql_vd = "
+        SELECT 
+            CONCAT('vd-', vf.id) as proposta_id,
+            vf.titulo as numero_proposta,
+            vf.valor_total as proposta_valor,
+            'Aprovada' as status,
+            vf.data_venda as data_criacao,
+            'Venda Direta / Importação' as motivo_status,
+            u.id as vendedor_id,
+            u.nome as vendedor_nome,
+            'DIRETO' as cliente_nome,
+            vf.descricao_produto as produto,
+            vf.fabricante_marca as fabricante,
+            '' as modelo,
+            1 as quantidade,
+            vf.valor_total as valor_unitario,
+            vf.valor_total as item_total
+        FROM vendas_fornecedores vf
+        LEFT JOIN usuarios u ON vf.usuario_id = u.id
+        WHERE vf.data_venda BETWEEN ? AND ?
+        AND (vf.proposta_ref_id IS NULL OR vf.titulo NOT LIKE 'Venda via Proposta #%')
+    ";
+    $params_vd = [$dtStart, $dtEnd];
+
+    if (!empty($user_ids)) {
+        list($ph, $vals) = $buildIn($user_ids);
+        $sql_vd .= " AND vf.usuario_id IN ($ph)";
+        $params_vd = array_merge($params_vd, $vals);
+    }
+    
+    $stmt_vd = $pdo->prepare($sql_vd);
+    $stmt_vd->execute($params_vd);
+    $rows_vd = $stmt_vd->fetchAll(PDO::FETCH_ASSOC);
+
+    $rows = array_merge($rows, $rows_vd);
+
+    // Re-sort rows by vendedor and data_criacao ASC
+    usort($rows, function($a, $b) {
+        if ($a['vendedor_nome'] !== $b['vendedor_nome']) {
+            return strcmp($a['vendedor_nome'] ?? '', $b['vendedor_nome'] ?? '');
+        }
+        return strtotime($a['data_criacao'] ?? '0') <=> strtotime($b['data_criacao'] ?? '0');
+    });
 
     // 2. Atividade de prospecção por vendedor no período
     $sql_activity = "
@@ -2574,6 +2623,10 @@ function get_vendor_detail_report($pdo, $start_date, $end_date, $supplier_ids = 
             SUM(CASE WHEN ef.nome = 'Negociação' THEN 1 ELSE 0 END) as ops_negociacao,
             SUM(CASE WHEN ef.nome = 'Fechado' THEN 1 ELSE 0 END) as ops_fechado,
             SUM(CASE WHEN ef.nome = 'Recusado' THEN 1 ELSE 0 END) as ops_recusado,
+            SUM(CASE WHEN ef.nome = 'Prospectando' THEN o.valor ELSE 0 END) as valor_prospectando,
+            SUM(CASE WHEN ef.nome = 'Negociação' THEN o.valor ELSE 0 END) as valor_negociacao,
+            SUM(CASE WHEN ef.nome = 'Fechado' THEN o.valor ELSE 0 END) as valor_fechado,
+            SUM(CASE WHEN ef.nome = 'Recusado' THEN o.valor ELSE 0 END) as valor_recusado,
             COUNT(DISTINCT p.id) as propostas_total,
             SUM(CASE WHEN p.status = 'Aprovada' THEN 1 ELSE 0 END) as propostas_aprovadas,
             SUM(CASE WHEN p.status LIKE 'Recusad%' THEN 1 ELSE 0 END) as propostas_recusadas,

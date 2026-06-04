@@ -3730,7 +3730,7 @@ function renderVendorDetailReport(items, activity) {
                 </div>
                 <span class="bg-${atingColor}-400/90 text-white text-[10px] font-black px-2.5 py-1 rounded-full">${fmtPct(a.atingimento)} Meta</span>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-0 divide-x divide-gray-100">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-0 divide-x divide-y divide-gray-100">
                 <div class="px-4 py-3 text-center">
                     <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Oportunidades</div>
                     <div class="text-lg font-black text-gray-800">${a.oportunidades_criadas || 0}</div>
@@ -3751,12 +3751,28 @@ function renderVendorDetailReport(items, activity) {
                     </div>
                 </div>
                 <div class="px-4 py-3 text-center">
-                    <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Total Vendido</div>
-                    <div class="text-base font-black text-green-600">${fmt(a.total_vendido)}</div>
-                    <div class="text-[10px] text-gray-400">Meta: ${fmt(a.meta_anual)}</div>
+                    <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Prospectando</div>
+                    <div class="text-base font-black text-blue-600">${fmt(a.valor_prospectando)}</div>
                 </div>
                 <div class="px-4 py-3 text-center">
-                    <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Conversão</div>
+                    <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Negociação</div>
+                    <div class="text-base font-black text-amber-600">${fmt(a.valor_negociacao)}</div>
+                </div>
+                <div class="px-4 py-3 text-center">
+                    <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Fechado</div>
+                    <div class="text-base font-black text-green-600">${fmt(a.valor_fechado)}</div>
+                </div>
+                <div class="px-4 py-3 text-center">
+                    <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Recusado</div>
+                    <div class="text-base font-black text-red-600">${fmt(a.valor_recusado)}</div>
+                </div>
+                <div class="px-4 py-3 text-center bg-gray-50/50">
+                    <div class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Total Vendido</div>
+                    <div class="text-base font-black text-green-700">${fmt(a.total_vendido)}</div>
+                    <div class="text-[10px] text-gray-400">Meta: ${fmt(a.meta_anual)}</div>
+                </div>
+                <div class="px-4 py-3 text-center bg-gray-50/50">
+                    <div class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Conversão</div>
                     <div class="text-lg font-black text-${convColor}-600">${fmtPct(a.taxa_conversao)}</div>
                     <div class="text-[10px] text-gray-400">${a.agendamentos_periodo || 0} agendamentos</div>
                 </div>
