@@ -453,6 +453,21 @@ function handle_move_opportunity($pdo, $data)
     $stmt = $pdo->prepare("UPDATE oportunidades SET etapa_id = ?, data_ultima_movimentacao = NOW() WHERE id = ?");
     $success = $stmt->execute([$data['newStageId'], $data['opportunityId']]);
     if ($success && $stmt->rowCount() > 0) {
+        // --- INÍCIO DA SINCRONIZAÇÃO DE VOLTA PARA A PROPOSTA ---
+        $status_proposta = null;
+        $lower_stage = strtolower(trim($newStageName));
+        if (in_array($lower_stage, ['prospectando', 'prospecção', 'contato inicial'])) $status_proposta = 'Rascunho';
+        elseif (in_array($lower_stage, ['proposta', 'envio de proposta', 'acolhimento de propostas'])) $status_proposta = 'Enviada';
+        elseif (in_array($lower_stage, ['negociação', 'em negociação', 'análise'])) $status_proposta = 'Negociando';
+        elseif (in_array($lower_stage, ['fechado', 'contrato', 'homologado', 'empenhado', 'ganho', 'vendido'])) $status_proposta = 'Aprovada';
+        elseif (in_array($lower_stage, ['recusado', 'desclassificado', 'perdida', 'perdido', 'cancelado', 'cancelada', 'fracassado', 'revogado', 'anulado', 'suspenso'])) $status_proposta = 'Recusada';
+
+        if ($status_proposta) {
+            $update_prop_stmt = $pdo->prepare("UPDATE propostas SET status = ?, data_aprovacao = CASE WHEN ? = 'Aprovada' AND status != 'Aprovada' THEN NOW() ELSE data_aprovacao END WHERE oportunidade_id = ?");
+            $update_prop_stmt->execute([$status_proposta, $status_proposta, $data['opportunityId']]);
+        }
+        // --- FIM DA SINCRONIZAÇÃO DE VOLTA PARA A PROPOSTA ---
+
         json_response(['success' => true]);
     } elseif ($success) {
         json_response(['success' => true, 'message' => 'Nenhuma alteração necessária.']);

@@ -23,10 +23,26 @@ function handle_create_proposal($pdo, $data)
         $oportunidade_id = $data['oportunidade_id'] ?? null;
         $new_opportunity = null; // Para retornar ao frontend se uma nova opp for criada
 
-        // Busca ID da etapa 'Proposta'
-        $stmt_stage = $pdo->prepare("SELECT id FROM etapas_funil WHERE nome = 'Proposta' LIMIT 1");
-        $stmt_stage->execute();
+        $proposal_status = $data['status'] ?? 'Rascunho';
+
+        // Busca ID da etapa inicial com base no status da proposta
+        $stage_name = 'Proposta';
+        if (strcasecmp($proposal_status, 'Rascunho') === 0) $stage_name = 'Prospectando';
+        elseif (strcasecmp($proposal_status, 'Enviada') === 0) $stage_name = 'Proposta';
+        elseif (strcasecmp($proposal_status, 'Negociando') === 0) $stage_name = 'Negociação';
+        elseif (strcasecmp($proposal_status, 'Aprovada') === 0) $stage_name = 'Fechado';
+        elseif (strcasecmp($proposal_status, 'Recusada') === 0) $stage_name = 'Recusado';
+
+        $stmt_stage = $pdo->prepare("SELECT id FROM etapas_funil WHERE nome = ? LIMIT 1");
+        $stmt_stage->execute([$stage_name]);
         $proposta_stage_id = $stmt_stage->fetchColumn();
+
+        // Se não encontrou a etapa específica, tenta o fallback 'Proposta'
+        if (!$proposta_stage_id) {
+            $stmt_stage = $pdo->prepare("SELECT id FROM etapas_funil WHERE nome = 'Proposta' LIMIT 1");
+            $stmt_stage->execute();
+            $proposta_stage_id = $stmt_stage->fetchColumn();
+        }
 
         // Extrair o vendedor responsável pela venda (comercial_user_id) mais cedo
         $proposal_owner_id = $_SESSION['user_id'];
@@ -62,7 +78,6 @@ function handle_create_proposal($pdo, $data)
         // Insere a proposta principal
         // MODIFICADO: Usa $proposal_owner_id em vez de $_SESSION['user_id']
         // Adicionado: frete_tipo, frete_valor, comercial_user_id
-        $proposal_status = $data['status'] ?? 'Rascunho';
         $data_aprovacao = (strcasecmp($proposal_status, 'Aprovada') === 0) ? date('Y-m-d H:i:s') : null;
 
         $sql = "INSERT INTO propostas (oportunidade_id, cliente_pf_id, organizacao_id, contato_id, usuario_id, comercial_user_id, valor_total, status, data_validade, data_aprovacao, faturamento, treinamento, condicoes_pagamento, prazo_entrega, garantia_equipamentos, garantia_acessorios, instalacao, assistencia_tecnica, observacoes, motivo_status, frete_tipo, frete_valor, data_criacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
@@ -516,6 +531,7 @@ function sync_opportunity_stage($pdo, $oportunidade_id, $status_proposta)
         // Normaliza o status para comparação (embora os arrays abaixo usem chaves diretas para mapear)
         // Mapeamento: Status Proposta -> Lista de possíveis nomes de Etapa
         $mapa_candidatos = [
+            'Rascunho' => ['Prospectando', 'Prospecção', 'Contato Inicial'],
             'ENVIADA' => ['Proposta', 'Envio de Proposta', 'Acolhimento de propostas'],
             'Recusada' => ['Recusado', 'Desclassificado', 'Perdida', 'Perdido', 'Cancelado', 'Cancelada', 'Fracassado', 'Revogado', 'Anulado', 'Suspenso'],
             'Aprovada' => ['Fechado', 'Contrato', 'Homologado', 'Empenhado', 'Ganho', 'Vendido'],
@@ -775,11 +791,21 @@ function handle_delete_proposal($pdo, $data)
         $stmt_items = $pdo->prepare("DELETE FROM proposta_itens WHERE proposta_id = ?");
         $stmt_items->execute([$proposalId]);
 
+        // Pegar oportunidade_id da proposta
+        $stmt_opp = $pdo->prepare("SELECT oportunidade_id FROM propostas WHERE id = ?");
+        $stmt_opp->execute([$proposalId]);
+        $opp_id = $stmt_opp->fetchColumn();
+
         // 4. Remove a proposta
         $stmt_proposal = $pdo->prepare("DELETE FROM propostas WHERE id = ?");
         $stmt_proposal->execute([$proposalId]);
 
         if ($stmt_proposal->rowCount() > 0) {
+            // 5. Remove a oportunidade (card no funil de vendas)
+            if ($opp_id) {
+                $pdo->prepare("DELETE FROM oportunidades WHERE id = ?")->execute([$opp_id]);
+            }
+
             $pdo->commit();
             json_response(['success' => true, 'message' => 'Proposta excluída com sucesso.']);
         } else {
