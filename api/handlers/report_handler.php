@@ -2618,33 +2618,59 @@ function get_vendor_detail_report($pdo, $start_date, $end_date, $supplier_ids = 
         SELECT 
             u.id as vendedor_id,
             u.nome as vendedor_nome,
-            COUNT(DISTINCT o.id) as oportunidades_criadas,
-            SUM(CASE WHEN ef.nome = 'Prospectando' THEN 1 ELSE 0 END) as ops_prospectando,
-            SUM(CASE WHEN ef.nome = 'Negociação' THEN 1 ELSE 0 END) as ops_negociacao,
-            SUM(CASE WHEN ef.nome = 'Fechado' THEN 1 ELSE 0 END) as ops_fechado,
-            SUM(CASE WHEN ef.nome = 'Recusado' THEN 1 ELSE 0 END) as ops_recusado,
-            SUM(CASE WHEN ef.nome = 'Prospectando' THEN o.valor ELSE 0 END) as valor_prospectando,
-            SUM(CASE WHEN ef.nome = 'Negociação' THEN o.valor ELSE 0 END) as valor_negociacao,
-            SUM(CASE WHEN ef.nome = 'Fechado' THEN o.valor ELSE 0 END) as valor_fechado,
-            SUM(CASE WHEN ef.nome = 'Recusado' THEN o.valor ELSE 0 END) as valor_recusado,
-            COUNT(DISTINCT p.id) as propostas_total,
-            SUM(CASE WHEN p.status = 'Aprovada' THEN 1 ELSE 0 END) as propostas_aprovadas,
-            SUM(CASE WHEN p.status LIKE 'Recusad%' THEN 1 ELSE 0 END) as propostas_recusadas,
-            SUM(CASE WHEN p.status = 'Enviada' THEN 1 ELSE 0 END) as propostas_enviadas,
-            SUM(CASE WHEN p.status = 'Aprovada' THEN p.valor_total ELSE 0 END) as total_aprovado,
-            SUM(CASE WHEN p.status LIKE 'Recusad%' THEN p.valor_total ELSE 0 END) as total_recusado,
+            COALESCE(o_agg.oportunidades_criadas, 0) as oportunidades_criadas,
+            COALESCE(o_agg.ops_prospectando, 0) as ops_prospectando,
+            COALESCE(o_agg.ops_negociacao, 0) as ops_negociacao,
+            COALESCE(o_agg.ops_fechado, 0) as ops_fechado,
+            COALESCE(o_agg.ops_recusado, 0) as ops_recusado,
+            COALESCE(o_agg.valor_prospectando, 0) as valor_prospectando,
+            COALESCE(o_agg.valor_negociacao, 0) as valor_negociacao,
+            COALESCE(o_agg.valor_fechado, 0) as valor_fechado,
+            COALESCE(o_agg.valor_recusado, 0) as valor_recusado,
+            COALESCE(p_agg.propostas_total, 0) as propostas_total,
+            COALESCE(p_agg.propostas_aprovadas, 0) as propostas_aprovadas,
+            COALESCE(p_agg.propostas_recusadas, 0) as propostas_recusadas,
+            COALESCE(p_agg.propostas_enviadas, 0) as propostas_enviadas,
+            COALESCE(p_agg.total_aprovado, 0) as total_aprovado,
+            COALESCE(p_agg.total_recusado, 0) as total_recusado,
             (SELECT COUNT(*) FROM agendamentos a 
              JOIN agendamento_usuarios au ON a.id = au.agendamento_id 
              WHERE au.usuario_id = u.id AND a.data_inicio BETWEEN ? AND ?) as agendamentos_periodo
         FROM usuarios u
-        LEFT JOIN oportunidades o ON o.usuario_id = u.id AND o.data_criacao BETWEEN ? AND ?
-        LEFT JOIN etapas_funil ef ON o.etapa_id = ef.id
-        LEFT JOIN propostas p ON COALESCE(p.comercial_user_id, p.usuario_id) = u.id 
-            AND (
+        LEFT JOIN (
+            SELECT 
+                o.usuario_id,
+                COUNT(o.id) as oportunidades_criadas,
+                SUM(CASE WHEN ef.nome = 'Prospectando' THEN 1 ELSE 0 END) as ops_prospectando,
+                SUM(CASE WHEN ef.nome = 'Negociação' THEN 1 ELSE 0 END) as ops_negociacao,
+                SUM(CASE WHEN ef.nome = 'Fechado' THEN 1 ELSE 0 END) as ops_fechado,
+                SUM(CASE WHEN ef.nome = 'Recusado' THEN 1 ELSE 0 END) as ops_recusado,
+                SUM(CASE WHEN ef.nome = 'Prospectando' THEN o.valor ELSE 0 END) as valor_prospectando,
+                SUM(CASE WHEN ef.nome = 'Negociação' THEN o.valor ELSE 0 END) as valor_negociacao,
+                SUM(CASE WHEN ef.nome = 'Fechado' THEN o.valor ELSE 0 END) as valor_fechado,
+                SUM(CASE WHEN ef.nome = 'Recusado' THEN o.valor ELSE 0 END) as valor_recusado
+            FROM oportunidades o
+            LEFT JOIN etapas_funil ef ON o.etapa_id = ef.id
+            WHERE o.data_criacao BETWEEN ? AND ?
+            GROUP BY o.usuario_id
+        ) o_agg ON o_agg.usuario_id = u.id
+        LEFT JOIN (
+            SELECT 
+                COALESCE(p.comercial_user_id, p.usuario_id) as p_usuario_id,
+                COUNT(p.id) as propostas_total,
+                SUM(CASE WHEN p.status = 'Aprovada' THEN 1 ELSE 0 END) as propostas_aprovadas,
+                SUM(CASE WHEN p.status LIKE 'Recusad%' THEN 1 ELSE 0 END) as propostas_recusadas,
+                SUM(CASE WHEN p.status = 'Enviada' THEN 1 ELSE 0 END) as propostas_enviadas,
+                SUM(CASE WHEN p.status = 'Aprovada' THEN p.valor_total ELSE 0 END) as total_aprovado,
+                SUM(CASE WHEN p.status LIKE 'Recusad%' THEN p.valor_total ELSE 0 END) as total_recusado
+            FROM propostas p
+            WHERE (
                 (p.status = 'Aprovada' AND COALESCE(p.data_aprovacao, p.data_criacao) BETWEEN ? AND ?)
                 OR
                 (p.status != 'Aprovada' AND p.data_criacao BETWEEN ? AND ?)
             )
+            GROUP BY COALESCE(p.comercial_user_id, p.usuario_id)
+        ) p_agg ON p_agg.p_usuario_id = u.id
         WHERE u.role IN ('Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista', 'Especialista')
         AND u.status = 'Ativo'
     ";

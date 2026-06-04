@@ -170,7 +170,7 @@ function renderKanbanBoard() {
 
         // --- FILTROS ESPECÍFICOS DO FUNIL DE VENDAS ---
         if (activeTab === 'vendas') {
-            const { searchVendedorId, searchClienteId, searchProdutoTerm } = appState.funilView;
+            const { searchVendedorId, searchClienteId, searchProdutoTerm, searchDataInicio, searchDataFim } = appState.funilView;
 
             if (searchVendedorId) {
                 opportunitiesInStage = opportunitiesInStage.filter(opp =>
@@ -199,6 +199,20 @@ function renderKanbanBoard() {
                     const matchTitulo = opp.titulo && opp.titulo.toLowerCase().includes(term);
                     const matchNotas = opp.notas && opp.notas.toLowerCase().includes(term);
                     return matchFabricante || matchDescricao || matchTitulo || matchNotas;
+                });
+            }
+
+            if (searchDataInicio) {
+                opportunitiesInStage = opportunitiesInStage.filter(opp => {
+                    if (!opp.data_criacao) return false;
+                    return new Date(opp.data_criacao).getTime() >= new Date(`${searchDataInicio}T00:00:00`).getTime();
+                });
+            }
+
+            if (searchDataFim) {
+                opportunitiesInStage = opportunitiesInStage.filter(opp => {
+                    if (!opp.data_criacao) return false;
+                    return new Date(opp.data_criacao).getTime() <= new Date(`${searchDataFim}T23:59:59`).getTime();
                 });
             }
         }
@@ -348,7 +362,7 @@ function renderVendasSearchHeader() {
     const headerContainer = document.getElementById('vendas-search-header-container');
     if (!headerContainer) return;
 
-    const { searchVendedorId, searchClienteId, searchProdutoTerm } = appState.funilView;
+    const { searchVendedorId, searchClienteId, searchProdutoTerm, searchDataInicio, searchDataFim } = appState.funilView;
 
     // Opções de vendedores (usuários com roles comerciais)
     const vendedorOptions = appState.users
@@ -371,13 +385,13 @@ function renderVendasSearchHeader() {
 
     headerContainer.innerHTML = `
          <div class="flex flex-col md:flex-row items-center gap-2 w-full">
-             <div class="flex-1 w-full">
+             <div class="flex-[1] w-full">
                  <select id="search-vendedor" class="form-input w-full text-sm py-1">
                      <option value="">Todos os vendedores</option>
                      ${vendedorOptions}
                  </select>
              </div>
-             <div class="flex-1 w-full">
+             <div class="flex-[1] w-full">
                  <select id="search-cliente" class="form-input w-full text-sm py-1">
                      <option value="">Todos os clientes</option>
                      <optgroup label="Organizações">
@@ -392,6 +406,10 @@ function renderVendasSearchHeader() {
                  <input type="text" id="search-produto" placeholder="Pesquisar por produto, fabricante..." 
                         value="${searchProdutoTerm || ''}" class="form-input w-full text-sm py-1 pr-8">
                  ${searchProdutoTerm ? `<button id="clear-produto-search" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>` : ''}
+             </div>
+             <div class="flex-[1] w-full flex gap-1">
+                 <input type="date" id="search-data-inicio" title="Data Inicial" class="form-input w-full text-sm py-1 px-1" value="${searchDataInicio || ''}">
+                 <input type="date" id="search-data-fim" title="Data Final" class="form-input w-full text-sm py-1 px-1" value="${searchDataFim || ''}">
              </div>
          </div>
      `;
@@ -422,6 +440,16 @@ function renderVendasSearchHeader() {
     document.getElementById('clear-produto-search')?.addEventListener('click', () => {
         appState.funilView.searchProdutoTerm = '';
         renderVendasSearchHeader();
+        renderKanbanBoard();
+    });
+
+    document.getElementById('search-data-inicio')?.addEventListener('change', (e) => {
+        appState.funilView.searchDataInicio = e.target.value || null;
+        renderKanbanBoard();
+    });
+
+    document.getElementById('search-data-fim')?.addEventListener('change', (e) => {
+        appState.funilView.searchDataFim = e.target.value || null;
         renderKanbanBoard();
     });
 }
@@ -479,11 +507,23 @@ function createOpportunityCard(opp, stageName = '') {
         uploadBtn = `<button class="btn-invoice-upload mt-2 text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 rounded px-2 py-1 w-full text-center hover:bg-indigo-100 transition-colors" onclick="event.stopPropagation(); window.uploadInvoicePDF(${opp.id})"><i class="fas fa-file-invoice mr-1"></i>Ler Nota Fiscal</button>`;
     }
 
+    // Datas formatadas
+    let dataCriacao = '';
+    let dataAtualizacao = '';
+    if (opp.data_criacao) {
+        dataCriacao = `<div class="text-[9px] text-gray-500 mt-1" title="Data de Criação"><i class="fas fa-calendar-plus mr-1"></i>${formatDate(opp.data_criacao)}</div>`;
+    }
+    if (opp.data_atualizacao && opp.data_atualizacao !== opp.data_criacao) {
+        dataAtualizacao = `<div class="text-[9px] text-gray-400 mt-0.5" title="Última Atualização"><i class="fas fa-history mr-1"></i>${formatDate(opp.data_atualizacao)}</div>`;
+    }
+
     return `
          <div class="opportunity-card" draggable="true" data-opp-id="${opp.id}">
              <h4 class="font-bold text-gray-800 text-xs">${opp.titulo}</h4>
              <p class="text-[10px] text-gray-500 mt-0.5">${opp.organizacao_nome || opp.cliente_pf_nome || 'Cliente não definido'}</p>
              ${contactInfo ? contactInfo.replace('text-xs', 'text-[10px]') : ''}
+             ${dataCriacao}
+             ${dataAtualizacao}
              <div class="mt-2 pt-1.5 border-t border-gray-100 flex justify-between items-center">
                  <span class="text-sm font-semibold text-indigo-700">${formatCurrency(opp.valor)}</span>
                  <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-full ${timeAlertClass}">

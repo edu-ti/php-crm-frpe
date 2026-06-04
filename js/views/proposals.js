@@ -119,7 +119,7 @@ export function renderProposalsView() {
             <h1 class="text-2xl font-bold text-gray-800 self-start sm:self-center">Propostas</h1>
             <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
                 <div class="relative w-full sm:w-48">
-                    <input type="text" id="proposal-search" placeholder="Pesquisar..." class="form-input w-full">
+                    <input type="text" id="proposal-search" placeholder="Pesquisar..." class="form-input w-full" value="${appState.proposalsView.searchTerm || ''}">
                     <i class="fas fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 </div>
                 <div class="w-full sm:w-48">
@@ -132,8 +132,22 @@ export function renderProposalsView() {
                             .join('')}
                     </select>
                 </div>
+                <div class="w-full sm:w-48">
+                    <select id="proposal-status-search" class="form-input w-full text-sm py-1">
+                        <option value="">Todos os status</option>
+                        <option value="Rascunho" ${appState.proposalsView.searchStatus === 'Rascunho' ? 'selected' : ''}>Rascunho</option>
+                        <option value="Enviada" ${appState.proposalsView.searchStatus === 'Enviada' ? 'selected' : ''}>Enviada</option>
+                        <option value="Aprovada" ${appState.proposalsView.searchStatus === 'Aprovada' ? 'selected' : ''}>Aprovada</option>
+                        <option value="Recusada" ${appState.proposalsView.searchStatus === 'Recusada' ? 'selected' : ''}>Recusada</option>
+                        <option value="Negociando" ${appState.proposalsView.searchStatus === 'Negociando' ? 'selected' : ''}>Negociando</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto sm:mr-4">
+                    <input type="date" id="proposal-data-inicio" title="Data Inicial" class="form-input w-full sm:w-[135px] text-sm py-1 px-1" value="${appState.proposalsView.searchDataInicio || ''}">
+                    <input type="date" id="proposal-data-fim" title="Data Final" class="form-input w-full sm:w-[135px] text-sm py-1 px-1" value="${appState.proposalsView.searchDataFim || ''}">
+                </div>
                 ${permissions.canCreate ? `
-                <button id="add-proposal-btn" class="btn btn-primary btn-sm w-full sm:w-auto text-center justify-center"><i class="fas fa-plus mr-2"></i>Criar Nova</button>
+                <button id="add-proposal-btn" class="btn btn-primary btn-sm w-full sm:w-auto text-center justify-center sm:ml-4"><i class="fas fa-plus mr-2"></i>Criar Nova</button>
                 ` : ''}
             </div>
         </div>
@@ -269,6 +283,9 @@ function renderProposalsList() {
     const { proposals, contacts } = appState;
     const searchTerm = document.getElementById('proposal-search')?.value.toLowerCase() || '';
     const searchVendedorId = document.getElementById('proposal-vendedor-search')?.value || '';
+    const searchStatus = appState.proposalsView.searchStatus || '';
+    const searchDataInicio = appState.proposalsView.searchDataInicio || '';
+    const searchDataFim = appState.proposalsView.searchDataFim || '';
     const { permissions } = appState.currentUser;
 
     const filteredProposals = (proposals || []).filter(p => {
@@ -295,7 +312,12 @@ function renderProposalsList() {
         const matchVendedor = !searchVendedorId ||
             String(p.comercial_user_id || p.usuario_id) === String(searchVendedorId);
 
-        return matchText && matchVendedor;
+        const matchStatus = !searchStatus || (p.status || '').toLowerCase() === searchStatus.toLowerCase();
+
+        const matchDataInicio = !searchDataInicio || (p.data_criacao && new Date(p.data_criacao).getTime() >= new Date(`${searchDataInicio}T00:00:00`).getTime());
+        const matchDataFim = !searchDataFim || (p.data_criacao && new Date(p.data_criacao).getTime() <= new Date(`${searchDataFim}T23:59:59`).getTime());
+
+        return matchText && matchVendedor && matchStatus && matchDataInicio && matchDataFim;
     });
 
     const { column, direction } = appState.proposalSort;
@@ -1177,13 +1199,32 @@ function addProposalEventListeners() {
         renderProposalsView();
         scrollToProposalForm();
     });
-    document.getElementById('proposal-search')?.addEventListener('input', () => {
+    document.getElementById('proposal-search')?.addEventListener('input', (e) => {
+        appState.proposalsView.searchTerm = e.target.value;
         appState.proposalsView.currentPage = 1;
         renderProposalsList();
     });
 
     document.getElementById('proposal-vendedor-search')?.addEventListener('change', (e) => {
         appState.proposalsView.searchVendedorId = e.target.value || null;
+        appState.proposalsView.currentPage = 1;
+        renderProposalsList();
+    });
+
+    document.getElementById('proposal-status-search')?.addEventListener('change', (e) => {
+        appState.proposalsView.searchStatus = e.target.value || null;
+        appState.proposalsView.currentPage = 1;
+        renderProposalsList();
+    });
+
+    document.getElementById('proposal-data-inicio')?.addEventListener('change', (e) => {
+        appState.proposalsView.searchDataInicio = e.target.value || null;
+        appState.proposalsView.currentPage = 1;
+        renderProposalsList();
+    });
+
+    document.getElementById('proposal-data-fim')?.addEventListener('change', (e) => {
+        appState.proposalsView.searchDataFim = e.target.value || null;
         appState.proposalsView.currentPage = 1;
         renderProposalsList();
     });
