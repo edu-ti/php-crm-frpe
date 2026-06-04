@@ -1932,7 +1932,7 @@ function renderDetailedReports(container) {
 
     // Eventos
     document.getElementById('refresh-report-btn').addEventListener('click', loadReportData);
-    document.getElementById('print-report-btn').addEventListener('click', () => exportToPDF());
+    document.getElementById('print-report-btn').addEventListener('click', () => exportDetailedReportToPDF());
     document.getElementById('export-excel-btn').addEventListener('click', exportToExcel);
     document.getElementById('toggle-filters-btn').addEventListener('click', () => {
         document.getElementById('reports-filters-container').classList.toggle('hidden');
@@ -2945,28 +2945,40 @@ function exportToExcel() {
     if (startDate) params.set('start_date', startDate);
     if (endDate) params.set('end_date', endDate);
 
-    const supplierContainer = document.getElementById('filter-supplier-container');
-    if (supplierContainer) {
-        const el = supplierContainer.querySelector('input[type="hidden"]') || supplierContainer.querySelector('select');
-        if (el && el.value) params.set('supplier_id', el.value);
+    if (typeof window.getMultiSelectValues === 'function') {
+        const supVals = window.getMultiSelectValues('supplier-select');
+        if (supVals && supVals.length > 0) params.set('supplier_id', supVals.join(','));
+        const userVals = window.getMultiSelectValues('user-select');
+        if (userVals && userVals.length > 0) params.set('user_id', userVals.join(','));
+        const ufVals = window.getMultiSelectValues('uf-select');
+        if (ufVals && ufVals.length > 0) params.set('uf', ufVals.join(','));
+        const clientVals = window.getMultiSelectValues('client-select');
+        if (clientVals && clientVals.length > 0) params.set('cliente_id', clientVals.join(','));
     }
 
-    const userContainer = document.getElementById('filter-user-container');
-    if (userContainer) {
-        const el = userContainer.querySelector('input[type="hidden"]') || userContainer.querySelector('select');
-        if (el && el.value) params.set('user_id', el.value);
-    }
+    window.open('api.php?' + params.toString(), '_blank');
+}
 
-    const ufContainer = document.getElementById('filter-uf-container');
-    if (ufContainer) {
-        const el = ufContainer.querySelector('input[type="hidden"]') || ufContainer.querySelector('select');
-        if (el && el.value) params.set('uf', el.value);
-    }
+function exportDetailedReportToPDF() {
+    const params = new URLSearchParams();
+    const reportType = document.getElementById('report-type')?.value || 'sales';
+    const startDate = document.getElementById('filter-start-date')?.value || '';
+    const endDate = document.getElementById('filter-end-date')?.value || '';
 
-    const clientContainer = document.getElementById('filter-client-container');
-    if (clientContainer) {
-        const el = clientContainer.querySelector('input[type="hidden"]') || clientContainer.querySelector('select');
-        if (el && el.value) params.set('cliente_id', el.value);
+    params.set('action', 'export_pdf');
+    params.set('report_type', reportType);
+    if (startDate) params.set('start_date', startDate);
+    if (endDate) params.set('end_date', endDate);
+
+    if (typeof window.getMultiSelectValues === 'function') {
+        const supVals = window.getMultiSelectValues('supplier-select');
+        if (supVals && supVals.length > 0) params.set('supplier_id', supVals.join(','));
+        const userVals = window.getMultiSelectValues('user-select');
+        if (userVals && userVals.length > 0) params.set('user_id', userVals.join(','));
+        const ufVals = window.getMultiSelectValues('uf-select');
+        if (ufVals && ufVals.length > 0) params.set('uf', ufVals.join(','));
+        const clientVals = window.getMultiSelectValues('client-select');
+        if (clientVals && clientVals.length > 0) params.set('cliente_id', clientVals.join(','));
     }
 
     window.open('api.php?' + params.toString(), '_blank');
@@ -3722,6 +3734,12 @@ function renderVendorDetailReport(items, activity) {
                 <div class="px-4 py-3 text-center">
                     <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Oportunidades</div>
                     <div class="text-lg font-black text-gray-800">${a.oportunidades_criadas || 0}</div>
+                    <div class="text-[9px] text-gray-400 mt-0.5">
+                        <span class="text-blue-600 font-bold">${a.ops_prospectando || 0} P</span> ·
+                        <span class="text-amber-600 font-bold">${a.ops_negociacao || 0} N</span> ·
+                        <span class="text-green-600 font-bold">${a.ops_fechado || 0} F</span> ·
+                        <span class="text-red-500 font-bold">${a.ops_recusado || 0} R</span>
+                    </div>
                 </div>
                 <div class="px-4 py-3 text-center">
                     <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Propostas</div>

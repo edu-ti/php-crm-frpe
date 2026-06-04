@@ -2570,6 +2570,10 @@ function get_vendor_detail_report($pdo, $start_date, $end_date, $supplier_ids = 
             u.id as vendedor_id,
             u.nome as vendedor_nome,
             COUNT(DISTINCT o.id) as oportunidades_criadas,
+            SUM(CASE WHEN ef.nome = 'Prospectando' THEN 1 ELSE 0 END) as ops_prospectando,
+            SUM(CASE WHEN ef.nome = 'Negociação' THEN 1 ELSE 0 END) as ops_negociacao,
+            SUM(CASE WHEN ef.nome = 'Fechado' THEN 1 ELSE 0 END) as ops_fechado,
+            SUM(CASE WHEN ef.nome = 'Recusado' THEN 1 ELSE 0 END) as ops_recusado,
             COUNT(DISTINCT p.id) as propostas_total,
             SUM(CASE WHEN p.status = 'Aprovada' THEN 1 ELSE 0 END) as propostas_aprovadas,
             SUM(CASE WHEN p.status LIKE 'Recusad%' THEN 1 ELSE 0 END) as propostas_recusadas,
@@ -2581,11 +2585,18 @@ function get_vendor_detail_report($pdo, $start_date, $end_date, $supplier_ids = 
              WHERE au.usuario_id = u.id AND a.data_inicio BETWEEN ? AND ?) as agendamentos_periodo
         FROM usuarios u
         LEFT JOIN oportunidades o ON o.usuario_id = u.id AND o.data_criacao BETWEEN ? AND ?
-        LEFT JOIN propostas p ON COALESCE(p.comercial_user_id, p.usuario_id) = u.id AND p.data_criacao BETWEEN ? AND ?
+        LEFT JOIN etapas_funil ef ON o.etapa_id = ef.id
+        LEFT JOIN propostas p ON COALESCE(p.comercial_user_id, p.usuario_id) = u.id 
+            AND (
+                (p.status = 'Aprovada' AND COALESCE(p.data_aprovacao, p.data_criacao) BETWEEN ? AND ?)
+                OR
+                (p.status != 'Aprovada' AND p.data_criacao BETWEEN ? AND ?)
+            )
         WHERE u.role IN ('Vendedor', 'Representante', 'Comercial', 'Gestor', 'Analista', 'Especialista')
         AND u.status = 'Ativo'
     ";
     $params_act = [
+        $start_date . ' 00:00:00', $end_date . ' 23:59:59',
         $start_date . ' 00:00:00', $end_date . ' 23:59:59',
         $start_date . ' 00:00:00', $end_date . ' 23:59:59',
         $start_date . ' 00:00:00', $end_date . ' 23:59:59'
