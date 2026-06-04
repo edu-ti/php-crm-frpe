@@ -28,6 +28,10 @@ function handle_create_proposal($pdo, $data)
         $stmt_stage->execute();
         $proposta_stage_id = $stmt_stage->fetchColumn();
 
+        // Extrair o vendedor responsável pela venda (comercial_user_id) mais cedo
+        $proposal_owner_id = $_SESSION['user_id'];
+        $comercial_user_id = !empty($data['comercial_user_id']) ? (int)$data['comercial_user_id'] : $proposal_owner_id;
+
         // Cria oportunidade se não veio de uma existente e a etapa 'Proposta' existe
         if (empty($oportunidade_id) && $proposta_stage_id) {
             $opp_title = "Oportunidade p/ Proposta: " . ($clientType === 'pj' ? $client['nome_fantasia'] : $client['nome']);
@@ -40,7 +44,7 @@ function handle_create_proposal($pdo, $data)
                 $cliente_pf_id,
                 $valor_total,
                 $proposta_stage_id,
-                $_SESSION['user_id']
+                $comercial_user_id
             ]);
             $oportunidade_id = $pdo->lastInsertId(); // Pega o ID da nova oportunidade
 
@@ -49,26 +53,11 @@ function handle_create_proposal($pdo, $data)
             $stmt_new_opp->execute([$oportunidade_id]);
             $new_opportunity = $stmt_new_opp->fetch(PDO::FETCH_ASSOC);
 
-        } elseif (!empty($oportunidade_id) && $proposta_stage_id) {
-            // Se veio de uma oportunidade, atualiza a etapa dela para 'Proposta'
-            // REMOVIDO: A atualização agora será feita pela função de sincronização
-            // $update_opp_stmt = $pdo->prepare("UPDATE oportunidades SET etapa_id = ?, data_ultima_movimentacao = NOW() WHERE id = ?");
-            // $update_opp_stmt->execute([$proposta_stage_id, $oportunidade_id]);
+        } elseif (!empty($oportunidade_id)) {
+            // Se veio de uma oportunidade existente, atualiza o dono dela para bater com a proposta
+            $update_opp_stmt = $pdo->prepare("UPDATE oportunidades SET usuario_id = ? WHERE id = ?");
+            $update_opp_stmt->execute([$comercial_user_id, $oportunidade_id]);
         }
-
-        // Busca o usuario_id (dono) da oportunidade para manter a atribuição original
-        $proposal_owner_id = $_SESSION['user_id']; // Default (fallback)
-        if ($oportunidade_id) {
-            $stmt_opp_owner = $pdo->prepare("SELECT usuario_id FROM oportunidades WHERE id = ?");
-            $stmt_opp_owner->execute([$oportunidade_id]);
-            $fetched_owner = $stmt_opp_owner->fetchColumn();
-            if ($fetched_owner) {
-                $proposal_owner_id = $fetched_owner;
-            }
-        }
-
-        // Vendedor responsável pela venda (comercial_user_id)
-        $comercial_user_id = !empty($data['comercial_user_id']) ? (int)$data['comercial_user_id'] : $proposal_owner_id;
 
         // Insere a proposta principal
         // MODIFICADO: Usa $proposal_owner_id em vez de $_SESSION['user_id']
@@ -259,6 +248,12 @@ function handle_update_proposal($pdo, $data)
 
         if ($oportunidade_id) {
             sync_opportunity_stage($pdo, $oportunidade_id, $new_status);
+            
+            // Sincroniza o dono da oportunidade também
+            if ($comercial_user_id) {
+                $update_opp_owner_stmt = $pdo->prepare("UPDATE oportunidades SET usuario_id = ? WHERE id = ?");
+                $update_opp_owner_stmt->execute([$comercial_user_id, $oportunidade_id]);
+            }
         }
 
         // ***** INÍCIO: Lógica para criar venda fornecedor se status mudou para "Aprovada" *****
