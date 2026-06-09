@@ -1895,10 +1895,22 @@ function renderDetailedReports(container) {
                      <button id="print-report-btn" class="flex-1 bg-rose-50 text-rose-700 py-3.5 rounded-2xl font-black uppercase text-[10px] hover:bg-rose-100 transition-all border border-rose-100 flex items-center justify-center gap-2" title="PDF"><i class="fas fa-file-pdf"></i> PDF</button>
                 </div>
 
-                <!-- ETAPA (dinâmica por tipo) -->
-                <div class="filter-card border-l-4 border-l-indigo-300 lg:col-span-2" id="filter-etapa-card">
-                    <div class="filter-label"><i class="fas fa-tasks"></i><span id="filter-etapa-label">Etapa</span></div>
-                    <div id="filter-etapa-container" class="w-full"></div>
+                <!-- ETAPA DE LICITAÇÃO -->
+                <div class="filter-card border-l-4 border-l-cyan-400" id="filter-etapa-licitacao-card">
+                    <div class="filter-label"><i class="fas fa-gavel"></i>Etapa de Licitação</div>
+                    <div id="filter-etapa-licitacao-container" class="w-full"></div>
+                </div>
+
+                <!-- FUNIL DE VENDAS -->
+                <div class="filter-card border-l-4 border-l-indigo-400" id="filter-etapa-funil-card">
+                    <div class="filter-label"><i class="fas fa-funnel-dollar"></i>Etapa do Funil de Vendas</div>
+                    <div id="filter-etapa-funil-container" class="w-full"></div>
+                </div>
+
+                <!-- STATUS DE PROPOSTA -->
+                <div class="filter-card border-l-4 border-l-orange-400" id="filter-status-proposta-card">
+                    <div class="filter-label"><i class="fas fa-file-signature"></i>Status de Proposta</div>
+                    <div id="filter-status-proposta-container" class="w-full"></div>
                 </div>
 
 
@@ -1938,13 +1950,8 @@ function renderDetailedReports(container) {
         document.getElementById('reports-filters-container').classList.toggle('hidden');
     });
 
-    // Atualiza etapas ao trocar tipo de relatório
-    document.getElementById('report-type').addEventListener('change', () => {
-        updateEtapaFilter();
-    });
-
+    // Atualiza etapas (removido dinâmica, agora fixo)
     populateFilters();
-    updateEtapaFilter(); // Popula etapas conforme tipo padrão
     setupModalLinks();
     restoreFilters();
 }
@@ -2022,9 +2029,10 @@ function restoreFilters() {
         if (f.suppliers) restoreMulti('supplier-select', f.suppliers);
         if (f.users) restoreMulti('user-select', f.users);
         if (f.clients) restoreMulti('client-select', f.clients);
-        if (f.etapas) restoreMulti('etapa-select', f.etapas);
+        if (f.etapaLicitacao) restoreMulti('etapa-licitacao-select', f.etapaLicitacao);
+        if (f.etapaFunil) restoreMulti('etapa-funil-select', f.etapaFunil);
         if (f.ufs) restoreMulti('uf-select', f.ufs);
-        if (f.statuses) restoreMulti('status-select', f.statuses);
+        if (f.statusProposta) restoreMulti('status-proposta-select', f.statusProposta);
     } catch (e) { console.error("Erro ao restaurar filtros:", e); }
 }
 
@@ -2065,6 +2073,20 @@ function populateFilters() {
     const orgs = appState.organizations || [];
     const ufs = [...new Set(orgs.map(o => o.estado).filter(Boolean))].sort();
     renderMultiSelect('filter-uf-container', 'uf-select', ufs.map(uf => ({ value: uf, label: uf })), 'Todos os Estados');
+
+    // 1. Etapas de Licitação
+    renderMultiSelect('filter-etapa-licitacao-container', 'etapa-licitacao-select', ETAPAS_FUNIL_LICITACOES, 'Todas as Etapas');
+
+    // 2. Etapa do Funil de Vendas
+    renderMultiSelect('filter-etapa-funil-container', 'etapa-funil-select', ETAPAS_FUNIL_VENDAS, 'Todas as Etapas');
+
+    // 3. Status de Proposta
+    const statusOptions = [
+        { value: 'Ganho', label: 'Ganho / Aprovada' },
+        { value: 'Perdido', label: 'Perdido / Recusada' },
+        { value: 'Aberto', label: 'Aberto / Em Andamento' }
+    ];
+    renderMultiSelect('filter-status-proposta-container', 'status-proposta-select', statusOptions, 'Todos os Status');
 
     // Fecha dropdowns ao clicar fora
     document.addEventListener('click', function (e) {
@@ -2156,17 +2178,24 @@ async function loadReportData() {
     const supplierIds = window.getMultiSelectValues('supplier-select');
     const userIds = window.getMultiSelectValues('user-select');
     const clientIds = window.getMultiSelectValues('client-select');
-    const etapaIds = window.getMultiSelectValues('etapa-select');
     const ufIds = window.getMultiSelectValues('uf-select');
+
+    const etapaLicitacaoIds = window.getMultiSelectValues('etapa-licitacao-select');
+    const etapaFunilIds = window.getMultiSelectValues('etapa-funil-select');
+    const statusPropostaIds = window.getMultiSelectValues('status-proposta-select');
+
+    // Combina as etapas para o backend
+    const combinedEtapaIds = [...etapaLicitacaoIds, ...etapaFunilIds];
 
     // Salva filtros no localStorage para persistência
     const filterState = {
         type, start, end,
         suppliers: supplierIds, users: userIds, clients: clientIds,
-        etapas: etapaIds, ufs: ufIds
+        etapaLicitacao: etapaLicitacaoIds, etapaFunil: etapaFunilIds, 
+        statusProposta: statusPropostaIds, ufs: ufIds
     };
 
-    updateFilterPills(type, start, end, supplierIds, userIds, clientIds, etapaIds, [], ufIds, []);
+    updateFilterPills(type, start, end, supplierIds, userIds, clientIds, combinedEtapaIds, [], ufIds, statusPropostaIds);
 
     localStorage.setItem('reports_filters', JSON.stringify(filterState));
 
@@ -2183,7 +2212,8 @@ async function loadReportData() {
             supplier_id: supplierIds.join(','),
             user_id: userIds.join(','),
             cliente_id: clientIds.join(','),
-            etapa_id: etapaIds.join(','),
+            etapa_id: combinedEtapaIds.join(','),
+            status_id: statusPropostaIds.join(','),
             uf: ufIds.join(','),
         };
         const response = await apiCall('get_report_data', { params });

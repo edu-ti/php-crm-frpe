@@ -263,6 +263,34 @@ function handle_update_opportunity($pdo, $data)
 
     $pdo->beginTransaction();
     try {
+        // --- VALIDAÇÃO DE PROPOSTA PARA NEGOCIAÇÃO E FECHADO ---
+        if (isset($data['etapa_id'])) {
+            $stmt_new_stage = $pdo->prepare("SELECT nome FROM etapas_funil WHERE id = ?");
+            $stmt_new_stage->execute([$data['etapa_id']]);
+            $newStageName = strtolower(trim($stmt_new_stage->fetchColumn()));
+
+            $is_negociacao = in_array($newStageName, ['negociação', 'em negociação', 'análise']);
+            $is_fechado = in_array($newStageName, ['fechado', 'contrato', 'homologado', 'empenhado', 'ganho', 'vendido']);
+
+            if ($is_negociacao || $is_fechado) {
+                $check_props = $pdo->prepare("SELECT COUNT(*) as total, SUM(CASE WHEN status = 'Aprovada' THEN 1 ELSE 0 END) as aprovadas FROM propostas WHERE oportunidade_id = ?");
+                $check_props->execute([$data['id']]);
+                $propData = $check_props->fetch(PDO::FETCH_ASSOC);
+                
+                $total_props = (int)$propData['total'];
+                $aprovadas = (int)$propData['aprovadas'];
+
+                if ($is_negociacao && $total_props === 0) {
+                    throw new Exception('Para mover para Negociação, é obrigatório ter pelo menos uma Proposta.');
+                }
+                
+                if ($is_fechado && $aprovadas === 0) {
+                    throw new Exception('Para mover para Fechado/Ganho, é obrigatório ter uma Proposta "Aprovada".');
+                }
+            }
+        }
+        // --- FIM DA VALIDAÇÃO ---
+
         $stmt = $pdo->prepare($sql);
         $success = $stmt->execute([
             $data['titulo'],
@@ -447,6 +475,30 @@ function handle_move_opportunity($pdo, $data)
     if ((in_array($oldStageName, $restricted_stages) || in_array($newStageName, $restricted_stages)) && !in_array($currentRole, $allowed_restricted_roles)) {
         json_response(['success' => false, 'error' => 'Acesso negado: Você não tem permissão para interagir com esta etapa do funil.'], 403);
         return;
+    }
+    
+    // --- VALIDAÇÃO DE PROPOSTA PARA NEGOCIAÇÃO E FECHADO ---
+    $lower_stage = strtolower(trim($newStageName));
+    $is_negociacao = in_array($lower_stage, ['negociação', 'em negociação', 'análise']);
+    $is_fechado = in_array($lower_stage, ['fechado', 'contrato', 'homologado', 'empenhado', 'ganho', 'vendido']);
+
+    if ($is_negociacao || $is_fechado) {
+        $check_props = $pdo->prepare("SELECT COUNT(*) as total, SUM(CASE WHEN status = 'Aprovada' THEN 1 ELSE 0 END) as aprovadas FROM propostas WHERE oportunidade_id = ?");
+        $check_props->execute([$data['opportunityId']]);
+        $propData = $check_props->fetch(PDO::FETCH_ASSOC);
+        
+        $total_props = (int)$propData['total'];
+        $aprovadas = (int)$propData['aprovadas'];
+
+        if ($is_negociacao && $total_props === 0) {
+            json_response(['success' => false, 'error' => 'Ação bloqueada: Para mover para Negociação, é obrigatório ter pelo menos uma Proposta.'], 400);
+            return;
+        }
+        
+        if ($is_fechado && $aprovadas === 0) {
+            json_response(['success' => false, 'error' => 'Ação bloqueada: Para mover para Fechado/Ganho, é obrigatório ter uma Proposta "Aprovada".'], 400);
+            return;
+        }
     }
     // ---------------------------------------
 

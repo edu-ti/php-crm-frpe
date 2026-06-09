@@ -225,7 +225,17 @@ function renderKanbanBoard() {
             return dateB - dateA;
         });
 
-        const stageTotal = opportunitiesInStage.reduce((sum, opp) => sum + parseFloat(opp.valor || 0), 0);
+        const stageTotal = opportunitiesInStage.reduce((sum, opp) => {
+            let oppValue = opp.valor_total || opp.valor || 0;
+            if (appState.proposals && appState.proposals.length > 0) {
+                const propostasOpp = appState.proposals.filter(p => p.oportunidade_id == opp.id);
+                if (propostasOpp.length > 0) {
+                    const aprovada = propostasOpp.find(p => p.status === 'Aprovada');
+                    oppValue = aprovada ? aprovada.valor_total : propostasOpp[0].valor_total;
+                }
+            }
+            return sum + parseFloat(oppValue);
+        }, 0);
 
         let extraCards = '';
         if (stage.nome.toLowerCase() === 'treinamentos' && appState.agendamentos) {
@@ -517,6 +527,16 @@ function createOpportunityCard(opp, stageName = '') {
         dataAtualizacao = `<div class="text-[9px] text-gray-400 mt-0.5" title="Última Atualização"><i class="fas fa-history mr-1"></i>${formatDate(opp.data_atualizacao)}</div>`;
     }
 
+    // Calcular o Valor Total a ser exibido
+    let valorParaMostrar = opp.valor_total || opp.valor || 0;
+    if (appState.proposals && appState.proposals.length > 0) {
+        const propostasOpp = appState.proposals.filter(p => p.oportunidade_id == opp.id);
+        if (propostasOpp.length > 0) {
+            const aprovada = propostasOpp.find(p => p.status === 'Aprovada');
+            valorParaMostrar = aprovada ? aprovada.valor_total : propostasOpp[0].valor_total;
+        }
+    }
+
     return `
          <div class="opportunity-card" draggable="true" data-opp-id="${opp.id}">
              <h4 class="font-bold text-gray-800 text-xs">${opp.titulo}</h4>
@@ -525,7 +545,7 @@ function createOpportunityCard(opp, stageName = '') {
              ${dataCriacao}
              ${dataAtualizacao}
              <div class="mt-2 pt-1.5 border-t border-gray-100 flex justify-between items-center">
-                 <span class="text-sm font-semibold text-indigo-700">${formatCurrency(opp.valor)}</span>
+                 <span class="text-sm font-semibold text-indigo-700">${formatCurrency(valorParaMostrar)}</span>
                  <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-full ${timeAlertClass}">
                      <i class="far fa-clock mr-1"></i>${timeInStage.text}
                  </span>
