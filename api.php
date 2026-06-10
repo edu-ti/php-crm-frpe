@@ -178,6 +178,7 @@ try {
         'create_user' => ['method' => 'POST', 'file' => '/api/handlers/user_handler.php', 'function' => 'handle_create_user'],
         'update_user' => ['method' => 'POST', 'file' => '/api/handlers/user_handler.php', 'function' => 'handle_update_user'],
         'delete_user' => ['method' => 'POST', 'file' => '/api/handlers/user_handler.php', 'function' => 'handle_delete_user'],
+        'change_password' => ['method' => 'POST', 'file' => '/api/handlers/user_handler.php', 'function' => 'handle_change_password'],
 
         // Agenda
         'get_agendamentos' => ['method' => 'GET', 'file' => '/api/handlers/agenda_handler.php', 'function' => 'handle_get_agendamentos'],

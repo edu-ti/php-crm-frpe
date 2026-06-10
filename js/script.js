@@ -2,6 +2,7 @@
 
 import { apiCall } from './api.js';
 import { showToast, showLoading } from './utils.js';
+import { renderModal, closeModal } from './ui.js';
 import { renderDashboardView } from './views/dashboard.js';
 import { renderFunilView } from './views/kanban.js';
 import { renderClientsView } from './views/clients.js';
@@ -269,6 +270,7 @@ function renderUI() {
                                 </div>
                             </button>
                             <div id="user-menu-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 hidden">
+                                <a href="#" id="change-password-btn" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Alterar Senha</a>
                                 <a href="#" id="logout-btn" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sair</a>
                             </div>
                         </div>
@@ -321,6 +323,15 @@ function renderUI() {
 function addGlobalEventListeners() {
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) logoutBtn.addEventListener('click', logout);
+
+    const changePasswordBtn = document.getElementById('change-password-btn');
+    if (changePasswordBtn) {
+        changePasswordBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('user-menu-dropdown')?.classList.add('hidden');
+            openChangePasswordModal();
+        });
+    }
 
     const refreshBtn = document.getElementById('refresh-data-btn');
     if (refreshBtn) refreshBtn.addEventListener('click', () => {
@@ -397,4 +408,45 @@ async function logout() {
     } finally {
         window.location.href = 'login.html'; // Redireciona para login.html
     }
+}
+
+function openChangePasswordModal() {
+    const title = 'Alterar Senha';
+    const content = `
+        <form id="change-password-form">
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label">Senha Atual*</label>
+                    <input type="password" name="senha_atual" required class="form-input">
+                </div>
+                <div>
+                    <label class="form-label">Nova Senha*</label>
+                    <input type="password" name="nova_senha" required class="form-input">
+                </div>
+                <div>
+                    <label class="form-label">Confirmar Nova Senha*</label>
+                    <input type="password" name="confirmar_senha" required class="form-input">
+                </div>
+            </div>
+        </form>
+    `;
+
+    renderModal(title, content, async (form) => {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        if (data.nova_senha !== data.confirmar_senha) {
+            showToast('As senhas não coincidem.', 'error');
+            return;
+        }
+
+        try {
+            await apiCall('change_password', { method: 'POST', body: JSON.stringify(data) });
+            showToast('Senha alterada com sucesso!');
+            closeModal();
+        } catch (error) {
+            console.error(error);
+            showToast(error.message || 'Erro ao alterar senha.', 'error');
+        }
+    });
 }

@@ -119,3 +119,30 @@ function handle_delete_user($pdo, $data)
     }
 }
 
+function handle_change_password($pdo, $data)
+{
+    if (empty($data['senha_atual']) || empty($data['nova_senha'])) {
+        json_response(['success' => false, 'error' => 'A senha atual e a nova senha são obrigatórias.'], 400);
+    }
+
+    $user_id = $_SESSION['user_id'];
+
+    $stmt = $pdo->prepare("SELECT senha FROM usuarios WHERE id = ?");
+    $stmt->execute([$user_id]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$user || !password_verify($data['senha_atual'], $user['senha'])) {
+        json_response(['success' => false, 'error' => 'Senha atual incorreta.'], 401);
+    }
+
+    $hashed_password = hashPassword($data['nova_senha']);
+
+    $stmt_update = $pdo->prepare("UPDATE usuarios SET senha = ? WHERE id = ?");
+    $success = $stmt_update->execute([$hashed_password, $user_id]);
+
+    if ($success) {
+        json_response(['success' => true, 'message' => 'Senha alterada com sucesso.']);
+    } else {
+        json_response(['success' => false, 'error' => 'Falha ao alterar senha.'], 500);
+    }
+}
