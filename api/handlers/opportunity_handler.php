@@ -525,6 +525,26 @@ function handle_move_opportunity($pdo, $data)
         }
         // --- FIM DA SINCRONIZAÇÃO DE VOLTA PARA A PROPOSTA ---
 
+        // --- ADICIONA HISTÓRICO DE MUDANÇA DE FASE ---
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `oportunidade_historico` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `oportunidade_id` int(11) NOT NULL,
+              `usuario_id` int(11) NOT NULL,
+              `tipo` varchar(50) NOT NULL DEFAULT 'nota',
+              `descricao` text NOT NULL,
+              `data_criacao` timestamp NOT NULL DEFAULT current_timestamp(),
+              PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+
+            $desc_historico = "Movido da etapa '{$oldStageName}' para '{$newStageName}'.";
+            $stmt_hist = $pdo->prepare("INSERT INTO oportunidade_historico (oportunidade_id, usuario_id, tipo, descricao) VALUES (?, ?, 'mudanca_fase', ?)");
+            $stmt_hist->execute([$data['opportunityId'], $_SESSION['user_id'], $desc_historico]);
+        } catch (Exception $e) {
+            // Ignora erros de histórico
+        }
+        // --- FIM HISTÓRICO ---
+
         json_response(['success' => true]);
     } elseif ($success) {
         json_response(['success' => true, 'message' => 'Nenhuma alteração necessária.']);
@@ -703,5 +723,66 @@ function handle_migrate_db_opps($pdo, $data)
         echo "Erro tipo: " . $e->getMessage() . "<br>";
     }
     exit;
+}
+
+function handle_get_opportunity_history($pdo, $data) {
+    if (empty($data['id'])) {
+        json_response(['success' => false, 'error' => 'ID da oportunidade não fornecido.'], 400);
+    }
+
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `oportunidade_historico` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `oportunidade_id` int(11) NOT NULL,
+          `usuario_id` int(11) NOT NULL,
+          `tipo` varchar(50) NOT NULL DEFAULT 'nota',
+          `descricao` text NOT NULL,
+          `data_criacao` timestamp NOT NULL DEFAULT current_timestamp(),
+          PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+
+        $stmt = $pdo->prepare("
+            SELECT h.*, u.nome as usuario_nome
+            FROM oportunidade_historico h
+            JOIN usuarios u ON h.usuario_id = u.id
+            WHERE h.oportunidade_id = ?
+            ORDER BY h.data_criacao DESC
+        ");
+        $stmt->execute([$data['id']]);
+        $historico = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        json_response(['success' => true, 'historico' => $historico]);
+    } catch (Exception $e) {
+        json_response(['success' => false, 'error' => 'Falha ao buscar histórico.', 'details' => $e->getMessage()], 500);
+    }
+}
+
+function handle_add_opportunity_note($pdo, $data) {
+    if (empty($data['oportunidade_id']) || empty($data['descricao'])) {
+        json_response(['success' => false, 'error' => 'Oportunidade e descrição são obrigatórias.'], 400);
+    }
+
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `oportunidade_historico` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `oportunidade_id` int(11) NOT NULL,
+          `usuario_id` int(11) NOT NULL,
+          `tipo` varchar(50) NOT NULL DEFAULT 'nota',
+          `descricao` text NOT NULL,
+          `data_criacao` timestamp NOT NULL DEFAULT current_timestamp(),
+          PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;");
+
+        $stmt = $pdo->prepare("INSERT INTO oportunidade_historico (oportunidade_id, usuario_id, tipo, descricao) VALUES (?, ?, 'nota', ?)");
+        $success = $stmt->execute([$data['oportunidade_id'], $_SESSION['user_id'], trim($data['descricao'])]);
+
+        if ($success) {
+            json_response(['success' => true]);
+        } else {
+            json_response(['success' => false, 'error' => 'Falha ao adicionar nota.'], 500);
+        }
+    } catch (Exception $e) {
+        json_response(['success' => false, 'error' => 'Erro ao salvar nota.', 'details' => $e->getMessage()], 500);
+    }
 }
 ?>

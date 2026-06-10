@@ -124,6 +124,8 @@ try {
         'move_opportunity' => ['method' => 'POST', 'file' => '/api/handlers/opportunity_handler.php', 'function' => 'handle_move_opportunity'],
         'get_opportunity_details' => ['method' => 'GET', 'file' => '/api/handlers/opportunity_handler.php', 'function' => 'handle_get_opportunity_details'],
         'transfer_opportunity' => ['method' => 'POST', 'file' => '/api/handlers/opportunity_handler.php', 'function' => 'handle_transfer_opportunity'],
+        'get_opportunity_history' => ['method' => 'GET', 'file' => '/api/handlers/opportunity_handler.php', 'function' => 'handle_get_opportunity_history'],
+        'add_opportunity_note' => ['method' => 'POST', 'file' => '/api/handlers/opportunity_handler.php', 'function' => 'handle_add_opportunity_note'],
 
         // Organizações
         'create_organization' => ['method' => 'POST', 'file' => '/api/handlers/organization_handler.php', 'function' => 'handle_create_organization'],

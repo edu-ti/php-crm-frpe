@@ -1176,6 +1176,20 @@ function renderOpportunityModal(opportunity = null) {
              <div class="${appState.funilView.activeTab === 'licitacoes' ? 'hidden' : ''}">
                  <div><label class="form-label">Mensagem/Notas Gerais</label><textarea name="notas" rows="3" class="form-input" ${isDisabled}>${data.notas || ''}</textarea></div>
              </div>
+             
+             <!-- --- SEÇÃO DE HISTÓRICO E NOTAS (NOVO) --- -->
+             ${isEditing ? `
+             <div class="border-t pt-4 mt-4" id="opportunity-history-section">
+                 <h4 class="font-bold text-gray-800 text-sm mb-2"><i class="fas fa-history mr-2"></i>Histórico e Anotações</h4>
+                 <div class="flex gap-2 mb-3">
+                     <textarea id="new-note-text" class="form-input flex-1" rows="2" placeholder="Adicionar nova atualização de andamento..."></textarea>
+                     <button type="button" class="btn btn-primary whitespace-nowrap" onclick="window.addOpportunityNote(${data.id})">Salvar Nota</button>
+                 </div>
+                 <div id="opportunity-history-list" class="space-y-2 max-h-60 overflow-y-auto pr-2">
+                     <div class="text-center text-gray-500 text-xs py-4">Carregando histórico...</div>
+                 </div>
+             </div>
+             ` : ''}
 
          </form>
      `;
@@ -1280,6 +1294,11 @@ function renderOpportunityModal(opportunity = null) {
 
     // Renderiza a secção de itens com os dados carregados
     renderOpportunityItemsSection(canEdit);
+
+    // Carrega o histórico se estiver editando
+    if (isEditing) {
+        window.fetchAndRenderOpportunityHistory(data.id);
+    }
 }
 
 // --- NOVA FUNÇÃO: Lógica de seleção Cliente/Contato (extraída) ---
@@ -1998,3 +2017,64 @@ function openVendaFornecedorModal(vendaData) {
     });
     calculateTotal(); // Calcula valor inicial
 }
+
+// --- ADIÇÃO: Funções para Histórico e Notas ---
+window.fetchAndRenderOpportunityHistory = async function(oppId) {
+    const listContainer = document.getElementById('opportunity-history-list');
+    if (!listContainer) return;
+
+    try {
+        const result = await apiCall('get_opportunity_history', { params: { id: oppId } });
+        if (result.success && result.historico) {
+            if (result.historico.length === 0) {
+                listContainer.innerHTML = '<div class="text-center text-gray-500 text-xs py-4">Nenhuma anotação ou histórico encontrado.</div>';
+                return;
+            }
+
+            listContainer.innerHTML = result.historico.map(h => {
+                const isSystem = h.tipo !== 'nota';
+                const icon = isSystem ? 'fas fa-info-circle text-blue-500' : 'fas fa-comment-dots text-gray-400';
+                return `
+                    <div class="bg-gray-50 p-2 rounded border text-xs">
+                        <div class="flex justify-between items-center mb-1 border-b pb-1">
+                            <span class="font-semibold text-gray-700"><i class="${icon} mr-1"></i>${h.usuario_nome}</span>
+                            <span class="text-[10px] text-gray-500">${formatDate(h.data_criacao)} ${new Date(h.data_criacao).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <div class="text-gray-800 whitespace-pre-wrap">${h.descricao}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (e) {
+        console.error("Erro ao carregar histórico", e);
+        listContainer.innerHTML = '<div class="text-center text-red-500 text-xs py-4">Erro ao carregar histórico.</div>';
+    }
+};
+
+window.addOpportunityNote = async function(oppId) {
+    const textarea = document.getElementById('new-note-text');
+    const noteText = textarea ? textarea.value.trim() : '';
+
+    if (!noteText) {
+        showToast('Digite uma anotação primeiro.', 'warning');
+        return;
+    }
+
+    try {
+        const result = await apiCall('add_opportunity_note', {
+            method: 'POST',
+            body: JSON.stringify({ oportunidade_id: oppId, descricao: noteText })
+        });
+
+        if (result.success) {
+            textarea.value = ''; // Limpa o campo
+            window.fetchAndRenderOpportunityHistory(oppId); // Atualiza a lista
+            showToast('Anotação salva com sucesso!');
+        } else {
+            showToast(result.error || 'Erro ao salvar anotação.', 'error');
+        }
+    } catch (e) {
+        console.error("Erro ao salvar nota:", e);
+        showToast('Erro de comunicação ao salvar anotação.', 'error');
+    }
+};
