@@ -1,0 +1,78 @@
+openapi: 3.0.0
+info:
+  title: CRM FRPE API
+  description: Especificação OpenAPI consolidada dos endpoints do projeto legado CRM-FRPE extraída por engenharia reversa.
+  version: 1.0.0
+servers:
+  - url: /
+paths:
+  /?endpoint=auth&action=login:
+    post:
+      summary: Realiza o login do usuário
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                senha:
+                  type: string
+      responses:
+        '200':
+          description: Login com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+  /?endpoint=opportunity&action=create:
+    post:
+      summary: Cria uma nova oportunidade
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lead_id:
+                  type: integer
+                valor:
+                  type: number
+      responses:
+        '201':
+          description: Oportunidade criada
+  /?endpoint=proposal&action=update_status:
+    put:
+      summary: Atualiza status da proposta (Aprova)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                novo_status:
+                  type: string
+      responses:
+        '200':
+          description: Proposta aprovada e financeiro provisionado
+  /?endpoint=report&action=dashboard_financeiro:
+    get:
+      summary: Retorna KPIs financeiros agregados
+      parameters:
+        - in: query
+          name: mes
+          schema:
+            type: integer
+        - in: query
+          name: ano
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: KPIs Dashboard

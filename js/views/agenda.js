@@ -77,6 +77,12 @@ function addAgendaEventListeners() {
                 console.error("Agendamento não encontrado no estado:", agendamentoId);
                 showToast("Erro: Agendamento não encontrado.", "error");
             }
+        } else if (target.closest('.prospeccao-event-item')) {
+            const vendaId = target.closest('.prospeccao-event-item').dataset.id;
+            const prosp = appState.vendasFornecedores.find(v => v.id == vendaId);
+            if (prosp && window.openVendaFornecedorModal) {
+                window.openVendaFornecedorModal(prosp);
+            }
         }
     });
 
@@ -123,6 +129,10 @@ function renderCalendar(month, year) {
             .filter(ag => ag.data_inicio && ag.data_inicio.startsWith(dateStr))
             .sort((a, b) => (a.data_inicio > b.data_inicio) ? 1 : -1); // Ordena por hora
 
+        // Adiciona prospecções no calendário também
+        const prospecceosDoDia = (appState.vendasFornecedores || [])
+            .filter(p => p.data_venda && p.data_venda.startsWith(dateStr));
+
         let agendamentosHtml = agendamentosDoDia.map(ag => {
             // Extrai a hora
             let hora = '??:??';
@@ -140,12 +150,20 @@ function renderCalendar(month, year) {
             // ** FIM DA ALTERAÇÃO **
         }).join('');
 
+        let prospecceosHtml = prospecceosDoDia.map(p => {
+            return `
+            <div class="text-xs p-1 mt-1 rounded-md bg-indigo-100 text-indigo-800 truncate cursor-pointer prospeccao-event-item hover:bg-indigo-200" data-id="${p.id}" title="${p.titulo} (Prospecção)">
+                <i class="fas fa-bullseye text-[6px] mr-1"></i>Prospecção - ${p.titulo}
+            </div>`;
+        }).join('');
+
         const isToday = day === todayDate; // Verifica se é o dia de hoje (apenas se for o mês/ano atual)
         dayCellsHtml += `
             <div class="bg-white p-1 border-t border-gray-200 min-h-[100px] flex flex-col overflow-hidden relative">
                  <div class="text-right text-xs font-semibold ${isToday ? 'bg-indigo-600 text-white rounded-full w-5 h-5 flex items-center justify-center ml-auto' : ''}">${day}</div>
                  <div class="flex-grow overflow-y-auto text-left space-y-1"> <!-- Permite scroll interno --!>
                     ${agendamentosHtml}
+                    ${prospecceosHtml}
                  </div>
             </div>`;
     }

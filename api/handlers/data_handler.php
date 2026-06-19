@@ -174,7 +174,7 @@ function handle_get_data($pdo)
              pf.nome as cliente_pf_nome,
              u.nome as usuario_nome
          FROM vendas_fornecedores vf
-         JOIN fornecedores f ON vf.fornecedor_id = f.id
+         LEFT JOIN fornecedores f ON vf.fornecedor_id = f.id
          LEFT JOIN organizacoes o ON vf.organizacao_id = o.id
          LEFT JOIN clientes_pf pf ON vf.cliente_pf_id = pf.id
          JOIN usuarios u ON vf.usuario_id = u.id
@@ -398,15 +398,23 @@ function handle_get_stats($pdo)
 
 function handle_create_venda_fornecedor($pdo, $data)
 {
-    if (empty($data['titulo']) || empty($data['data_venda']) || empty($data['fornecedor_id'])) {
+    if (empty($data['titulo']) || empty($data['data_venda'])) {
         json_response(['success' => false, 'error' => 'Campos obrigatórios ausentes.'], 400);
         return; // Adiciona return
     }
 
-    $sql = "INSERT INTO vendas_fornecedores (fornecedor_id, organizacao_id, usuario_id, titulo, data_venda, origem, descricao_produto, fabricante_marca, modelo, quantidade, valor_unitario, valor_total, notas, cliente_pf_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // Adicionado cliente_pf_id
+    try {
+        $pdo->exec("ALTER TABLE vendas_fornecedores ADD COLUMN etapa_id INT NULL");
+    } catch (Exception $e) {}
+
+    try {
+        $pdo->exec("ALTER TABLE vendas_fornecedores MODIFY fornecedor_id INT NULL");
+    } catch (Exception $e) {}
+
+    $sql = "INSERT INTO vendas_fornecedores (fornecedor_id, organizacao_id, usuario_id, titulo, data_venda, origem, descricao_produto, fabricante_marca, modelo, quantidade, valor_unitario, valor_total, notas, cliente_pf_id, etapa_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"; // Adicionado etapa_id
     $stmt = $pdo->prepare($sql);
     $success = $stmt->execute([
-        $data['fornecedor_id'],
+        empty($data['fornecedor_id']) ? null : $data['fornecedor_id'],
         $data['organizacao_id'] ?? null,
         $_SESSION['user_id'],
         $data['titulo'],
@@ -419,7 +427,8 @@ function handle_create_venda_fornecedor($pdo, $data)
         $data['valor_unitario'] ?? 0.00,
         $data['valor_total'] ?? 0.00,
         $data['notas'] ?? null,
-        $data['cliente_pf_id'] ?? null // Adicionado cliente_pf_id
+        $data['cliente_pf_id'] ?? null,
+        empty($data['etapa_id']) ? null : $data['etapa_id']
     ]);
 
     if ($success) {
@@ -433,7 +442,7 @@ function handle_create_venda_fornecedor($pdo, $data)
                  pf.nome as cliente_pf_nome, -- Adicionado
                  u.nome as usuario_nome
              FROM vendas_fornecedores vf
-             JOIN fornecedores f ON vf.fornecedor_id = f.id
+             LEFT JOIN fornecedores f ON vf.fornecedor_id = f.id
              LEFT JOIN organizacoes o ON vf.organizacao_id = o.id
              LEFT JOIN clientes_pf pf ON vf.cliente_pf_id = pf.id -- Adicionado
              JOIN usuarios u ON vf.usuario_id = u.id
@@ -449,30 +458,23 @@ function handle_create_venda_fornecedor($pdo, $data)
 
 function handle_update_venda_fornecedor($pdo, $data)
 {
-    if (empty($data['id']) || empty($data['titulo']) || empty($data['data_venda']) || empty($data['fornecedor_id'])) {
+    if (empty($data['id']) || empty($data['titulo']) || empty($data['data_venda'])) {
         json_response(['success' => false, 'error' => 'ID e outros campos obrigatórios ausentes para atualização.'], 400);
         return;
     }
 
-    $sql = "UPDATE vendas_fornecedores SET
-                 fornecedor_id = ?,
-                 organizacao_id = ?,
-                 titulo = ?,
-                 data_venda = ?,
-                 origem = ?,
-                 descricao_produto = ?,
-                 fabricante_marca = ?,
-                 modelo = ?,
-                 quantidade = ?,
-                 valor_unitario = ?,
-                 valor_total = ?,
-                 notas = ?,
-                 cliente_pf_id = ?
-             WHERE id = ?";
+    try {
+        $pdo->exec("ALTER TABLE vendas_fornecedores ADD COLUMN etapa_id INT NULL");
+    } catch (Exception $e) {}
 
+    try {
+        $pdo->exec("ALTER TABLE vendas_fornecedores MODIFY fornecedor_id INT NULL");
+    } catch (Exception $e) {}
+
+    $sql = "UPDATE vendas_fornecedores SET fornecedor_id = ?, organizacao_id = ?, titulo = ?, data_venda = ?, origem = ?, descricao_produto = ?, fabricante_marca = ?, modelo = ?, quantidade = ?, valor_unitario = ?, valor_total = ?, notas = ?, cliente_pf_id = ?, etapa_id = ? WHERE id = ? AND usuario_id = ?";
     $stmt = $pdo->prepare($sql);
     $success = $stmt->execute([
-        $data['fornecedor_id'],
+        empty($data['fornecedor_id']) ? null : $data['fornecedor_id'],
         $data['organizacao_id'] ?? null,
         $data['titulo'],
         $data['data_venda'],
@@ -484,8 +486,10 @@ function handle_update_venda_fornecedor($pdo, $data)
         $data['valor_unitario'] ?? 0.00,
         $data['valor_total'] ?? 0.00,
         $data['notas'] ?? null,
-        $data['cliente_pf_id'] ?? null, // Adicionado
-        $data['id']
+        $data['cliente_pf_id'] ?? null,
+        empty($data['etapa_id']) ? null : $data['etapa_id'],
+        $data['id'],
+        $_SESSION['user_id']
     ]);
 
     if ($success) {
@@ -498,7 +502,7 @@ function handle_update_venda_fornecedor($pdo, $data)
                  pf.nome as cliente_pf_nome, -- Adicionado
                  u.nome as usuario_nome
              FROM vendas_fornecedores vf
-             JOIN fornecedores f ON vf.fornecedor_id = f.id
+             LEFT JOIN fornecedores f ON vf.fornecedor_id = f.id
              LEFT JOIN organizacoes o ON vf.organizacao_id = o.id
              LEFT JOIN clientes_pf pf ON vf.cliente_pf_id = pf.id -- Adicionado
              JOIN usuarios u ON vf.usuario_id = u.id
@@ -529,5 +533,66 @@ function handle_delete_venda_fornecedor($pdo, $data)
     } else {
         json_response(['success' => false, 'error' => 'Falha ao excluir a venda.'], 500);
     }
+}
+
+function handle_add_venda_fornecedor_note($pdo, $data) {
+    if (empty($data['venda_fornecedor_id']) || empty($data['descricao'])) {
+        json_response(['success' => false, 'error' => 'ID da venda e descrição são obrigatórios.'], 400);
+        return;
+    }
+    
+    // Auto-create table if needed
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS historico_vendas_fornecedores (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                venda_fornecedor_id INT NOT NULL,
+                usuario_id INT NOT NULL,
+                tipo ENUM('criacao', 'atualizacao', 'mudanca_etapa', 'nota') NOT NULL,
+                descricao TEXT NOT NULL,
+                data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (venda_fornecedor_id) REFERENCES vendas_fornecedores(id) ON DELETE CASCADE,
+                FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+    } catch (Exception $e) {}
+
+    $sql = "INSERT INTO historico_vendas_fornecedores (venda_fornecedor_id, usuario_id, tipo, descricao) VALUES (?, ?, 'nota', ?)";
+    $stmt = $pdo->prepare($sql);
+    $success = $stmt->execute([$data['venda_fornecedor_id'], $_SESSION['user_id'], $data['descricao']]);
+    if ($success) {
+        json_response(['success' => true]);
+    } else {
+        json_response(['success' => false, 'error' => 'Falha ao salvar anotação.'], 500);
+    }
+}
+
+function handle_get_venda_fornecedor_history($pdo, $data) {
+    if (empty($data['id'])) {
+        json_response(['success' => false, 'error' => 'ID da venda é obrigatório.'], 400);
+        return;
+    }
+    
+    // Auto-create table if needed to avoid errors reading
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS historico_vendas_fornecedores (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                venda_fornecedor_id INT NOT NULL,
+                usuario_id INT NOT NULL,
+                tipo ENUM('criacao', 'atualizacao', 'mudanca_etapa', 'nota') NOT NULL,
+                descricao TEXT NOT NULL,
+                data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (venda_fornecedor_id) REFERENCES vendas_fornecedores(id) ON DELETE CASCADE,
+                FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+    } catch (Exception $e) {}
+
+    $sql = "SELECT h.*, u.nome as usuario_nome FROM historico_vendas_fornecedores h JOIN usuarios u ON h.usuario_id = u.id WHERE h.venda_fornecedor_id = ? ORDER BY h.data_criacao DESC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$data['id']]);
+    $historico = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    json_response(['success' => true, 'historico' => $historico]);
 }
 ?>

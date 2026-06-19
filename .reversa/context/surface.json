@@ -1,0 +1,46 @@
+{
+  "generated_at": "2026-06-15T11:51:00Z",
+  "project_root": "d:/SISTEMAS/php-crm-frpe",
+  "languages": [
+    { "name": "PHP", "extensions": [".php"], "file_count": 30 },
+    { "name": "SQL", "extensions": [".sql"], "file_count": 3 },
+    { "name": "HTML", "extensions": [".html"], "file_count": 2 },
+    { "name": "JavaScript", "extensions": [".js"], "file_count": 5 },
+    { "name": "CSS", "extensions": [".css"], "file_count": 5 }
+  ],
+  "primary_language": "PHP",
+  "frameworks": [
+    { "name": "phpmailer", "version": "^6.8", "source": "composer.json" },
+    { "name": "sendgrid", "version": "^7.0", "source": "composer.json" }
+  ],
+  "package_manager": "composer",
+  "entry_points": [
+    { "path": "index.php", "type": "web_entry" },
+    { "path": "api.php", "type": "api_entry" },
+    { "path": "login.html", "type": "web_entry" },
+    { "path": "register.html", "type": "web_entry" }
+  ],
+  "config_files": [
+    "composer.json", "config.php", ".env.example", ".htaccess"
+  ],
+  "ci_cd": [],
+  "docker": null,
+  "database_hints": [
+    { "path": "sql/", "type": "migrations_dir" },
+    { "path": "banco-de-dados/u540193243_crmfr_db.sql", "type": "sql_dump" }
+  ],
+  "test_framework": null,
+  "test_file_count": 0,
+  "modules": [
+    "auth", "agenda", "client_pf", "contact", "data", "email", "finance", "invoice_parser", "lead", "opportunity", "organization", "product", "proposal", "rbac", "report", "user"
+  ],
+  "total_files": 45,
+  "organization_suggestion": {
+    "granularity": "endpoint",
+    "rationale": "O roteamento é centralizado no arquivo api.php, mapeando actions para arquivos handler específicos.",
+    "signals": [
+      { "type": "centralized_routing", "evidence": ["api.php"] }
+    ],
+    "features": []
+  }
+}

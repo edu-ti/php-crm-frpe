@@ -1536,3 +1536,60 @@ function canEditUnitPrice() {
     const allowedRoles = ['Analista', 'Comercial', 'Gestor', 'Diretor', 'Super Admin', 'Admin'];
     return allowedRoles.includes(role);
 }
+
+// Export function to be used by kanban Agenda Semanal
+export async function openCreateProposalForOpportunity(oppId) {
+    const opp = appState.opportunities.find(o => String(o.id) === String(oppId));
+    if (!opp) {
+        showToast('Oportunidade não encontrada para criar proposta.', 'error');
+        return;
+    }
+    
+    resetProposalState();
+    
+    appState.proposal.oportunidade_id = oppId;
+    appState.proposal.isEditing = false;
+    
+    if (opp.organizacao_id) {
+        appState.proposal.clientType = 'pj';
+        const org = appState.organizations?.find(o => String(o.id) === String(opp.organizacao_id));
+        if (org) {
+            appState.proposal.currentClient = JSON.parse(JSON.stringify(org));
+            if (opp.contato_id) {
+                appState.proposal.currentClient.contact = {
+                    id: opp.contato_id,
+                    nome: opp.contato_nome,
+                    email: opp.contato_email,
+                    telefone: opp.contato_telefone
+                };
+            }
+        }
+    } else if (opp.cliente_pf_id) {
+        appState.proposal.clientType = 'pf';
+        const pf = appState.clients_pf?.find(c => String(c.id) === String(opp.cliente_pf_id));
+        if (pf) {
+            appState.proposal.currentClient = JSON.parse(JSON.stringify(pf));
+        }
+    }
+
+    // Força ir para a view de propostas
+    const sidebarLink = document.querySelector('.sidebar-link[data-view="proposals"]');
+    if (sidebarLink) {
+        sidebarLink.click();
+    } else {
+        // Fallback manually hiding other views
+        document.querySelectorAll('.view-container').forEach(v => v.classList.add('hidden'));
+        const propView = document.getElementById('proposals-view');
+        if (propView) propView.classList.remove('hidden');
+    }
+
+    renderProposalsView();
+    
+    setTimeout(() => {
+        const formContainer = document.getElementById('proposal-form-container');
+        if (formContainer) {
+            formContainer.classList.remove('hidden');
+            formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 100);
+}

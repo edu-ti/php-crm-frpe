@@ -21,10 +21,10 @@ export function renderFunilView() {
 
     // Define 'licitacoes' as a valid tab if not already handled by default state
     // We might need to ensure appState.funilView has a sensible default.
-
-    container.innerHTML = `
+    container.innerHTML = `
         <div class="flex justify-between items-start sm:items-center mb-3 gap-2 flex-shrink-0 responsive-stack"> <!-- Adicionado responsive-stack -->
              <div class="flex items-center space-x-1 overflow-x-auto pb-1 max-w-full">
+                 <button class="funil-tab-btn flex-shrink-0 ${activeTab === 'agenda' ? 'active' : ''}" data-tab="agenda">Agenda da Semana</button>
                  <button class="funil-tab-btn flex-shrink-0 ${activeTab === 'vendas' ? 'active' : ''}" data-tab="vendas">Funil de Vendas</button>
                  <button class="funil-tab-btn flex-shrink-0 ${activeTab === 'fornecedores' ? 'active' : ''}" data-tab="fornecedores">Funil de Fornecedores</button>
                  <button class="funil-tab-btn flex-shrink-0 ${activeTab === 'licitacoes' ? 'active' : ''}" data-tab="licitacoes">Funil Licitações</button>
@@ -38,11 +38,11 @@ export function renderFunilView() {
 
                  ${permissions.canCreate ? `
                   <button id="add-venda-fornecedor-btn" class="btn btn-primary ${activeTab === 'vendas' || activeTab === 'licitacoes' ? 'hidden' : ''}">
-                     <i class="fas fa-plus mr-2"></i><span>Cadastrar Venda</span>
+                     <i class="fas fa-plus mr-2"></i><span>Cadastrar Prospecção</span>
                  </button>
                  ` : ''}
              </div>
-         </div>
+         </div> </div>
           <!-- Container para Cabeçalho de Fornecedores -->
          <div id="fornecedores-header-container" class="bg-white p-2 rounded-lg shadow-sm border mb-3 flex-shrink-0 ${activeTab !== 'fornecedores' ? 'hidden' : ''}"></div>
          
@@ -51,6 +51,9 @@ export function renderFunilView() {
 
          <!-- Container para Filtros de Pesquisa do Funil de Vendas -->
          <div id="vendas-search-header-container" class="bg-white p-2 rounded-lg shadow-sm border mb-3 flex-shrink-0 ${activeTab !== 'vendas' ? 'hidden' : ''}"></div>
+
+         <!-- Container para Cabeçalho de Agenda -->
+         <div id="agenda-header-container" class="bg-white p-2 rounded-lg shadow-sm border mb-3 flex-shrink-0 ${activeTab !== 'agenda' ? 'hidden' : ''}"></div>
 
          <!-- --- ALTERAÇÃO: Adicionado container para scroll --- -->
          <div id="funil-content-container" class="kanban-scroll-container">
@@ -77,6 +80,9 @@ export function renderFunilView() {
     } else if (activeTab === 'licitacoes') {
         renderLicitacoesHeader(); // Renderiza o cabeçalho novo
         renderKanbanBoard();
+    } else if (activeTab === 'agenda') {
+        renderAgendaSemanalHeader();
+        renderAgendaSemanalBoard();
     } else {
         renderFornecedoresView(); // Fornecedores também usam a estrutura Kanban agora
     }
@@ -237,6 +243,8 @@ function renderKanbanBoard() {
             return sum + parseFloat(oppValue);
         }, 0);
 
+        const finalStageTotal = stageTotal;
+
         let extraCards = '';
         if (stage.nome.toLowerCase() === 'treinamentos' && appState.agendamentos) {
             const treinamentos = appState.agendamentos.filter(ag => ag.tipo === 'Treinamento');
@@ -253,24 +261,27 @@ function renderKanbanBoard() {
             extraClass = ' restricted-stage';
         }
 
+        const countTotalCards = opportunitiesInStage.length;
+
         const column = document.createElement('div');
-        column.className = 'kanban-column flex flex-col' + extraClass;
+        column.className = 'kanban-column flex flex-col min-w-[300px] snap-center' + extraClass;
         column.dataset.stageId = stage.id;
         column.dataset.isRestricted = isRestrictedColumn ? 'true' : 'false';
         column.dataset.stageName = stage.nome;
 
         column.innerHTML = `
-             <div class="kanban-column-header">
+             <div class="kanban-column-header mb-2 bg-gray-50 p-2 rounded shadow-sm border">
                  <div class="flex justify-between items-center">
-                     <h3 class="font-semibold text-sm text-gray-700">${stage.nome} ${isRestrictedColumn ? '<i class="fas fa-lock ml-1 text-xs" title="Somente Leitura"></i>' : ''}</h3>
-                     <span class="font-bold text-xs text-gray-800">${formatCurrency(stageTotal)}</span>
+                     <h3 class="font-bold text-gray-700 truncate" title="${stage.nome}">${stage.nome} ${isRestrictedColumn ? '<i class="fas fa-lock ml-1 text-xs" title="Somente Leitura"></i>' : ''}</h3>
+                     <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap">${countTotalCards}</span>
                  </div>
+                 <div class="text-xs text-gray-500 mt-1 font-semibold">${formatCurrency(finalStageTotal)}</div>
              </div>
-             <div class="stage-cards">
+             <div class="stage-cards overflow-y-auto flex-1 min-h-[100px] p-1 kanban-scroll-area" data-stage-id="${stage.id}">
+                 ${opportunitiesInStage.map(opp => createOpportunityCard(opp)).join('')}
                  ${extraCards}
-                 ${opportunitiesInStage.map(opp => createOpportunityCard(opp, stage.nome)).join('') || (extraCards === '' ? '<div class="p-4 text-center text-xs text-gray-400">Nenhuma oportunidade.</div>' : '')}
              </div>
-         `;
+        `;
         board.appendChild(column);
     });
 
@@ -558,6 +569,27 @@ function createOpportunityCard(opp, stageName = '') {
      `;
 }
 
+function createProspeccaoOpportunityCard(prosp) {
+    let uploadBtn = ''; // Not needed for prospecção here
+    const clientName = prosp.organizacao_nome || prosp.cliente_pf_nome || 'Cliente não definido';
+    const totalValue = prosp.valor_total || 0;
+
+    return `
+         <div class="kanban-card prospeccao-card mb-2 bg-purple-50 p-2 rounded shadow-sm border border-purple-200 cursor-pointer hover:shadow-md transition-shadow" data-id="${prosp.id}">
+             <div class="flex justify-between items-start mb-1">
+                 <h4 class="font-bold text-purple-900 text-xs truncate" title="${prosp.titulo}"><i class="fas fa-bullseye text-purple-500 mr-1"></i> ${prosp.titulo}</h4>
+                 <span class="text-[9px] bg-purple-200 text-purple-800 px-1 py-0.5 rounded ml-1 whitespace-nowrap">Prospecção</span>
+             </div>
+             <p class="text-[10px] text-purple-700 mt-0.5 truncate" title="${clientName}"><i class="far fa-building mr-1"></i>${clientName}</p>
+             
+             <div class="mt-2 pt-1.5 border-t border-purple-200 flex justify-between items-center">
+                 <span class="text-xs font-semibold text-purple-900">${formatCurrency(totalValue)}</span>
+                 <span class="text-[9px] text-purple-600">${prosp.vendedor_nome || ''}</span>
+             </div>
+         </div>
+     `;
+}
+
 function addKanbanEventListeners() {
     const { permissions } = appState.currentUser;
     const cards = document.querySelectorAll('#funil-inner-container .opportunity-card');
@@ -608,6 +640,18 @@ function addKanbanEventListeners() {
             if (agendamento) {
                 openTrainingDetailsModal(agendamento);
             }
+        });
+    });
+
+    const prospeccaoCards = document.querySelectorAll('#funil-inner-container .prospeccao-card');
+    prospeccaoCards.forEach(card => {
+        card.replaceWith(card.cloneNode(true));
+    });
+    document.querySelectorAll('#funil-inner-container .prospeccao-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            const id = card.dataset.id;
+            const prosp = appState.vendasFornecedores.find(p => p.id == id);
+            if (prosp) openVendaFornecedorModal(prosp);
         });
     });
 }
@@ -895,6 +939,12 @@ function renderFornecedoresGrid() {
 
     const vendasFiltered = vendasFornecedores.filter(venda => {
         if (!venda.data_venda) return false;
+        
+        // --- CORREÇÃO DE BUG ---
+        // Se a venda não tem fornecedor_id, ela é uma "Prospecção", 
+        // e não deve NUNCA aparecer no Funil de Fornecedores.
+        if (!venda.fornecedor_id) return false;
+
         // Considera a data como UTC para evitar problemas de fuso horário na comparação
         const vendaDate = new Date(venda.data_venda + 'T00:00:00Z');
         const vendaYear = vendaDate.getUTCFullYear();
@@ -1844,10 +1894,11 @@ async function handleOpportunityFormSubmit(form) {
 
 
 // Funções de Fornecedores
-function openVendaFornecedorModal(vendaData) {
+window.openVendaFornecedorModal = openVendaFornecedorModal;
+export function openVendaFornecedorModal(vendaData) {
     const isEditing = !!vendaData;
     const data = vendaData || {};
-    const title = isEditing ? 'Editar Venda Fornecedor' : 'Cadastrar Venda';
+    const title = 'Cadastro de Prospecção'; // O usuário pediu que o título seja este, mesmo para edição
     const { permissions } = appState.currentUser;
 
     const fornecedorOptions = appState.fornecedores.map(f => `<option value="${f.id}" ${data.fornecedor_id == f.id ? 'selected' : ''}>${f.nome}</option>`).join('');
@@ -1869,7 +1920,6 @@ function openVendaFornecedorModal(vendaData) {
               <input type="hidden" name="id" value="${data.id || ''}">
               <div><label class="form-label">Data*</label><input type="date" name="data_venda" required value="${data.data_venda || new Date().toISOString().split('T')[0]}" class="form-input"></div>
               <div><label class="form-label">Título*</label><input type="text" name="titulo" required value="${data.titulo || ''}" class="form-input"></div>
-              <div><label class="form-label">Fornecedor*</label><select name="fornecedor_id" required class="form-input"><option value="">Selecione...</option>${fornecedorOptions}</select></div>
               
               <!-- *** ALTERAÇÃO: Select combinado para Cliente *** -->
               <div>
@@ -1898,6 +1948,29 @@ function openVendaFornecedorModal(vendaData) {
               </div>
               <div><label class="form-label">Valor Total (R$)</label><input type="text" name="valor_total" value="${formatCurrencyForInput(data.valor_total)}" readonly class="form-input bg-gray-100 font-bold"></div>
               <div><label class="form-label">Notas</label><textarea name="notas" rows="3" class="form-input">${data.notas || ''}</textarea></div>
+              ${isEditing ? `
+              <div class="mt-4 p-4 border rounded bg-gray-50">
+                  <label class="form-label font-bold text-gray-700">Etapa do Funil de Vendas</label>
+                  <select name="etapa_id" class="form-input">
+                      <option value="">Selecione a etapa para mover esta prospecção...</option>
+                      ${appState.stages.filter(s => s.funil_id == 1 || !s.funil_id).map(s => `<option value="${s.id}" ${data.etapa_id == s.id ? 'selected' : ''}>${s.nome}</option>`).join('')}
+                  </select>
+                  <p class="text-xs text-gray-500 mt-1">Ao selecionar uma etapa, esta prospecção será atualizada com o progresso no funil.</p>
+              </div>
+              
+              <div class="mt-6 pt-4 border-t">
+                  <h3 class="text-sm font-semibold text-gray-700 mb-2"><i class="fas fa-history mr-2"></i>Histórico e Anotações</h3>
+                  <div class="mb-3">
+                      <textarea id="new-venda-note-text" rows="2" class="form-input text-sm" placeholder="Adicionar nova atualização de andamento..."></textarea>
+                      <div class="flex justify-end mt-2">
+                          <button type="button" class="btn btn-primary btn-sm" onclick="event.preventDefault(); window.addVendaFornecedorNote(${data.id})">Salvar Nota</button>
+                      </div>
+                  </div>
+                  <div id="venda-history-list" class="space-y-2 max-h-48 overflow-y-auto">
+                      <div class="text-center text-gray-500 text-xs py-4">Carregando histórico...</div>
+                  </div>
+              </div>
+              ` : ''}
               ${deleteButtonHtml}
          </form>
      `;
@@ -1926,6 +1999,59 @@ function openVendaFornecedorModal(vendaData) {
         const endpoint = isEditing ? 'update_venda_fornecedor' : 'create_venda_fornecedor';
         const successMessage = isEditing ? 'Venda atualizada!' : 'Venda cadastrada!';
 
+        // *** NOVA LÓGICA DE CONVERSÃO ***
+        // Se o usuário selecionou uma etapa_id na edição, converte para OPORTUNIDADE real!
+        if (isEditing && submissionData.etapa_id) {
+            const oppData = {
+                titulo: submissionData.titulo,
+                organizacao_id: submissionData.organizacao_id,
+                cliente_pf_id: submissionData.cliente_pf_id,
+                valor: submissionData.valor_total,
+                etapa_id: submissionData.etapa_id,
+                origem: submissionData.origem,
+                descricao_produto: submissionData.descricao_produto,
+                notas: submissionData.notas,
+                items: [{
+                    descricao: submissionData.descricao_produto || submissionData.titulo || 'Item da Prospecção',
+                    quantidade: submissionData.quantidade || 1,
+                    valor_unitario: submissionData.valor_total || 0,
+                    fabricante: submissionData.fabricante_marca || '',
+                    modelo: submissionData.modelo || '',
+                    status: 'VENDA'
+                }]
+            };
+            
+            try {
+                // 1. Cria a nova oportunidade
+                const resultOpp = await apiCall('create_opportunity', { method: 'POST', body: JSON.stringify(oppData) });
+                if (resultOpp && resultOpp.opportunity) {
+                    appState.opportunities.push(resultOpp.opportunity);
+                }
+
+                // 2. ATUALIZA a prospecção antiga (mantendo-a na origem para acompanhamento) em vez de apagá-la
+                const resultUpdate = await apiCall('update_venda_fornecedor', { method: 'POST', body: JSON.stringify(submissionData) });
+                if (resultUpdate && resultUpdate.venda_fornecedor) {
+                    const savedVenda = resultUpdate.venda_fornecedor;
+                    const index = appState.vendasFornecedores.findIndex(v => v.id == savedVenda.id);
+                    if (index !== -1) appState.vendasFornecedores[index] = savedVenda;
+                }
+
+                showToast('Prospecção convertida! Uma cópia foi mantida na origem.');
+                
+                if (typeof renderFunilView === 'function') {
+                    renderFunilView(); 
+                } else {
+                    renderFornecedoresView();
+                }
+                closeModal();
+            } catch (err) {
+                console.error("Erro ao converter prospecção:", err);
+                showToast('Erro ao criar oportunidade.', 'error');
+            }
+            return; // Sai da função para não executar o update_venda_fornecedor
+        }
+        // *** FIM DA LÓGICA DE CONVERSÃO ***
+
         try {
             const result = await apiCall(endpoint, { method: 'POST', body: JSON.stringify(submissionData) });
             const savedVenda = result.venda_fornecedor; // Pega o objeto retornado
@@ -1938,7 +2064,14 @@ function openVendaFornecedorModal(vendaData) {
             }
 
             showToast(successMessage);
-            renderFornecedoresView(); // Re-renderiza a view de fornecedores
+            
+            // Re-renderiza a aba atual (seja Agenda, Vendas, Licitações ou Fornecedores)
+            if (typeof renderFunilView === 'function') {
+                renderFunilView(); 
+            } else {
+                renderFornecedoresView();
+            }
+            
             closeModal();
         } catch (error) { }
     }, 'Salvar');
@@ -2016,6 +2149,15 @@ function openVendaFornecedorModal(vendaData) {
         e.target.value = formatCurrencyForInput(parseCurrency(e.target.value));
     });
     calculateTotal(); // Calcula valor inicial
+
+    // Carrega o histórico se estiver editando
+    if (isEditing) {
+        setTimeout(() => {
+            if (window.fetchAndRenderVendaFornecedorHistory) {
+                window.fetchAndRenderVendaFornecedorHistory(data.id);
+            }
+        }, 300);
+    }
 }
 
 // --- ADIÇÃO: Funções para Histórico e Notas ---
@@ -2078,3 +2220,340 @@ window.addOpportunityNote = async function(oppId) {
         showToast('Erro de comunicação ao salvar anotação.', 'error');
     }
 };
+
+window.fetchAndRenderVendaFornecedorHistory = async function(vendaId) {
+    const listContainer = document.getElementById('venda-history-list');
+    if (!listContainer) return;
+
+    try {
+        const result = await apiCall('get_venda_fornecedor_history', { params: { id: vendaId } });
+        if (result.success && result.historico) {
+            if (result.historico.length === 0) {
+                listContainer.innerHTML = '<div class="text-center text-gray-500 text-xs py-4">Nenhuma anotação ou histórico encontrado.</div>';
+                return;
+            }
+
+            listContainer.innerHTML = result.historico.map(h => {
+                const isSystem = h.tipo !== 'nota';
+                const icon = isSystem ? 'fas fa-info-circle text-blue-500' : 'fas fa-comment-dots text-gray-400';
+                return `
+                    <div class="bg-gray-50 p-2 rounded border text-xs">
+                        <div class="flex justify-between items-center mb-1 border-b pb-1">
+                            <span class="font-semibold text-gray-700"><i class="${icon} mr-1"></i>${h.usuario_nome}</span>
+                            <span class="text-[10px] text-gray-500">${formatDate(h.data_criacao)} ${new Date(h.data_criacao).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <div class="text-gray-800 whitespace-pre-wrap">${h.descricao}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (e) {
+        console.error("Erro ao carregar histórico", e);
+        listContainer.innerHTML = '<div class="text-center text-red-500 text-xs py-4">Erro ao carregar histórico.</div>';
+    }
+};
+
+window.addVendaFornecedorNote = async function(vendaId) {
+    const textarea = document.getElementById('new-venda-note-text');
+    const noteText = textarea ? textarea.value.trim() : '';
+
+    if (!noteText) {
+        showToast('Digite uma anotação primeiro.', 'warning');
+        return;
+    }
+
+    try {
+        const result = await apiCall('add_venda_fornecedor_note', {
+            method: 'POST',
+            body: JSON.stringify({ venda_fornecedor_id: vendaId, descricao: noteText })
+        });
+
+        if (result.success) {
+            textarea.value = ''; // Limpa o campo
+            window.fetchAndRenderVendaFornecedorHistory(vendaId); // Atualiza a lista
+            showToast('Anotação salva com sucesso!');
+        } else {
+            showToast(result.error || 'Erro ao salvar anotação.', 'error');
+        }
+    } catch (e) {
+        console.error("Erro ao salvar nota:", e);
+        showToast('Erro de comunicação ao salvar anotação.', 'error');
+    }
+};
+
+// --- AGENDA SEMANAL ---
+function getStartOfWeek(date) {
+    const d = new Date(date);
+    const day = d.getDay(); // 0 is Sunday
+    // if we want Monday to be the first day:
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff));
+}
+
+function renderAgendaSemanalHeader() {
+    const headerContainer = document.getElementById('agenda-header-container');
+    if (!headerContainer) return;
+    
+    if (appState.funilView.agendaWeekOffset === undefined) {
+        appState.funilView.agendaWeekOffset = 0;
+    }
+    
+    const today = new Date();
+    today.setDate(today.getDate() + (appState.funilView.agendaWeekOffset * 7));
+    const startOfWeek = getStartOfWeek(today);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+    headerContainer.classList.remove('hidden');
+    headerContainer.innerHTML = `
+         <div class="flex flex-col md:flex-row items-center gap-4 justify-between w-full">
+            <h3 class="font-bold text-gray-700">Atividades da Semana</h3>
+            <div class="flex items-center space-x-2">
+                <button id="prev-week-agenda-btn" class="btn btn-secondary btn-sm"><i class="fas fa-chevron-left"></i> Semana Anterior</button>
+                <span class="font-medium text-sm text-gray-600 px-2">${startOfWeek.getDate()} ${monthNames[startOfWeek.getMonth()]} - ${endOfWeek.getDate()} ${monthNames[endOfWeek.getMonth()]}</span>
+                <button id="next-week-agenda-btn" class="btn btn-secondary btn-sm">Próxima Semana <i class="fas fa-chevron-right"></i></button>
+                <button id="current-week-agenda-btn" class="btn btn-outline-secondary btn-sm ml-2">Semana Atual</button>
+            </div>
+         </div>
+    `;
+
+    document.getElementById('prev-week-agenda-btn')?.addEventListener('click', () => {
+        appState.funilView.agendaWeekOffset--;
+        renderFunilView();
+    });
+    document.getElementById('next-week-agenda-btn')?.addEventListener('click', () => {
+        appState.funilView.agendaWeekOffset++;
+        renderFunilView();
+    });
+    document.getElementById('current-week-agenda-btn')?.addEventListener('click', () => {
+        appState.funilView.agendaWeekOffset = 0;
+        renderFunilView();
+    });
+}
+
+function renderAgendaSemanalBoard() {
+    const board = document.getElementById('funil-inner-container');
+    if (!board) return;
+    board.innerHTML = '';
+
+    const today = new Date();
+    if (appState.funilView.agendaWeekOffset !== undefined) {
+        today.setDate(today.getDate() + (appState.funilView.agendaWeekOffset * 7));
+    }
+    const startOfWeek = getStartOfWeek(today);
+
+    const daysOfWeek = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+    
+    // Filter agendamentos for current user or all if gestor
+    const { permissions, id: userId, role } = appState.currentUser;
+    const canSeeAll = ['Gestor', 'Administrador'].includes(role) || permissions.isAdmin;
+    
+    let atividades = appState.agendamentos || [];
+    if (!canSeeAll) {
+        atividades = atividades.filter(ag => String(ag.criado_por) === String(userId) || String(ag.para_usuario_id) === String(userId));
+    }
+
+    let prospecceos = appState.vendasFornecedores || [];
+    if (!canSeeAll) {
+        prospecceos = prospecceos.filter(p => String(p.usuario_id) === String(userId));
+    }
+
+    daysOfWeek.forEach((dayName, index) => {
+        const columnDate = new Date(startOfWeek);
+        columnDate.setDate(startOfWeek.getDate() + index);
+        
+        // Formata mantendo o timezone local para YYYY-MM-DD
+        const year = columnDate.getFullYear();
+        const month = String(columnDate.getMonth() + 1).padStart(2, '0');
+        const day = String(columnDate.getDate()).padStart(2, '0');
+        const columnDateString = `${year}-${month}-${day}`;
+        
+        const isToday = new Date().toLocaleDateString('en-CA') === columnDateString; // YYYY-MM-DD
+        
+        // Find activities for this day
+        const dayActivities = atividades.filter(ag => {
+            if (!ag.data_inicio) return false;
+            return ag.data_inicio.split(' ')[0] === columnDateString || ag.data_inicio.split('T')[0] === columnDateString;
+        });
+
+        // Find prospecções for this day
+        const dayProspecceos = prospecceos.filter(p => {
+            if (!p.data_venda) return false;
+            return p.data_venda.split('T')[0] === columnDateString;
+        });
+
+        const column = document.createElement('div');
+        column.className = 'kanban-column flex flex-col ' + (isToday ? 'bg-indigo-50 border-indigo-200 border-2' : '');
+        
+        const combinedHtml = [
+            ...dayActivities.map(ag => createAgendaCard(ag)),
+            ...dayProspecceos.map(p => createProspeccaoAgendaCard(p))
+        ].join('');
+
+        column.innerHTML = `
+             <div class="kanban-column-header">
+                 <div class="flex justify-between items-center">
+                     <h3 class="font-semibold text-sm ${isToday ? 'text-indigo-800 font-bold' : 'text-gray-700'}">${dayName}</h3>
+                     <span class="font-bold text-xs text-gray-500">${columnDate.getDate()}/${columnDate.getMonth()+1}</span>
+                 </div>
+             </div>
+             <div class="stage-cards p-2 overflow-y-auto flex-1">
+                 ${combinedHtml || '<div class="text-center text-xs text-gray-400 mt-4">Nenhuma atividade</div>'}
+             </div>
+        `;
+        board.appendChild(column);
+    });
+
+    // Add listeners to new buttons
+    document.querySelectorAll('.update-funnel-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const agId = e.currentTarget.dataset.id;
+            const oppId = e.currentTarget.dataset.opp;
+            if (oppId && oppId !== 'null') {
+                openUpdateFunnelModal(oppId);
+            } else {
+                showToast('Esta atividade não possui oportunidade vinculada.', 'warn');
+            }
+        });
+    });
+
+    // Add click listeners to Prospecção cards
+    document.querySelectorAll('.prospeccao-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            const id = e.currentTarget.dataset.id;
+            const prosp = appState.vendasFornecedores.find(p => p.id == id);
+            if (prosp) openVendaFornecedorModal(prosp);
+        });
+    });
+}
+
+function createProspeccaoAgendaCard(p) {
+    const clientName = p.organizacao_nome || p.cliente_pf_nome || 'Cliente não informado';
+    return `
+         <div class="prospeccao-card bg-indigo-50 p-3 rounded shadow-sm border border-indigo-200 mb-2 cursor-pointer hover:shadow-md transition" data-id="${p.id}">
+             <h4 class="font-bold text-indigo-800 text-xs">${p.titulo || 'Prospecção'}</h4>
+             <p class="text-[10px] text-gray-500 mt-0.5"><i class="fas fa-bullseye"></i> Prospecção</p>
+             <p class="text-[10px] text-gray-600 mt-0.5 truncate"><i class="fas fa-building mr-1"></i>${clientName}</p>
+             <div class="mt-2 pt-1.5 border-t border-indigo-100 flex justify-between items-center">
+                 <span class="text-sm font-semibold text-indigo-700">${formatCurrency(p.valor_total)}</span>
+             </div>
+         </div>
+    `;
+}
+
+function createAgendaCard(ag) {
+    let displayTime = 'N/A';
+    if (ag.data_inicio) {
+        const parts = ag.data_inicio.split(/[T ]/);
+        if (parts.length > 1) {
+            displayTime = parts[1].substring(0, 5); // HH:mm
+        }
+    }
+    
+    const oppHtml = ag.oportunidade_id ? `<div class="text-[10px] text-indigo-600 mt-1 truncate" title="Opp #${ag.oportunidade_id}"><i class="fas fa-link"></i> Opp #${ag.oportunidade_id} ${ag.oportunidade_titulo || ''}</div>` : '';
+    
+    return `
+         <div class="opportunity-card bg-white p-3 rounded shadow-sm border mb-2 cursor-pointer hover:shadow-md transition" data-id="${ag.id}">
+             <h4 class="font-bold text-gray-800 text-xs">${ag.titulo}</h4>
+             <p class="text-[10px] text-gray-500 mt-0.5"><i class="fas fa-tag"></i> ${ag.tipo}</p>
+             ${oppHtml}
+             <div class="mt-2 pt-1.5 border-t border-gray-100 flex justify-between items-center">
+                 <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                     <i class="far fa-clock mr-1"></i>${displayTime}
+                 </span>
+                 ${ag.oportunidade_id ? `<button class="update-funnel-btn text-[10px] bg-indigo-600 text-white rounded px-2 py-1 hover:bg-indigo-700 transition font-medium" data-id="${ag.id}" data-opp="${ag.oportunidade_id}">Avançar Funil</button>` : ''}
+             </div>
+         </div>
+    `;
+}
+
+window.openUpdateFunnelModal = function(opportunityId) {
+    const opp = appState.opportunities.find(o => String(o.id) === String(opportunityId));
+    if (!opp) {
+        showToast('Oportunidade não encontrada.', 'error');
+        return;
+    }
+    
+    // Filter stages for Funnel 1 (Vendas)
+    const stages = appState.stages.filter(s => s.funil_id == 1 || !s.funil_id).sort((a,b) => a.ordem - b.ordem);
+    
+    const options = stages.map(s => `<option value="${s.id}" ${s.id == opp.etapa_id ? 'selected' : ''}>${s.nome}</option>`).join('');
+    
+    const content = `
+        <div class="space-y-4">
+            <p class="text-sm text-gray-600">Atualize a etapa do funil para a oportunidade <strong>${opp.titulo}</strong>.</p>
+            <div>
+                <label class="form-label">Nova Etapa do Funil</label>
+                <select id="new-funnel-stage" class="form-input w-full">
+                    ${options}
+                </select>
+            </div>
+            <div class="flex gap-2 justify-end mt-4 pt-2 border-t">
+                <button id="btn-save-move-opp" class="btn btn-secondary">Salvar e Mover</button>
+                <button id="btn-save-create-proposal" class="btn btn-primary">Salvar e Criar Proposta</button>
+            </div>
+        </div>
+    `;
+    
+    renderModal('Atualizar Oportunidade', content, null, null, null);
+    
+    // Custom handlers
+    document.getElementById('btn-save-move-opp')?.addEventListener('click', async () => {
+        const newStageId = document.getElementById('new-funnel-stage').value;
+        const btn = document.getElementById('btn-save-move-opp');
+        btn.disabled = true;
+        btn.innerHTML = 'Movendo...';
+        await moveOpportunityFromModal(opportunityId, newStageId);
+        closeModal();
+    });
+    
+    document.getElementById('btn-save-create-proposal')?.addEventListener('click', async () => {
+        const newStageId = document.getElementById('new-funnel-stage').value;
+        const btn = document.getElementById('btn-save-create-proposal');
+        btn.disabled = true;
+        btn.innerHTML = 'Aguarde...';
+        const moved = await moveOpportunityFromModal(opportunityId, newStageId);
+        closeModal();
+        if (moved) {
+            if (typeof window.openCreateProposalForOpportunity === 'function') {
+                window.openCreateProposalForOpportunity(opportunityId);
+            } else {
+                import('./proposals.js').then(module => {
+                    module.openCreateProposalForOpportunity(opportunityId);
+                }).catch(err => {
+                    console.error('Falha ao importar proposals.js', err);
+                    showToast('Módulo de propostas não carregado.', 'error');
+                });
+            }
+        }
+    });
+}
+
+async function moveOpportunityFromModal(opportunityId, newStageId) {
+    try {
+        const result = await apiCall('move_opportunity', {
+            method: 'POST',
+            body: JSON.stringify({ opportunityId, newStageId })
+        });
+        if (result && result.success !== false) {
+            // update state
+            const opp = appState.opportunities.find(o => String(o.id) === String(opportunityId));
+            if (opp) {
+                opp.etapa_id = newStageId;
+                opp.data_ultima_movimentacao = new Date().toISOString();
+            }
+            showToast('Oportunidade atualizada com sucesso!');
+            renderFunilView();
+            return true;
+        } else {
+            showToast('Erro ao atualizar oportunidade.', 'error');
+            return false;
+        }
+    } catch (e) {
+        showToast('Erro de conexão ao atualizar.', 'error');
+        return false;
+    }
+}

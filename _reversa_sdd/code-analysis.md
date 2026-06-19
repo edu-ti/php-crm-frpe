@@ -1,0 +1,19 @@
+# Análise de Código Consolidada
+
+## Módulos Analisados:
+1. **auth**: Handler simples de login/logout usando PHP sessions. Consultas SQL com validação de status de usuário ativo.
+2. **agenda**: Lógica complexa que envolve transações SQL em múltiplas tabelas (agendamentos e agendamento_usuarios), alteração do status de oportunidades ("Controle de Entrega") e disparo de notificações por email para os envolvidos.
+3. **client_pf**: Operações CRUD para clientes pessoa física. Contém lógica de importação em lote de dados com dupla verificação de unicidade (CPF e E-mail) e higienização de strings de entrada.
+4. **contact**: Operações CRUD básicas de contatos ligados a organizações, com validação de unicidade de email.
+5. **data**: Ponto central de distribuição de dados em massa para o frontend (dashboards e relatórios). Contém lógicas complexas de RBAC, filtrando as consultas de bancos conforme a role (Gestor, Vendedor, etc) e a tabela de permissões. Também lida com CRUD de vendas de fornecedores.
+6. **email**: Envio em massa utilizando a biblioteca PHPMailer (SMTP) ou SendGrid. Possui rotina para substituição de URLs relativas por absolutas (no corpo de e-mails vindos do editor TinyMCE) e endpoint para upload de imagens.
+7. **finance**: Operações de criação, atualização e exclusão de empenhos e notas fiscais. Realiza higienização de valores monetários (remove R$, formata decimais) antes de persistir no banco.
+8. **invoice_parser**: Integra-se com a biblioteca smalot/pdfparser para leitura de PDFs de notas fiscais. Utiliza Expressões Regulares (RegEx) para extrair valor total, destinatário e itens. Opcionalmente, atualiza a oportunidade com o valor lido e anota os produtos extraídos.
+9. **lead**: Gerencia o ciclo de vida inicial do CRM. Permite importar leads ignorando duplicados, atualizar campos dinâmicos e status, e converter um lead em "Pré-proposta" (oportunidade) gerando clientes PF sob demanda se necessário.
+10. **opportunity**: Central no sistema de vendas. Realiza CRUD complexo com dezenas de campos, cálculo de valor dinâmico (somando parâmetros e multiplicadores de locação). Exige sincronização reversa de status (quando oportunidade move no funil, proposta vinculada atualiza status também). Gera histórico detalhado de eventos.
+11. **organization**: CRUD básico de clientes Pessoa Jurídica, com checagem de CNPJ duplicado para garantir integridade.
+12. **product**: Módulo expansivo que gerencia o catálogo de produtos e inclui tabelas de preço (cabeçalho/itens) e a composição de Kits comerciais (onde o valor do kit salva um "snapshot" dos preços no momento da montagem). Possui dependência mútua com uploads de imagem.
+13. **proposal**: Orquestra propostas comerciais, incluindo cálculo recursivo de totais com multiplicadores de locação e descontos. Implementa gatilhos automáticos para atualizar a etapa do funil da oportunidade associada e injetar vendas no módulo de Fornecedores quando aprovada. Tem RBAC estrito (vendedores só podem alterar as próprias propostas).
+14. **rbac**: Expõe a matriz de permissões (recurso x ação x role) e lida com a persistência dessas permissões. Possui lógica fallback para quando a base não estiver preenchida. Adota uma regra implícita em que habilitar 'move' automaticamente exige 'edit'.
+15. **report**: Implementado com orientação a objetos (`ReportHandler`). Faz agregações massivas combinando `propostas` aprovadas e `vendas_fornecedores`, aplicando filtros RBAC/UF/Mês. Calcula curvas de desempenho (Ticket Médio, Conversões e Funil de Licitações) para os Dashboards de BI.
+16. **user**: Gerencia credenciais e usuários. Apenas Gestor e Analista possuem privilégios. Exclusão tenta Hard Delete primeiro; se houver constraint de integridade (ex: usuário possui propostas), aplica Soft Delete arquivando com data em `deleted_at`.

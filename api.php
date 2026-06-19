@@ -70,6 +70,7 @@ try {
         'fetch_cnpj' => ['method' => 'GET', 'file' => '/api/handlers/external_api_handler.php', 'function' => 'handle_fetch_cnpj'],
         'fetch_cep' => ['method' => 'GET', 'file' => '/api/handlers/external_api_handler.php', 'function' => 'handle_fetch_cep'],
         'migrate_db' => ['method' => 'GET', 'file' => '/api/handlers/opportunity_handler.php', 'function' => 'handle_migrate_db_opps'],
+        'setup_vendas_db' => ['method' => 'GET', 'file' => '/api/handlers/data_handler.php', 'function' => 'handle_setup_vendas_db'],
     ];
 
     // Verifica rotas públicas
@@ -220,6 +221,8 @@ try {
         'create_nota_fiscal' => ['method' => 'POST', 'file' => '/api/handlers/finance_handler.php', 'function' => 'handle_create_nota_fiscal'],
         'update_nota_fiscal' => ['method' => 'POST', 'file' => '/api/handlers/finance_handler.php', 'function' => 'handle_update_nota_fiscal'],
         'delete_nota_fiscal' => ['method' => 'POST', 'file' => '/api/handlers/finance_handler.php', 'function' => 'handle_delete_nota_fiscal'],
+        'add_venda_fornecedor_note' => ['method' => 'POST', 'file' => '/api/handlers/data_handler.php', 'function' => 'handle_add_venda_fornecedor_note'],
+        'get_venda_fornecedor_history' => ['method' => 'GET', 'file' => '/api/handlers/data_handler.php', 'function' => 'handle_get_venda_fornecedor_history'],
     ];
 
     if (isset($protected_routes[$action])) {

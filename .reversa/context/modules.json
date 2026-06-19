@@ -1,0 +1,791 @@
+{
+  "generated_at": "2026-06-15T12:15:00Z",
+  "modules": [
+    {
+      "name": "auth",
+      "path": "api/handlers/auth_handler.php",
+      "purpose": "Autenticação e controle de sessão de usuários",
+      "primary_files": [
+        "api/handlers/auth_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_login",
+          "file": "api/handlers/auth_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "handle_logout",
+          "file": "api/handlers/auth_handler.php",
+          "params": [],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "usuarios",
+          "fields": [
+            { "name": "id", "type": "int", "required": true },
+            { "name": "email", "type": "string", "required": true },
+            { "name": "senha", "type": "string", "required": true },
+            { "name": "status", "type": "string", "required": true }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "Somente usuários com status 'Ativo' podem fazer login.",
+          "location": "api/handlers/auth_handler.php:11",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": [],
+      "algorithms": [],
+      "complexity": "low"
+    },
+    {
+      "name": "agenda",
+      "path": "api/handlers/agenda_handler.php",
+      "purpose": "Gerenciamento de agendamentos e notificações por email",
+      "primary_files": [
+        "api/handlers/agenda_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_create_agendamento",
+          "file": "api/handlers/agenda_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "agendamentos",
+          "fields": [
+            { "name": "id", "type": "int", "required": true }
+          ],
+          "confidence": "inferred"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "Se o tipo for 'Controle de Entrega', a oportunidade associada muda de etapa.",
+          "location": "api/handlers/agenda_handler.php:96",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["email", "oportunidade"],
+      "algorithms": [],
+      "complexity": "high"
+    },
+    {
+      "name": "client_pf",
+      "path": "api/handlers/client_pf_handler.php",
+      "purpose": "CRUD e importação em lote de clientes pessoa física",
+      "primary_files": [
+        "api/handlers/client_pf_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_create_cliente_pf",
+          "file": "api/handlers/client_pf_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "clientes_pf",
+          "fields": [
+            { "name": "cpf", "type": "string", "required": true }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "CPFs e E-mails devem ser únicos na base.",
+          "location": "api/handlers/client_pf_handler.php:18",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": [],
+      "algorithms": [
+        "Importação em lote de clientes com detecção de duplicados"
+      ],
+      "complexity": "medium"
+    },
+    {
+      "name": "contact",
+      "path": "api/handlers/contact_handler.php",
+      "purpose": "CRUD de contatos de organizações",
+      "primary_files": [
+        "api/handlers/contact_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_create_contact",
+          "file": "api/handlers/contact_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "contatos",
+          "fields": [
+            { "name": "email", "type": "string", "required": false }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "Emails de contatos não podem ser duplicados.",
+          "location": "api/handlers/contact_handler.php:12",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["organizacoes"],
+      "algorithms": [],
+      "complexity": "low"
+    },
+    {
+      "name": "data",
+      "path": "api/handlers/data_handler.php",
+      "purpose": "Recuperação centralizada de dados mestres (dashboards/tabelas) e gestão de vendas a fornecedores",
+      "primary_files": [
+        "api/handlers/data_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_get_data",
+          "file": "api/handlers/data_handler.php",
+          "params": ["pdo"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "handle_get_stats",
+          "file": "api/handlers/data_handler.php",
+          "params": ["pdo"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "vendas_fornecedores",
+          "fields": [
+            { "name": "fornecedor_id", "type": "int", "required": true }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "Filtra oportunidades e agendamentos com base na role (RBAC) do usuário.",
+          "location": "api/handlers/data_handler.php:21",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["usuarios", "oportunidades", "propostas", "fornecedores", "produtos"],
+      "algorithms": [
+        "Cálculo de KPIs de conversão e estatísticas de vendas"
+      ],
+      "complexity": "high"
+    },
+    {
+      "name": "email",
+      "path": "api/handlers/email_handler.php",
+      "purpose": "Envio em massa de emails para leads e upload de imagens do TinyMCE",
+      "primary_files": [
+        "api/handlers/email_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_send_bulk_email_leads",
+          "file": "api/handlers/email_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [],
+      "business_rules": [
+        {
+          "description": "As URLs das imagens inseridas pelo editor precisam ser convertidas para absolutas antes de enviar.",
+          "location": "api/handlers/email_handler.php:29",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["SendGrid", "PHPMailer", "TinyMCE"],
+      "algorithms": [
+        "Parsing e conversão de URLs relativas para absolutas no corpo HTML"
+      ],
+      "complexity": "medium"
+    },
+    {
+      "name": "finance",
+      "path": "api/handlers/finance_handler.php",
+      "purpose": "Gerenciamento de empenhos e notas fiscais",
+      "primary_files": [
+        "api/handlers/finance_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_create_empenho",
+          "file": "api/handlers/finance_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "handle_create_nota_fiscal",
+          "file": "api/handlers/finance_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "empenhos",
+          "fields": [
+            { "name": "oportunidade_id", "type": "int", "required": true }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "notas_fiscais",
+          "fields": [
+            { "name": "empenho_id", "type": "int", "required": false }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "Valores monetários recebem formatação específica antes de inserir no BD (remove R$, ajusta decimal).",
+          "location": "api/handlers/finance_handler.php:14",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["oportunidades", "organizacoes"],
+      "algorithms": [],
+      "complexity": "medium"
+    },
+    {
+      "name": "invoice_parser",
+      "path": "api/handlers/invoice_parser_handler.php",
+      "purpose": "Leitura e extração de dados de notas fiscais em PDF",
+      "primary_files": [
+        "api/handlers/invoice_parser_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_parse_invoice",
+          "file": "api/handlers/invoice_parser_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [],
+      "business_rules": [
+        {
+          "description": "Utiliza regex para capturar valor total, destinatário e lista de produtos da NFe, e opcionalmente adiciona essas notas à oportunidade.",
+          "location": "api/handlers/invoice_parser_handler.php:30",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["Smalot\\PdfParser\\Parser", "oportunidades"],
+      "algorithms": [
+        "Extração de texto de PDF",
+        "Parsing via Expressões Regulares (RegEx)"
+      ],
+      "complexity": "high"
+    },
+    {
+      "name": "lead",
+      "path": "api/handlers/lead_handler.php",
+      "purpose": "Gestão de leads: importação, atualização de status e conversão para pré-proposta",
+      "primary_files": [
+        "api/handlers/lead_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_convert_lead_to_pre_proposal",
+          "file": "api/handlers/lead_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "handle_import_leads",
+          "file": "api/handlers/lead_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "leads",
+          "fields": [
+            { "name": "email", "type": "string", "required": false },
+            { "name": "telefone", "type": "string", "required": false }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "Ao converter um lead para oportunidade, caso o cliente_pf não exista (buscando por email ou telefone), ele é criado automaticamente.",
+          "location": "api/handlers/lead_handler.php:27",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["clientes_pf", "oportunidades", "etapas_funil"],
+      "algorithms": [
+        "Geração de número sequencial (ANO/ID) de pré-proposta",
+        "Importação em lote de leads ignorando duplicados"
+      ],
+      "complexity": "high"
+    },
+    {
+      "name": "opportunity",
+      "path": "api/handlers/opportunity_handler.php",
+      "purpose": "CRUD de Oportunidades, cálculo de valores totais, gestão de itens e movimentação no funil de vendas.",
+      "primary_files": [
+        "api/handlers/opportunity_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_create_opportunity",
+          "file": "api/handlers/opportunity_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "handle_update_opportunity",
+          "file": "api/handlers/opportunity_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "handle_move_opportunity",
+          "file": "api/handlers/opportunity_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "oportunidades",
+          "fields": [
+            { "name": "titulo", "type": "string", "required": true },
+            { "name": "valor", "type": "decimal", "required": true }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "oportunidade_itens",
+          "fields": [
+            { "name": "oportunidade_id", "type": "int", "required": true }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "oportunidade_historico",
+          "fields": [
+            { "name": "oportunidade_id", "type": "int", "required": true }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "O valor total da oportunidade é calculado no backend somando (valor_unitario + parametros) * quantidade * multiplicador_locacao de todos os itens.",
+          "location": "api/handlers/opportunity_handler.php:24",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "Não é permitido mover para a etapa de Negociação sem possuir ao menos uma Proposta gerada.",
+          "location": "api/handlers/opportunity_handler.php:485",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "Não é permitido mover para Fechado/Ganho sem possuir ao menos uma Proposta com status 'Aprovada'.",
+          "location": "api/handlers/opportunity_handler.php:498",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["oportunidade_itens", "oportunidade_historico", "propostas", "leads", "etapas_funil"],
+      "algorithms": [
+        "Cálculo iterativo do valor total com base em parâmetros JSON dinâmicos e meses de locação",
+        "Sincronização reversa do status da oportunidade para o status das propostas"
+      ],
+      "complexity": "high"
+    },
+    {
+      "name": "organization",
+      "path": "api/handlers/organization_handler.php",
+      "purpose": "Gerenciamento de Organizações (Clientes/Empresas)",
+      "primary_files": [
+        "api/handlers/organization_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_create_organization",
+          "file": "api/handlers/organization_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "organizacoes",
+          "fields": [
+            { "name": "nome_fantasia", "type": "string", "required": true },
+            { "name": "cnpj", "type": "string", "required": false }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "Não é permitido cadastrar duas organizações com o mesmo CNPJ.",
+          "location": "api/handlers/organization_handler.php:12",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": [],
+      "algorithms": [],
+      "complexity": "low"
+    },
+    {
+      "name": "product",
+      "path": "api/handlers/product_handler.php",
+      "purpose": "CRUD de Produtos do Catálogo, Tabelas de Preço (master/detail) e Kits",
+      "primary_files": [
+        "api/handlers/product_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_create_product",
+          "file": "api/handlers/product_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "handle_create_price_table",
+          "file": "api/handlers/product_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "handle_create_kit",
+          "file": "api/handlers/product_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "produtos",
+          "fields": [
+            { "name": "nome_produto", "type": "string", "required": true }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "tabela_preco",
+          "fields": [
+            { "name": "codigo", "type": "string", "required": true }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "tabela_preco_itens",
+          "fields": [
+            { "name": "tabela_preco_id", "type": "int", "required": true }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "kits",
+          "fields": [
+            { "name": "valor_total", "type": "decimal", "required": true }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "kit_itens",
+          "fields": [
+            { "name": "kit_id", "type": "int", "required": true }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "Itens de tabelas de preço não podem ser excluídos se estiverem associados a algum Kit.",
+          "location": "api/handlers/product_handler.php:273",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "Valor total do Kit é calculado iterando sobre seus itens e salvando o snapshot do valor unitário no momento da criação/edição.",
+          "location": "api/handlers/product_handler.php:330",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["tabela_preco", "tabela_preco_itens", "kits", "kit_itens", "produtos"],
+      "algorithms": [
+        "Cálculo de snapshot de valor_unitario_snapshot ao criar Kits",
+        "Upload e unlink de arquivos físicos ao gerenciar imagens de produtos"
+      ],
+      "complexity": "high"
+    },
+    {
+      "name": "proposal",
+      "path": "api/handlers/proposal_handler.php",
+      "purpose": "Gerenciamento de propostas comerciais e sincronização bidirecional com oportunidades.",
+      "primary_files": [
+        "api/handlers/proposal_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_create_proposal",
+          "file": "api/handlers/proposal_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "handle_update_proposal",
+          "file": "api/handlers/proposal_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "sync_opportunity_stage",
+          "file": "api/handlers/proposal_handler.php",
+          "params": ["pdo", "oportunidade_id", "status_proposta"],
+          "returns": "void",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "create_vendas_fornecedores_from_proposal",
+          "file": "api/handlers/proposal_handler.php",
+          "params": ["pdo", "proposta_id", "organizacao_id", "cliente_pf_id"],
+          "returns": "void",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "propostas",
+          "fields": [
+            { "name": "oportunidade_id", "type": "int", "required": true },
+            { "name": "valor_total", "type": "decimal", "required": true },
+            { "name": "status", "type": "string", "required": true }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "proposta_itens",
+          "fields": [
+            { "name": "proposta_id", "type": "int", "required": true },
+            { "name": "parametros", "type": "json", "required": false }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "Sincroniza automaticamente a etapa da Oportunidade quando o status da Proposta muda.",
+          "location": "api/handlers/proposal_handler.php:126",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "Cria registros na tabela vendas_fornecedores automaticamente quando o status da proposta muda para 'Aprovada'.",
+          "location": "api/handlers/proposal_handler.php:131",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "Vendedores só podem editar e excluir propostas que eles próprios criaram.",
+          "location": "api/handlers/proposal_handler.php:195",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["oportunidades", "vendas_fornecedores", "etapas_funil", "usuarios", "proposta_itens"],
+      "algorithms": [
+        "Sincronização reversa Proposta -> Oportunidade baseada em dicionário de de-para",
+        "Parsing de JSON de parâmetros por item para flexibilidade"
+      ],
+      "complexity": "high"
+    },
+    {
+      "name": "rbac",
+      "path": "api/handlers/rbac_handler.php",
+      "purpose": "Gerenciamento de Matriz de Permissões (Role-Based Access Control).",
+      "primary_files": [
+        "api/handlers/rbac_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_save_role_permissions",
+          "file": "api/handlers/rbac_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "roles",
+          "fields": [
+            { "name": "name", "type": "string", "required": true }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "permissions",
+          "fields": [
+            { "name": "resource", "type": "string", "required": true },
+            { "name": "action", "type": "string", "required": true }
+          ],
+          "confidence": "confirmed"
+        },
+        {
+          "name": "role_permissions",
+          "fields": [
+            { "name": "role_id", "type": "int", "required": true },
+            { "name": "permission_id", "type": "int", "required": true },
+            { "name": "allowed", "type": "boolean", "required": true }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "Permissão de 'move' exige permissão prévia de 'edit' implicitamente.",
+          "location": "api/handlers/rbac_handler.php:188",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": [],
+      "algorithms": [
+        "Fallback memory catalog de roles e permissões caso banco esteja vazio"
+      ],
+      "complexity": "medium"
+    },
+    {
+      "name": "report",
+      "path": "api/handlers/report_handler.php",
+      "purpose": "Agregação de dados analíticos para dashboards, BI KPIs e painéis de desempenho.",
+      "primary_files": [
+        "api/handlers/report_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "ReportHandler::handleRequest",
+          "file": "api/handlers/report_handler.php",
+          "params": ["method", "action"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [],
+      "business_rules": [
+        {
+          "description": "Soma valores de vendas vindos tanto de Propostas Aprovadas quanto de Vendas a Fornecedores diretas (evitando duplicidade).",
+          "location": "api/handlers/report_handler.php:146",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "Calcula Ticket Médio Anual e Mensal agregando volume total sobre quantidade absoluta de registros de sucesso.",
+          "location": "api/handlers/report_handler.php:445",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": ["propostas", "vendas_fornecedores", "oportunidades", "etapas_funil", "fornecedores", "fornecedor_metas"],
+      "algorithms": [
+        "Unions massivos entre tabelas de propostas e vendas avulsas para consolidar faturamento",
+        "Agrupamento de status do funil de licitações para consolidar resultado (Ganho x Perdido)",
+        "Separação ABC baseada em curva de faturamento percentual"
+      ],
+      "complexity": "high"
+    },
+    {
+      "name": "user",
+      "path": "api/handlers/user_handler.php",
+      "purpose": "CRUD de Usuários, alteração de senha e gestão de acesso ao CRM.",
+      "primary_files": [
+        "api/handlers/user_handler.php"
+      ],
+      "functions": [
+        {
+          "name": "handle_create_user",
+          "file": "api/handlers/user_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        },
+        {
+          "name": "handle_delete_user",
+          "file": "api/handlers/user_handler.php",
+          "params": ["pdo", "data"],
+          "returns": "JSON",
+          "confidence": "confirmed"
+        }
+      ],
+      "entities": [
+        {
+          "name": "usuarios",
+          "fields": [
+            { "name": "nome", "type": "string", "required": true },
+            { "name": "email", "type": "string", "required": true },
+            { "name": "senha", "type": "string", "required": true },
+            { "name": "role", "type": "string", "required": true },
+            { "name": "status", "type": "string", "required": true }
+          ],
+          "confidence": "confirmed"
+        }
+      ],
+      "business_rules": [
+        {
+          "description": "Exclusão de usuários possui fallback para Soft Delete (desativação) caso violem restrição de integridade (erro PDO 23000).",
+          "location": "api/handlers/user_handler.php:98",
+          "confidence": "confirmed"
+        },
+        {
+          "description": "Somente usuários com papel 'Gestor' ou 'Analista' podem criar, editar ou excluir contas.",
+          "location": "api/handlers/user_handler.php:8",
+          "confidence": "confirmed"
+        }
+      ],
+      "dependencies": [],
+      "algorithms": [
+        "Tratamento de exceção SQL para conversão de Hard Delete em Soft Delete"
+      ],
+      "complexity": "low"
+    }
+  ]
+}
