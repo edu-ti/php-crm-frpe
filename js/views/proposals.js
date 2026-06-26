@@ -1063,6 +1063,20 @@ function handleItemInputChange(e) {
         // Não atualiza o estado aqui, só no blur
     } else if (prop === 'status') {
         appState.proposal.items[index][prop] = value;
+        
+        // Calcular 6% do valor do catálogo para Locação, ou 100% para Venda
+        const item = appState.proposal.items[index];
+        if (item.produto_id) {
+            const product = appState.products.find(p => p.id == item.produto_id);
+            if (product) {
+                if (value === 'LOCAÇÃO') {
+                    item.valor_unitario = (product.valor_unitario || 0) * 0.06;
+                } else if (value === 'VENDA') {
+                    item.valor_unitario = product.valor_unitario || 0;
+                }
+            }
+        }
+        
         // Se mudou o status, precisamos re-renderizar para mostrar/esconder o campo Locação
         renderProposalItemsSection();
     } else if (prop === 'meses_locacao') {
